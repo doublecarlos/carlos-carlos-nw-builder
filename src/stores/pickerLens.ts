@@ -19,6 +19,8 @@ export const showHidden = ref(false);
 export const showPreview = ref(true);
 /** Draw the muted "Potentially" line: bonuses the item contributes to but would not activate. */
 export const showPotential = ref(true);
+/** Show the highlighted candidate's full item card beside the open menu. */
+export const showCard = ref(true);
 
 /** The menu's rows, in order: one entry per option, so adding another is a line here and a ref
  *  above rather than a second list the menu has to be kept in sync with. */
@@ -37,6 +39,7 @@ export const OPTIONS = [
     label: "Show potential bonus stats",
     value: showPotential,
   },
+  { key: "showCard", label: "Show item card", value: showCard },
 ] as const;
 
 export function toggle(key: string) {

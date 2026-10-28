@@ -54,7 +54,7 @@ const labelFor = (value: string) =>
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
 
-const { open, query, highlight } = useMenuNavigation({
+const { open, query, highlight, pointAt } = useMenuNavigation({
   target: input,
   entryCount: () => entries.value.length,
   onHighlightChange: () => menu.value?.scrollToHighlighted(),
@@ -199,7 +199,7 @@ function onPaste(event: ClipboardEvent) {
         :key="entry.value"
         :highlighted="index === highlight"
         @mousedown.prevent="add(entry.value)"
-        @mouseenter="highlight = index"
+        @mousemove="pointAt($event, index)"
       >
         <span class="flex items-center gap-2">
           <span class="min-w-0 flex-1">

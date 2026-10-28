@@ -16,6 +16,12 @@ import { useElementBounding, useWindowSize } from "@vueuse/core";
 // Rendered in place rather than teleported through BasePopover (base.css's exception), but
 // `fixed` against its parent's rect, so a scrolling ancestor (a point section's horizontally
 // scrolling body) can't clip it. `--anchor-width` carries the parent's width for `menuClass`.
+//
+// The optional `aside` slot is a detail panel beside the menu, top-aligned with it. It sits on
+// whichever side has room and stays hidden when neither does, since covering the menu would be
+// worse than not showing it. Pressing on it keeps focus in the input that owns the menu, and
+// its clicks stay its own: a host row reacting to them (BuildSlot's cursor parking) would
+// blur that input.
 
 withDefaults(
   defineProps<{
@@ -39,7 +45,7 @@ const MARGIN = 8;
 const el = useTemplateRef("el");
 const anchor = computed(() => el.value?.parentElement ?? null);
 const { left, top, bottom, width } = useElementBounding(anchor);
-const { height: viewportHeight } = useWindowSize();
+const { width: viewportWidth, height: viewportHeight } = useWindowSize();
 
 /** The rows' full height, unconstrained by `max-height`. Remeasured on every render, since
  *  the rows arrive through the slot. */
@@ -67,6 +73,40 @@ const style = computed<CSSProperties>(() => {
   };
 });
 
+const asideEl = useTemplateRef("aside");
+const menuBox = useElementBounding(el);
+const asideBox = useElementBounding(asideEl);
+
+/** Gap between the menu and the aside panel. */
+const ASIDE_GAP = 6;
+
+const asideStyle = computed<CSSProperties>(() => {
+  const asideWidth = asideBox.width.value;
+  const right = menuBox.right.value + ASIDE_GAP;
+  const leftSide = menuBox.left.value - ASIDE_GAP - asideWidth;
+  const asideLeft =
+    right + asideWidth <= viewportWidth.value - MARGIN
+      ? right
+      : leftSide >= MARGIN
+        ? leftSide
+        : null;
+  // Slid up just enough to end inside the viewport, never above its top margin.
+  const asideTop = Math.max(
+    Math.min(
+      menuBox.top.value,
+      viewportHeight.value - MARGIN - asideBox.height.value,
+    ),
+    MARGIN,
+  );
+  return {
+    left: `${asideLeft ?? 0}px`,
+    top: `${asideTop}px`,
+    maxHeight: `min(32rem, ${viewportHeight.value - 2 * MARGIN}px)`,
+    // Hidden rather than removed, so its size stays measurable for the next placement.
+    visibility: asideLeft === null ? "hidden" : undefined,
+  };
+});
+
 /** Scroll the `[data-highlighted]` row into view. Called by the parent picker's
  * `watch(highlight, ...)` instead of reaching into `$el`.
  *
@@ -89,6 +129,7 @@ defineExpose({ scrollToHighlighted });
 
 defineSlots<{
   default(): unknown;
+  aside?(): unknown;
 }>();
 </script>
 
@@ -103,5 +144,16 @@ defineSlots<{
     :style="style"
   >
     <slot />
+  </div>
+  <div
+    v-if="$slots.aside"
+    ref="aside"
+    class="fixed z-menu flex"
+    data-testid="picker-aside"
+    :style="asideStyle"
+    @mousedown.prevent
+    @click.stop
+  >
+    <slot name="aside" />
   </div>
 </template>

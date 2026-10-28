@@ -97,7 +97,10 @@ test.describe("item picker bonus preview", () => {
     const row = slotRow(page, "gear.head");
 
     await pickerInput(row).click();
-    await row.getByText(HEAD_ITEM_WITH_BONUS, { exact: true }).click();
+    await row
+      .getByTestId("picker-menu")
+      .getByText(HEAD_ITEM_WITH_BONUS, { exact: true })
+      .click();
 
     // The row's own stat summary (BuildEditor.vue's `statSummary`) now credits the same
     // bonus this item's picker row previewed before it was picked.

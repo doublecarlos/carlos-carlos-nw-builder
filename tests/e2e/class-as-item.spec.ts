@@ -25,7 +25,10 @@ test("the class row is a picker over class items", async ({ page }) => {
     row.getByText(className("wizard"), { exact: true }),
   ).toBeVisible();
 
-  await row.getByText(className("warlock"), { exact: true }).click();
+  await row
+    .getByTestId("picker-menu")
+    .getByText(className("warlock"), { exact: true })
+    .click();
   await expect(pickerInput(row)).toHaveValue(className("warlock"));
 });
 

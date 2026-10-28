@@ -71,6 +71,7 @@ test("a mount's fixed slot only offers insignia of its own shape", async ({
   await first.fill("Insignia of");
   await expect(
     slotRow(page, "insignia.insignia1_1")
+      .getByTestId("picker-menu")
       .getByText(BARBED, { exact: true })
       .first(),
   ).toBeVisible();
@@ -82,10 +83,14 @@ test("a mount's fixed slot only offers insignia of its own shape", async ({
   await first.click();
   await first.fill("Insignia of");
   await expect(
-    slotRow(page, "insignia.insignia1_1").getByText(CRESCENT, { exact: true }),
+    slotRow(page, "insignia.insignia1_1")
+      .getByTestId("picker-menu")
+      .getByText(CRESCENT, { exact: true }),
   ).toBeVisible();
   await expect(
-    slotRow(page, "insignia.insignia1_1").getByText(BARBED, { exact: true }),
+    slotRow(page, "insignia.insignia1_1")
+      .getByTestId("picker-menu")
+      .getByText(BARBED, { exact: true }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
@@ -95,6 +100,7 @@ test("a mount's fixed slot only offers insignia of its own shape", async ({
   await third.fill("Insignia of");
   await expect(
     slotRow(page, "insignia.insignia1_3")
+      .getByTestId("picker-menu")
       .getByText(BARBED, { exact: true })
       .first(),
   ).toBeVisible();
@@ -112,6 +118,7 @@ test("a slot offers only the half of a pair that belongs in it", async ({
   await fourth.fill(ENLIGHTENED);
   const fourthRow = slotRow(page, "insignia.insignia1_4");
   const offered = await fourthRow
+    .getByTestId("picker-menu")
     .getByText(ENLIGHTENED, { exact: true })
     .count();
   expect(offered).toBeGreaterThan(0);
@@ -120,7 +127,9 @@ test("a slot offers only the half of a pair that belongs in it", async ({
     offered,
   );
   await expect(
-    fourthRow.getByText(`${ENLIGHTENED} (Pref)`, { exact: true }),
+    fourthRow
+      .getByTestId("picker-menu")
+      .getByText(`${ENLIGHTENED} (Pref)`, { exact: true }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
@@ -130,7 +139,10 @@ test("a slot offers only the half of a pair that belongs in it", async ({
   await third.fill(BARBED);
   const thirdRow = slotRow(page, "insignia.insignia1_3");
   await expect(
-    thirdRow.getByText(BARBED, { exact: true }).first(),
+    thirdRow
+      .getByTestId("picker-menu")
+      .getByText(BARBED, { exact: true })
+      .first(),
   ).toBeVisible();
   await expect(thirdRow.getByTestId("picker-option-preferred")).toHaveCount(0);
 });

@@ -81,7 +81,10 @@ test.describe("quick", () => {
 
     await input.click();
     await input.fill(BOSS);
-    await picker.getByText(BOSS, { exact: true }).click();
+    await picker
+      .getByTestId("picker-menu")
+      .getByText(BOSS, { exact: true })
+      .click();
 
     await expect(input).toHaveValue(BOSS);
   });
@@ -116,7 +119,9 @@ test.describe("disallowEmpty", () => {
     await row.scrollIntoViewIfNeeded();
     await pickerInput(row).click();
     // The candidates are still all there -- only the "no value" row is gone.
-    await expect(row.getByText(BOSS, { exact: true })).toBeVisible();
+    await expect(
+      row.getByTestId("picker-menu").getByText(BOSS, { exact: true }),
+    ).toBeVisible();
     await expect(row.getByText("- empty -", { exact: true })).toHaveCount(0);
   });
 });

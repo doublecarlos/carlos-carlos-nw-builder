@@ -1,5 +1,6 @@
 import { ref, nextTick, watch, type Ref } from "vue";
 import { onKeyStroke } from "@vueuse/core";
+import { createPointerMoveFilter } from "../lib/pointer-moved";
 
 /**
  * The open/query/highlight state and ArrowUp/ArrowDown/Escape handling shared by CreatableComboBox
@@ -47,5 +48,12 @@ export function useMenuNavigation(options: {
 
   onKeyStroke("Escape", close, { target: options.target });
 
-  return { open, query, highlight, close };
+  const pointerMoved = createPointerMoveFilter();
+
+  /** A row's `mousemove` handler: the pointer takes the highlight only when it really moved. */
+  function pointAt(event: MouseEvent, index: number) {
+    if (pointerMoved(event)) highlight.value = index;
+  }
+
+  return { open, query, highlight, close, pointAt };
 }
