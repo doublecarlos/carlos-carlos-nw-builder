@@ -280,6 +280,14 @@
   {
     "id": "avian-aura-group-celestial",
     "name": "Avian Aura",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "min": 0,
+        "max": 4,
+        "default": 1
+      }
+    },
     "grants": [
       {
         "when": {
@@ -287,6 +295,23 @@
         },
         "stats": {
           "power": 2100
+        },
+        "scale": {
+          "formula": "$stacks"
+        }
+      }
+    ]
+  },
+  {
+    "id": "awakened-forger-s-box",
+    "name": "Awakened Forger's Box",
+    "grants": [
+      {
+        "when": {
+          "toggle": "consumables"
+        },
+        "stats": {
+          "power_p": 0.03
         }
       }
     ]
@@ -400,6 +425,89 @@
         "stats": {
           "outgoing_damage": 0.135
         }
+      }
+    ]
+  },
+  {
+    "id": "blessed-advantage-stats",
+    "name": "Blessed Advantage Stats",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "tiers": [
+          {
+            "atLeast": 1,
+            "stats": {}
+          },
+          {
+            "atLeast": 2,
+            "stats": {
+              "power_p": 0.04
+            }
+          },
+          {
+            "atLeast": 3,
+            "stats": {
+              "power_p": 0.06,
+              "recharge": 0.15
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "blessed-resilience-stats",
+    "name": "Blessed Resilience Stats",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "tiers": [
+          {
+            "atLeast": 1,
+            "stats": {
+              "defense_p": 0.02
+            }
+          },
+          {
+            "atLeast": 2,
+            "stats": {
+              "defense_p": 0.04,
+              "hit_points_p": 0.04
+            }
+          },
+          {
+            "atLeast": 3,
+            "stats": {
+              "defense_p": 0.06,
+              "hit_points_p": 0.06
+            }
+          }
+        ]
       }
     ]
   },
@@ -637,6 +745,21 @@
         "stats": {
           "acc_p": 0.1,
           "sev_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "chocolate-awareness",
+    "name": "Chocolate",
+    "grants": [
+      {
+        "when": {
+          "toggle": "consumables"
+        },
+        "stats": {
+          "awareness": 4000,
+          "hit_points": 20000
         }
       }
     ]
@@ -1274,6 +1397,21 @@
         },
         "stats": {
           "defense_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "honeyed-bread-defense",
+    "name": "Honeyed Bread",
+    "grants": [
+      {
+        "when": {
+          "toggle": "consumables"
+        },
+        "stats": {
+          "defense": 4000,
+          "hit_points": 20000
         }
       }
     ]
@@ -3169,6 +3307,28 @@
     ]
   },
   {
+    "id": "m34-ashen-bindings-of-the-devourer",
+    "name": "M34 Ashen Bindings of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.064
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-bindings-of-the-devourer-1",
+    "name": "M34 Ashen Bindings of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.075
+        }
+      }
+    ]
+  },
+  {
     "id": "m34-ashen-bindings-of-the-devourer-2",
     "name": "M34 Ashen Bindings of the Devourer +2",
     "grants": [
@@ -3251,6 +3411,30 @@
     ]
   },
   {
+    "id": "m34-ashen-cowl-of-the-devourer",
+    "name": "M34 Ashen Cowl of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.068,
+          "mana_regen": 0.23
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-cowl-of-the-devourer-1",
+    "name": "M34 Ashen Cowl of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.075,
+          "mana_regen": 0.25
+        }
+      }
+    ]
+  },
+  {
     "id": "m34-ashen-cowl-of-the-devourer-2",
     "name": "M34 Ashen Cowl of the Devourer +2",
     "grants": [
@@ -3318,6 +3502,30 @@
         "stats": {
           "acc_p": 0.086,
           "ap_gain": 0.017
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-jerkin-of-the-devourer",
+    "name": "M34 Ashen Jerkin of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.064,
+          "outgoing_damage": 0.038
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-jerkin-of-the-devourer-1",
+    "name": "M34 Ashen Jerkin of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.075,
+          "outgoing_damage": 0.045
         }
       }
     ]
@@ -3411,6 +3619,30 @@
       {
         "stats": {
           "strike_p": 0.086
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-striders-of-the-devourer",
+    "name": "M34 Ashen Striders of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.051,
+          "movement": 0.04
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-striders-of-the-devourer-1",
+    "name": "M34 Ashen Striders of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.06,
+          "movement": 0.05
         }
       }
     ]
@@ -4240,6 +4472,38 @@
         "stats": {
           "power": 4000,
           "hit_points": 20000
+        }
+      }
+    ]
+  },
+  {
+    "id": "protective-embrace",
+    "name": "Protective Embrace",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "min": 0,
+        "max": 5,
+        "default": 5
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "all": [
+            {
+              "toggle": "party"
+            },
+            {
+              "toggle": "combat"
+            }
+          ]
+        },
+        "stats": {
+          "defense_p": 0.01
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       }
     ]

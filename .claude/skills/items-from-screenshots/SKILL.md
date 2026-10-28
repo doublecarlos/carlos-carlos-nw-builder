@@ -30,7 +30,8 @@ Note down these fields for each tooltip:
 | Slot line (`Arms`, `Armor`, `Feet`, `Head`, `Weapon, Ranged`, `Implement`) | `filter`                                                           |
 | Dev info `Def:` line                                                       | `gameIds: ["<Def value>"]`                                         |
 
-- **Mod number:** read it from the `Def:` id (`Head_M33_..._Sss-tier` means M33). If there's no dev info, ask the user for the mod and the game ids; don't infer them from item level. The usual id form is `<Slot>_M<nn>_<Role>_<Tier>`.
+- **Mod number:** read it from the `Def:` id (`Head_M33_..._Sss-tier` means M33). If there's no dev info and the user hasn't named the mod, ask; don't infer it from item level.
+- **Never omit `gameIds`.** Without dev info, build the id as `<Slot>_M<nn>_<Role>_<Tier>`: role from the class groups table, tier from sibling items of the same mod and rarity (M34: legendary `R4`, mythic `R5`, celestial `R6`). Flag derived ids in the report.
 - **Copy the `Def:` value exactly.** Never guess the tier suffix: it varies by mod and rarity (`S-tier` in M31, `R4`/`R5`/`R6` in M34).
 - **Game ID clashes:** before adding a game ID, grep `data/` for it. If another item already uses it, stop and ask, because the id was probably mistyped.
 - **Ignore these parts:**
@@ -47,12 +48,14 @@ Gear is usually limited to one of these class groups, which match the armor type
 | ------------- | --------------------------------------- | ------------ |
 | Light DPS     | `["warlock", "wizard"]`                 | `Lightdps`   |
 | Medium DPS    | `["bard", "cleric", "ranger", "rogue"]` | `Mediumdps`  |
+| Medium DPS 1  | `["ranger", "rogue"]`                   | `Mediumdps1` |
+| Medium DPS 2  | `["bard", "cleric"]`                    | `Mediumdps2` |
 | Heavy DPS     | `["barbarian", "fighter"]`              | `Heavydps`   |
 | Medium healer | `["bard", "warlock"]`                   | `Mediumheal` |
 | Heavy healer  | `["cleric", "paladin"]`                 | `Heavyheal`  |
 | Heavy tank    | `["barbarian", "fighter", "paladin"]`   | `Heavytank`  |
 
-- **M34 Medium DPS split:** from M34, some Medium DPS items are split into Rogue/Ranger (`["ranger", "rogue"]`) and Cleric/Bard (`["bard", "cleric"]`). Always use the classes the tooltip lists. If you only have the game id and it doesn't show which split it is, ask.
+- **M34 Medium DPS split:** from M34, some Medium DPS items are split into Rogue/Ranger (`Mediumdps1`) and Cleric/Bard (`Mediumdps2`), while others stay on all four classes (`Mediumdps`). Always use the classes the tooltip lists, and pick the role from them.
 - **Check the tooltip anyway:** the role in the game id suggests the group, but the `Requires Class` line wins. If they disagree, mention it in the report.
 - **Single-class items:** some items are limited to a single class (class weapons such as `Primary_M32_Warlock_All_R6`).
 
