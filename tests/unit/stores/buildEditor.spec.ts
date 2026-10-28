@@ -872,6 +872,28 @@ describe("buildEditor item_picker_list rows", () => {
     expect(builds.build.value!.choices[row(2)]).toBeUndefined();
   });
 
+  it("copySection from a shorter list leaves no rows past the new count", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    const target = builds.build.value!;
+    const source = storage.defaultBuild("Source");
+    source.listRows[LIST] = 1;
+    source.choices[row(1)] = "ItemA";
+    builds.replaceActive(source);
+    builds.replaceActive(target);
+
+    for (let i = 0; i < 3; i += 1) buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(3), "ItemC");
+    buildEditor.copySection(source.id, [slot.section]);
+
+    const build = builds.build.value!;
+    expect(build.listRows[LIST]).toBe(1);
+    expect(build.choices[row(1)]).toBe("ItemA");
+    expect(build.choices[row(3)]).toBeUndefined();
+    expect(storage.duplicate(build).listRows[LIST]).toBe(1);
+  });
+
   it("applyPreset grows a list to cover the rows it names", async () => {
     const { builds, buildEditor, resolved } = await freshStores();
     const slot = resolved.db.value.slotById.get(LIST)!;
