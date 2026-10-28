@@ -1171,9 +1171,6 @@ export interface GrantScale {
   multiplier: number;
   /** Why the formula has no usable result: a runtime error or a negative value. */
   error?: string;
-  /** What a formula reading more than one thing read, so a note can name each value. Absent
-   *  on a single read, whose `label` already names it. */
-  reads?: FormulaRead[];
   /** The resolved payload before the multiplier (the catalog's real value plus any typed
    * dynamic stat), which `stats` no longer holds once scaled. Null while the grant is
    * inactive, like `stats`. */

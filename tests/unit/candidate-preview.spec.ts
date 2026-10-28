@@ -1,10 +1,13 @@
 // The picker card's "what if this candidate were picked" resolve, against the shipped catalog.
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import * as db from "../../src/data/db";
+import * as engine from "../../src/engine/engine";
 import { defaultBuild } from "../../src/storage/storage";
 import {
   bonusesForItem,
+  candidatePreviews,
   resolveWithCandidate,
+  samePreviewInputs,
 } from "../../src/lib/candidate-preview";
 import type { Db, EvaluatedBonus, Item } from "../../src/types";
 
@@ -63,5 +66,64 @@ describe("bonusesForItem", () => {
     } as unknown as Db;
     const a = { id: "a" } as EvaluatedBonus;
     expect(bonusesForItem(stub, item, new Map([["a", a]]))).toEqual([a]);
+  });
+});
+
+describe("candidatePreviews", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("keeps what the card reads next to the row's sums", () => {
+    const { slotId, item } = candidateWithBonuses();
+    const preview = candidatePreviews({ db: shipped, build, slotId }, [
+      item,
+    ]).get(item.id)!;
+    const result = resolveWithCandidate(shipped, build, slotId, item.id);
+    const byId = new Map(result.bonuses.map((b) => [b.id, b]));
+    expect(preview.bonuses.map((b) => b.id)).toEqual(
+      bonusesForItem(shipped, item, byId).map((b) => b.id),
+    );
+    expect([...preview.bonusById.keys()]).toEqual([...byId.keys()]);
+    expect(preview.ctx.equipped.get(item.id)).toBeGreaterThan(0);
+  });
+
+  it("resolves each candidate once", () => {
+    const { slotId } = candidateWithBonuses();
+    const items = db.forSlotAndBuild(shipped, slotId, build).slice(0, 5);
+    const spy = vi.spyOn(engine, "resolveBonuses");
+    candidatePreviews({ db: shipped, build, slotId }, items);
+    expect(spy).toHaveBeenCalledTimes(items.length);
+  });
+
+  it("maps a candidate whose resolve throws to null, and keeps the rest", () => {
+    const { slotId } = candidateWithBonuses();
+    const items = db.forSlotAndBuild(shipped, slotId, build).slice(0, 2);
+    vi.spyOn(engine, "resolveBonuses").mockImplementationOnce(() => {
+      throw new Error("bad");
+    });
+    const map = candidatePreviews({ db: shipped, build, slotId }, items);
+    expect(map.get(items[0].id)).toBeNull();
+    expect(map.get(items[1].id)).not.toBeNull();
+  });
+});
+
+describe("samePreviewInputs", () => {
+  const inputs = { db: shipped, build, slotId: "gear.head" };
+
+  it("matches a fresh object with the same parts", () => {
+    expect(samePreviewInputs(inputs, { ...inputs })).toBe(true);
+  });
+
+  it("tells apart a changed build or slot", () => {
+    expect(samePreviewInputs(inputs, { ...inputs, build: { ...build } })).toBe(
+      false,
+    );
+    expect(samePreviewInputs(inputs, { ...inputs, slotId: "gear.armor" })).toBe(
+      false,
+    );
+  });
+
+  it("matches only undefined against undefined", () => {
+    expect(samePreviewInputs(undefined, undefined)).toBe(true);
+    expect(samePreviewInputs(inputs, undefined)).toBe(false);
   });
 });

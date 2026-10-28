@@ -431,12 +431,10 @@ function grantScale(
   const result = evaluateFormula(grant.scale.formula, ctx);
   const read = singleRead(grant.scale.formula);
   const label = formulaLabel(grant.scale, ctx);
-  // A single read already names what it scales by; only a compound formula lists its reads.
   const base = {
     formula,
     ...(label && { label }),
     ...(read?.kind === "scaler" && { path: read.path }),
-    ...(!read && { reads: formulaReads(grant.scale.formula, ctx) }),
   };
   if (!result.ok) return { ...base, multiplier: 0, error: result.error };
   if (result.value < 0) {
@@ -448,12 +446,16 @@ function grantScale(
 
 /** The unmet requirement a scale not above 0 adds to its grant's gate, so the grant reads as
  *  one step from active. A compound formula is named by what it read rather than by its text,
- *  e.g. "multiplier > 0 - Stacks: 0". */
+ *  e.g. "multiplier > 0 - Stacks: 0". The reads are worked out only here, for an unmet scale;
+ *  display code derives them from a context when it needs them. */
 function scaleLeaf(
   scale: Omit<GrantScale, "unscaled">,
+  formula: string,
+  ctx: EvalContext,
 ): ConditionLeafResult | null {
   if (scale.multiplier > 0) return null;
-  const reads = scale.reads ?? [];
+  // A single read already names what it scales by; only a compound formula lists its reads.
+  const reads = singleRead(formula) ? [] : formulaReads(formula, ctx);
   const name = scale.label ?? (reads.length ? "multiplier" : scale.formula);
   return {
     ok: false,
@@ -511,7 +513,7 @@ function evaluateGrant(
 
   // Carried on every shape, active or not, so an inactive grant's preview can scale too.
   const scale = grantScale(grant, ctx);
-  const unmetScale = scale && scaleLeaf(scale);
+  const unmetScale = scale && scaleLeaf(scale, grant.scale!.formula, ctx);
   const { gate: explained, errors } = settle(grant.when);
   report(errors);
   if (explained.ok && scale?.error) report([scale.error]);

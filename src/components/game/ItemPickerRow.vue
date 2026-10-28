@@ -102,6 +102,14 @@ const derivedBonusRow = computed(
   () => stableRef(props.db, props.slotDef.id)?.role === "bonus",
 );
 
+/** A new object only when one of its parts changes, since the picker resolves every candidate
+ *  against it. */
+const bonusPreview = computed(() => ({
+  db: props.db,
+  build: props.build,
+  slotId: props.slotDef.id,
+}));
+
 const insigniaGroups = computed(() =>
   bonusGroupsFor(props.db, props.build, props.slotDef.id, props.items ?? []),
 );
@@ -132,7 +140,7 @@ const stableGroup = computed(() => {
       :hidden-reasons="hiddenReasons"
       :readonly="derivedBonusRow"
       :groups="insigniaGroups"
-      :bonus-preview="{ db, build, slotId: slotDef.id }"
+      :bonus-preview="bonusPreview"
       :hide-preview="slotDef.hidePreview"
       :allow-empty="!slotDef.disallowEmpty"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"

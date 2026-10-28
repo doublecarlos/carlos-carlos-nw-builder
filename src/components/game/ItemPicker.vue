@@ -24,14 +24,16 @@ import { itemScaleFactor, itemScalers } from "../../composables/useItemScale";
 import { scaledStat } from "../../engine/scaling";
 import { itemSearchText } from "../../lib/item-search";
 import {
-  bonusesForItem,
-  resolveWithCandidate,
+  candidatePreviews,
+  samePreviewInputs,
+  type CandidatePreview,
+  type PreviewInputs,
 } from "../../lib/candidate-preview";
 import * as pickerLens from "../../stores/pickerLens";
 import { PREFERRED_MARK, itemDisplay } from "../../engine/insignia";
 import { qualityColor, toneStyle } from "../../lib/item-quality";
 import type { InsigniaGroup } from "../../engine/insignia";
-import type { Item, Db, Build, EvaluatedBonus } from "../../types";
+import type { Item, Db, EvaluatedBonus } from "../../types";
 import ComboBox from "../ui/ComboBox.vue";
 import type { ComboBoxExposed, HighlightSource } from "../ui/ComboBox.vue";
 import ItemCard from "./ItemCard.vue";
@@ -57,11 +59,7 @@ const props = withDefaults(
      * unset by callers with no live build to resolve against (PresetForm's item rows, which
      * pick a default for a slot rather than editing a real build). The same resolve also finds
      * the candidates a `hideFromPicker` problem grant withholds, at no extra pass. */
-    bonusPreview?: {
-      db: Db;
-      build: Build;
-      slotId: string;
-    };
+    bonusPreview?: PreviewInputs;
     /** Render bare item names -- no item level, no conditional-bonus marker, no stat/bonus
      * preview lines -- and let the menu match the input's width instead of widening to make
      * room for them. For candidate lists that read as identities rather than gear (the class
@@ -113,73 +111,13 @@ const combobox = ref<ComboBoxExposed | null>(null);
  *  comment on `candidateStats` further down. */
 const isOpen = ref(false);
 
-interface BonusStatsPreview {
-  /** What's active if `item` is picked -- same attribution `EngineRow` itself sums into a
-   *  row's stats, so this matches what the row's own stat summary would show once the item
-   *  is actually picked. */
-  current: Record<string, number>;
-  /** The ceiling: bonuses `item` itself contributes to that aren't active in
-   *  this hypothetical build -- e.g. a bonus tier it would count toward but not complete on
-   *  its own. Sourced from `previewStats`, the same near-miss payload BonusInspector.vue
-   *  and ItemCard.vue already show for equipped items' inactive bonuses. */
-  potential: Record<string, number>;
-  /** The bonus whose `hideFromPicker` grant picking `item` would activate, or null. Withholds
-   *  the candidate the way the slot's own filters do, and is its reason once re-shown. */
-  conflict: string | null;
-}
-
-/**
- * The bonus stats `item` would add if it were slotted into `bonusPreview.slotId` -- resolved
- * by cloning the active build with just that one slot's choice swapped, then reading the
- * engine's own attribution/near-miss data off the result. A bad candidate/build combination
- * fails resolution rather than crash the whole dropdown -- the preview just stays empty for
- * that one row.
- */
-function previewBonusStats(item: Item): BonusStatsPreview | null {
-  const ctx = props.bonusPreview;
-  if (!ctx) return null;
-  try {
-    const result = resolveWithCandidate(ctx.db, ctx.build, ctx.slotId, item.id);
-
-    const current: Record<string, number> = {};
-    for (const bonus of result.bonuses) {
-      if (!bonus.active || bonus.slotId !== ctx.slotId || !bonus.appliedStats)
-        continue;
-      for (const [key, value] of Object.entries(bonus.appliedStats)) {
-        current[key] = (current[key] ?? 0) + (value ?? 0);
-      }
-    }
-
-    // `db.bonusesFor(item)` -- item's own contribution list -- rather than filtering
-    // `result.bonuses` by slotId: an inactive bonus has no "instancing slot" worth trusting,
-    // so membership is what decides whether this candidate is one of its sources at all. Also
-    // used for the "hideFromPicker" check below, for the same reason: a problem grant's own
-    // `EvaluatedBonus.slotId` is just whichever contributing slot happened to sort first, not
-    // necessarily this one, so slot attribution can't be trusted to find it.
-    const bonusById = new Map(result.bonuses.map((bonus) => [bonus.id, bonus]));
-    const potential: Record<string, number> = {};
-    let conflict: string | null = null;
-    for (const candidate of ctx.db.bonusesFor(item)) {
-      const resolved = bonusById.get(candidate.bonus.id);
-      if (!resolved) continue;
-      const problem = resolved.active
-        ? resolved.problems.find((p) => p.hideFromPicker)
-        : undefined;
-      if (problem) {
-        conflict ??= `conflicts with ${problem.label ?? candidate.bonus.name}`;
-      }
-      if (resolved.active || resolved.excluded || !resolved.previewStats)
-        continue;
-      for (const [key, value] of Object.entries(resolved.previewStats)) {
-        potential[key] = (potential[key] ?? 0) + (value ?? 0);
-      }
-    }
-
-    return { current, potential, conflict };
-  } catch {
-    return null;
-  }
-}
+/** `bonusPreview`, kept while its db, build and slot are unchanged, so a caller passing a fresh
+ *  literal per render does not re-resolve every candidate. */
+const previewInputs = computed<PreviewInputs | undefined>((previous) =>
+  samePreviewInputs(previous, props.bonusPreview)
+    ? previous
+    : props.bonusPreview,
+);
 
 /** `hidePreview` states something about the call site's own list, so the menu option can only
  *  take previews away, never add them back. */
@@ -204,18 +142,15 @@ const EMPTY_PREVIEW: ReturnType<typeof bonusStatPreview> = {
   more: 0,
 };
 
-/** Per-candidate resolve results, keyed by item id -- computed once per item and shared by
- *  both `visibleItems` (filtering) and `matchMap` (preview) below, rather than resolving twice.
- *  `null` while closed, so touching it costs nothing: the `isOpen` guard runs *before* any
- *  `previewBonusStats` call, so a closed picker's `options`/`matchMap` (both derived from this)
- *  track only `isOpen`/`props.items` as reactive dependencies, not the deep build state
- *  `resolveBonuses` reads -- same "closed rows never pay the cost" property `matchMap` alone used
- *  to have, now shared across filtering too. */
+/** One resolve per candidate, shared by filtering (`visibleItems`), the row previews
+ *  (`matchMap`) and the card. Null while closed, and checked before any resolve, so a closed
+ *  picker tracks only `isOpen` and never the build. */
 const candidateStats = computed(() => {
   if (!isOpen.value) return null;
-  const map = new Map<string, BonusStatsPreview | null>();
-  for (const item of props.items) map.set(item.id, previewBonusStats(item));
-  return map;
+  const inputs = previewInputs.value;
+  return inputs
+    ? candidatePreviews(inputs, props.items)
+    : new Map<string, CandidatePreview | null>();
 });
 
 /** The caller's `hiddenReasons` plus this component's own conflict check. Names every withheld
@@ -396,36 +331,18 @@ const cardItem = computed(() => {
   return props.items.find((item) => item.id === id) ?? null;
 });
 
-/** One resolve for the card's candidate alone; `candidateStats` keeps only sums per row. A
- *  resolve that throws leaves the card with the item's own lines and no bonuses. */
+/** Reads the candidate's resolve from `candidateStats`. Without one (no build, or a resolve
+ *  that threw) the card shows the item's own lines and no bonuses. */
 const card = computed(() => {
   const item = cardItem.value;
   if (!item) return null;
-  const ctx = props.bonusPreview;
-  let bonuses: EvaluatedBonus[] = [];
-  let bonusById = new Map<string, EvaluatedBonus>();
-  let context = null;
-  if (ctx) {
-    try {
-      const result = resolveWithCandidate(
-        ctx.db,
-        ctx.build,
-        ctx.slotId,
-        item.id,
-      );
-      bonusById = new Map(result.bonuses.map((bonus) => [bonus.id, bonus]));
-      bonuses = bonusesForItem(ctx.db, item, bonusById);
-      context = result.ctx;
-    } catch {
-      // Card without bonuses, as for a picker with no build.
-    }
-  }
+  const preview = candidateStats.value?.get(item.id) ?? null;
   return {
     item,
-    bonuses,
-    bonusById,
-    context,
-    db: ctx?.db ?? props.db,
+    bonuses: preview?.bonuses ?? [],
+    bonusById: preview?.bonusById ?? new Map<string, EvaluatedBonus>(),
+    context: preview?.ctx ?? null,
+    db: previewInputs.value?.db ?? props.db,
     scalers: itemScalers(item),
   };
 });
