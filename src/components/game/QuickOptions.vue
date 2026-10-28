@@ -22,9 +22,11 @@ import { paramDiffers, paramDiffTitle } from "../../composables/useCompareDiff";
 import * as compare from "../../stores/compare";
 import * as buildEditor from "../../stores/buildEditor";
 import * as engine from "../../stores/resolved";
+import type { PreviewInputs } from "../../lib/candidate-preview";
 import type {
   Build,
   BuildParameterSlot,
+  Item,
   ItemPickerSlot,
   Slot,
 } from "../../types";
@@ -82,6 +84,33 @@ function asStrNum(slot: BuildParameterSlot): string | number {
   return paramValue(slot) as string | number;
 }
 
+const quickPickers = computed(() =>
+  quickSlots.value.filter((slot) => slot.type === "item_picker"),
+);
+
+/** Each picker's candidates by slot id, kept across renders and build edits: the picker
+ *  resolves every one of them while open. */
+const pickerItems = computed(
+  () =>
+    new Map<string, Item[]>(
+      quickPickers.value.map((slot) => [
+        slot.id,
+        engine.db.value.forSlot(slot.id),
+      ]),
+    ),
+);
+
+/** Each picker's preview build by slot id, new only when the db or build changes. */
+const pickerPreviews = computed(
+  () =>
+    new Map<string, PreviewInputs>(
+      quickPickers.value.map((slot) => [
+        slot.id,
+        { db: engine.db.value, build: build.value, slotId: slot.id },
+      ]),
+    ),
+);
+
 const choice = (slot: ItemPickerSlot) => build.value.choices[slot.id] ?? "";
 const chosenItem = (slot: ItemPickerSlot) =>
   engine.db.value.get(choice(slot)) ?? null;
@@ -117,15 +146,11 @@ const chosenItem = (slot: ItemPickerSlot) =>
         </BaseTooltip>
         <ItemPicker
           class="w-44"
-          :items="engine.db.value.forSlot(slot.id)"
+          :items="pickerItems.get(slot.id) ?? []"
           :model-value="choice(slot)"
           :selected-item="chosenItem(slot)"
           :db="engine.db.value"
-          :bonus-preview="{
-            db: engine.db.value,
-            build: build,
-            slotId: slot.id,
-          }"
+          :bonus-preview="pickerPreviews.get(slot.id)"
           :hide-preview="true"
           :allow-empty="!slot.disallowEmpty"
           @update:model-value="buildEditor.setChoice(slot.id, $event)"

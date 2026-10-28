@@ -8,9 +8,9 @@ import {
 } from "./format";
 import { descriptionParagraphs } from "./description";
 import { findParamSlot } from "./build-path";
-import { isHiddenBonus } from "../engine/bonus";
+import { bonusContext, isHiddenBonus } from "../engine/bonus";
 import { scaleLadder } from "../engine/scale-steps";
-import { formatNumber } from "../engine/formula";
+import { formatNumber, formulaReads, singleRead } from "../engine/formula";
 import type {
   BonusSource,
   DynamicStatConfig,
@@ -45,12 +45,8 @@ export interface StatLine {
 
 /** What a note needs to know about one scaler acting on a value: `ResolvedScaler` and
  *  `GrantScale` both carry these fields. A factor with a `path` is a scaler's multiplier,
- *  shown as a percentage; one without is a formula's plain result, with `reads` naming what
- *  a compound formula read. */
-export type ScaleFactor = Pick<
-  GrantScale,
-  "label" | "multiplier" | "path" | "reads"
->;
+ *  shown as a percentage; one without is a formula's plain result. */
+export type ScaleFactor = Pick<GrantScale, "label" | "multiplier" | "path">;
 
 /** `reads` as note parts, "Stacks: 12, Encounter Damage: 40%", each scaler or param name
  *  linking to its parameter row when `slots` has it. */
@@ -72,13 +68,14 @@ export function readParts(reads: FormulaRead[], slots: Slot[]): NotePart[] {
  * factor in turn keeps every label next to its own number and every link on its own name. The
  * scaler's name links to its parameter slot when `slots` has it; without a catalog (the layer
  * editor's preview card) or a scaler behind it, it stays text. A formula with no label shows
- * its number alone, and a compound one follows it with what it read, in parentheses.
+ * its number alone. `reads`, what a grant's compound formula read, follows in parentheses.
  */
 export function scaleNote(
   rawValue: number | undefined,
   statKey: string,
   scalers: ScaleFactor[],
   slots: Slot[],
+  reads: FormulaRead[] = [],
 ): NotePart[] {
   const parts: NotePart[] = [];
   let text = formatStat(statKey, rawValue);
@@ -86,18 +83,18 @@ export function scaleNote(
     parts.push({ text }, ...extra);
     text = "";
   };
-  for (const { label, multiplier, path, reads } of scalers) {
+  for (const { label, multiplier, path } of scalers) {
     text += ` x ${path ? pct(multiplier) : formatNumber(multiplier)}`;
     if (label) {
       const slotId = path ? findParamSlot(slots, path)?.id : undefined;
       text += " ";
       flush([{ text: label, ...(slotId && { slotId }) }]);
     }
-    if (reads?.length) {
-      text += " (";
-      flush(readParts(reads, slots));
-      text = ")";
-    }
+  }
+  if (reads.length) {
+    text += " (";
+    flush(readParts(reads, slots));
+    text = ")";
   }
   if (text) parts.push({ text });
   return parts.filter((part) => part.text);
@@ -216,7 +213,11 @@ export function tierHeading(grant: ResolvedGrant, atLeast: number): string {
 // Tiers have no `when` of their own (bonus.ts matches the `tierBy` measure directly), so the
 // active tier is read off `chose` instead of the gate. Every rung shows what it would grant
 // under the grant's scaler, with the real value in its note.
-function tierLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
+function tierLadderFor(
+  grant: ResolvedGrant | null,
+  slots: Slot[],
+  reads: FormulaRead[],
+) {
   const tiers = grant?.raw.tiers;
   if (!tiers?.length) return null;
   const activeAt =
@@ -231,7 +232,7 @@ function tierLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
         atLeast,
         heading: tierHeading(grant!, atLeast),
         active,
-        stats: rungLines(tier.stats, active, grant!, slots),
+        stats: rungLines(tier.stats, active, grant!, slots, reads),
       };
     })
     .sort((a, b) => a.atLeast - b.atLeast);
@@ -276,6 +277,7 @@ function stepLadderFor(
 function variantLadderFor(
   grant: ResolvedGrant | null,
   slots: Slot[],
+  reads: FormulaRead[],
   values: Record<string, number>,
 ) {
   const variants = grant?.raw.variants;
@@ -299,6 +301,7 @@ function variantLadderFor(
         active,
         grant!,
         slots,
+        reads,
         variant.dynamicStats,
         values,
       ),
@@ -336,11 +339,12 @@ function scaledLines(
   unscaled: StatValues,
   scale: GrantScale,
   slots: Slot[],
+  reads: FormulaRead[],
 ): StatLine[] {
   const factor = scale.multiplier > 0 ? scale.multiplier : 1;
   return statList(unscaled, factor).map((line) => ({
     ...line,
-    note: scaleNote(unscaled[line.key], line.key, [scale], slots),
+    note: scaleNote(unscaled[line.key], line.key, [scale], slots, reads),
   }));
 }
 
@@ -353,6 +357,7 @@ function rungLines(
   active: boolean,
   grant: ResolvedGrant,
   slots: Slot[],
+  reads: FormulaRead[],
   configs?: DynamicStatConfig[],
   values: Record<string, number> = {},
 ): StatLine[] {
@@ -360,7 +365,7 @@ function rungLines(
   const live = active ? (scale?.unscaled ?? grant.stats) : null;
   const unscaled = live ?? withDynamicValues(stats, configs, values);
   const lines = scale
-    ? scaledLines(unscaled, scale, slots)
+    ? scaledLines(unscaled, scale, slots, reads)
     : statList(unscaled);
   return withDynamicNotes(lines, configs);
 }
@@ -374,6 +379,7 @@ function grantStatLines(
   preview: StatValues | null,
   stacks: number,
   slots: Slot[],
+  reads: FormulaRead[],
 ): StatLine[] | null {
   const scale = grant.scale;
   const configs = grant.raw.dynamicStats;
@@ -384,22 +390,38 @@ function grantStatLines(
     return withDynamicNotes(
       lines.map((line) => ({
         ...line,
-        note: scaleNote(unscaled[line.key], line.key, [scale], slots),
+        note: scaleNote(unscaled[line.key], line.key, [scale], slots, reads),
       })),
       configs,
     );
   }
   if (!preview) return null;
   return withDynamicNotes(
-    scale ? scaledLines(preview, scale, slots) : statList(preview),
+    scale ? scaledLines(preview, scale, slots, reads) : statList(preview),
     configs,
+  );
+}
+
+/** What a grant's compound scale read, for its notes. Display only, so worked out here from
+ *  the build's context rather than on every resolve. Empty without a context or for a scale
+ *  that reads one thing, whose label already names it. */
+function scaleReads(
+  entry: EvaluatedBonus,
+  grant: ResolvedGrant,
+  ctx: EvalContext | undefined,
+): FormulaRead[] {
+  const formula = grant.raw.scale?.formula;
+  if (!ctx || !entry.bonus || !formula || singleRead(formula)) return [];
+  return formulaReads(
+    formula,
+    bonusContext(entry.bonus, ctx, entry.inputValues),
   );
 }
 
 /** One row per grant of `entry`, with each stat line already formatted. `slots` resolves a
  *  scaler's parameter slot for the note links, and `ctx`, the build's context, lets a scale's
- *  step ladder be laid out. Shared with BonusInspector.vue, which shows the scaled grants'
- *  lines under the bonus payload. */
+ *  step ladder be laid out and a compound scale's note name what it read. Shared with
+ *  BonusInspector.vue, which shows the scaled grants' lines under the bonus payload. */
 export function grantRows(
   entry: EvaluatedBonus,
   slots: Slot[] = [],
@@ -412,9 +434,10 @@ export function grantRows(
       ? null
       : previewStatsFor(grant.raw, entry.dynamicValues);
     const steps = stepLadderFor(entry, grant, preview, ctx);
+    const reads = scaleReads(entry, grant, ctx);
     // Whatever else the formula read is noted beside the ladder.
     const stepReads = steps
-      ? (grant.scale?.reads ?? []).filter((read) => read.key !== steps.readKey)
+      ? reads.filter((read) => read.key !== steps.readKey)
       : [];
     return {
       key: index,
@@ -422,8 +445,8 @@ export function grantRows(
       active: grant.active,
       unmet: grant.gate?.unmet ?? [],
       problem: grant.problem,
-      tiers: tierLadderFor(grant, slots),
-      variants: variantLadderFor(grant, slots, entry.dynamicValues),
+      tiers: tierLadderFor(grant, slots, reads),
+      variants: variantLadderFor(grant, slots, reads, entry.dynamicValues),
       steps: steps?.rungs ?? null,
       stepNote: stepReads.length ? readParts(stepReads, slots) : null,
       eachStack: stacking && preview != null,
@@ -432,7 +455,7 @@ export function grantRows(
             grant.raw.longDescription || grant.raw.shortDescription,
           )
         : [],
-      stats: grantStatLines(grant, preview, stacks, slots),
+      stats: grantStatLines(grant, preview, stacks, slots, reads),
       scaled: grant.scale != null,
     };
   });

@@ -47,10 +47,15 @@ const anchor = computed(() => el.value?.parentElement ?? null);
 const { left, top, bottom, width } = useElementBounding(anchor);
 const { width: viewportWidth, height: viewportHeight } = useWindowSize();
 
-/** The rows' full height, unconstrained by `max-height`. Remeasured on every render, since
- *  the rows arrive through the slot. */
+/** The rows' full height, unconstrained by `max-height`. Remeasured only when the row count
+ *  changes: reading `scrollHeight` forces a layout, and a highlight move re-renders the menu
+ *  without changing its height. */
 const contentHeight = ref(0);
+let measuredRows = -1;
 const measure = () => {
+  const rows = el.value?.childElementCount ?? 0;
+  if (rows === measuredRows) return;
+  measuredRows = rows;
   contentHeight.value = el.value?.scrollHeight ?? 0;
 };
 onMounted(measure);

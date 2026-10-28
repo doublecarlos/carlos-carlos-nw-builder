@@ -173,7 +173,9 @@ const entries = computed<Entry[]>(() => {
       payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,
       perStack: entry.stacks > 1 ? entry.stats : null,
       scaledGrants: entry.grants.some((grant) => grant.scale)
-        ? grantRows(entry, db.value.slots).filter((grant) => grant.scaled)
+        ? grantRows(entry, db.value.slots, result.value.context).filter(
+            (grant) => grant.scaled,
+          )
         : [],
       manyGrants: entry.grants.length > 1,
       formulas: grantFormulas(entry, result.value.context, db.value.slots),

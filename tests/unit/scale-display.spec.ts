@@ -232,32 +232,42 @@ const rungs = (build: Build, id: string) =>
     stats[0].value,
   ]);
 
+/** The first stat line's note on the hover card, given the build's context. */
+const noteOf = (build: Build, id: string) =>
+  cardGrants(build, id)[0].stats![0].note;
+
 describe("a compound scale's reads", () => {
   it("names each scaler as a percent, linked by its path", () => {
-    expect(scaleOf(buildWith(["curse-ring"]), "curse")).toMatchObject({
-      multiplier: 0.7,
-      reads: [
-        {
-          kind: "scaler",
-          label: "Encounter Damage",
-          text: "40%",
-          path: "scalers.enc",
-        },
-        {
-          kind: "scaler",
-          label: "At-will Damage",
-          text: "30%",
-          path: "scalers.aw",
-        },
-      ],
-    });
+    expect(noteOf(buildWith(["curse-ring"]), "curse")).toEqual([
+      { text: "100 x 0.7 (" },
+      { text: "Encounter Damage", slotId: "enc" },
+      { text: ": 40%" },
+      { text: ", " },
+      { text: "At-will Damage", slotId: "aw" },
+      { text: ": 30%" },
+      { text: ")" },
+    ]);
   });
 
   it("names an input and a named formula by their labels, once each", () => {
-    expect(scaleOf(buildWith(["pack-ring"]), "pack").reads).toEqual([
-      { key: "input:stacks", kind: "input", label: "Stacks", text: "1" },
-      { key: "named:self", kind: "named", label: "own copy", text: "0" },
-    ]);
+    const note = noteOf(buildWith(["pack-ring"]), "pack")!;
+    expect(note.map((part) => part.text).join("")).toMatch(
+      /\(Stacks: 1, own copy: 0\)$/,
+    );
+  });
+
+  it("is left out without the build's context", () => {
+    const [grant] = grantRows(
+      entry(buildWith(["curse-ring"]), "curse"),
+      testDb.slots,
+    );
+    expect(grant.stats![0].note).toEqual([{ text: "100 x 0.7" }]);
+  });
+
+  it("is not worked out on a resolve, where every scale is above 0", () => {
+    const scale = scaleOf(buildWith(["curse-ring"]), "curse");
+    expect(scale.multiplier).toBeGreaterThan(0);
+    expect(scale).not.toHaveProperty("reads");
   });
 
   it("explains an unlabeled scale at 0 by its values, not its text", () => {
@@ -272,9 +282,9 @@ describe("a compound scale's reads", () => {
   });
 
   it("is absent on a single read, whose label already names it", () => {
-    const scale = scaleOf(buildWith(["single-ring"]), "single");
-    expect(scale.label).toBe("Stacks");
-    expect(scale.reads).toBeUndefined();
+    const build = buildWith(["single-ring"]);
+    expect(scaleOf(build, "single").label).toBe("Stacks");
+    expect(noteOf(build, "single")!.at(-1)?.text).toBe("Stacks");
   });
 });
 
@@ -402,7 +412,23 @@ describe("stepsRangeWarning", () => {
 describe("the hover card", () => {
   it("follows a compound scale's number with what it read, each scaler linked", () => {
     const scale = scaleOf(buildWith(["curse-ring"]), "curse");
-    expect(scaleNote(100, "power", [scale], testDb.slots)).toEqual([
+    const reads = [
+      {
+        key: "scaler:scalers.enc",
+        kind: "scaler",
+        label: "Encounter Damage",
+        text: "40%",
+        path: "scalers.enc",
+      },
+      {
+        key: "scaler:scalers.aw",
+        kind: "scaler",
+        label: "At-will Damage",
+        text: "30%",
+        path: "scalers.aw",
+      },
+    ];
+    expect(scaleNote(100, "power", [scale], testDb.slots, reads)).toEqual([
       { text: "100 x 0.7 (" },
       { text: "Encounter Damage", slotId: "enc" },
       { text: ": 40%" },

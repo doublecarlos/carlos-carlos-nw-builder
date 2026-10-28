@@ -118,6 +118,18 @@ test("the card's formula link filters the inspector down to exactly the bonus", 
   await expect(other).toBeVisible();
 });
 
+test("the inspector's detailed scaling notes what the scale read", async ({
+  page,
+}) => {
+  const card = await openWithRamp(page, 2, false);
+  await card.getByTestId("item-card-inspect").click();
+  await expect(
+    page
+      .getByTestId(`bonus-entry-${BONUS_ID}`)
+      .getByTestId("bonus-grant-scale"),
+  ).toContainText("100 x 1.5 halving-stack multiplier (Stacks: 2)");
+});
+
 test("an intervals scale is labeled by its interval", async ({ page }) => {
   await openBuilder(page);
   await importText(
