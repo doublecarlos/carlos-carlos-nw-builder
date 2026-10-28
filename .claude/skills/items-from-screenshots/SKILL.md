@@ -21,6 +21,7 @@ Note down these fields for each tooltip:
 | Tooltip part                                                               | Goes to                                                            |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Name, as shown (keep a trailing `+N`)                                      | `name`, prefixed with the mod: `M34 Ashen Hood of the Devourer +2` |
+| Name color                                                                 | `quality`                                                          |
 | `Item Level`                                                               | `il`                                                               |
 | Stat lines (`+6,581 Accuracy`)                                             | rating keys on the item, using the tooltip number as shown         |
 | `Combined Rating`                                                          | `combined_rating`                                                  |
@@ -32,6 +33,7 @@ Note down these fields for each tooltip:
 
 - **Mod number:** read it from the `Def:` id (`Head_M33_..._Sss-tier` means M33). If there's no dev info and the user hasn't named the mod, ask; don't infer it from item level.
 - **Never omit `gameIds`.** Without dev info, build the id as `<Slot>_M<nn>_<Role>_<Tier>`: role from the class groups table, tier from sibling items of the same mod and rarity (M34: legendary `R4`, mythic `R5`, celestial `R6`). Flag derived ids in the report.
+- **Quality from the name color:** white `common`, green `uncommon`, blue `rare`, purple `epic`, orange `legendary`, cyan `mythic`, magenta `celestial`. OCR text doesn't carry the color, so read it from the image. If the color is unclear, use the rarity in the name or the `Def:` tier (M34: `R4` legendary, `R5` mythic, `R6` celestial), and say so in the report.
 - **Copy the `Def:` value exactly.** Never guess the tier suffix: it varies by mod and rarity (`S-tier` in M31, `R4`/`R5`/`R6` in M34).
 - **Game ID clashes:** before adding a game ID, grep `data/` for it. If another item already uses it, stop and ask, because the id was probably mistyped.
 - **Ignore these parts:**
@@ -101,6 +103,7 @@ Keep the field order of the existing entries:
   "id": "m34-ashen-hood-of-the-devourer-2",
   "name": "M34 Ashen Hood of the Devourer +2",
   "filter": "gear_head",
+  "quality": "celestial",
   "il": 6750,
   "power": 3544,
   "acc": 6581,

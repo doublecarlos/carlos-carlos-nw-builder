@@ -34,17 +34,25 @@
   --capped: #00831c;
   --overcapped: #ff6600;
 
-  /* Item quality name colors. Each keeps its hue across themes and clears 4.5:1 on every
-   * surface a name sits on, except light Legendary and Mythic at 4:1
-   * (tests/unit/item-quality.spec.ts).
-   * Common is plain text, since white would vanish on a light surface. */
+  /* In-game item quality name colors, as sampled from the game UI. The theme colors below
+   * derive from these, keeping the game hue and moving only lightness where contrast needs it. */
+  --quality-game-common: #ffffff;
+  --quality-game-uncommon: #1a8000;
+  --quality-game-rare: #3391e9;
+  --quality-game-epic: #7a38ff;
+  --quality-game-legendary: #f27900;
+  --quality-game-mythic: #00f0c8;
+  --quality-game-celestial: #ff00ff;
+
+  /* Item quality name colors. Common is plain text, since white would vanish on a light
+   * surface. */
   --quality-common: var(--text);
-  --quality-uncommon: #4c7602;
-  --quality-rare: #1b6db7;
-  --quality-epic: #7a38fe;
-  --quality-legendary: #c05000;
-  --quality-mythic: #027e93;
-  --quality-celestial: #be01be;
+  --quality-uncommon: var(--quality-game-uncommon);
+  --quality-rare: var(--quality-game-rare);
+  --quality-epic: var(--quality-game-epic);
+  --quality-legendary: var(--quality-game-legendary);
+  --quality-mythic: oklch(from var(--quality-game-mythic) 0.6 c h);
+  --quality-celestial: var(--quality-game-celestial);
 
   --shadow-color: rgb(15 23 42 / 0.1);
   --shadow-color-soft: rgb(15 23 42 / 0.1);
@@ -77,13 +85,14 @@
   --capped: #43c162;
   --overcapped: #ef8a4a;
 
+  /* Game colors as is, with Uncommon and Epic lifted to read without the game's text outline. */
   --quality-common: var(--text);
-  --quality-uncommon: #5fd07f;
-  --quality-rare: #4794e0;
-  --quality-epic: #967bfe;
-  --quality-legendary: #f27900;
-  --quality-mythic: #3fe9f1;
-  --quality-celestial: #f04aee;
+  --quality-uncommon: oklch(from var(--quality-game-uncommon) 0.64 c h);
+  --quality-rare: var(--quality-game-rare);
+  --quality-epic: oklch(from var(--quality-game-epic) 0.72 c h);
+  --quality-legendary: var(--quality-game-legendary);
+  --quality-mythic: var(--quality-game-mythic);
+  --quality-celestial: var(--quality-game-celestial);
 
   /* Black shadows vanish on a dark ground, so overlays lean on a deeper scrim and a visible
    * rim (--line-strong) instead of the near-invisible drop shadow. */
@@ -135,6 +144,17 @@
   --z-index-menu: 30;
   --z-index-modal: 50;
   --z-index-popover: 60;
+}
+
+/* Build values read heavier than their labels. Set on a container of build controls; an empty
+ * control's placeholder stays at normal weight. */
+@utility build-values {
+  & input {
+    font-weight: var(--font-weight-semibold);
+  }
+  & input::placeholder {
+    font-weight: var(--font-weight-normal);
+  }
 }
 
 @layer base {

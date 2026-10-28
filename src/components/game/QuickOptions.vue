@@ -90,7 +90,7 @@ const chosenItem = (slot: ItemPickerSlot) =>
 <template>
   <div
     data-testid="quick-options"
-    class="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5"
+    class="build-values flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5"
   >
     <template v-for="(slot, index) in quickSlots" :key="slot.id">
       <span
