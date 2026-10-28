@@ -3307,6 +3307,28 @@
     ]
   },
   {
+    "id": "m34-ashen-bindings-of-the-devourer",
+    "name": "M34 Ashen Bindings of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.064
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-bindings-of-the-devourer-1",
+    "name": "M34 Ashen Bindings of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.075
+        }
+      }
+    ]
+  },
+  {
     "id": "m34-ashen-bindings-of-the-devourer-2",
     "name": "M34 Ashen Bindings of the Devourer +2",
     "grants": [
@@ -3389,6 +3411,30 @@
     ]
   },
   {
+    "id": "m34-ashen-cowl-of-the-devourer",
+    "name": "M34 Ashen Cowl of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.068,
+          "mana_regen": 0.23
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-cowl-of-the-devourer-1",
+    "name": "M34 Ashen Cowl of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.075,
+          "mana_regen": 0.25
+        }
+      }
+    ]
+  },
+  {
     "id": "m34-ashen-cowl-of-the-devourer-2",
     "name": "M34 Ashen Cowl of the Devourer +2",
     "grants": [
@@ -3456,6 +3502,30 @@
         "stats": {
           "acc_p": 0.086,
           "ap_gain": 0.017
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-jerkin-of-the-devourer",
+    "name": "M34 Ashen Jerkin of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.064,
+          "outgoing_damage": 0.038
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-jerkin-of-the-devourer-1",
+    "name": "M34 Ashen Jerkin of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.075,
+          "outgoing_damage": 0.045
         }
       }
     ]
@@ -3549,6 +3619,30 @@
       {
         "stats": {
           "strike_p": 0.086
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-striders-of-the-devourer",
+    "name": "M34 Ashen Striders of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.051,
+          "movement": 0.04
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-striders-of-the-devourer-1",
+    "name": "M34 Ashen Striders of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.06,
+          "movement": 0.05
         }
       }
     ]
