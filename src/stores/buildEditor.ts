@@ -489,10 +489,12 @@ export function copySection(fromId: string, sectionIds: string[]) {
   );
   const wanted = new Set(sectionIds);
   // Row counts first: the walk below is over the *source's* rows, so this build has to be as
-  // long as it before any of them can be copied across.
+  // long as it before any of them can be copied across. Existing rows are cleared so a longer
+  // list leaves no hidden rows past the new count.
   for (const slot of db.value.slots) {
-    if (wanted.has(slot.section) && slot.type === "item_picker_list")
-      b.listRows[slot.id] = listRowCount(source, slot);
+    if (!wanted.has(slot.section) || slot.type !== "item_picker_list") continue;
+    for (const rowId of listRowIds(b, slot.id)) clearSlotData(b, rowId);
+    b.listRows[slot.id] = listRowCount(source, slot);
   }
   for (const slot of buildSlots(source)) {
     if (!wanted.has(slot.section)) continue;
