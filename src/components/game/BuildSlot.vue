@@ -79,6 +79,7 @@ const props = defineProps<{
 const choiceDiffers = computed(() => props.diff?.choice);
 const toggleDiffers = computed(() => props.diff?.disabled);
 const otherChoiceLabel = computed(() => props.diff?.otherChoiceLabel);
+const otherChoiceQuality = computed(() => props.diff?.otherChoiceQuality);
 const bonusDiffs = computed(() => props.diff?.bonuses);
 const inputDiffs = computed(() => props.diff?.inputs ?? []);
 const paramDiffers = computed(() => props.diff?.param);
@@ -182,8 +183,10 @@ useCursorRowKeys(anchor, {
 
 <template>
   <div
-    class="relative grid col-span-full py-1 pr-2.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent [grid-template-columns:subgrid]"
+    class="relative grid col-span-full pr-2.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent [grid-template-columns:subgrid]"
     :class="[
+      // A nested row is an attachment of the one above it, so it reads smaller and tighter.
+      nest ? 'py-0.5 text-[13px]' : 'py-1',
       noBorder || (nest && !nest.last)
         ? 'border-b-0'
         : 'border-b border-line/45 last:border-b-0',
@@ -207,7 +210,7 @@ useCursorRowKeys(anchor, {
          on the row: on the row it would push the label into the shared label-to-control gap. -->
     <div
       class="col-start-1 flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5"
-      :class="nest ? 'pl-6' : 'pl-2.5'"
+      :class="nest ? 'pl-8.5' : 'pl-2.5'"
     >
       <!-- A point_assignment row has no single control to point `for` at (it is a row of
            steppers, one per item), so it labels the group instead -- see `aria-labelledby`
@@ -235,8 +238,10 @@ useCursorRowKeys(anchor, {
       />
     </div>
 
+    <!-- Nested controls step in too, so the control column itself shows the tree. -->
     <div
       class="min-w-0 grid [grid-column:2/-1] [grid-template-columns:subgrid]"
+      :class="nest && 'pl-6'"
       :role="labelsOneControl ? undefined : 'group'"
       :aria-labelledby="labelsOneControl ? undefined : labelId"
     >
@@ -262,6 +267,7 @@ useCursorRowKeys(anchor, {
           :slot-def="slotDef"
           :build="build"
           :db="db"
+          :nested="!!nest"
           :compare-build="compareBuild"
           :highlight-diff="highlightDiff"
           :disabled="disabled"
@@ -273,6 +279,7 @@ useCursorRowKeys(anchor, {
           :invalid="errors?.some((e) => e.severity !== 'warning') ?? false"
           :choice-differs="choiceDiffers"
           :other-choice-label="otherChoiceLabel"
+          :other-choice-quality="otherChoiceQuality"
           :bonus-diffs="bonusDiffs"
           :input-diffs="inputDiffs"
         />

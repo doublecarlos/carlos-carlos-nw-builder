@@ -19,6 +19,7 @@ import * as db from "./db";
 import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
+import { isQuality } from "../lib/item-quality";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import {
@@ -775,6 +776,7 @@ const ITEM_FIELDS = new Set([
   "id",
   "name",
   "filter",
+  "quality",
   "tags",
   "maxCopies",
   "allowedClass",
@@ -2655,6 +2657,9 @@ export function validate(
       const problem = checkBounds(item.inlineRepetition, "inlineRepetition");
       if (problem) report("error", problem, item.id);
     }
+
+    if (item.quality && !isQuality(item.quality))
+      report("error", `quality "${item.quality}" is not a quality`, item.id);
 
     // A typo in any of these fails silently: the resolver simply never matches.
     if (item.insigniaShape && !isShape(item.insigniaShape))

@@ -24,6 +24,7 @@ import { scaledStat } from "../../engine/scaling";
 import { itemSearchText } from "../../lib/item-search";
 import * as pickerLens from "../../stores/pickerLens";
 import { PREFERRED_MARK, itemDisplay } from "../../engine/insignia";
+import { qualityColor, toneStyle } from "../../lib/item-quality";
 import type { InsigniaGroup } from "../../engine/insignia";
 import type { Item, Db, Build } from "../../types";
 import ComboBox from "../ui/ComboBox.vue";
@@ -358,6 +359,8 @@ const selectedLabel = computed(() =>
   props.selectedItem ? itemDisplay(props.db, props.selectedItem).name : "",
 );
 
+const selectedTone = computed(() => qualityColor(props.selectedItem?.quality));
+
 defineExpose({
   /** Focus the underlying input -- same open/clear behavior as a direct click (ComboBox's
    *  own `onFocus` opens the list and starts a fresh query). */
@@ -380,6 +383,7 @@ defineExpose({
     :invalid="invalid"
     :show-empty-option="allowEmpty"
     :closed-display="selectedLabel"
+    :tone="selectedTone"
     :placeholder="selectedLabel || placeholder || '-'"
     :title-input="false"
     :readonly="readonly"
@@ -392,9 +396,13 @@ defineExpose({
     <template #option="{ option }">
       <div class="flex items-baseline gap-1.5" :class="option.group && 'pl-3'">
         <span class="flex min-w-0 flex-1 items-baseline font-semibold">
-          <span class="overflow-hidden text-ellipsis whitespace-nowrap">{{
-            displayMap.get(option.value)?.name ?? option.label
-          }}</span>
+          <span
+            class="overflow-hidden text-ellipsis whitespace-nowrap text-(--tone)"
+            :style="toneStyle(displayMap.get(option.value)?.quality)"
+            :data-quality="displayMap.get(option.value)?.quality ?? undefined"
+            data-testid="picker-option-name"
+            >{{ displayMap.get(option.value)?.name ?? option.label }}</span
+          >
           <span
             v-if="displayMap.get(option.value)?.preferred"
             class="ml-1 shrink-0 text-accent"

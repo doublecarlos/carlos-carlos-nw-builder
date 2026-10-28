@@ -37,6 +37,7 @@ import type {
   BuildParameterSlot,
 } from "../../types";
 import { INSIGNIA_SHAPES } from "../../types";
+import { QUALITIES, qualityColor, toneStyle } from "../../lib/item-quality";
 import {
   buildDraft,
   toItem,
@@ -223,6 +224,16 @@ function addStat() {
 function removeStat(index: number) {
   draft.value.stats.splice(index, 1);
 }
+
+/** Each option carries its own tone, so the menu previews the palette. */
+const qualityOptions = [
+  { value: "", label: "- none -", style: undefined },
+  ...QUALITIES.map((q) => ({
+    value: q.id,
+    label: q.label,
+    style: toneStyle(q.id),
+  })),
+];
 
 const shapeOptions = INSIGNIA_SHAPES.map((shape) => ({
   value: shape,
@@ -544,6 +555,22 @@ function showsGroup(group: FieldGroup): boolean {
           @click="$emit('open-filter', draft.filter.trim())"
           >edit filter</BaseLink
         >
+      </FormField>
+      <FormField label="Quality">
+        <ComboBox
+          class="w-36"
+          data-testid="item-quality"
+          :options="qualityOptions"
+          :model-value="draft.quality"
+          :tone="qualityColor(draft.quality)"
+          @update:model-value="(v) => (draft.quality = v)"
+        >
+          <template #option="{ option }">
+            <span class="text-(--tone)" :style="option.style">{{
+              option.label
+            }}</span>
+          </template>
+        </ComboBox>
       </FormField>
       <FormField label="Max copies (0 = unlimited)">
         <BaseInput

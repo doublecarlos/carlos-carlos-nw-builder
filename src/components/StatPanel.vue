@@ -763,6 +763,7 @@ const {
         v-if="openCard"
         :label="openLabel"
         :sections="openSections"
+        :db="engine.db.value"
         :data-stat-key="openCard.key"
         @close="closeCard"
         @go-to-slot="goToSlot"

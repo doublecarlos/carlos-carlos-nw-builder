@@ -1252,6 +1252,9 @@ watch(
               :other-choice-label="
                 rowDataFor(slotDef.id).diff?.otherChoiceLabel ?? ''
               "
+              :other-choice-quality="
+                rowDataFor(slotDef.id).diff?.otherChoiceQuality
+              "
               :highlight-diff="highlightDiff"
               :no-border="noBorderIds.has(slotDef.id)"
               :nest="nestById.get(slotDef.id)"

@@ -665,6 +665,7 @@ const PREF_SUFFIX = /\s*\(Pref\)$/;
 export interface ItemDisplay {
   name: string;
   preferred: boolean;
+  quality: string | null;
 }
 
 /** How an item's name reads on screen: an upgraded insignia's `(Pref)` suffix becomes a star,
@@ -677,6 +678,7 @@ export function itemDisplay(
   return {
     name: preferred ? item.name.replace(PREF_SUFFIX, "") : item.name,
     preferred,
+    quality: item.quality ?? null,
   };
 }
 

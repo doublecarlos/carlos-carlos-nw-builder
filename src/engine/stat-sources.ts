@@ -21,6 +21,8 @@ export interface StatSource {
    * contribution, Combined rating, an ability score, Outgoing Healing, Forte, Over cap), which
    * has no row to jump to. */
   slotId?: string;
+  /** The item this line came from, when it came from one. */
+  itemId?: string;
 }
 export interface StatSourceSection {
   title: string;
@@ -107,6 +109,7 @@ function sourcesFor(
       value: entry.value,
     };
     if (entry.slotId) source.slotId = entry.slotId;
+    if (entry.itemId && entry.kind !== "bonus") source.itemId = entry.itemId;
     if (entry.kind === "contribution")
       bySourceStat.set(entry.sourceStat!, source);
     out.push(source);
