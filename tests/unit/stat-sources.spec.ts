@@ -125,8 +125,8 @@ describe("stat source lines", () => {
   it("lists the same item in two slots as two lines, each linked to its own slot", () => {
     const itemLines = rating.sources.filter((s) => s.name === ring.name);
     expect(itemLines).toEqual([
-      { name: ring.name, value: 10, slotId: "gear.ring1" },
-      { name: ring.name, value: 10, slotId: "gear.ring2" },
+      { name: ring.name, value: 10, slotId: "gear.ring1", itemId: ring.id },
+      { name: ring.name, value: 10, slotId: "gear.ring2", itemId: ring.id },
     ]);
   });
 
@@ -136,6 +136,7 @@ describe("stat source lines", () => {
       name: boon.name,
       value: 15,
       slotId: "boons.tier1",
+      itemId: boon.id,
     });
   });
 

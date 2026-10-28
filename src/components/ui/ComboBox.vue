@@ -60,6 +60,9 @@ const props = withDefaults(
     /** The input's own DOM id, so a `<label for>` written by an ancestor can point at it.
      *  Passed in rather than generated here, since that ancestor needs the same value. */
     inputId?: string;
+    /** Any CSS color, tinting the closed box's text and, faintly, its border. Ignored by the
+     *  border while `invalid`. */
+    tone?: string;
     /** Display the current value and never open. For a row whose content is derived, where a
      *  disabled control would drop out of the tab order and take its text with it. */
     readonly?: boolean;
@@ -75,6 +78,7 @@ const props = withDefaults(
     titleRows: true,
     inputId: undefined,
     readonly: false,
+    tone: undefined,
   },
 );
 
@@ -335,7 +339,15 @@ onKeyStroke(
       ref="input"
       data-testid="picker-input"
       class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 placeholder:text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-      :class="invalid ? 'border-danger' : 'border-line'"
+      :class="[
+        invalid
+          ? 'border-danger'
+          : tone
+            ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
+            : 'border-line',
+        tone && !open && 'text-(--tone)',
+      ]"
+      :style="tone ? { '--tone': tone } : undefined"
       type="text"
       :readonly="readonly"
       :role="readonly ? undefined : 'combobox'"

@@ -383,6 +383,7 @@ describe("naming an insignia", () => {
     expect(insignia.itemDisplay(made, made.get("regal-pref")!)).toEqual({
       name: "regal",
       preferred: true,
+      quality: null,
     });
     expect(insignia.itemLabel(made, made.get("regal-pref")!)).toBe(
       `regal ${insignia.PREFERRED_MARK}`,
@@ -400,6 +401,7 @@ describe("naming an insignia", () => {
     expect(insignia.itemDisplay(null, made.get("regal-pref")!)).toEqual({
       name: "regal (Pref)",
       preferred: false,
+      quality: null,
     });
   });
 });

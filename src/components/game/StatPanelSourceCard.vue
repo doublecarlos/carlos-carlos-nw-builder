@@ -15,11 +15,14 @@ import BaseCardBody from "../ui/BaseCardBody.vue";
 import StatRows from "./StatRows.vue";
 import type { StatRow } from "./StatRows.vue";
 import type { StatSourceSection } from "../../engine/stat-sources";
+import type { Db } from "../../types";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
 const props = defineProps<{
   label: string;
   sections: StatSourceSection[];
+  /** Resolves a source's item to its quality, for tinting its line. */
+  db: Db;
 }>();
 
 const emit = defineEmits<{ close: []; "go-to-slot": [slotId: string] }>();
@@ -37,6 +40,7 @@ const sectionRows = computed(() =>
       label: source.name,
       value: signedStat(section.key, source.value),
       select: source.slotId,
+      quality: source.itemId && props.db.get(source.itemId)?.quality,
     })),
   })),
 );

@@ -396,6 +396,18 @@ export interface SlotsData {
 
 // --- items / bonuses -----------------------------------------------------------------------
 
+/** In-game item rarities, lowest first. The order is the rank. */
+export const ITEM_QUALITIES = [
+  "common",
+  "uncommon",
+  "rare",
+  "epic",
+  "legendary",
+  "mythic",
+  "celestial",
+] as const;
+export type ItemQuality = (typeof ITEM_QUALITIES)[number];
+
 /** Every non-stat field an item may carry -- see catalog.ts's `ITEM_FIELDS`, which lints
  * against this same list. Stat keys ride alongside as top-level properties (`item.acc`, not
  * `item.stats.acc`); a same-named index signature can't be typed `number` without conflicting
@@ -410,6 +422,10 @@ export interface Item {
    * item with no name), just no longer the identity. */
   name: string;
   filter?: string;
+  /** In-game rarity of the tier this entry models, for display only. Absent means the item
+   * has no rarity at all (boons, feats), not Common. A `string` because the shipped JSON
+   * widens to one; `ITEM_QUALITIES` is the vocabulary, enforced by catalog.ts. */
+  quality?: string;
   tags?: string[];
   maxCopies?: number;
   allowedClass?: string[];

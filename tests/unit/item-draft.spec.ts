@@ -21,6 +21,13 @@ describe("buildDraft / toItem round trip", () => {
     expect(toItem(draft, { id: "sword" })).toEqual(item);
   });
 
+  it("round-trips a quality, and writes none for an empty one", () => {
+    const item: Item = { id: "a", name: "A", filter: "ring", quality: "epic" };
+    expect(toItem(buildDraft(item), { id: "a" })).toEqual(item);
+    const draft = { ...buildDraft(item), quality: "" as const };
+    expect(toItem(draft, { id: "a" })).not.toHaveProperty("quality");
+  });
+
   it("round-trips flat stat keys", () => {
     const item: Item = {
       id: "ring",
@@ -126,6 +133,10 @@ describe("diffLabel", () => {
     expect(diffLabel(JSON.stringify(old), JSON.stringify(nw))).toBe(
       "edit stat: power",
     );
+  });
+
+  it("labels a quality change", () => {
+    expect(labelFor({ quality: "mythic" })).toBe("edit quality → mythic");
   });
 
   it("labels a tag addition with a count", () => {

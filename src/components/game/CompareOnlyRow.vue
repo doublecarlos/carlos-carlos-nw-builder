@@ -4,6 +4,7 @@
 // differing row. Like TextRow, it carries no data-cursor-key, so the arrow-key cursor and Tab
 // skip it.
 import NestGuide from "./NestGuide.vue";
+import { toneStyle } from "../../lib/item-quality";
 import type { Slot } from "../../types";
 import type { NestPosition } from "../../lib/slot-parent";
 
@@ -11,6 +12,7 @@ defineProps<{
   slotDef: Slot;
   compareName: string;
   otherChoiceLabel: string;
+  otherChoiceQuality?: string | null;
   highlightDiff: boolean;
   noBorder?: boolean;
   /** See `BuildSlot`'s prop of the same name. */
@@ -32,13 +34,16 @@ defineProps<{
     <NestGuide v-if="nest" :nest="nest" />
     <span
       class="col-start-1 w-44 min-w-0 truncate self-start py-0.5 text-muted"
-      :class="nest ? 'pl-6' : 'pl-2.5'"
+      :class="nest ? 'pl-8.5' : 'pl-2.5'"
       >{{ slotDef.label }}</span
     >
-    <div class="min-w-0 [grid-column:2/-1] py-0.5">
+    <div class="min-w-0 [grid-column:2/-1] py-0.5" :class="nest && 'pl-6'">
       <p class="italic text-muted">Not available in this build</p>
       <p class="slot-diff-note mt-0.5 text-muted">
-        {{ compareName }}: {{ otherChoiceLabel }}
+        {{ compareName }}:
+        <span class="text-(--tone)" :style="toneStyle(otherChoiceQuality)">{{
+          otherChoiceLabel
+        }}</span>
       </p>
     </div>
   </div>

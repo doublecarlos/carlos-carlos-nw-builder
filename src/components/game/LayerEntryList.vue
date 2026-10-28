@@ -12,6 +12,7 @@ import BaseTooltip from "../ui/BaseTooltip.vue";
 import LayerListHeader from "./LayerListHeader.vue";
 import type { Item, Bonus, FilterDef } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
+import { toneStyle } from "../../lib/item-quality";
 
 export interface ItemRow {
   key: string;
@@ -148,9 +149,13 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         :class="row.key === selectedKey && 'is-on bg-accent-soft'"
         @click="onRowClick(row)"
       >
-        <span class="editor-row-name min-w-0 flex-1 truncate">{{
-          row.name
-        }}</span>
+        <span
+          class="editor-row-name min-w-0 flex-1 truncate text-(--tone)"
+          :style="
+            row.kind === 'item' ? toneStyle(row.item?.quality) : undefined
+          "
+          >{{ row.name }}</span
+        >
         <BaseBadge v-if="row.status !== 'base'" :variant="row.status">{{
           row.status
         }}</BaseBadge>

@@ -25,7 +25,7 @@ import type {
   StatValues,
 } from "../types";
 
-const ITEM_LEADING_KEYS = ["id", "name", "filter"] as const;
+const ITEM_LEADING_KEYS = ["id", "name", "filter", "quality"] as const;
 const ITEM_TRAILING_KEYS = [
   "shortDescription",
   "longDescription",

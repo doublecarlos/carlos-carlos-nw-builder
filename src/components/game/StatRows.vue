@@ -9,10 +9,13 @@
 // its own navigation.
 import type { StatLine } from "../../lib/item-card-rows";
 import BaseLink from "../ui/BaseLink.vue";
+import { toneStyle } from "../../lib/item-quality";
 
 export interface StatRow extends StatLine {
   /** When set, the row renders as a button and `select` emits this value on click. */
   select?: string;
+  /** Tints the label with this item quality's color. */
+  quality?: string | null;
 }
 
 withDefaults(
@@ -64,7 +67,11 @@ const NOTE_CLASS = `${ROW_COLLAPSE} text-muted`;
       @click="row.select && emit('select', row.select)"
     >
       <!-- The label flexes and wraps within itself so the value keeps the right edge. -->
-      <span class="min-w-0 flex-1">{{ row.label }}</span>
+      <span
+        class="min-w-0 flex-1 text-(--tone)"
+        :style="toneStyle(row.quality)"
+        >{{ row.label }}</span
+      >
       <span class="flex-none tabular-nums">{{ row.value }}</span>
       <span
         v-if="row.note"

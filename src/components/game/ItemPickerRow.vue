@@ -20,6 +20,7 @@ import {
   stableRef,
 } from "../../engine/insignia";
 import { useSlotInputs } from "../../composables/useSlotInputs";
+import { toneStyle } from "../../lib/item-quality";
 import { inputKey } from "../../lib/build-inputs";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
 import type { InputDiff } from "../../composables/useCompareDiff";
@@ -45,10 +46,13 @@ const props = defineProps<{
   invalid?: boolean;
   choiceDiffers?: boolean;
   otherChoiceLabel?: string;
+  otherChoiceQuality?: string | null;
   bonusDiffs?: { id: string; message: string }[];
   inputDiffs?: InputDiff[];
   /** DOM id for the picker input, so BuildSlot's row label can point at it. */
   inputId?: string;
+  /** Narrows the picker by the nested row's indent, keeping its right edge in line. */
+  nested?: boolean;
 }>();
 
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
@@ -114,8 +118,11 @@ const stableGroup = computed(() => {
     <ItemPicker
       ref="picker"
       :placeholder="placeholder"
-      class="grow-0 basis-80 min-w-40"
-      :class="disabled && '[&_input]:text-muted [&_input]:line-through'"
+      class="grow-0 min-w-40"
+      :class="[
+        nested ? 'basis-74' : 'basis-80',
+        disabled && '[&_input]:text-muted [&_input]:line-through',
+      ]"
       :items="items ?? []"
       :input-id="inputId"
       :model-value="choice()"
@@ -212,7 +219,13 @@ const stableGroup = computed(() => {
     v-if="highlightDiff && choiceDiffers"
     class="slot-diff-note mt-0.5 text-muted"
   >
-    {{ compareBuild?.name }}: {{ otherChoiceLabel || "(empty)" }}
+    {{ compareBuild?.name }}:
+    <span
+      class="text-(--tone)"
+      :style="toneStyle(otherChoiceQuality)"
+      data-testid="compare-choice"
+      >{{ otherChoiceLabel || "(empty)" }}</span
+    >
     <BaseLink
       class="ml-0.5"
       @click.stop="buildEditor.applyFromCompare(slotDef.id)"

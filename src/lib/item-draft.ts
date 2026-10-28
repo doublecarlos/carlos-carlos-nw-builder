@@ -30,6 +30,7 @@ export type { StatRow, DynamicStatDraft };
 export interface ItemDraft {
   name: string;
   filter: string;
+  quality: string;
   shortDescription: string;
   longDescription: string;
   maxCopies: number | string | null;
@@ -84,6 +85,7 @@ export function buildDraft(item: Item | null | undefined): ItemDraft {
   return {
     name: source.name ?? "",
     filter: source.filter ?? "",
+    quality: source.quality ?? "",
     shortDescription: source.shortDescription ?? "",
     longDescription: source.longDescription ?? "",
     maxCopies: source.maxCopies ?? null,
@@ -135,6 +137,7 @@ export function toItem(local: ItemDraft, ctx: ItemDraftContext): Item {
     filter: local.filter.trim(),
   };
 
+  putIfSet(item, "quality", local.quality);
   putIfSet(item, "shortDescription", local.shortDescription.trim());
   putIfSet(item, "longDescription", local.longDescription.trim());
 
@@ -246,6 +249,10 @@ const CHECKS: DiffCheck<Item>[] = [
   (old, nw) => (old.name !== nw.name ? `edit name → "${nw.name}"` : null),
   (old, nw) =>
     old.filter !== nw.filter ? `edit filter → "${nw.filter}"` : null,
+  (old, nw) =>
+    old.quality !== nw.quality
+      ? `edit quality → ${nw.quality ?? "(none)"}`
+      : null,
   (old, nw) =>
     old.shortDescription !== nw.shortDescription
       ? "edit short description"

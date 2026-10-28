@@ -37,6 +37,8 @@ export interface SlotDiff {
   /** Display text for the compare build's choice, already resolved to a name; empty when it
    *  holds nothing. */
   otherChoiceLabel: string;
+  /** The compare build's choice's quality, for tinting `otherChoiceLabel`. */
+  otherChoiceQuality: string | null;
   /** item_picker only: the `toggleable` checkbox differs. Its own flag, not part of `choice`:
    *  both builds hold the same item, one just is not counting it. */
   disabled: boolean;
@@ -142,6 +144,11 @@ export function useCompareDiff(options: {
     if (!id) return "";
     const item = db.value.get(id);
     return item ? itemLabel(db.value, item) : id;
+  }
+
+  function otherChoiceQuality(slotId: string) {
+    const id = otherChoice(slotId);
+    return (id && db.value.get(id)?.quality) || null;
   }
 
   function differs(slotId: string) {
@@ -293,6 +300,7 @@ export function useCompareDiff(options: {
         map.set(slot.id, {
           choice,
           otherChoiceLabel: otherChoiceLabel(slot.id),
+          otherChoiceQuality: otherChoiceQuality(slot.id),
           disabled,
           inputs,
           bonuses,

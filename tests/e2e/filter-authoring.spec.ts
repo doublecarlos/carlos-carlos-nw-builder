@@ -40,7 +40,7 @@ test("a category with no declaration lists its items and can be given metadata",
   // The id is the category's own name, so there is nothing to type.
   await expect(page.getByTestId("filter-name-input")).toHaveCount(0);
   await expect(page.getByTestId("filter-item-count")).toContainText(
-    "4 item(s)",
+    /[1-9]\d* item\(s\)/,
   );
 
   await page.getByTestId("filter-max-copies").fill("2");

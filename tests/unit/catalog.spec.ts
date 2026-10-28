@@ -613,6 +613,18 @@ describe("catalog.validate: gameIds lint", () => {
     expect(findings).toEqual([]);
   });
 
+  it("reports an unknown quality as an error", () => {
+    const items = [
+      { id: "q", name: "Q", filter: "gear_head", quality: "shiny" },
+      { id: "ok", name: "Ok", filter: "gear_head", quality: "mythic" },
+    ] as Item[];
+    const own = catalog
+      .validate(items, [])
+      .filter((f) => /quality/.test(f.message));
+    expect(own).toHaveLength(1);
+    expect(own[0]).toMatchObject({ level: "error", name: "q" });
+  });
+
   it("reports a non-string / empty gameIds entry as an error", () => {
     const items = [
       {

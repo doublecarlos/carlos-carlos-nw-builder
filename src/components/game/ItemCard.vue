@@ -29,6 +29,7 @@ import {
   slotSummary,
 } from "../../engine/insignia";
 import { composeFactor, scaledStat } from "../../engine/scaling";
+import { qualityColor, toneStyle } from "../../lib/item-quality";
 import type {
   Item,
   Db,
@@ -241,11 +242,20 @@ const rows = computed(() =>
 <template>
   <!-- Content inside the tooltip -- positioning, z-index, scroll, and max dimensions
        are handled by BasePopover. Internal structure uses BaseCard for the visual frame. -->
-  <BaseCard class="itemcard" data-testid="item-card">
+  <BaseCard
+    class="itemcard"
+    data-testid="item-card"
+    :tone="qualityColor(shown.quality)"
+  >
     <BaseCardHeader sticky>
       <!-- Inline, so a name that wraps carries the star along on its last line. -->
       <span class="flex-1 font-semibold"
-        ><span data-testid="item-card-name">{{ shown.name }}</span
+        ><span
+          class="text-(--tone)"
+          :style="toneStyle(shown.quality)"
+          :data-quality="shown.quality ?? undefined"
+          data-testid="item-card-name"
+          >{{ shown.name }}</span
         ><span
           v-if="shown.preferred"
           class="ml-1 text-accent"
