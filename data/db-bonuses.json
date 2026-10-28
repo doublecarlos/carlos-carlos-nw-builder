@@ -280,6 +280,14 @@
   {
     "id": "avian-aura-group-celestial",
     "name": "Avian Aura",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "min": 0,
+        "max": 4,
+        "default": 1
+      }
+    },
     "grants": [
       {
         "when": {
@@ -287,6 +295,23 @@
         },
         "stats": {
           "power": 2100
+        },
+        "scale": {
+          "formula": "$stacks"
+        }
+      }
+    ]
+  },
+  {
+    "id": "awakened-forger-s-box",
+    "name": "Awakened Forger's Box",
+    "grants": [
+      {
+        "when": {
+          "toggle": "consumables"
+        },
+        "stats": {
+          "power_p": 0.03
         }
       }
     ]
@@ -400,6 +425,89 @@
         "stats": {
           "outgoing_damage": 0.135
         }
+      }
+    ]
+  },
+  {
+    "id": "blessed-advantage-stats",
+    "name": "Blessed Advantage Stats",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "tiers": [
+          {
+            "atLeast": 1,
+            "stats": {}
+          },
+          {
+            "atLeast": 2,
+            "stats": {
+              "power_p": 0.04
+            }
+          },
+          {
+            "atLeast": 3,
+            "stats": {
+              "power_p": 0.06,
+              "recharge": 0.15
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "blessed-resilience-stats",
+    "name": "Blessed Resilience Stats",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "tiers": [
+          {
+            "atLeast": 1,
+            "stats": {
+              "defense_p": 0.02
+            }
+          },
+          {
+            "atLeast": 2,
+            "stats": {
+              "defense_p": 0.04,
+              "hit_points_p": 0.04
+            }
+          },
+          {
+            "atLeast": 3,
+            "stats": {
+              "defense_p": 0.06,
+              "hit_points_p": 0.06
+            }
+          }
+        ]
       }
     ]
   },
@@ -637,6 +745,21 @@
         "stats": {
           "acc_p": 0.1,
           "sev_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "chocolate-awareness",
+    "name": "Chocolate",
+    "grants": [
+      {
+        "when": {
+          "toggle": "consumables"
+        },
+        "stats": {
+          "awareness": 4000,
+          "hit_points": 20000
         }
       }
     ]
@@ -1274,6 +1397,21 @@
         },
         "stats": {
           "defense_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "honeyed-bread-defense",
+    "name": "Honeyed Bread",
+    "grants": [
+      {
+        "when": {
+          "toggle": "consumables"
+        },
+        "stats": {
+          "defense": 4000,
+          "hit_points": 20000
         }
       }
     ]
@@ -4240,6 +4378,38 @@
         "stats": {
           "power": 4000,
           "hit_points": 20000
+        }
+      }
+    ]
+  },
+  {
+    "id": "protective-embrace",
+    "name": "Protective Embrace",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "min": 0,
+        "max": 5,
+        "default": 5
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "all": [
+            {
+              "toggle": "party"
+            },
+            {
+              "toggle": "combat"
+            }
+          ]
+        },
+        "stats": {
+          "defense_p": 0.01
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       }
     ]

@@ -817,6 +817,12 @@
     "bonuses": ["avian-aura-group-celestial"]
   },
   {
+    "id": "awakened-forger-s-box",
+    "name": "Awakened Forger's Box",
+    "filter": "trinket",
+    "bonuses": ["awakened-forger-s-box"]
+  },
+  {
     "id": "backup-performer",
     "name": "Backup Performer",
     "filter": "feat1",
@@ -833,6 +839,18 @@
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "barbarian-shaman-s-wisdom",
+    "name": "Barbarian Shaman's Wisdom",
+    "filter": "companion_power",
+    "il": 900,
+    "power_p": 0.045,
+    "ca_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Barbarianshaman_Player_Bonus"],
+    "longDescription": "Barbarian Shaman companion power. Role: Offense/Utility.",
+    "tags": ["companion_power:offense", "companion_power:utility"]
   },
   {
     "id": "bard-s-storyteller-flamingo",
@@ -1066,6 +1084,7 @@
     "id": "boon-master-blessed-advantage",
     "name": "Blessed Advantage",
     "filter": "boon_tier_master",
+    "bonuses": ["blessed-advantage-stats"],
     "inlineRepetition": {
       "min": 0,
       "max": 3,
@@ -1078,6 +1097,7 @@
     "id": "boon-master-blessed-resilience",
     "name": "Blessed Resilience",
     "filter": "boon_tier_master",
+    "bonuses": ["blessed-resilience-stats"],
     "inlineRepetition": {
       "min": 0,
       "max": 3,
@@ -2104,6 +2124,12 @@
     "allowedClass": ["wizard"]
   },
   {
+    "id": "chocolate-awareness",
+    "name": "Chocolate",
+    "filter": "consumable_food",
+    "bonuses": ["chocolate-awareness"]
+  },
+  {
     "id": "class-barbarian",
     "name": "Barbarian",
     "filter": "build_param_linked_item",
@@ -2426,6 +2452,13 @@
     "shortDescription": "Whenever you receive damage, explode in a 15' radius, dealing 200 magnitude damage to foes. This effect can only trigger once every 10 seconds."
   },
   {
+    "id": "defense-kit",
+    "name": "Defense Kit",
+    "filter": "reinforcement_armor_kit",
+    "il": 44,
+    "defense": 880
+  },
+  {
     "id": "demogorgon-s-reach",
     "name": "Demogorgon's Reach",
     "filter": "artifact",
@@ -2609,6 +2642,20 @@
     "name": "Drizzt",
     "filter": "group_buff",
     "bonuses": ["drizzt"]
+  },
+  {
+    "id": "dummy-artifact-1200-il",
+    "name": "Dummy Artifact 1200 IL",
+    "filter": "artifact",
+    "il": 1200,
+    "combined_rating": 1020
+  },
+  {
+    "id": "dummy-artifact-1500-il",
+    "name": "Dummy Artifact 1500 IL",
+    "filter": "artifact",
+    "il": 1500,
+    "combined_rating": 1275
   },
   {
     "id": "elemental-medley",
@@ -3065,6 +3112,12 @@
     "il": 1750,
     "forte": 2625,
     "combined_rating": 1575
+  },
+  {
+    "id": "honeyed-bread-defense",
+    "name": "Honeyed Bread",
+    "filter": "consumable_food",
+    "bonuses": ["honeyed-bread-defense"]
   },
   {
     "id": "hot-wings-accuracy-severity",
@@ -6072,6 +6125,15 @@
     "gameIds": ["Artifact_M31_All_Lockbox_Artifact_R5"]
   },
   {
+    "id": "omnipotence-awareness-celestial",
+    "name": "Omnipotence",
+    "filter": "mount_equip",
+    "il": 1750,
+    "awareness": 2625,
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Awareness"]
+  },
+  {
     "id": "opportunistic-ca-celestial",
     "name": "Opportunistic",
     "filter": "mount_equip",
@@ -6490,6 +6552,12 @@
     "bonuses": ["prime-rib-power"]
   },
   {
+    "id": "protective-embrace",
+    "name": "Protective Embrace",
+    "filter": "group_buff",
+    "bonuses": ["protective-embrace"]
+  },
+  {
     "id": "protector-s-covenant",
     "name": "Protector's Covenant",
     "filter": "insignia_bonus",
@@ -6802,6 +6870,14 @@
     "allowedClass": ["wizard"],
     "tags": ["exclusive:thaumaturge"],
     "bonuses": ["relative-haste-2"]
+  },
+  {
+    "id": "resiliency-of-the-depths",
+    "name": "Resiliency of the Depths",
+    "filter": "overload",
+    "il": 1,
+    "incoming_damage": -0.05,
+    "gameIds": ["Enchantment_Overload_Damage_Reduction"]
   },
   {
     "id": "rhythm-illuminated",
