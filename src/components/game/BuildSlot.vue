@@ -240,7 +240,7 @@ useCursorRowKeys(anchor, {
 
     <!-- Nested controls step in too, so the control column itself shows the tree. -->
     <div
-      class="min-w-0 grid [grid-column:2/-1] [grid-template-columns:subgrid]"
+      class="build-values min-w-0 grid [grid-column:2/-1] [grid-template-columns:subgrid]"
       :class="nest && 'pl-6'"
       :role="labelsOneControl ? undefined : 'group'"
       :aria-labelledby="labelsOneControl ? undefined : labelId"
