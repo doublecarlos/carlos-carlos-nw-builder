@@ -2,8 +2,9 @@
 // Root component: page shell, URL sync.
 //
 // Layout: header (always visible), then either a loading skeleton, the first-run landing
-// screen, or the three-column builder (nav, editor area with sticky header, stat panel).
-// With no builds, the landing content takes the place of the editor and stat panel.
+// screen, or the builder (nav, editor area with sticky header, stat panel). With no builds,
+// the landing content takes the place of the editor and stat panel. Which builder panes show
+// at each viewport size is `shellLayout`'s call.
 import { watch, computed } from "vue";
 import { useEventListener } from "@vueuse/core";
 import NavBar from "./components/NavBar.vue";
@@ -22,8 +23,17 @@ import * as landing from "./stores/landing";
 import * as layers from "./stores/layers";
 import * as stableBrowser from "./stores/stableBrowser";
 import RailGutter from "./components/ui/RailGutter.vue";
+import BaseSheet from "./components/ui/BaseSheet.vue";
+import SegmentedControl from "./components/ui/SegmentedControl.vue";
 import * as rails from "./stores/rails";
 import * as viewport from "./stores/viewport";
+import * as shell from "./stores/shell";
+import {
+  shellLayout,
+  viewportKind,
+  type PhonePane,
+  type StatsMode,
+} from "./lib/shell-layout";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
 import { undoScope, useUndoScope } from "./composables/useUndoScope";
 import { useUndoRedoKeys } from "./composables/useUndoRedoKeys";
@@ -78,6 +88,47 @@ const selectedLayer = computed(() => {
   if (sel?.kind !== "layer") return null;
   return layers.layers.value.find((l) => l.id === sel.id) ?? null;
 });
+
+// --- narrow layouts -----------------------------------------------------------------------
+
+const layout = computed(() =>
+  shellLayout(
+    viewportKind(viewport.isDesktop.value, viewport.isPhone.value),
+    selectedLayer.value ? "layer" : activeBuild.value ? "build" : "none",
+    shell.phonePane.value,
+  ),
+);
+
+/** The rail's own collapse state only applies while it is a rail. */
+const statsCollapsed = computed(
+  () => layout.value.stats === "rail" && detailsCollapsed.value,
+);
+
+// A fixed column is as wide as the narrowest phone, a width the stat panel has to fit anyway.
+const STATS_COLUMN_CLASSES: Record<StatsMode, string> = {
+  rail: "flex-none border-l",
+  fixed: "w-[360px] flex-none border-l",
+  pane: "min-w-0 flex-1",
+  hidden: "",
+};
+
+const PANE_OPTIONS: { value: PhonePane; label: string; testid: string }[] = [
+  { value: "editor", label: "Editor", testid: "pane-editor" },
+  { value: "stats", label: "Stats", testid: "pane-stats" },
+];
+
+// The drawer is a way to pick something: once a pick lands, get out of the way of it. A pick
+// a dirty draft vetoes lands nothing, so the drawer stays open on the choice still to make.
+watch(selection.selection, () => shell.closeNavDrawer());
+
+// Nothing may reopen a drawer the layout no longer has: widening to desktop, or the landing
+// screen taking over, closes it for good.
+watch(
+  () => layout.value.nav !== "drawer" || loading.value || showLanding.value,
+  (gone) => {
+    if (gone) shell.closeNavDrawer();
+  },
+);
 
 const minWidthPx = computed(() =>
   viewport.isDesktop.value
@@ -176,13 +227,14 @@ syncRoute({ push: false });
     <!-- Landing: first visit, nothing stored yet -->
     <LandingScreen v-else-if="showLanding" />
 
-    <!-- Three-column builder -->
+    <!-- Builder: nav, editor and stats, arranged by `layout` -->
     <template v-else>
       <div class="flex min-h-0 flex-1">
         <!-- Column 1: Nav. The gutter along its inner edge carries both the collapse toggle
              and the resize handle, and is all that is left to render once the rail
              collapses. -->
         <div
+          v-if="layout.nav === 'rail'"
           class="relative flex flex-none border-r border-line"
           :style="{ width: navWidth + 'px' }"
           data-testid="nav-column"
@@ -203,6 +255,17 @@ syncRoute({ push: false });
           />
         </div>
 
+        <BaseSheet
+          v-else-if="shell.navDrawerOpen.value"
+          side="left"
+          title="Builds and layers"
+          panel-class="w-80"
+          data-testid="nav-drawer"
+          @close="shell.closeNavDrawer()"
+        >
+          <NavBar class="min-h-0 flex-1 overflow-y-auto" />
+        </BaseSheet>
+
         <!-- Columns 2 and 3 share the editor undo scope, so one ring wraps both. -->
         <div class="relative flex min-w-0 flex-1">
           <!-- Layer selected: editor spans columns 2 and 3 -->
@@ -214,25 +277,38 @@ syncRoute({ push: false });
 
           <!-- Build selected: BuildEditor + StatPanel -->
           <template v-else-if="activeBuild">
-            <!-- Column 2: Editor area -->
-            <div class="flex min-w-0 flex-1 flex-col">
+            <!-- Column 2: Editor area. Hidden rather than unmounted on a phone's stats pane, so
+                 switching back finds it as it was left. -->
+            <div
+              v-show="layout.editor"
+              class="flex min-w-0 flex-1 flex-col"
+              data-testid="editor-pane"
+            >
               <BuildEditor :build="activeBuild" />
             </div>
 
-            <!-- Column 3: Stat panel. Same gutter treatment as the nav, mirrored. -->
+            <!-- Column 3: Stat panel. Same gutter treatment as the nav, mirrored, while it is a
+                 rail; a fixed column or a phone pane has no width of its own to drag. -->
             <div
-              class="flex flex-none border-l border-line"
-              :style="{ width: detailsWidth + 'px' }"
+              v-show="layout.stats !== 'hidden'"
+              class="flex border-line"
+              :class="STATS_COLUMN_CLASSES[layout.stats]"
+              :style="
+                layout.stats === 'rail'
+                  ? { width: detailsWidth + 'px' }
+                  : undefined
+              "
               data-testid="stat-panel-column"
             >
               <RailGutter
+                v-if="layout.stats === 'rail'"
                 rail="details"
                 side="right"
                 label="stats"
                 :collapsed="detailsCollapsed"
               />
               <div
-                v-if="!detailsCollapsed"
+                v-if="!statsCollapsed"
                 class="min-w-0 flex-1 overflow-y-auto"
               >
                 <BuildDetails v-if="resolved.ok" :build="activeBuild" />
@@ -253,6 +329,15 @@ syncRoute({ push: false });
           />
         </div>
       </div>
+
+      <SegmentedControl
+        v-if="layout.paneSwitch"
+        v-model="shell.phonePane.value"
+        :options="PANE_OPTIONS"
+        fill
+        class="flex-none border-t border-line bg-surface px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        data-testid="pane-switch"
+      />
     </template>
 
     <ConfirmDialog />

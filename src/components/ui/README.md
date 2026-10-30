@@ -20,6 +20,7 @@ ordinary one.
 | BaseNotice                                | Dismissible inline message                                                                 |
 | BasePanel                                 | Side-panel shell                                                                           |
 | BasePopover                               | Teleported overlay shell for tooltips, hover cards, click-triggered popovers               |
+| BaseSheet                                 | Off-canvas side drawer or bottom sheet: backdrop, focus trap, Escape, scroll lock          |
 | BaseTextarea                              | The ordinary multi-line text field                                                         |
 | BaseTooltip                               | Themed hover/focus tooltip, replacing `title`                                              |
 | ClearableInput                            | A text filter field with an in-field clear button, wrapping BaseInput                      |

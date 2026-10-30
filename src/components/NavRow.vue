@@ -146,7 +146,7 @@ function onRowKeydown(event: KeyboardEvent) {
       class="nav-rename min-w-0 flex-1 focus:outline-none"
       @update:model-value="emit('rename-start', id, String($event))"
       @keydown.enter="emit('rename-commit')"
-      @keydown.esc="emit('rename-cancel')"
+      @keydown.esc.prevent="emit('rename-cancel')"
       @blur="emit('rename-commit')"
     />
 

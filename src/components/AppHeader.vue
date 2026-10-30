@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Full-width header bar: app title, export/import, an auto-save indicator, theme toggle,
 // notice, and the About/shortcut overlays.
-import { ref, useTemplateRef } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import ThemeToggle from "./ui/ThemeToggle.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseLink from "./ui/BaseLink.vue";
@@ -20,6 +20,7 @@ import {
   Gamepad2,
   Info,
   Keyboard,
+  Menu,
   Search,
   Table,
   Upload,
@@ -39,6 +40,8 @@ import * as engine from "../stores/resolved";
 import { mountSlotId } from "../engine/insignia";
 import * as buildEditor from "../stores/buildEditor";
 import * as layerEditorUi from "../stores/layerEditorUi";
+import * as landing from "../stores/landing";
+import * as shell from "../stores/shell";
 import GoToPalette from "./GoToPalette.vue";
 import { isMac } from "../lib/platform";
 
@@ -46,6 +49,11 @@ const importFileInput = useTemplateRef("importFileInput");
 const modKey = isMac ? "⌘" : "Ctrl";
 const showBundleExport = ref(false);
 const showAbout = ref(false);
+
+/** The nav exists only inside the builder, never over the loading or landing screens. */
+const navAvailable = computed(
+  () => !builds.loading.value && !landing.showing.value,
+);
 
 function triggerExportBundle() {
   showBundleExport.value = true;
@@ -103,6 +111,18 @@ async function onImportFile(event: Event) {
          intrinsic width, so without this the bar's own minimum grows with each one added and
          a narrow window scrolls sideways -- and of everything up here, the title is what a
          narrow window can most afford to lose the tail of. -->
+    <!-- Below lg the nav lives in a drawer, and this is the way in. -->
+    <BaseButton
+      v-if="navAvailable"
+      class="lg:hidden"
+      data-testid="header-nav-toggle"
+      aria-label="Builds and layers"
+      aria-haspopup="dialog"
+      :aria-expanded="shell.navDrawerOpen.value"
+      @click="shell.openNavDrawer()"
+      ><Menu
+    /></BaseButton>
+
     <h1 class="flex min-w-0 items-center text-base font-semibold tracking-wide">
       <img class="inline" src="/icon-512.png" alt="" width="32" height="32" />
       <span class="min-w-0 flex-1 truncate">Carlos Carlos' NW Builder</span>
