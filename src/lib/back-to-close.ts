@@ -7,7 +7,8 @@
 // whatever their capture flag, so the shared instance listens from module load, ahead of any
 // component's setup.
 //
-// One overlay holds Back at a time.
+// Overlays stack: a picker opened from inside an editor sheet holds its own marker above the
+// sheet's, so Back closes the picker first and the sheet on the next press.
 
 /** The key flagging a marker entry's history state. */
 export const MARKER = "backToClose";
@@ -26,9 +27,14 @@ export interface BackHost {
   ): void;
 }
 
+/** One open overlay. An object rather than its `close`, so the same function can hold twice. */
+interface Held {
+  close: () => void;
+}
+
 export function createBackToClose(host: BackHost) {
-  /** The open overlay's close, while its marker is on top. */
-  let onBack: (() => void) | null = null;
+  /** The open overlays, innermost last, each with its marker on the history stack. */
+  const held: Held[] = [];
   /** Resolves a release once the pop it started arrives. */
   let settling: (() => void) | null = null;
 
@@ -38,11 +44,10 @@ export function createBackToClose(host: BackHost) {
       settling();
       return;
     }
-    if (!onBack) return;
-    const close = onBack;
-    onBack = null;
+    const top = held.pop();
+    if (!top) return;
     event.stopImmediatePropagation();
-    close();
+    top.close();
   }
 
   host.addEventListener("popstate", onPopState, { capture: true });
@@ -57,11 +62,16 @@ export function createBackToClose(host: BackHost) {
       "",
       host.location.href,
     );
-    onBack = close;
+    const entry: Held = { close };
+    held.push(entry);
 
     return () => {
-      if (onBack !== close) return Promise.resolve();
-      onBack = null;
+      const at = held.indexOf(entry);
+      if (at === -1) return Promise.resolve();
+      held.splice(at, 1);
+      // An overlay still open above this one owns the top entry, so there is nothing to step
+      // over without closing it too. This marker stays behind as a same-URL entry.
+      if (at !== held.length) return Promise.resolve();
       // A route change pushed or replaced over the marker since: no entry of ours to step over.
       const top: unknown = host.history.state;
       if (!(top && typeof top === "object" && MARKER in top))

@@ -117,4 +117,43 @@ describe("createBackToClose", () => {
     await release();
     expect(win.index()).toBe(0);
   });
+
+  it("Back closes a nested overlay first, then the one under it", async () => {
+    const win = fakeWindow();
+    const { hold } = createBackToClose(win.host);
+    const outer = vi.fn();
+    const inner = vi.fn();
+    hold(outer);
+    hold(inner);
+    win.listen();
+
+    win.host.history.back();
+    await popped();
+    expect(inner).toHaveBeenCalledOnce();
+    expect(outer).not.toHaveBeenCalled();
+
+    win.host.history.back();
+    await popped();
+    expect(outer).toHaveBeenCalledOnce();
+    expect(win.index()).toBe(0);
+    expect(win.app).not.toHaveBeenCalled();
+  });
+
+  it("releasing a nested overlay leaves Back with the one under it", async () => {
+    const win = fakeWindow();
+    const { hold } = createBackToClose(win.host);
+    const outer = vi.fn();
+    hold(outer);
+    const releaseInner = hold(vi.fn());
+    win.listen();
+
+    await releaseInner();
+    expect(win.index()).toBe(1);
+
+    win.host.history.back();
+    await popped();
+    expect(outer).toHaveBeenCalledOnce();
+    expect(win.index()).toBe(0);
+    expect(win.app).not.toHaveBeenCalled();
+  });
 });

@@ -20,7 +20,7 @@ ordinary one.
 | BaseNotice                                | Dismissible inline message                                                                 |
 | BasePanel                                 | Side-panel shell                                                                           |
 | BasePopover                               | Teleported overlay shell for tooltips, hover cards, click-triggered popovers               |
-| BaseSheet                                 | Off-canvas side drawer or bottom sheet: backdrop, focus trap, Escape, scroll lock          |
+| BaseSheet                                 | Off-canvas side drawer or bottom sheet (kept above the keyboard): backdrop, focus trap     |
 | BaseTextarea                              | The ordinary multi-line text field                                                         |
 | BaseTooltip                               | Mouse-hover/keyboard-focus tooltip, never on tap; `tappable` for an info-only trigger      |
 | ClearableInput                            | A text filter field with an in-field clear button, wrapping BaseInput                      |

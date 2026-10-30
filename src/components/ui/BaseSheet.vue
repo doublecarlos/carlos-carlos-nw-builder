@@ -6,9 +6,16 @@
 // Unlike BaseModal it does not silence the app's shortcuts: what a sheet holds is the app's own
 // working surface, moved off-canvas for lack of room. And Escape only closes it while focus is
 // inside it, so a menu or confirm dialog opened on top takes the key first.
-import { onBeforeUnmount, onMounted, useId, useTemplateRef } from "vue";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  useId,
+  useTemplateRef,
+} from "vue";
 import { useEventListener, useScrollLock } from "@vueuse/core";
 import { trapTab } from "../../lib/focus-trap";
+import { useVisualViewport } from "../../composables/useVisualViewport";
 
 // Attrs land on the backdrop, as BaseModal's do, so a `data-testid` there names the whole sheet.
 defineOptions({ inheritAttrs: false });
@@ -44,6 +51,21 @@ const SIDE_CLASSES: Record<"left" | "right" | "bottom", string> = {
   bottom:
     "inset-x-0 bottom-0 max-h-[85dvh] rounded-t-lg border-t pb-[env(safe-area-inset-bottom)]",
 };
+
+/** Share of the visible height a bottom sheet may take. */
+const BOTTOM_MAX_SHARE = 0.85;
+
+// A bottom sheet rides on the visual viewport, so the on-screen keyboard pushes it up rather
+// than covering the field being typed in.
+const visible = useVisualViewport();
+const panelStyle = computed(() => {
+  if (props.side !== "bottom") return undefined;
+  const { top, height } = visible.value;
+  return {
+    bottom: `${Math.max(0, window.innerHeight - top - height)}px`,
+    maxHeight: `${Math.floor(height * BOTTOM_MAX_SHARE)}px`,
+  };
+});
 
 const titleId = useId();
 const panel = useTemplateRef<HTMLElement>("panel");
@@ -91,6 +113,7 @@ onBeforeUnmount(() => {
         ref="panel"
         class="absolute flex flex-col overflow-hidden border-line bg-surface shadow-xl focus:outline-none"
         :class="[SIDE_CLASSES[side], panelClass]"
+        :style="panelStyle"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="title ? titleId : undefined"
