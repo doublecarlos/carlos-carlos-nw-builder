@@ -17,11 +17,11 @@ defineEmits<{
 <template>
   <BaseTooltip text="Reset every slot in this section to its default">
     <BaseButton
-      class="mr-0.5 w-36 flex-none justify-center whitespace-nowrap"
+      class="mr-0.5 w-36 flex-none justify-center whitespace-nowrap max-md:w-auto"
       :data-testid="`clear-section-${sectionId}`"
       @click="$emit('clear')"
     >
-      <RotateCcw />Clear
+      <RotateCcw /><span class="max-md:sr-only">Clear</span>
     </BaseButton>
   </BaseTooltip>
 </template>

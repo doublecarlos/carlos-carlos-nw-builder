@@ -25,6 +25,7 @@ You **MUST NOT**:
 - Workaround Git commit hooks with flags to disable them
 - Write a raw `<input>`/`<textarea>` outside `src/components/ui` (enforced by lint) - use `BaseInput`/`BaseTextarea`, or a dedicated `ui/` primitive for a genuinely novel control
 - Use a bare `z-<number>` utility class (enforced by lint) - use the `--z-index-*` scale in `src/base.css`
+- Put `flex-wrap` on a row of form controls outside `src/components/ui` (enforced by lint) - use `FormGrid`, `InputRow` or a `RepeatableRows` `#lead` card, `md:flex-wrap` when the row has its own phone layout, or `flow-wrap` for a flow of independent items
 - Call a composable from inside a template expression - construct it once (in `<script setup>`, or cached by key for a per-row case) and read the result in the template
 
 # Good practices

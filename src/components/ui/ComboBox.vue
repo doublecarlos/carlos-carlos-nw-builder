@@ -29,6 +29,11 @@ export interface ComboBoxExposed {
 // damage type, forte picks).
 //
 // Reuses ComboBoxMenu/ComboBoxMenuRow primitives for the floating dropdown.
+//
+// With `phoneScreen`, a phone opens it as a full-screen surface instead (ComboBoxScreen): the
+// box in the row becomes a read-only trigger, and typing happens in a search field at the top
+// of that screen, focused only once tapped. Choosing, Escape, the close button or the phone's
+// Back hands focus back to the row.
 import {
   ref,
   shallowRef,
@@ -37,13 +42,18 @@ import {
   nextTick,
   useId,
   useTemplateRef,
+  onBeforeUnmount,
 } from "vue";
 import { onKeyStroke } from "@vueuse/core";
-import { blurToRowAnchor } from "../../lib/row-cursor";
+import { blurToRowAnchor, rowAnchorOf } from "../../lib/row-cursor";
+import { holdBack } from "../../lib/back-to-close";
 import { filterAndRank } from "../../lib/text-filter";
 import { createPointerMoveFilter } from "../../lib/pointer-moved";
+import { isPhone } from "../../stores/viewport";
+import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
+import ComboBoxScreen from "./ComboBoxScreen.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -78,6 +88,10 @@ const props = withDefaults(
     /** Display the current value and never open. For a row whose content is derived, where a
      *  disabled control would drop out of the tab order and take its text with it. */
     readonly?: boolean;
+    /** Open as a full-screen surface on a phone (ComboBoxScreen). */
+    phoneScreen?: boolean;
+    /** That screen's heading and accessible name. */
+    screenLabel?: string;
   }>(),
   {
     placeholder: "-",
@@ -91,8 +105,24 @@ const props = withDefaults(
     inputId: undefined,
     readonly: false,
     tone: undefined,
+    phoneScreen: false,
+    screenLabel: "Choose",
   },
 );
+
+const { id: controlId, describedBy } = useFormFieldControl(() => props.inputId);
+
+defineSlots<{
+  option?(props: { option: T; highlighted: boolean }): unknown;
+  group?(props: { label: string }): unknown;
+  empty?(): unknown;
+  "no-match"?(): unknown;
+  more?(props: { count: number }): unknown;
+  aside?(): unknown;
+  /** Header actions on the phone screen. `close` closes it, handing focus back to the row, and
+   *  resolves once the history marker Back would have popped is gone. */
+  actions?(props: { close: () => Promise<void> }): unknown;
+}>();
 
 const emit = defineEmits<{
   /** Mirrors `open` outward -- callers that need to know without polling the exposed ref
@@ -117,7 +147,41 @@ const highlight = ref(0);
 /** Set by a pointer moving over a row; every other highlight change comes from the keyboard. */
 const highlightSource = shallowRef<HighlightSource>("keyboard");
 const input = useTemplateRef("input");
-const list = ref<InstanceType<typeof ComboBoxMenu> | null>(null);
+const searchInput = useTemplateRef("searchInput");
+/** The open list, as either presentation. Only the screen has a `panel`. */
+const list = ref<{
+  scrollToHighlighted: () => void;
+  panel?: HTMLElement | null;
+} | null>(null);
+const screenPanel = () => list.value?.panel ?? null;
+
+/** Whether opening now shows the full-screen surface. */
+const screen = computed(() => props.phoneScreen && isPhone.value);
+// Crossing the breakpoint while open would swap the surface out from under the focused field.
+watch(screen, () => {
+  if (open.value) close();
+});
+
+/** Set while focus is handed back to the trigger, so that focus does not reopen the screen. */
+let returningFocus = false;
+
+// The phone's Back closes the screen (lib/back-to-close.ts). Every other way of closing steps
+// back over the marker Back would have popped, and `backSettled` resolves once it has.
+let releaseBack: (() => Promise<void>) | null = null;
+let backSettled: Promise<void> = Promise.resolve();
+watch(
+  () => open.value && screen.value,
+  (shown) => {
+    if (shown) {
+      releaseBack = holdBack(closeScreen);
+      return;
+    }
+    backSettled = releaseBack?.() ?? Promise.resolve();
+    releaseBack = null;
+  },
+  { flush: "sync" },
+);
+onBeforeUnmount(() => void releaseBack?.());
 
 const selected = computed(
   () => props.options.find((option) => option.value === model.value) ?? null,
@@ -235,10 +299,13 @@ const firstStop = () => stops.value[0] ?? 0;
 /** Skips the reset when already open: `focusAndSeed` below pre-sets `open` before the
  *  native focus event fires, and this must not stomp the query it just seeded. */
 function onFocus() {
-  if (props.readonly || open.value) return;
+  if (props.readonly || open.value || returningFocus) return;
   open.value = true;
   query.value = "";
   highlightSelected();
+  // The screen opens with focus on its panel, so no keyboard covers the list until the search
+  // field is tapped.
+  if (screen.value) nextTick(() => screenPanel()?.focus());
   // A caller may only settle its options once it hears the menu opened (ItemPicker withholds
   // and reorders candidates then), which moves the selected option to another index.
   const opened = highlight.value;
@@ -246,6 +313,11 @@ function onFocus() {
     if (open.value && !query.value && highlight.value === opened)
       highlightSelected();
   });
+}
+
+/** A trigger that kept focus after its screen closed opens again on the next tap. */
+function onTriggerClick() {
+  if (screen.value && !open.value) onFocus();
 }
 
 /** Starts on whatever is already selected, not on "empty". */
@@ -264,13 +336,48 @@ function onInput(event: Event) {
 
 function onBlur() {
   // Options use @mousedown.prevent, so a click never reaches this -- but Tab and
-  // focus-stealing elsewhere do, and the dropdown must not survive them.
+  // focus-stealing elsewhere do, and the dropdown must not survive them. The phone screen
+  // takes focus from the trigger on purpose, and closes only by its own controls.
+  if (screen.value) return;
   close();
 }
 
 function close() {
   open.value = false;
   query.value = "";
+}
+
+/** Closes the phone screen and hands focus back to the row it opened from: the row's cursor
+ *  anchor inside the build editor, else the trigger itself, without that focus reopening it. */
+function closeScreen(): Promise<void> {
+  close();
+  const anchor = rowAnchorOf(input.value);
+  if (anchor) anchor.focus();
+  else {
+    returningFocus = true;
+    input.value?.focus();
+    returningFocus = false;
+  }
+  return backSettled;
+}
+
+/** Ends an interaction that closes the picker, keeping the row cursor where there is one. */
+function dismiss() {
+  if (screen.value) closeScreen();
+  else {
+    close();
+    blurToRowAnchor(input.value);
+  }
+}
+
+/** A tap on the phone screen chooses on `click` rather than `mousedown`: the screen must still
+ *  be there for that click to land on, or it falls through to whatever the row shows behind. */
+function onRowMousedown(row: Row<T>) {
+  if (!screen.value) chooseRow(row);
+}
+
+function onRowClick(row: Row<T>) {
+  if (screen.value) chooseRow(row);
 }
 
 /** `blur: false` for the Tab case below -- the browser's own Tab-forward looks at
@@ -283,11 +390,11 @@ function chooseRow(row: Row<T> | undefined, options: { blur?: boolean } = {}) {
 
 function choose(option: T | null, { blur = true }: { blur?: boolean } = {}) {
   model.value = option ? option.value : "";
-  close();
   // Blur to the row's cursor anchor when this input sits in one (see blurToRowAnchor):
   // choosing with Enter or clicking an option must keep the row cursor alive, not drop
   // focus to <body> where arrow keys die until the user clicks a row again.
-  if (blur) blurToRowAnchor(input.value);
+  if (blur) dismiss();
+  else close();
 }
 
 /** Focuses the input, which opens the list on a fresh query the same way a click does (see
@@ -306,10 +413,14 @@ function focusAndSeed(char: string) {
   open.value = true;
   query.value = char;
   setHighlight(firstStop());
-  nextTick(() => input.value?.focus());
+  nextTick(() => (screen.value ? searchInput : input).value?.focus());
 }
 
 defineExpose({ focusInput, focusAndSeed });
+
+/** Either presentation's typing field takes the keys below, and so does the phone screen's
+ *  panel, which holds focus until the search field is tapped. */
+const keyTargets = [input, searchInput, screenPanel];
 
 // --- keyboard handling via onKeyStroke (scoped to the input ref) ------------------------
 
@@ -323,77 +434,82 @@ defineExpose({ focusInput, focusAndSeed });
  * input is still focused when the browser's own Tab-forward runs.
  */
 
-onKeyStroke(
-  "Escape",
-  (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    close();
-    // Same blur-to-anchor as choose: Escape closes the picker but keeps the row cursor.
-    blurToRowAnchor(input.value);
-  },
-  { target: input },
-);
-
-onKeyStroke(
-  ["ArrowDown", "ArrowUp"],
-  (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!open.value) {
-      onFocus();
-      return;
-    }
-    // Stepping through `stops` rather than through `rows` is what skips headings, and it
-    // stops at either end rather than wrapping -- same as it always did.
-    const step = e.key === "ArrowDown" ? 1 : -1;
-    const at = stops.value.indexOf(highlight.value);
-    const next = Math.min(
-      Math.max((at === -1 ? 0 : at) + step, 0),
-      stops.value.length - 1,
-    );
-    setHighlight(stops.value[next] ?? highlight.value);
-  },
-  { target: input },
-);
-
-onKeyStroke(
-  "Enter",
-  (e) => {
-    if (!open.value) return;
-    e.preventDefault();
-    e.stopPropagation();
-    chooseRow(rows.value[highlight.value]);
-  },
-  { target: input },
-);
-
-onKeyStroke(
-  "Tab",
-  (e) => {
-    if (!open.value) return;
-    if (e.shiftKey) {
-      // Browsing backward -- just close, don't commit a highlight the user was
-      // arrowing away from.
+for (const target of keyTargets) {
+  onKeyStroke(
+    "Escape",
+    (e) => {
       e.preventDefault();
       e.stopPropagation();
-      close();
-      return;
-    }
-    // Commit the highlighted choice, same as Enter, then let the browser's own Tab
-    // move focus on to whatever's next -- no preventDefault, and no stopPropagation
-    // (see the block comment above).
-    chooseRow(rows.value[highlight.value], { blur: false });
-  },
-  { target: input },
-);
+      // Same blur-to-anchor as choose: Escape closes the picker but keeps the row cursor.
+      dismiss();
+    },
+    { target },
+  );
+
+  onKeyStroke(
+    ["ArrowDown", "ArrowUp"],
+    (e) => {
+      // On the panel, only its own focus: a focused button inside keeps its own keys.
+      if (e.target !== e.currentTarget) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (!open.value) {
+        onFocus();
+        return;
+      }
+      // Stepping through `stops` rather than through `rows` is what skips headings, and it
+      // stops at either end rather than wrapping -- same as it always did.
+      const step = e.key === "ArrowDown" ? 1 : -1;
+      const at = stops.value.indexOf(highlight.value);
+      const next = Math.min(
+        Math.max((at === -1 ? 0 : at) + step, 0),
+        stops.value.length - 1,
+      );
+      setHighlight(stops.value[next] ?? highlight.value);
+    },
+    { target },
+  );
+
+  onKeyStroke(
+    "Enter",
+    (e) => {
+      if (!open.value || e.target !== e.currentTarget) return;
+      e.preventDefault();
+      e.stopPropagation();
+      chooseRow(rows.value[highlight.value]);
+    },
+    { target },
+  );
+
+  onKeyStroke(
+    "Tab",
+    (e) => {
+      // The phone screen keeps Tab inside itself (ComboBoxScreen's trap).
+      if (!open.value || screen.value) return;
+      if (e.shiftKey) {
+        // Browsing backward -- just close, don't commit a highlight the user was
+        // arrowing away from.
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+        return;
+      }
+      // Commit the highlighted choice, same as Enter, then let the browser's own Tab
+      // move focus on to whatever's next -- no preventDefault, and no stopPropagation
+      // (see the block comment above).
+      chooseRow(rows.value[highlight.value], { blur: false });
+    },
+    { target },
+  );
+}
 </script>
 
 <template>
   <div class="relative">
     <input
-      :id="inputId"
+      :id="controlId"
       ref="input"
+      :aria-describedby="describedBy"
       data-testid="picker-input"
       class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       :class="[
@@ -408,19 +524,25 @@ onKeyStroke(
       :data-filled="model ? '' : undefined"
       :style="tone ? { '--tone': tone } : undefined"
       type="text"
-      :readonly="readonly"
+      :readonly="readonly || screen"
       :role="readonly ? undefined : 'combobox'"
-      :aria-autocomplete="readonly ? undefined : 'list'"
+      :aria-autocomplete="readonly || screen ? undefined : 'list'"
+      :aria-haspopup="screen ? 'dialog' : undefined"
       :aria-expanded="readonly ? undefined : open ? 'true' : 'false'"
-      :aria-controls="open ? listboxId : undefined"
-      :aria-activedescendant="activeDescendant"
+      :aria-controls="open && !screen ? listboxId : undefined"
+      :aria-activedescendant="screen ? undefined : activeDescendant"
       :aria-invalid="invalid ? 'true' : undefined"
       autocomplete="off"
       spellcheck="false"
-      :value="open ? query : closedDisplay || (selected ? selected.label : '')"
+      :value="
+        open && !screen
+          ? query
+          : closedDisplay || (selected ? selected.label : '')
+      "
       :title="titleInput ? closedDisplay || (selected?.label ?? '') : ''"
       :placeholder="placeholder"
       @focus="onFocus"
+      @click="onTriggerClick"
       @input="onInput"
       @blur="onBlur"
     />
@@ -432,12 +554,40 @@ onKeyStroke(
       >▾</span
     >
 
-    <ComboBoxMenu
+    <!-- One set of rows for either presentation: the floating menu, or the phone screen. -->
+    <component
+      :is="screen ? ComboBoxScreen : ComboBoxMenu"
       v-if="open"
       ref="list"
-      :menu-class="menuClass"
-      :listbox-id="listboxId"
+      v-bind="
+        screen
+          ? { label: screenLabel, listboxId, onClose: closeScreen }
+          : { menuClass, listboxId }
+      "
     >
+      <template v-if="screen" #search>
+        <input
+          ref="searchInput"
+          data-testid="picker-search"
+          class="w-full rounded-md border border-line bg-surface px-2 py-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="true"
+          :aria-controls="listboxId"
+          :aria-activedescendant="activeDescendant"
+          :aria-label="screenLabel"
+          autocomplete="off"
+          spellcheck="false"
+          enterkeyhint="done"
+          placeholder="Search…"
+          :value="query"
+          @input="onInput"
+        />
+      </template>
+      <template v-if="screen && $slots.actions" #actions>
+        <slot name="actions" :close="closeScreen" />
+      </template>
       <!-- Keyed by position: one option may be listed under several headings, so two rows can
            share a value. -->
       <template v-for="(row, index) in rows" :key="index">
@@ -460,7 +610,8 @@ onKeyStroke(
           muted
           :highlighted="highlight === index"
           :selected="model === ''"
-          @mousedown.prevent="choose(null)"
+          @mousedown.prevent="onRowMousedown(row)"
+          @click="onRowClick(row)"
           @mousemove="onRowPointer($event, index)"
         >
           <slot name="empty">- empty -</slot>
@@ -472,7 +623,8 @@ onKeyStroke(
           :title="titleRows && row.option.label"
           :highlighted="highlight === index"
           :selected="row.option.value === model"
-          @mousedown.prevent="choose(row.option)"
+          @mousedown.prevent="onRowMousedown(row)"
+          @click="onRowClick(row)"
           @mousemove="onRowPointer($event, index)"
         >
           <slot
@@ -497,7 +649,9 @@ onKeyStroke(
         <slot name="more" :count="hiddenCount">{{ hiddenCount }} more</slot>
       </ComboBoxMenuRow>
 
-      <template v-if="$slots.aside" #aside><slot name="aside" /></template>
-    </ComboBoxMenu>
+      <template v-if="$slots.aside && !screen" #aside
+        ><slot name="aside"
+      /></template>
+    </component>
   </div>
 </template>

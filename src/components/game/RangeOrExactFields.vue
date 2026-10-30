@@ -26,9 +26,15 @@ const props = withDefaults(
     /** Type the values in percent, for a percent input or param. They are still stored as
      *  decimals. */
     percent?: boolean;
+    /** In a wrapping column: the mode switch takes a line of its own and the number fields
+     *  share the next one. */
+    fill?: boolean;
   }>(),
-  { unitSuffix: "", allowAtLeastOne: false, percent: false },
+  { unitSuffix: "", allowAtLeastOne: false, percent: false, fill: false },
 );
+
+const fieldClass = computed(() => (props.fill ? "min-w-0 flex-1" : "min-w-0"));
+const inputClass = computed(() => (props.fill ? "w-full" : "w-24"));
 
 const atLeast = defineModel<string | number | null>("atLeast", {
   default: null,
@@ -61,7 +67,11 @@ function setRangeMode(mode: RangeMode) {
 </script>
 
 <template>
-  <FormField :label="'&nbsp'" class="min-w-0">
+  <FormField
+    :label="fill ? 'Compare' : undefined"
+    :label-spacer="!fill"
+    :class="fill ? 'min-w-0 basis-full' : 'min-w-0'"
+  >
     <SegmentedControl
       :model-value="rangeMode"
       :options="modeOptions"
@@ -69,27 +79,27 @@ function setRangeMode(mode: RangeMode) {
     />
   </FormField>
   <template v-if="rangeMode === 'range'">
-    <FormField :label="`At least${unitSuffix}`" class="min-w-0"
+    <FormField :label="`At least${unitSuffix}`" :class="fieldClass"
       ><NumberOrPercentInput
         v-model="atLeast"
         :percent="percent"
-        class="w-24"
+        :class="inputClass"
         step="any"
     /></FormField>
-    <FormField :label="`Below${unitSuffix}`" class="min-w-0"
+    <FormField :label="`Below${unitSuffix}`" :class="fieldClass"
       ><NumberOrPercentInput
         v-model="below"
         :percent="percent"
-        class="w-24"
+        :class="inputClass"
         step="any"
     /></FormField>
   </template>
   <template v-else-if="rangeMode === 'exact'">
-    <FormField :label="`Exactly${unitSuffix}`" class="min-w-0"
+    <FormField :label="`Exactly${unitSuffix}`" :class="fieldClass"
       ><NumberOrPercentInput
         v-model="exactly"
         :percent="percent"
-        class="w-24"
+        :class="inputClass"
         step="any"
     /></FormField>
   </template>

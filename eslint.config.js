@@ -52,10 +52,11 @@ export default defineConfigWithVueTs(
   },
 
   {
-    name: "app/no-raw-text-inputs",
+    name: "app/ui-primitives",
     files: ["src/**/*.vue"],
     // The primitives themselves (BaseInput, BaseTextarea, and genuinely novel controls like
-    // OcrTextField/PercentInput) are what a raw <input>/<textarea> is allowed to live inside.
+    // OcrTextField/PercentInput) are what a raw <input>/<textarea>, or a wrapping row of
+    // controls, is allowed to live inside.
     ignores: ["src/components/ui/**"],
     rules: {
       // A checkbox/radio/file/range/color/hidden input is a different control than the
@@ -73,6 +74,16 @@ export default defineConfigWithVueTs(
             "VElement[name='input']:not(:has(VAttribute[key.name='type'] > VLiteral[value=/^(checkbox|radio|file|range|color|hidden)$/]))",
           message:
             "Use BaseInput or another ui/ primitive instead of a raw <input>. See src/components/ui/README.md.",
+        },
+        // A `flex-wrap` row of form controls breaks unevenly on a phone. The primitives own how
+        // a control row wraps (FormGrid, InputRow, RepeatableRows cards). A row may still wrap
+        // from `md:` up when a phone lays it out otherwise, and a genuine flow of independent
+        // items says so with `flow-wrap`.
+        {
+          selector:
+            "VElement:has(VElement[rawName=/^(input|select|textarea|FormField|FormGrid|BaseInput|BaseTextarea|BaseCheckbox|ComboBox|CreatableComboBox|NumberStepper|PercentInput|NumberOrPercentInput|StatValueInput|TokenInput|OcrTextField|FormulaField|FormulaInput|SegmentedControl|ItemPicker)$/]) > VStartTag > VAttribute[key.name=/^(class|row-class)$/] > VLiteral[value=/(^|\\s)(max-[\\w-]+:)?flex-wrap(\\s|$)/]",
+          message:
+            "Don't wrap a row of form controls with flex-wrap: use a ui/ primitive (FormGrid, InputRow, RepeatableRows #lead), or `flow-wrap` for a flow of independent items. See src/components/ui/README.md.",
         },
       ],
     },

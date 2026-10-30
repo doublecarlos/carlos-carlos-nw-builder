@@ -5,10 +5,12 @@
 // A typed value outside [min, max] is let through, so the caller can flag it rather than have
 // it silently rewritten. Only the buttons clamp. Attributes (`data-testid`, `id`) land on the
 // input itself, the way they would on a native one.
+import { computed } from "vue";
 import { Minus, Plus } from "@lucide/vue";
 import BaseInput from "./BaseInput.vue";
 import IconButton from "./IconButton.vue";
 import { isMac } from "../../lib/platform";
+import { coarsePointer } from "../../stores/viewport";
 
 defineOptions({ inheritAttrs: false });
 
@@ -24,6 +26,14 @@ const props = withDefaults(
 const model = defineModel<number>({ required: true });
 
 const modKey = isMac ? "Cmd" : "Ctrl";
+
+/** The Ctrl+click hint is left off on a coarse pointer, which has no key to hold. */
+const decreaseTitle = computed(() =>
+  coarsePointer.value ? "Decrease" : `Decrease (${modKey}+click for min)`,
+);
+const increaseTitle = computed(() =>
+  coarsePointer.value ? "Increase" : `Increase (${modKey}+click for max)`,
+);
 
 /** Mid-typing states ("-", "") are left in the field without writing anything. */
 function onInput(raw: string | number | null) {
@@ -47,7 +57,7 @@ function stepBy(dir: 1 | -1, event: MouseEvent) {
 <template>
   <div class="flex items-center gap-1">
     <IconButton
-      :title="`Decrease (${modKey}+click for min)`"
+      :title="decreaseTitle"
       :disabled="model <= min"
       @click="stepBy(-1, $event)"
     >
@@ -64,7 +74,7 @@ function stepBy(dir: 1 | -1, event: MouseEvent) {
       @update:model-value="onInput"
     />
     <IconButton
-      :title="`Increase (${modKey}+click for max)`"
+      :title="increaseTitle"
       :disabled="model >= max"
       @click="stepBy(1, $event)"
     >

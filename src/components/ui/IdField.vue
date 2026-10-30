@@ -20,6 +20,7 @@ defineProps<{
 <template>
   <FormField :label="label">
     <BaseTooltip
+      tappable
       :text="
         existing
           ? 'Frozen; renaming does not change it'

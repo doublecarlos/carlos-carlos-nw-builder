@@ -4,7 +4,9 @@
 // the title (ItemBonuses' collapse chevron), `#after-title` holds the caller's badges and
 // chips, `#extra-actions` its own actions (ItemBonuses' Detach, ItemForm's From screenshot).
 // Revert/Duplicate/Delete are icon buttons right after the title; Save is the one labeled
-// button, on the right.
+// button, on the right. The bar wraps as two whole groups, the title with its actions and
+// the right-hand group, so a narrow form puts Save on its own line rather than splitting it
+// from the checkbox beside it.
 // `embedded`: an in-flow row inside another form's card, the same layout, just not sticky.
 // `toggleable`: a click on the bar's inert area (title, badges, chips, spacer) raises
 // `toggle`; its controls never do.
@@ -115,32 +117,35 @@ const actions = computed<ActionSpec[]>(() =>
     ]"
     @click="onBarClick"
   >
-    <slot name="leading" />
-    <strong data-testid="form-bar-title">{{ title }}</strong>
-    <BaseBadge v-if="status !== 'base'" :variant="status">{{
-      status
-    }}</BaseBadge>
-    <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
-    <slot name="after-title" />
-    <!-- Secondary actions stay snug against the title, as icon buttons; the spacer span
-         below is what parks Save at the row's end. -->
-    <span
-      v-if="actions.length || $slots['extra-actions']"
-      class="flex flex-wrap items-center gap-1.5 text-[14px]"
-    >
-      <IconButton
-        v-for="action in actions"
-        :key="action.key"
-        :title="action.title"
-        :data-testid="action.testid"
-        @click="action.run($event)"
+    <span class="flex min-w-0 items-center gap-1.5">
+      <slot name="leading" />
+      <strong class="min-w-0" data-testid="form-bar-title">{{ title }}</strong>
+      <BaseBadge v-if="status !== 'base'" :variant="status">{{
+        status
+      }}</BaseBadge>
+      <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
+      <slot name="after-title" />
+      <!-- Secondary actions stay snug against the title, as icon buttons. -->
+      <span
+        v-if="actions.length || $slots['extra-actions']"
+        class="flex items-center gap-1.5 text-[14px]"
       >
-        <component :is="action.icon" />
-      </IconButton>
-      <slot name="extra-actions" />
+        <IconButton
+          v-for="action in actions"
+          :key="action.key"
+          :title="action.title"
+          :data-testid="action.testid"
+          @click="action.run($event)"
+        >
+          <component :is="action.icon" />
+        </IconButton>
+        <slot name="extra-actions" />
+      </span>
     </span>
-    <span class="flex flex-1 flex-wrap items-center gap-1.5">
-      <span class="flex-1"></span>
+    <span
+      v-if="isNew || $slots['before-actions']"
+      class="ml-auto flex items-center gap-1.5"
+    >
       <slot name="before-actions" />
       <!-- Save button only for new entries -->
       <BaseButton

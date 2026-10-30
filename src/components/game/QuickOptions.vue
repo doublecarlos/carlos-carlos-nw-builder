@@ -119,7 +119,7 @@ const chosenItem = (slot: ItemPickerSlot) =>
 <template>
   <div
     data-testid="quick-options"
-    class="build-values flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5"
+    class="build-values flex flex-1 flow-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5"
   >
     <template v-for="(slot, index) in quickSlots" :key="slot.id">
       <span
@@ -133,10 +133,13 @@ const chosenItem = (slot: ItemPickerSlot) =>
 
       <div
         v-if="slot.type === 'item_picker'"
-        class="flex items-center gap-1.5 whitespace-nowrap"
+        class="flex items-center gap-1.5 whitespace-nowrap max-md:flow-wrap"
         :data-testid="`quick-picker-${slot.id}`"
       >
-        <BaseTooltip :text="differs(slot) ? (diffTitle(slot) ?? '') : ''">
+        <BaseTooltip
+          :text="differs(slot) ? (diffTitle(slot) ?? '') : ''"
+          tappable
+        >
           <span
             :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"
             :tabindex="differs(slot) ? 0 : undefined"
@@ -153,15 +156,21 @@ const chosenItem = (slot: ItemPickerSlot) =>
           :bonus-preview="pickerPreviews.get(slot.id)"
           :hide-preview="true"
           :allow-empty="!slot.disallowEmpty"
+          phone-screen
+          :label="slot.label"
           @update:model-value="buildEditor.setChoice(slot.id, $event)"
         />
       </div>
 
       <div
         v-else-if="!isBooleanParam(slot)"
-        class="flex items-center gap-1.5 whitespace-nowrap"
+        class="flex items-center gap-1.5 whitespace-nowrap max-md:basis-full max-md:flex-col max-md:items-start max-md:gap-1"
+        :data-testid="`quick-param-${slot.id}`"
       >
-        <BaseTooltip :text="differs(slot) ? (diffTitle(slot) ?? '') : ''">
+        <BaseTooltip
+          :text="differs(slot) ? (diffTitle(slot) ?? '') : ''"
+          tappable
+        >
           <span
             :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"
             :tabindex="differs(slot) ? 0 : undefined"
@@ -171,6 +180,7 @@ const chosenItem = (slot: ItemPickerSlot) =>
         </BaseTooltip>
         <BuildParamInput
           :slot-def="slot"
+          phone-screen
           :model-value="asStrNum(slot)"
           @update:model-value="buildEditor.setParam(slot, $event!)"
         />
@@ -182,7 +192,10 @@ const chosenItem = (slot: ItemPickerSlot) =>
         :model-value="paramValue(slot) as boolean"
         @update:model-value="buildEditor.setParam(slot, $event!)"
       >
-        <BaseTooltip :text="differs(slot) ? (diffTitle(slot) ?? '') : ''">
+        <BaseTooltip
+          :text="differs(slot) ? (diffTitle(slot) ?? '') : ''"
+          tappable
+        >
           <span
             :class="differs(slot) ? 'font-bold text-diff' : ''"
             :tabindex="differs(slot) ? 0 : undefined"

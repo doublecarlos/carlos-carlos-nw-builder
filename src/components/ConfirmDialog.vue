@@ -25,6 +25,7 @@ watch(pending, async (request) => {
     v-if="pending"
     :title="pending.title"
     panel-class="w-[26rem] max-w-[92vw]"
+    phone="card"
     data-testid="confirm-dialog"
     @close="confirm.settle(false)"
   >
@@ -56,7 +57,9 @@ watch(pending, async (request) => {
     <div
       class="flex flex-none items-center gap-2 border-t border-line px-4 py-3"
     >
-      <span v-if="pending.skippable !== false" class="text-xs text-muted"
+      <span
+        v-if="pending.skippable !== false"
+        class="text-xs text-muted pointer-coarse:hidden"
         >Hold Shift to skip this confirmation.</span
       >
       <BaseButton

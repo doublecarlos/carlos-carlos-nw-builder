@@ -16,24 +16,28 @@ const emit = defineEmits<{ add: []; remove: [index: number] }>();
 <template>
   <RepeatableRows
     :rows="rows"
-    row-class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
+    row-class="stat-row flex md:flex-wrap items-center gap-1.5 mb-1"
     add-label="Add stat"
     remove-label="Remove stat"
     @add="emit('add')"
     @remove="(i) => emit('remove', i)"
   >
-    <template #row="{ row: stat }">
+    <template #lead="{ row: stat }">
       <ComboBox
-        class="combo--stat w-52"
+        class="combo--stat w-full md:w-52"
         :model-value="stat.key"
         :options="statPickerOptions"
         placeholder="- pick a stat -"
+        phone-screen
+        screen-label="Stat"
         @update:model-value="(v) => (stat.key = v)"
       />
+    </template>
+    <template #row="{ row: stat }">
       <StatValueInput
         v-model="stat.value"
         :stat-key="stat.key"
-        class="w-28"
+        class="w-full md:w-28"
         step="any"
         @keydown="focusNextCombo"
       />

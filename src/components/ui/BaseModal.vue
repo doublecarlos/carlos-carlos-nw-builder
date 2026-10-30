@@ -3,6 +3,12 @@
 // and the dialog semantics that make it announce as a dialog. Callers supply the panel's
 // sizing through `panelClass` -- the chrome is shared, the shape is not.
 //
+// Below md the panel fills the screen whatever `panelClass` asks for: the phone variants here
+// win over a caller's plain width and height, so no call site carries its own phone sizing.
+// `phone="card"` keeps a short dialog (a confirmation) as a centered card instead.
+//
+// On a touch layout the browser's Back closes it, the same as Escape (lib/back-to-close.ts).
+//
 // Anchored surfaces are deliberately not built on this: none of them is modal. A hover surface
 // (BasePopover, BaseTooltip) never takes focus. BaseMenu takes it on open and returns it on
 // close. This component traps focus for a full dialog. In-flow panels are BaseDrawer.
@@ -10,6 +16,8 @@ import { onBeforeUnmount, onMounted, useId, useTemplateRef } from "vue";
 import { useScrollLock } from "@vueuse/core";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 import { trapTab } from "../../lib/focus-trap";
+import { useBackToClose } from "../../composables/useBackToClose";
+import { backClosesOverlays } from "../../stores/viewport";
 import { modalClosed, modalOpened } from "../../stores/modals";
 
 // Attrs land on the backdrop, not the panel: `data-testid` on the outer element is what lets
@@ -29,12 +37,20 @@ const props = withDefaults(
     align?: "center" | "top";
     /** The panel's own width and height -- every surface differs, so none is assumed here. */
     panelClass?: string | string[];
+    /** The panel below md: `fill` takes the whole screen, `card` stays a centered box capped
+     *  to the viewport, for a dialog too short to be worth a screen of its own. */
+    phone?: "fill" | "card";
+    /** Whether the browser's Back closes it on a touch layout. Off for a caller whose open
+     *  state already has its own history entry. */
+    backCloses?: boolean;
   }>(),
   {
     title: undefined,
     label: undefined,
     panelClass: undefined,
     align: "center",
+    phone: "fill",
+    backCloses: true,
   },
 );
 
@@ -43,6 +59,14 @@ const emit = defineEmits<{ close: [] }>();
 if (import.meta.env.DEV && !props.title && !props.label) {
   console.warn("BaseModal: pass `title` or `label` -- a dialog needs a name.");
 }
+
+/** Below md, `fill` drops the desktop size for the full screen, padded clear of the notch and
+ *  home bar, and `card` keeps it but capped to the screen. Variant utilities sort after plain
+ *  ones, so these beat a caller's `w-[720px]` or `max-h-[85vh]`. */
+const PHONE_CLASSES = {
+  fill: "max-md:h-dvh max-md:max-h-none max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:pt-[env(safe-area-inset-top)] max-md:pr-[env(safe-area-inset-right)] max-md:pb-[env(safe-area-inset-bottom)] max-md:pl-[env(safe-area-inset-left)]",
+  card: "max-md:max-h-[calc(100dvh-2rem)] max-md:max-w-[calc(100vw-2rem)]",
+} as const;
 
 const titleId = useId();
 const panel = useTemplateRef<HTMLElement>("panel");
@@ -62,6 +86,11 @@ defineExpose({ releaseFocus });
 
 // Locked for as long as this component lives; VueUse restores the previous overflow on unmount.
 useScrollLock(document.body, true);
+
+useBackToClose(
+  () => props.backCloses && backClosesOverlays.value,
+  () => emit("close"),
+);
 
 /** Tab wraps inside the panel: a modal owns the screen while it is open, so tabbing off its
  *  edge must not land on the page behind it. */
@@ -90,14 +119,17 @@ useEscapeToClose(() => emit("close"));
   <Teleport to="body">
     <div
       class="fixed inset-0 z-modal flex justify-center bg-scrim"
-      :class="align === 'top' ? 'items-start pt-[12vh]' : 'items-center'"
+      :class="[
+        align === 'top' ? 'items-start pt-[12vh]' : 'items-center',
+        phone === 'fill' && 'max-md:pt-0',
+      ]"
       v-bind="$attrs"
       @click.self="emit('close')"
     >
       <div
         ref="panel"
         class="flex flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-xl focus:outline-none"
-        :class="panelClass"
+        :class="[panelClass, PHONE_CLASSES[phone]]"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="title ? titleId : undefined"

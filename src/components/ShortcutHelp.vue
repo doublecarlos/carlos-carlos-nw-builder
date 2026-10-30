@@ -30,9 +30,11 @@ import * as shortcutHelp from "../stores/shortcutHelp";
           <div
             v-for="shortcut in group.shortcuts"
             :key="shortcut.description"
-            class="flex items-baseline gap-3"
+            class="flex items-baseline gap-3 max-md:flex-col max-md:gap-0.5"
           >
-            <dt class="flex w-60 flex-none flex-wrap items-baseline gap-1">
+            <dt
+              class="flex w-60 flex-none flex-wrap items-baseline gap-1 max-md:w-auto"
+            >
               <template v-for="(chord, index) in shortcut.keys" :key="chord">
                 <span v-if="index > 0" class="text-muted">or</span>
                 <!-- Each chord is its own inline-flex run, so a row with alternatives wraps

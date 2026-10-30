@@ -629,113 +629,117 @@ const {
     />
 
     <PanelHead>Ratings</PanelHead>
-    <table class="w-full border-collapse border border-line">
-      <thead>
-        <tr>
-          <td
-            colspan="1"
-            class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
-          >
-            Stat
-          </td>
-          <td
-            colspan="2"
-            class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
-          >
-            Value
-          </td>
-          <td
-            colspan="2"
-            class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
-          >
-            Overcap
-          </td>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Each cell colored off its own column's 'over', not the row: rating and
+    <!-- Scrolls on its own below lg, as StatPanelPairsTable's tables do. -->
+    <div class="max-lg:overflow-x-auto" data-testid="stat-table-scroll">
+      <table class="w-full border-collapse border border-line">
+        <thead>
+          <tr>
+            <td
+              colspan="1"
+              class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
+            >
+              Stat
+            </td>
+            <td
+              colspan="2"
+              class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
+            >
+              Value
+            </td>
+            <td
+              colspan="2"
+              class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
+            >
+              Overcap
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Each cell colored off its own column's 'over', not the row: rating and
              percentage cap independently, so one can read green while the other reads
              red on the same row. -->
-        <tr
-          v-for="row in capRows"
-          :key="row.key"
-          class="even:bg-surface-2/55 group hover:outline hover:outline-2 hover:outline-accent"
-          :data-stat-row="row.key"
-        >
-          <td
-            class="border border-line px-1 py-0.5 align-top"
-            :class="row.sepAfter && 'border-b-2 border-b-text/50'"
+          <tr
+            v-for="row in capRows"
+            :key="row.key"
+            class="even:bg-surface-2/55 group hover:outline hover:outline-2 hover:outline-accent max-lg:-outline-offset-2"
+            :data-stat-row="row.key"
           >
-            <div class="flex items-center">
-              <IconButton
-                title="Show sources"
-                class="stat-info-btn"
-                :data-stat-key="row.key"
-                @click="toggleCard($event, row.key)"
-              >
-                <CircleAlert />
-              </IconButton>
-              <span>{{ row.label }}</span>
-            </div>
-            <CompareLine
-              v-if="row.compare"
-              :text="`↳ ${compareName}`"
-              :title="compareName"
-              fit-right
-            />
-          </td>
-          <td
-            class="border border-line px-1 py-0.5 text-right align-top tabular-nums gap-0.5"
-            :class="[
-              row.rating.primaryCls,
-              row.sepAfter && 'border-b-2 border-b-text/50',
-            ]"
-            data-testid="stat-value"
-          >
-            {{ int(row.rating.total) }}
-            <CompareLine
-              v-if="row.compare"
-              class="tabular-nums"
-              :class="row.compare.rating.cls"
-              :text="row.compare.rating.text"
-            />
-          </td>
-          <td
-            class="border border-line px-1 py-0.5 text-right align-top tabular-nums"
-            :class="[
-              row.percent.primaryCls,
-              row.sepAfter && 'border-b-2 border-b-text/50',
-            ]"
-          >
-            {{ pct(row.percent.capped) }}
-            <CompareLine
-              v-if="row.compare"
-              class="tabular-nums"
-              :class="row.compare.percent.cls"
-              :text="row.compare.percent.text"
-            />
-          </td>
-          <td
-            class="border border-line px-1 py-0.5 text-right align-top tabular-nums text-muted"
-            :class="[
-              row.percent.overCls,
-              row.sepAfter && 'border-b-2 border-b-text/50',
-            ]"
-          >
-            {{ signedPct(row.percent.over) }}
-          </td>
-          <td
-            class="border border-line px-1 py-0.5 text-right align-top tabular-nums text-muted"
-            :class="[
-              row.rating.overCls,
-              row.sepAfter && 'border-b-2 border-b-text/50',
-            ]"
-          >
-            {{ signedInt(row.rating.over) }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <td
+              class="border border-line px-1 py-0.5 align-top"
+              :class="row.sepAfter && 'border-b-2 border-b-text/50'"
+            >
+              <div class="flex items-center">
+                <IconButton
+                  title="Show sources"
+                  :label="`Show sources for ${row.label}`"
+                  class="stat-info-btn"
+                  :data-stat-key="row.key"
+                  @click="toggleCard($event, row.key)"
+                >
+                  <CircleAlert />
+                </IconButton>
+                <span>{{ row.label }}</span>
+              </div>
+              <CompareLine
+                v-if="row.compare"
+                :text="`↳ ${compareName}`"
+                :title="compareName"
+                fit-right
+              />
+            </td>
+            <td
+              class="border border-line px-1 py-0.5 text-right align-top tabular-nums gap-0.5"
+              :class="[
+                row.rating.primaryCls,
+                row.sepAfter && 'border-b-2 border-b-text/50',
+              ]"
+              data-testid="stat-value"
+            >
+              {{ int(row.rating.total) }}
+              <CompareLine
+                v-if="row.compare"
+                class="tabular-nums"
+                :class="row.compare.rating.cls"
+                :text="row.compare.rating.text"
+              />
+            </td>
+            <td
+              class="border border-line px-1 py-0.5 text-right align-top tabular-nums"
+              :class="[
+                row.percent.primaryCls,
+                row.sepAfter && 'border-b-2 border-b-text/50',
+              ]"
+            >
+              {{ pct(row.percent.capped) }}
+              <CompareLine
+                v-if="row.compare"
+                class="tabular-nums"
+                :class="row.compare.percent.cls"
+                :text="row.compare.percent.text"
+              />
+            </td>
+            <td
+              class="border border-line px-1 py-0.5 text-right align-top tabular-nums text-muted"
+              :class="[
+                row.percent.overCls,
+                row.sepAfter && 'border-b-2 border-b-text/50',
+              ]"
+            >
+              {{ signedPct(row.percent.over) }}
+            </td>
+            <td
+              class="border border-line px-1 py-0.5 text-right align-top tabular-nums text-muted"
+              :class="[
+                row.rating.overCls,
+                row.sepAfter && 'border-b-2 border-b-text/50',
+              ]"
+            >
+              {{ signedInt(row.rating.over) }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <PanelHead>Other stats</PanelHead>
     <StatPanelPairsTable :rows="otherRows" :compare-label="compareName" />

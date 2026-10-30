@@ -30,6 +30,7 @@ describe("layerEditorUi store", () => {
       filter: "",
       status: "",
       q: "",
+      view: "list",
     });
   });
 

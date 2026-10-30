@@ -23,7 +23,7 @@ const model = defineModel<string>({ default: "" });
     <BaseInput
       v-model="model"
       type="text"
-      class="w-full pr-7!"
+      class="w-full pr-7! pointer-coarse:pr-[calc(var(--spacing-tap)+0.25rem)]!"
       :placeholder="placeholder"
       :data-testid="testid"
     />

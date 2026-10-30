@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A repeatable list of a bonus's input declarations (id / type / label / default, plus
 // bounds, step, presets and control for a number). The same row-mutating shape as
-// `DynamicStatRowList`.
+// `DynamicStatRowList`, the id leading the row so a phone gives it the card's first line.
 import ComboBox from "../ui/ComboBox.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -42,7 +42,7 @@ const controlOptions = [
 <template>
   <RepeatableRows
     :rows="rows"
-    row-class="bonus-input-row flex flex-wrap items-start gap-1.5 mb-1"
+    row-class="bonus-input-row flex md:flex-wrap items-start gap-1.5 mb-1"
     labeled-fields
     add-label="Add input"
     remove-label="Remove input"
@@ -50,43 +50,50 @@ const controlOptions = [
     @add="emit('add')"
     @remove="(i) => emit('remove', i)"
   >
-    <template #row="{ row }">
+    <template #lead="{ row }">
       <IdField
         v-if="row.frozen"
         :id="row.name"
         label="Id"
         existing
-        class="w-32"
+        class="md:w-32"
         data-testid="bonus-input-id"
       />
       <FormField v-else label="Id">
         <BaseInput
           v-model="row.name"
-          class="w-32"
+          class="w-full md:w-32"
           type="text"
           data-testid="bonus-input-id"
         />
       </FormField>
-      <FormField label="Type">
+    </template>
+    <template #row="{ row }">
+      <!-- A phone card stacks the fields at full width, the numbers two to a line. -->
+      <FormField label="Type" class="max-md:w-full">
         <ComboBox
-          class="w-28"
+          class="w-full md:w-28"
           :model-value="row.type"
           :options="typeOptions"
           data-testid="bonus-input-type"
           @update:model-value="(v) => (row.type = v as InputDraft['type'])"
         />
       </FormField>
-      <FormField label="Label (optional)">
+      <FormField label="Label (optional)" class="max-md:w-full">
         <BaseInput
           v-model="row.label"
-          class="w-40"
+          class="w-full md:w-40"
           type="text"
           data-testid="bonus-input-label"
         />
       </FormField>
-      <FormField v-if="row.type === 'boolean'" label="Default">
+      <FormField
+        v-if="row.type === 'boolean'"
+        label="Default"
+        class="max-md:w-full"
+      >
         <ComboBox
-          class="w-20"
+          class="w-full md:w-20"
           :model-value="String(row.on)"
           :options="onOffOptions"
           data-testid="bonus-input-default"
@@ -94,34 +101,41 @@ const controlOptions = [
         />
       </FormField>
       <template v-else>
-        <FormField
-          v-for="field in NUMBER_FIELDS"
-          :key="field.key"
-          :label="field.label"
-        >
-          <NumberOrPercentInput
-            v-model="row[field.key]"
-            :percent="row.type === 'percent'"
-            class="w-20"
-            :data-testid="`bonus-input-${field.key}`"
-          />
-        </FormField>
+        <div class="grid w-full grid-cols-2 gap-1.5 md:contents">
+          <FormField
+            v-for="field in NUMBER_FIELDS"
+            :key="field.key"
+            :label="field.label"
+          >
+            <NumberOrPercentInput
+              v-model="row[field.key]"
+              :percent="row.type === 'percent'"
+              class="w-full md:w-20"
+              :data-testid="`bonus-input-${field.key}`"
+            />
+          </FormField>
+        </div>
         <FormField
           label="Presets"
+          class="max-md:w-full"
           :hint="
             row.type === 'percent' ? 'comma-separated, in %' : 'comma-separated'
           "
         >
           <BaseInput
             v-model="row.presets"
-            class="w-32"
+            class="w-full md:w-32"
             type="text"
             data-testid="bonus-input-presets"
           />
         </FormField>
-        <FormField v-if="row.type === 'number'" label="Control">
+        <FormField
+          v-if="row.type === 'number'"
+          label="Control"
+          class="max-md:w-full"
+        >
           <ComboBox
-            class="w-44"
+            class="w-full md:w-44"
             :model-value="row.control"
             :options="controlOptions"
             data-testid="bonus-input-control"

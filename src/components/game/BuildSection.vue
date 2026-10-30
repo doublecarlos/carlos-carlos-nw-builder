@@ -64,9 +64,12 @@ const hasAssignments = computed(() => props.assignmentColumns > 0);
  *  controls line up across the whole editor. A point section adds one max-content stepper
  *  track plus a trailing filler every row spans, so the steppers neither wrap nor stretch and
  *  a picker still fills the width; other sections get one shrinking track that truncates a
- *  long picker summary. The column gap is declared here alone; subgrids inherit it. */
+ *  long picker summary. The column gap is declared here alone; subgrids inherit it.
+ *
+ *  A phone has no width for a label column: every row stacks its label over its control in
+ *  one track, and a point row wraps its steppers instead of scrolling them. */
 const bodyStyle = computed(() => ({
-  gridTemplateColumns: hasAssignments.value
+  "--section-columns": hasAssignments.value
     ? `11rem repeat(${props.assignmentColumns}, max-content) 1fr`
     : "11rem minmax(0, 1fr)",
 }));
@@ -126,8 +129,8 @@ const bodyStyle = computed(() => ({
 
     <div
       v-if="expanded"
-      class="bg-surface pb-2 pt-1 grid gap-x-2.5"
-      :class="hasAssignments && 'overflow-x-auto'"
+      class="bg-surface pb-2 pt-1 grid gap-x-2.5 grid-cols-(--section-columns) max-md:grid-cols-[minmax(0,1fr)]"
+      :class="hasAssignments && 'md:overflow-x-auto'"
       :style="bodyStyle"
       data-testid="section-body"
     >

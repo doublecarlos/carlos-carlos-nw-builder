@@ -5,6 +5,7 @@ import { effectScope } from "vue";
 import {
   useTooltipController,
   _resetTooltips,
+  revealsOnFocus,
 } from "../../src/composables/useTooltipController";
 
 /** Each tooltip instance lives in its own component scope; `onScopeDispose` is what unmounting
@@ -68,5 +69,25 @@ describe("useTooltipController", () => {
     const { value: other } = inScope(() => useTooltipController());
     other.show();
     expect(other.open.value).toBe(true);
+  });
+});
+
+describe("revealsOnFocus", () => {
+  it("opens for keyboard focus, before any press or after a key", () => {
+    expect(revealsOnFocus(true, null)).toBe(true);
+  });
+
+  it("opens for a visible focus that follows a mouse press, as on a text field", () => {
+    expect(revealsOnFocus(true, "mouse")).toBe(true);
+  });
+
+  it("stays shut for a focus that follows a tap, even a visible one", () => {
+    expect(revealsOnFocus(true, "touch")).toBe(false);
+    expect(revealsOnFocus(true, "pen")).toBe(false);
+  });
+
+  it("stays shut for a click's focus or a script's focus after one", () => {
+    expect(revealsOnFocus(false, null)).toBe(false);
+    expect(revealsOnFocus(false, "mouse")).toBe(false);
   });
 });

@@ -87,7 +87,7 @@ function update(preset: SectionPreset) {
       <template #trigger="{ toggle, attrs }">
         <BaseTooltip text="Apply a preset to this section, or save one from it">
           <BaseButton class="section-preset-btn" v-bind="attrs" @click="toggle">
-            <LayoutTemplate />Presets…
+            <LayoutTemplate /><span class="max-md:sr-only">Presets…</span>
           </BaseButton>
         </BaseTooltip>
       </template>

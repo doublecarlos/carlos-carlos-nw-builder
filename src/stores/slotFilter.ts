@@ -10,6 +10,7 @@
 // builds (the list it filters is the same shape either way) but not a reload.
 import { computed, ref } from "vue";
 import type { SupplyNeed } from "../types";
+import * as shell from "./shell";
 
 /** Free text, matched against slot label, section label, current choice and stat summary. */
 export const text = ref("");
@@ -47,9 +48,11 @@ export function clearNeed() {
  *
  * Replaces any need already filtered on rather than adding to it: "show me where this comes
  * from" is a question about one thing at a time, and the text/stat filters are left alone so
- * a user who had already narrowed to a section keeps that narrowing.
+ * a user who had already narrowed to a section keeps that narrowing. Brings the editor pane
+ * up on a phone, where the list is not beside the panel that asked.
  */
 export function showSuppliersOf(wanted: SupplyNeed, wantedLabel: string) {
+  shell.showPane("editor");
   need.value = wanted;
   label.value = wantedLabel;
 }

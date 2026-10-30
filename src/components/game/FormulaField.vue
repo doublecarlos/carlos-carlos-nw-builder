@@ -151,11 +151,13 @@ const reference = computed(() => {
 
 <template>
   <div class="flex min-w-0 flex-col gap-0.5">
-    <div class="flex flex-wrap items-start gap-1.5">
+    <div
+      class="flex items-start gap-1.5 max-md:flex-col max-md:items-stretch md:flex-wrap"
+    >
       <FormulaInput
         ref="input"
         v-model="formula"
-        class="min-w-56 flex-1"
+        class="flex-1 md:min-w-56"
         :issues="issues"
         :placeholder="placeholder"
         :testid="testid"
@@ -175,7 +177,7 @@ const reference = computed(() => {
       <BaseInput
         v-model="label"
         type="text"
-        class="w-36"
+        class="md:w-36"
         :placeholder="derivedLabel ?? 'Label (optional)'"
         :data-testid="`${testid}-label`"
       />

@@ -4,11 +4,16 @@
 // styling, menu and the keyboard contract live around it. The insertion line itself is a
 // list-level DropIndicator, not drawn per row. A `before` slot is kept for the layer enable
 // checkbox, a control rather than part of the name button.
+//
+// A mouse drags the whole row. A finger on the row scrolls the list, so a coarse pointer gets
+// a grip to drag from instead; the row's own handle props still do the work.
 import { computed, type Component, type Directive } from "vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import { EllipsisVertical } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
+import DragHandle from "./ui/DragHandle.vue";
+import { coarsePointer } from "../stores/viewport";
 import { isMac } from "../lib/platform";
 import {
   dragSource,
@@ -126,8 +131,10 @@ function onRowKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
+  <!-- Tap-sized on a coarse pointer, so the row holds its tap-sized buttons. One that
+       overflowed would scroll the list when focused, and a scroll closes the row menu. -->
   <div
-    class="nav-row relative flex cursor-grab select-none items-center gap-1 h-9 rounded-md py-1 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
+    class="nav-row relative flex cursor-grab select-none items-center gap-1 h-9 rounded-md py-1 pointer-coarse:h-tap pointer-coarse:py-0 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
     :class="[
       `nav-row--${kind}`,
       active && 'is-active bg-accent-soft',
@@ -136,6 +143,11 @@ function onRowKeydown(event: KeyboardEvent) {
     ]"
     v-bind="rowProps"
   >
+    <DragHandle
+      v-if="coarsePointer && !renaming"
+      class="flex-none"
+      data-testid="nav-drag-handle"
+    />
     <slot name="before" />
 
     <BaseInput
@@ -146,7 +158,7 @@ function onRowKeydown(event: KeyboardEvent) {
       class="nav-rename min-w-0 flex-1 focus:outline-none"
       @update:model-value="emit('rename-start', id, String($event))"
       @keydown.enter="emit('rename-commit')"
-      @keydown.esc="emit('rename-cancel')"
+      @keydown.esc.prevent="emit('rename-cancel')"
       @blur="emit('rename-commit')"
     />
 

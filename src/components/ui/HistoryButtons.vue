@@ -6,6 +6,7 @@
 import { computed } from "vue";
 import { Redo2, Undo2 } from "@lucide/vue";
 import IconButton from "./IconButton.vue";
+import { coarsePointer } from "../../stores/viewport";
 
 const props = withDefaults(
   defineProps<{
@@ -23,8 +24,11 @@ const props = withDefaults(
 
 defineEmits<{ undo: []; redo: [] }>();
 
-const describe = (verb: string, label: string, chord: string) =>
-  label ? `${verb}: ${label} (${chord})` : `${verb} (${chord})`;
+/** The chord is left off on a coarse pointer, where there is no keyboard to press it on. */
+const describe = (verb: string, label: string, chord: string) => {
+  const head = label ? `${verb}: ${label}` : verb;
+  return coarsePointer.value ? head : `${head} (${chord})`;
+};
 
 const undoTitle = computed(() => describe("Undo", props.undoLabel, "Ctrl+Z"));
 const redoTitle = computed(() =>

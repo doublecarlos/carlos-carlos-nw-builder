@@ -14,15 +14,19 @@
 // belongs to; the label cell's would otherwise run the full width of the stat's name.
 //
 // `title` carries the untruncated text -- the build-name variant is the one that overflows.
+// Below lg the wrapper's inline-size containment keeps that name out of the column's width, so
+// a long one truncates to the cell instead of widening the table past a narrow panel.
 defineProps<{ text: string; title?: string; fitRight?: boolean }>();
 </script>
 
 <template>
-  <span
-    class="block truncate border-t border-dashed border-muted leading-tight opacity-70"
-    :class="fitRight && 'ml-auto w-fit max-w-full'"
-    :title="title"
-    data-testid="compare-line"
-    >{{ text }}</span
-  >
+  <span class="block" :class="fitRight && 'max-lg:contain-inline-size'">
+    <span
+      class="block truncate border-t border-dashed border-muted leading-tight opacity-70"
+      :class="fitRight && 'ml-auto w-fit max-w-full'"
+      :title="title"
+      data-testid="compare-line"
+      >{{ text }}</span
+    >
+  </span>
 </template>

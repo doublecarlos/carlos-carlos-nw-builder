@@ -81,6 +81,7 @@ function dragHandleProps(id: string, index: number) {
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <BaseTooltip
         text="Layers apply bottom to top; a higher layer overrides the ones below it."
+        tappable
       >
         <span
           class="flex items-center gap-1 text-sm font-semibold uppercase text-muted"

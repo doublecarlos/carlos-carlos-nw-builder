@@ -8,6 +8,7 @@ import {
   pickerInput,
   expandAllSections,
 } from "./support/app";
+import { addLayer, layerRow } from "./support/nav";
 
 test("every label points at a control that exists", async ({ page }) => {
   await openBuilder(page);
@@ -141,4 +142,31 @@ test("the picker drops its listbox wiring once closed", async ({ page }) => {
   // Both would otherwise point at ids that no longer exist in the document.
   await expect(input).not.toHaveAttribute("aria-controls", /./);
   await expect(input).not.toHaveAttribute("aria-activedescendant", /./);
+});
+
+test("a form field's label names its control", async ({ page }) => {
+  await openBuilder(page);
+  await addLayer(page);
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await page.getByTestId("new-item").click();
+  await page.getByTestId("show-all-fields").click();
+  const form = page.getByTestId("layer-form-pane");
+
+  // Clicking a FormField label focuses the text input or combobox it wraps.
+  await form.getByText("Max copies (0 = unlimited)").click();
+  await expect(form.getByTestId("item-max-copies")).toBeFocused();
+  await expect(form.getByLabel("Quality")).toHaveAttribute("role", "combobox");
+
+  // Every label names a control that exists, and no label is left naming nothing.
+  const problems = await form.evaluate((root) =>
+    [...root.querySelectorAll("label")]
+      .filter((label) => {
+        const id = label.getAttribute("for");
+        return id
+          ? !document.getElementById(id)
+          : !label.querySelector("input, select, textarea");
+      })
+      .map((label) => label.textContent?.trim() ?? ""),
+  );
+  expect(problems).toEqual([]);
 });

@@ -20,8 +20,16 @@ const props = withDefaults(
     options: BonusOption[];
     placeholder?: string;
     self?: boolean;
+    /** Forwarded to ComboBox: open full-screen on a phone. */
+    phoneScreen?: boolean;
+    screenLabel?: string;
   }>(),
-  { placeholder: "- bonus -", self: false },
+  {
+    placeholder: "- bonus -",
+    self: false,
+    phoneScreen: false,
+    screenLabel: "Bonus",
+  },
 );
 
 const model = defineModel<string>({ default: "" });
@@ -42,6 +50,8 @@ const closedDisplay = computed(() =>
     :placeholder="placeholder"
     :show-empty-option="self"
     :closed-display="closedDisplay"
+    :phone-screen="phoneScreen"
+    :screen-label="screenLabel"
     menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
   >
     <template #empty>this bonus</template>

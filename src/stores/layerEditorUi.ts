@@ -5,12 +5,14 @@
 // URL (its own corner of the query string, cleared on unmount to keep a build's URL clean),
 // but a fresh mount needs *something* to fall back on once that URL is gone. Field names
 // mirror the router params so either can be the source. Only one of `slot`/`preset`/`sectionId`
-// is set at a time; `slotsGroup` is the Slots tab group last shown.
+// is set at a time; `slotsGroup` is the Slots tab group last shown. `view` is the phone's
+// master-detail half, never in the URL; like the rest of this record it lasts the session.
 import { reactive, readonly, shallowRef } from "vue";
 import * as router from "../lib/router";
 import * as layers from "./layers";
 import * as selection from "./selection";
 import type { Item, SectionPreset } from "../types";
+import type { LayerEditorView } from "../lib/layer-editor-layout";
 
 export interface LayerEditorUiState {
   section: string;
@@ -23,6 +25,7 @@ export interface LayerEditorUiState {
   filter: string;
   status: string;
   q: string;
+  view: LayerEditorView;
 }
 
 function defaults(): LayerEditorUiState {
@@ -37,6 +40,7 @@ function defaults(): LayerEditorUiState {
     filter: "",
     status: "",
     q: "",
+    view: "list",
   };
 }
 

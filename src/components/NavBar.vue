@@ -25,6 +25,7 @@ import * as selection from "../stores/selection";
 import * as buildEditor from "../stores/buildEditor";
 import * as trash from "../stores/trash";
 import * as confirm from "../stores/confirm";
+import { coarsePointer } from "../stores/viewport";
 import type { TrashEntry } from "../types";
 
 const root = useTemplateRef("root");
@@ -377,8 +378,15 @@ const moveToItems = (id: string) => {
   ];
 };
 
+/** The F2 hint only means something with a keyboard to hand. */
+const renameItem = () => ({
+  action: "rename",
+  label: coarsePointer.value ? "Rename" : "Rename (F2)",
+  icon: Pencil,
+});
+
 const buildMenuItems = (id: string) => [
-  { action: "rename", label: "Rename (F2)", icon: Pencil },
+  renameItem(),
   { action: "duplicate", label: "Duplicate", icon: Copy },
   { action: "download", label: "Download…", icon: Download },
   ...moveToItems(id),
@@ -393,7 +401,7 @@ const buildMenuItems = (id: string) => [
 ];
 
 const folderMenuItems = () => [
-  { action: "rename", label: "Rename (F2)", icon: Pencil },
+  renameItem(),
   { action: "new-build", label: "New build here", icon: Plus },
   { action: "delete", label: "Delete folder…", danger: true, icon: Trash },
 ];
@@ -407,7 +415,7 @@ function navMenuItems() {
 }
 
 const layerMenuItems = (id: string) => [
-  { action: "rename", label: "Rename (F2)", icon: Pencil },
+  renameItem(),
   { action: "duplicate", label: "Duplicate", icon: Copy },
   { action: "download", label: "Download…", icon: Download },
   {

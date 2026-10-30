@@ -6,6 +6,7 @@
 // acting on it; the marked text under the field shifts with it so the marks stay aligned.
 import { computed, nextTick, useId, useSlots, useTemplateRef } from "vue";
 import BaseLink from "./BaseLink.vue";
+import { useFormFieldControl } from "../../composables/useFormField";
 
 export interface FormulaInputIssue {
   /** Character offsets into the text. An empty range marks a position, such as the end. */
@@ -29,12 +30,26 @@ const props = withDefaults(
 
 const model = defineModel<string>({ default: "" });
 const slots = useSlots();
-const indent = computed(() => (slots.leading ? "pl-6 pr-1.5" : "px-1.5"));
+// A coarse pointer grows a leading button to a tap target, so the text clears that instead.
+const indent = computed(() =>
+  slots.leading
+    ? "pl-6 pointer-coarse:pl-[calc(var(--spacing-tap)+0.25rem)] pr-1.5"
+    : "px-1.5",
+);
 const field = useTemplateRef<HTMLInputElement>("field");
 const messagesId = useId();
+const { id: controlId, describedBy } = useFormFieldControl();
 
 const hasError = computed(() =>
   props.issues.some((issue) => (issue.level ?? "error") === "error"),
+);
+
+/** The issue list while there are issues, then the field's hint. */
+const describedByIds = computed(
+  () =>
+    [props.issues.length ? messagesId : undefined, describedBy.value]
+      .filter(Boolean)
+      .join(" ") || undefined,
 );
 
 /** The text cut at every issue boundary, each run knowing whether an issue covers it. An
@@ -91,6 +106,7 @@ defineExpose({ insert });
   <div class="flex min-w-0 flex-col gap-0.5">
     <div class="relative">
       <input
+        :id="controlId"
         ref="field"
         v-model="model"
         type="text"
@@ -100,7 +116,7 @@ defineExpose({ insert });
         :class="[hasError ? 'border-danger' : 'border-line', indent]"
         :placeholder="placeholder"
         :aria-invalid="hasError || undefined"
-        :aria-describedby="issues.length ? messagesId : undefined"
+        :aria-describedby="describedByIds"
         :data-testid="testid"
       />
       <span

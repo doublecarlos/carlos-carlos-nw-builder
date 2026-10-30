@@ -140,16 +140,29 @@ export async function cursorKey(page: Page): Promise<string | null> {
   return cursorRow(page).getAttribute("data-cursor-key");
 }
 
+/** Below `md` a build editor picker opens full-screen (ComboBoxScreen). */
+export function isPhoneViewport(page: Page): boolean {
+  return (page.viewportSize()?.width ?? Infinity) < 768;
+}
+
+/** A picker's full-screen surface on a phone. */
+export function pickerScreen(page: Page): Locator {
+  return page.getByTestId("picker-screen");
+}
+
 /** Opens a slot's picker, types the item's full (unique) name to filter down to it, and clicks
- * the matching row -- the same path a user takes, not a shortcut around ItemPicker. */
+ * the matching row -- the same path a user takes, not a shortcut around ItemPicker. On a phone
+ * that happens on the picker's full-screen surface. */
 export async function chooseItem(page: Page, slotId: string, itemName: string) {
   const row = slotRow(page, slotId);
   const input = pickerInput(row);
   await input.click();
-  await input.fill(itemName);
+  const phone = isPhoneViewport(page);
+  const list = phone ? pickerScreen(page) : row;
+  await (phone ? list.getByTestId("picker-search") : input).fill(itemName);
   // A universal insignia slot lists one candidate under every bonus heading it belongs to, so
   // an exact-name match is not always a single row.
-  await row.getByText(itemName, { exact: true }).first().click();
+  await list.getByText(itemName, { exact: true }).first().click();
   // Park the pointer clear of the row. The option just clicked can sit inside the row's own
   // box, and the item card opens on `mouseenter` -- a later `.hover()` on a row the pointer
   // never left would fire nothing.

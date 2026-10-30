@@ -118,6 +118,15 @@ export function separatorTop(
   return (above + below) / 2 - listTop;
 }
 
+/** Pure. Whether a press may arm a drag. A mouse drags from anywhere the handle props are
+ *  bound, which for a nav row is the whole row. A finger or pen drags only from a grip
+ *  (`[data-drag-handle]`, which is `touch-none`): anywhere else the browser owns the
+ *  gesture, and the move threshold would otherwise arm a drag on the first few px of a swipe
+ *  before the browser claimed it for scrolling. */
+export function armsDrag(pointerType: string, onGrip: boolean): boolean {
+  return pointerType === "mouse" || onGrip;
+}
+
 /** Pure. Autoscroll speed for the pointer's signed distance from a scrollable edge: negative
  *  near the top, positive near the bottom, 0 at `zone` px away, capped at `maxSpeed`. */
 export function autoscrollDelta(
@@ -363,7 +372,8 @@ function cancelDrag() {
 }
 
 /** Binds the element that starts a drag: a grip icon in the editor's rows (so inputs keep text
- *  selection) and the whole row in the sidebar nav. Rename mode turns dragging off.
+ *  selection) and the whole row in the sidebar nav. Rename mode turns dragging off. A touch
+ *  press arms only from a grip inside the bound element (see `armsDrag`).
  *
  *  `pointerdown` only arms a drag; it starts after `DRAG_THRESHOLD` px, so a click or small
  *  wiggle still selects the row. Presses in an editable descendant or a `data-no-drag` element
@@ -379,6 +389,9 @@ export function useDragHandle(getSource: () => DragSource): DragHandleProps {
         return;
 
       const handleEl = event.currentTarget as HTMLElement;
+      const grip = startedOn.closest("[data-drag-handle]");
+      if (!armsDrag(event.pointerType, !!grip && handleEl.contains(grip)))
+        return;
       const pointerId = event.pointerId;
       const startX = event.clientX;
       const startY = event.clientY;
@@ -417,9 +430,12 @@ export function useDragHandle(getSource: () => DragSource): DragHandleProps {
         finish(true);
       }
       // A capture loss ahead of the matching pointerup would strand the drag open; defer a
-      // frame so a same-frame pointerup finishes first and this no-ops via `finished`.
+      // frame so a same-frame pointerup finishes first and this no-ops via `finished`. Only
+      // the handle's own capture counts: a touch starts implicitly captured to the element
+      // under the finger, and `startDrag` taking it over fires a loss there.
       function onLostCapture(lostEvent: PointerEvent) {
-        if (lostEvent.pointerId !== pointerId) return;
+        if (lostEvent.pointerId !== pointerId || lostEvent.target !== handleEl)
+          return;
         requestAnimationFrame(() => finish(true));
       }
 

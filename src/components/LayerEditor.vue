@@ -18,7 +18,8 @@ import {
   watch,
 } from "vue";
 import BaseModal from "./ui/BaseModal.vue";
-import { useEventListener, useMediaQuery } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
+import * as viewport from "../stores/viewport";
 import * as confirm from "../stores/confirm";
 import * as draftGuard from "../stores/draftGuard";
 import ItemForm from "./game/ItemForm.vue";
@@ -50,14 +51,22 @@ const TooltipImportModal = defineAsyncComponent({
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
 import LayerSlotOutline from "./game/LayerSlotOutline.vue";
+import LayerActionsMenu from "./game/LayerActionsMenu.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
 import IconButton from "./ui/IconButton.vue";
+import BaseButton from "./ui/BaseButton.vue";
 import RailGutter from "./ui/RailGutter.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
-import { Download, RotateCcw, TriangleAlert, Upload } from "@lucide/vue";
+import {
+  ChevronLeft,
+  Download,
+  RotateCcw,
+  TriangleAlert,
+  Upload,
+} from "@lucide/vue";
 import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 import * as router from "../lib/router";
@@ -68,7 +77,13 @@ import * as layerEditorUi from "../stores/layerEditorUi";
 import * as rails from "../stores/rails";
 import { matchesQuery } from "../lib/text-filter";
 import { editorDb } from "../lib/editor-db";
+import { viewportKind } from "../lib/shell-layout";
+import {
+  layerEditorLayout,
+  type LayerEditorView,
+} from "../lib/layer-editor-layout";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
+import { useBackToClose } from "../composables/useBackToClose";
 import { provideEditorDb } from "../composables/useEditorDb";
 import type {
   CatalogGroup,
@@ -92,19 +107,12 @@ import type {
 } from "./game/LayerEntryList.vue";
 import type { OutlineKind, OutlineMove, OutlineRow } from "../lib/slot-outline";
 
-const entriesCollapsed = rails.collapsed("layerEntries");
+const storedEntriesCollapsed = rails.collapsed("layerEntries");
 const entriesWidth = rails.width("layerEntries");
 
 // The two panes only sit side by side from `lg` up; below it they stack, and a pinned width
 // would be a width on a full-bleed row. Matches the `lg:flex-row` on their container.
-const sideBySide = useMediaQuery("(min-width: 64rem)");
-
-/** Only an open rail in a side-by-side layout gets a width of its own. */
-const entriesStyle = computed(() =>
-  sideBySide.value && !entriesCollapsed.value
-    ? { width: `${entriesWidth.value}px` }
-    : undefined,
-);
+const sideBySide = viewport.isDesktop;
 
 const props = defineProps<{ layer: Layer }>();
 
@@ -137,6 +145,60 @@ provideEditorDb(db);
  *  to another without this component unmounting, and a stale binding would leak writes into
  *  the previous layer's stored state. */
 const ui = computed(() => layerEditorUi.getState(props.layer.id));
+
+/** The phone's master-detail half, remembered per layer like the rest of `ui`. */
+const view = computed<LayerEditorView>({
+  get: () => ui.value.view,
+  set: (next) => (ui.value.view = next),
+});
+
+const layout = computed(() =>
+  layerEditorLayout(
+    viewportKind(viewport.isDesktop.value, viewport.isPhone.value),
+    view.value,
+  ),
+);
+
+/** The stored collapse applies only where the list is a rail; a phone's list always shows. */
+const entriesCollapsed = computed(
+  () => layout.value.entriesRail && storedEntriesCollapsed.value,
+);
+
+/** Only an open rail in a side-by-side layout gets a width of its own. */
+const entriesStyle = computed(() =>
+  sideBySide.value && !entriesCollapsed.value
+    ? { width: `${entriesWidth.value}px` }
+    : undefined,
+);
+
+/** Back from a phone's form to its list. Leaving unmounts the form, so a dirty draft asks
+ *  first, the same as any other move away from it. False when the user stays.
+ *
+ *  The list keeps its entry marked, but the route stops naming it: a phone's route names an
+ *  entry only while its form shows, so a reload lands where the user was. */
+async function backToList(): Promise<boolean> {
+  if (!(await draftGuard.confirmDiscard())) return false;
+  view.value = "list";
+  writeRoute(routeParamsFor(activeGroup.value, null));
+  return true;
+}
+
+// On a phone the browser's Back leaves the form for the list, through the same guard. That
+// marker is the editor's only history step: every route write replaces instead (`writeRoute`),
+// so Back runs form, list, then whatever came before the layer.
+useBackToClose(() => layout.value.back && view.value === "detail", backToList);
+
+/** Writes this editor's route params, replacing the entry instead of pushing on a phone. */
+function writeRoute(
+  params: router.RouterParams,
+  { push = true }: { push?: boolean } = {},
+) {
+  router.apply(params, { push: push && !layout.value.back });
+}
+
+/** Whether any group has an entry selected, which a phone shows as its form. */
+const anySelected = () =>
+  EDITOR_GROUPS.some((group) => selectedBySection[group] != null);
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
@@ -713,6 +775,7 @@ function onPopState() {
   duplicateSlotSeed.value = null;
   const route = router.parse();
   restoreSelection(route);
+  view.value = anySelected() ? "detail" : "list";
   statusFilter.value = isValidStatusFilter(route.status) ? route.status : "all";
   query.value = route.q ?? "";
 }
@@ -724,10 +787,15 @@ async function switchTab(target: string) {
   if (tab.value === target) return;
   if (!(await draftGuard.confirmDiscard())) return;
   tab.value = target;
+  // A phone lands on the new tab's list, the way into any of its entries.
+  view.value = "list";
   const group = groupsOfTab(target)[0];
-  router.apply({
+  writeRoute({
     section: tabParam(target),
-    ...routeParamsFor(group, selectedBySection[group]),
+    ...routeParamsFor(
+      group,
+      layout.value.back ? null : selectedBySection[group],
+    ),
   });
 }
 
@@ -737,15 +805,21 @@ async function select(
 ) {
   if (row.status === "removed") return;
   const group = GROUP_OF_KIND[row.kind];
-  if (activeGroup.value === group && selectedBySection[group] === row.key)
+  if (activeGroup.value === group && selectedBySection[group] === row.key) {
+    // A phone's marked row reopens its form, and the route names the entry again.
+    const reopening = layout.value.back && view.value === "list";
+    view.value = "detail";
+    if (reopening) writeRoute(routeParamsFor(group, row.key), { push });
     return;
+  }
   if (!(await draftGuard.confirmDiscard())) return;
+  view.value = "detail";
   // Clear the sibling groups too, or their forms would stay selected behind the new one.
   for (const sibling of groupsOfTab(GROUPS[group].tab))
     selectedBySection[sibling] = null;
   selectedBySection[group] = row.key;
   slotsGroup.value = group;
-  router.apply(routeParamsFor(group, row.key), { push });
+  writeRoute(routeParamsFor(group, row.key), { push });
 }
 
 const selectedKey = computed(() => selectedBySection[activeGroup.value]);
@@ -758,7 +832,8 @@ async function newEntry(group: EditorGroup) {
     selectedBySection[sibling] = null;
   slotsGroup.value = group;
   newItemCounter.value++;
-  router.apply(routeParamsFor(group, null));
+  view.value = "detail";
+  writeRoute(routeParamsFor(group, null));
 }
 
 function newItem() {
@@ -790,7 +865,8 @@ async function duplicateItem() {
   duplicateItemSeed.value = item;
   selectedBySection.items = null;
   newItemCounter.value++;
-  router.apply({ item: null });
+  view.value = "detail";
+  writeRoute({ item: null });
   showNotice(`Duplicating "${item.name}". Edit and save to create a copy.`);
 }
 
@@ -803,7 +879,8 @@ async function createFromTooltip(draft: Partial<Item>) {
   selectedBySection.items = null;
   duplicateItemSeed.value = { id: "", name: "", ...draft } as Item;
   newItemCounter.value++;
-  router.apply({ item: null });
+  view.value = "detail";
+  writeRoute({ item: null });
   showTooltipImport.value = false;
   showNotice(
     `Filled ${Object.keys(draft).length} field(s) from the tooltip. Review and save to create the item.`,
@@ -839,7 +916,8 @@ async function duplicateBonus() {
   duplicateBonusSeed.value = bonus;
   selectedBySection.bonuses = null;
   newItemCounter.value++;
-  router.apply({ bonus: null });
+  view.value = "detail";
+  writeRoute({ bonus: null });
   showNotice(
     `Duplicating "${bonus.name || bonus.id}". Edit and save to create a copy.`,
   );
@@ -868,7 +946,8 @@ async function duplicateSlot() {
   selectedBySection.slots = null;
   slotsGroup.value = "slots";
   newItemCounter.value++;
-  router.apply(routeParamFor("slots", null));
+  view.value = "detail";
+  writeRoute(routeParamFor("slots", null));
   showNotice(
     `Duplicating "${slot.label || slot.id}". Edit and save to create a copy.`,
   );
@@ -892,7 +971,7 @@ function saveEntry(
     catalog.upsert(overlay.value, group, id, entity),
   );
   selectedBySection[group] = id;
-  router.apply(routeParamFor(group, id));
+  writeRoute(routeParamFor(group, id));
   showNotice(`Saved ${noun} "${label}"`);
 }
 
@@ -921,7 +1000,8 @@ function deleteEntry(group: EditorGroup) {
     catalog.remove(overlay.value, group, id),
   );
   selectedBySection[group] = null;
-  router.apply(routeParamFor(group, null));
+  view.value = "list";
+  writeRoute(routeParamFor(group, null));
   showNotice(`Removed ${noun} "${label}"`);
 }
 
@@ -953,7 +1033,7 @@ async function resetAll(event: MouseEvent) {
     title: "Discard changes",
     message: `Discard all ${changedCount.value} unsaved change${changedCount.value === 1 ? "" : "s"} in this layer?`,
     confirmLabel: "Discard",
-    note: confirm.UNDO_NOTE,
+    note: confirm.undoNote(),
   });
   if (!ok) return;
   commit(null, "Discard all changes", catalog.emptyOverlay());
@@ -962,7 +1042,8 @@ async function resetAll(event: MouseEvent) {
     selectedBySection[group] = null;
     Object.assign(cleared, routeParamFor(group, null));
   }
-  router.apply(cleared);
+  view.value = "list";
+  writeRoute(cleared);
   showNotice("Discarded every change. The layer is back to the shipped data.");
 }
 
@@ -974,7 +1055,8 @@ async function jumpTo(group: EditorGroup, id: string) {
   for (const sibling of groupsOfTab(target)) selectedBySection[sibling] = null;
   selectedBySection[group] = id;
   slotsGroup.value = group;
-  router.apply({
+  view.value = "detail";
+  writeRoute({
     section: tabParam(target),
     ...routeParamsFor(group, id),
   });
@@ -1023,7 +1105,7 @@ async function onDeleteBonusTop(event?: MouseEvent) {
     message: `Delete bonus “${label}”?`,
     confirmLabel: "Delete",
     danger: true,
-    note: confirm.UNDO_NOTE,
+    note: confirm.undoNote(),
     checkbox: members.length
       ? {
           label: `Also unlink from ${members.length} item${members.length === 1 ? "" : "s"}`,
@@ -1040,7 +1122,8 @@ async function onDeleteBonusTop(event?: MouseEvent) {
     catalog.remove(next, "bonuses", bonus.id),
   );
   selectedBySection.bonuses = null;
-  router.apply(routeParamFor("bonuses", null));
+  view.value = "list";
+  writeRoute(routeParamFor("bonuses", null));
   showNotice(`Removed bonus "${label}"`);
 }
 const onRevertBonusTop = () => revertEntry("bonuses");
@@ -1102,7 +1185,7 @@ async function onDeleteSection(event?: MouseEvent) {
     message: `Delete section “${label}”?`,
     confirmLabel: "Delete",
     danger: true,
-    note: confirm.UNDO_NOTE,
+    note: confirm.undoNote(),
     checkbox: members.length
       ? {
           label: `Also delete its slots and presets (${members.length})`,
@@ -1125,7 +1208,8 @@ async function onDeleteSection(event?: MouseEvent) {
     catalog.remove(next, "sections", section.id),
   );
   selectedBySection.sections = null;
-  router.apply(routeParamFor("sections", null));
+  view.value = "list";
+  writeRoute(routeParamFor("sections", null));
   showNotice(`Removed section "${label}"`);
 }
 
@@ -1220,10 +1304,10 @@ async function importOverlay(event: Event) {
 }
 
 watch(statusFilter, (value) => {
-  router.apply({ status: value === "all" ? null : value }, { push: false });
+  writeRoute({ status: value === "all" ? null : value }, { push: false });
 });
 watch(query, (value) => {
-  router.apply({ q: value || null }, { push: false });
+  writeRoute({ q: value || null }, { push: false });
 });
 
 // Mirror every field this component owns into the per-layer store, so a later remount (a
@@ -1281,10 +1365,13 @@ onMounted(() => {
     ui.value.slotsGroup = "sectionPresets";
     ui.value.preset = "";
     showNotice("New preset from the current build. Name it and save.");
+    view.value = "detail";
   } else if (newItemSeed) {
     showNewItemSeed(newItemSeed);
   } else {
     restoreSelection(source);
+    // A deep link or back/forward names what to show; a plain remount keeps the stored view.
+    if (routedActive) view.value = anySelected() ? "detail" : "list";
   }
   if (isValidStatusFilter(source.status)) statusFilter.value = source.status;
   if (source.q) query.value = source.q;
@@ -1316,6 +1403,7 @@ watch(
  *  since that is what a later remount restores from. */
 function showNewItemSeed(seed: Item) {
   tab.value = "items";
+  view.value = "detail";
   ui.value.section = "items";
   ui.value.item = "";
   const narrowedTo = [seed.filter, ...(seed.tags ?? [])]
@@ -1339,7 +1427,7 @@ watch(layerEditorUi.newItemSeed, () => {
 });
 
 onUnmounted(() => {
-  router.apply(
+  writeRoute(
     {
       item: null,
       bonus: null,
@@ -1362,8 +1450,13 @@ onUnmounted(() => {
     data-undo-scope="editor"
   >
     <!-- Layer header strip -->
-    <div class="mb-2 flex flex-none flex-wrap items-center gap-1.5">
-      <div class="flex items-center gap-1.5">
+    <div class="mb-2 flex flex-none flow-wrap items-center gap-1.5">
+      <!-- With the actions in a menu, this row keeps the menu at its end and the tabs wrap
+           below it. -->
+      <div
+        class="flex min-w-0 items-center gap-1.5"
+        :class="layout.actions === 'menu' && 'w-full'"
+      >
         <BaseCheckbox
           data-testid="layer-enabled"
           :model-value="props.layer.enabled"
@@ -1373,13 +1466,31 @@ onUnmounted(() => {
               layers.setLayerEnabled(props.layer.id, v)
           "
         />
-        <strong>{{ props.layer.name }}</strong>
-        <span class="text-muted tabular-nums"
+        <strong class="min-w-0 truncate">{{ props.layer.name }}</strong>
+        <span class="flex-none text-muted tabular-nums"
           >{{ entryCount }} entr{{ entryCount === 1 ? "y" : "ies" }}</span
         >
+        <template v-if="layout.actions === 'menu'">
+          <span class="flex-1"></span>
+          <LayerActionsMenu
+            :can-undo="canUndo"
+            :can-redo="canRedo"
+            :undo-label="undoLabel"
+            :redo-label="redoLabel"
+            :can-discard="Boolean(changedCount)"
+            @undo="undo()"
+            @redo="redo()"
+            @export="showExport = true"
+            @import="importOverlay"
+            @discard="resetAll"
+          />
+        </template>
       </div>
 
-      <span class="mx-1 h-4 w-px bg-line"></span>
+      <span
+        v-if="layout.actions === 'bar'"
+        class="mx-1 h-4 w-px bg-line"
+      ></span>
 
       <TabStrip>
         <TabButton
@@ -1390,7 +1501,10 @@ onUnmounted(() => {
           @click="switchTab(entry.id)"
         >
           {{ entry.label }}
-          <span class="opacity-75 tabular-nums">{{ entry.count }}</span>
+          <!-- Left out on a phone, so the four tabs fit one row. -->
+          <span class="opacity-75 tabular-nums max-md:hidden">{{
+            entry.count
+          }}</span>
         </TabButton>
       </TabStrip>
 
@@ -1406,7 +1520,10 @@ onUnmounted(() => {
         >{{ warnCount }} warning(s)</BaseBadge
       >
 
-      <span class="inline-flex flex-wrap gap-1.5 items-center text-lg">
+      <span
+        v-if="layout.actions === 'bar'"
+        class="inline-flex flow-wrap gap-1.5 items-center text-lg"
+      >
         <HistoryButtons
           testid="editor"
           :can-undo="canUndo"
@@ -1486,10 +1603,17 @@ onUnmounted(() => {
 
     <div class="flex min-h-0 flex-1 flex-col items-stretch gap-3 lg:flex-row">
       <!-- Narrowed or collapsed, the list hands its width to the form beside it -- the same
-           trade the build editor's rails offer. The gutter holds the toggle either way. -->
+           trade the build editor's rails offer. The gutter holds the toggle either way. A
+           phone's list has the pane to itself, so it fills it and scrolls inside. Stacked on
+           a tablet, the list is capped so the form below keeps most of the height, and the
+           margin keeps a touch-sized toggle from poking past the page's edge. -->
       <div
-        class="flex min-h-0 flex-none items-stretch"
-        :class="entriesCollapsed && 'rounded-md border border-line bg-surface'"
+        v-if="layout.list"
+        class="flex min-h-0 items-stretch md:max-lg:mr-2 md:max-lg:max-h-[40%]"
+        :class="[
+          layout.form ? 'flex-none' : 'flex-1',
+          entriesCollapsed && 'rounded-md border border-line bg-surface',
+        ]"
         :style="entriesStyle"
         :data-testid="
           entriesCollapsed ? 'layer-entries-collapsed' : 'layer-entries-column'
@@ -1525,6 +1649,7 @@ onUnmounted(() => {
           @restore="restore"
         />
         <RailGutter
+          v-if="layout.entriesRail"
           rail="layerEntries"
           side="left"
           label="the entry list"
@@ -1533,8 +1658,19 @@ onUnmounted(() => {
         />
       </div>
 
+      <!-- Outside the form's scroller, so it stays in reach however far down the form is. -->
+      <BaseButton
+        v-if="layout.form && layout.back"
+        variant="ghost"
+        class="-mb-2 flex-none self-start"
+        data-testid="layer-form-back"
+        @click="backToList"
+        ><ChevronLeft />Back to list</BaseButton
+      >
       <div
+        v-if="layout.form"
         class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface px-3 pb-3"
+        data-testid="layer-form-pane"
       >
         <ItemForm
           v-if="activeGroup === 'items'"

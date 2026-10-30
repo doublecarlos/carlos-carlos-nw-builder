@@ -727,7 +727,7 @@ function toggleJson(gIndex: number) {
               <p class="text-muted">
                 Shows a warning or error. Grants no stats.
               </p>
-              <div class="my-1.5 flex flex-wrap items-center gap-1.5">
+              <div class="my-1.5 flex items-center gap-1.5">
                 <FormSection sub inline>Severity</FormSection>
                 <SegmentedControl
                   v-model="grant.problemSeverity"
@@ -789,7 +789,7 @@ function toggleJson(gIndex: number) {
             v-if="grant.payload === 'flat' && grant.scale.formula.trim()"
           >
             <div
-              class="mb-1.5 flex flex-wrap items-center gap-1.5"
+              class="mb-1.5 flex flow-wrap items-center gap-1.5"
               data-testid="grant-scale-steps"
             >
               <span class="text-muted">Show a ladder over</span>
@@ -821,7 +821,7 @@ function toggleJson(gIndex: number) {
           </template>
 
           <FormSection sub>Name and description (optional)</FormSection>
-          <div class="mb-1.5 flex flex-wrap items-start gap-1.5">
+          <div class="mb-1.5 flex items-start gap-1.5">
             <IconButton
               v-if="!nameDescriptionActive(grant)"
               title="Add name and description"

@@ -64,8 +64,8 @@ const nearMissOnly = ref(false);
 const open = reactive<Record<string, boolean>>({});
 
 /** Narrows the build editor's slot list to the rows that could supply what one unmet
- *  condition counts (an item, a tag, an occurrence of another bonus). The list is in the next
- *  column over, already on screen, so there is nothing to navigate to. */
+ *  condition counts (an item, a tag, an occurrence of another bonus). The store brings the
+ *  list on screen, so there is nothing to navigate to here. */
 function locateNeed(need: SupplyNeed, label: string) {
   slotFilter.showSuppliersOf(need, label);
 }
@@ -299,15 +299,27 @@ const counts = computed(() => {
                 class="size-1.5 flex-none rounded-full"
                 :class="entry.dotClass"
               ></span>
+              <!-- A touch screen has no hover title, so an open entry spells out its whole
+                   title and qualifier instead of truncating them. -->
               <span
                 class="max-w-3/5 flex-none overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline"
-                :class="entry.muted && 'text-muted'"
+                :class="[
+                  entry.muted && 'text-muted',
+                  open[entry.id] &&
+                    'pointer-coarse:whitespace-normal pointer-coarse:wrap-break-word',
+                ]"
+                data-testid="bonus-entry-title"
                 >{{ entry.title }}</span
               >
               <span
                 v-if="entry.qualifier"
                 class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted"
+                :class="
+                  open[entry.id] &&
+                  'pointer-coarse:whitespace-normal pointer-coarse:wrap-break-word'
+                "
                 :title="entry.qualifier"
+                data-testid="bonus-entry-qualifier"
               >
                 {{ entry.qualifier }}
               </span>
@@ -342,6 +354,7 @@ const counts = computed(() => {
                 v-if="leaf.need"
                 class="ml-1 align-middle"
                 title="Show the slots that could supply this"
+                :label="`Show the slots that could supply ${leaf.label}`"
                 :data-testid="`bonus-need-locate-${entry.id}-${i}`"
                 @click="locateNeed(leaf.need, leaf.label)"
               >
@@ -361,6 +374,7 @@ const counts = computed(() => {
                     v-if="child.need"
                     class="ml-1 align-middle"
                     title="Show the slots that could supply this"
+                    :label="`Show the slots that could supply ${child.label}`"
                     :data-testid="`bonus-need-locate-${entry.id}-${i}-${j}`"
                     @click="locateNeed(child.need, child.label)"
                   >

@@ -24,7 +24,7 @@ const toneClass = computed(() =>
 </script>
 
 <template>
-  <BaseTooltip :text="tooltip" :width="300">
+  <BaseTooltip :text="tooltip" :width="300" tappable>
     <span
       class="flex items-center gap-1 whitespace-nowrap"
       :class="toneClass"
@@ -34,7 +34,8 @@ const toneClass = computed(() =>
     >
       <TriangleAlert v-if="storageFailed" class="h-[14px] w-[14px]" />
       <HardDrive v-else class="h-[14px] w-[14px]" />
-      {{ label }}
+      <!-- Below lg the icon alone carries it; the tooltip and screen readers keep the words. -->
+      <span class="max-lg:sr-only">{{ label }}</span>
     </span>
   </BaseTooltip>
 </template>

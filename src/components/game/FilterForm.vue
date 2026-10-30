@@ -155,7 +155,7 @@ function save() {
       Fields the item form shows for this category. Fields that no filter claims
       show on every item.
     </FormSectionDescription>
-    <div class="mb-2 flex flex-wrap gap-x-4 gap-y-1">
+    <div class="mb-2 flex flow-wrap gap-x-4 gap-y-1">
       <BaseCheckbox
         v-for="group in FIELD_GROUP_OPTIONS"
         :key="group.value"

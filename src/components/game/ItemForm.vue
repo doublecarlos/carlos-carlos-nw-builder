@@ -625,7 +625,7 @@ function showsGroup(group: FieldGroup): boolean {
           ><Trash
         /></IconButton>
       </FormSection>
-      <div class="flex flex-wrap items-center gap-1.5 mb-2">
+      <div class="flex items-center gap-1.5 mb-2">
         <IconButton
           v-if="!descriptionActive"
           title="Add description"
@@ -674,7 +674,7 @@ function showsGroup(group: FieldGroup): boolean {
       <FormSection data-testid="group-allowed-class"
         >Class restrictions</FormSection
       >
-      <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+      <div class="mb-1.5 flex flow-wrap gap-x-3 gap-y-0.5">
         <BaseCheckbox
           v-for="cls in classes"
           :key="cls.value"
@@ -694,7 +694,7 @@ function showsGroup(group: FieldGroup): boolean {
         >For boons, leveling attribute scores, and other point assignment
         slots.</FormSectionDescription
       >
-      <div class="flex flex-wrap items-center gap-1.5 mb-2">
+      <div class="flex flex-col items-start gap-1.5 mb-2">
         <IconButton
           v-if="!repetitionActive"
           title="Add inline repetition"
@@ -711,6 +711,7 @@ function showsGroup(group: FieldGroup): boolean {
         /></IconButton>
         <FormGrid
           v-if="repetitionActive"
+          class="w-full"
           data-testid="inline-repetition-fields"
         >
           <FormField label="Min">
@@ -755,10 +756,12 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('insignia')">
       <FormSection data-testid="group-insignia">Insignia</FormSection>
-      <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <div
+        class="mb-1.5 flex items-center gap-x-4 gap-y-1.5 max-md:flex-col max-md:items-stretch md:flex-wrap"
+      >
         <FormField label="Insignia shape">
           <ComboBox
-            class="w-44"
+            class="md:w-44"
             data-testid="item-insignia-shape"
             :options="recipeOptions"
             :model-value="draft.insigniaShape"
@@ -767,7 +770,7 @@ function showsGroup(group: FieldGroup): boolean {
         </FormField>
         <FormField label="Preferred version">
           <ComboBox
-            class="w-80"
+            class="md:w-80"
             data-testid="item-preferred-variant"
             :options="preferredVariantOptions"
             :model-value="draft.preferredVariant"
@@ -784,26 +787,36 @@ function showsGroup(group: FieldGroup): boolean {
 
       <RepeatableRows
         :rows="draft.insigniaSlots"
-        row-class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+        row-class="insignia-slot-row mb-1 flex md:flex-wrap items-center gap-1.5"
         add-label="Add insignia slot"
         remove-label="Remove insignia slot"
         add-testid="item-add-insignia-slot"
         @add="addInsigniaSlot"
         @remove="removeInsigniaSlot"
       >
-        <template #row="{ row, index }">
+        <template #lead="{ row, index }">
           <FormField :label="`Slot ${index + 1} shape`">
             <ComboBox
-              class="w-44"
+              class="w-full md:w-44"
               :data-testid="`item-insignia-slot-${index}`"
               :options="slotShapeOptions"
               :model-value="row.shape"
+              phone-screen
+              :screen-label="`Slot ${index + 1} shape`"
               @update:model-value="(v) => (row.shape = v)"
             />
           </FormField>
-          <FormField v-if="!row.shape || row.preferred" label="Prefers">
+        </template>
+        <template #row="{ row, index }">
+          <FormField
+            v-if="!row.shape || row.preferred"
+            label="Prefers"
+            class="w-full md:w-auto"
+          >
             <ComboBox
-              class="w-44"
+              class="w-full md:w-44"
+              phone-screen
+              screen-label="Prefers"
               :data-testid="`item-insignia-slot-preferred-${index}`"
               :options="preferredOptions"
               :model-value="row.preferred"
@@ -823,7 +836,7 @@ function showsGroup(group: FieldGroup): boolean {
       >
       <RepeatableRows
         :rows="draft.insigniaRecipe"
-        row-class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+        row-class="insignia-recipe-row mb-1 flex items-center gap-1.5"
         add-label="Add recipe shape"
         remove-label="Remove recipe shape"
         add-testid="item-add-recipe-shape"
@@ -893,24 +906,29 @@ function showsGroup(group: FieldGroup): boolean {
       </FormSectionDescription>
       <RepeatableRows
         :rows="draft.defaultParams"
-        row-class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+        row-class="default-param-row flex md:flex-wrap items-center gap-1.5 mb-1"
         add-label="Add default build parameter"
         remove-label="Remove default build parameter"
         @add="addDefaultParam"
         @remove="removeDefaultParam"
       >
-        <template #row="{ row }">
+        <template #lead="{ row }">
           <ComboBox
-            class="w-52"
+            class="w-full md:w-52"
             :model-value="row.slotId"
             :options="defaultParamSlotOptions"
             placeholder="- pick a build parameter -"
+            phone-screen
+            screen-label="Build parameter"
             @update:model-value="(v) => (row.slotId = v)"
           />
+        </template>
+        <template #row="{ row }">
           <BuildParamInput
             v-if="slotForDefaultParam(row.slotId)"
             v-model="row.value"
             :slot-def="slotForDefaultParam(row.slotId)!"
+            phone-screen
             >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
           >
         </template>
@@ -926,23 +944,27 @@ function showsGroup(group: FieldGroup): boolean {
       </FormSectionDescription>
       <RepeatableRows
         :rows="draft.publishes"
-        row-class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+        row-class="publishes-row flex md:flex-wrap items-center gap-1.5 mb-1"
         add-label="Add published value"
         remove-label="Remove published value"
         @add="addPublishes"
         @remove="removePublishes"
       >
-        <template #row="{ row, index }">
+        <template #lead="{ row, index }">
           <BaseInput
             v-model="row.path"
-            class="w-52"
+            class="w-full md:w-52"
             type="text"
             placeholder="Context path, e.g. class"
+            aria-label="Context path"
             :data-testid="`publishes-path-${index}`"
           />
+        </template>
+        <template #row="{ row, index }">
           <BaseInput
             v-model="row.value"
-            class="w-52"
+            class="w-full md:w-52"
+            aria-label="Value"
             type="text"
             placeholder="Value"
             :data-testid="`publishes-value-${index}`"
@@ -958,14 +980,16 @@ function showsGroup(group: FieldGroup): boolean {
         Builds using a retired item will still work, and the Build Editor will
         offer the replacement set below.
       </FormSectionDescription>
-      <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <div
+        class="mb-1.5 flex items-center gap-x-4 gap-y-1.5 max-md:flex-col max-md:items-stretch md:flex-wrap"
+      >
         <BaseCheckbox
           v-model="draft.hideFromPicker"
           data-testid="item-hide-from-picker"
         >
           Retire item
         </BaseCheckbox>
-        <div class="flex min-w-80 flex-1 items-center gap-1.5">
+        <div class="flex flex-1 items-center gap-1.5 md:min-w-80">
           <span class="whitespace-nowrap text-muted">Replaced by</span>
           <ComboBox
             class="min-w-0 flex-1"
@@ -980,28 +1004,35 @@ function showsGroup(group: FieldGroup): boolean {
       <template v-if="draft.replacedBy">
         <RepeatableRows
           :rows="draft.replacedByValues"
-          row-class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+          row-class="replaced-by-value-row flex md:flex-wrap items-center gap-1.5 mb-1"
           add-label="Add carried value"
           remove-label="Remove carried value"
           add-testid="item-add-carried-value"
           @add="addReplacedByValue"
           @remove="removeReplacedByValue"
         >
-          <template #row="{ row }">
+          <template #lead="{ row }">
             <FormField label="Carry stat">
               <ComboBox
-                class="combo--stat w-52"
+                class="combo--stat w-full md:w-52"
                 :model-value="row.stat"
                 :options="statPickerOptions"
                 placeholder="- pick a stat -"
+                phone-screen
+                screen-label="Carry stat"
                 @update:model-value="(v) => (row.stat = v)"
               />
             </FormField>
-            <FormField label="Value on the replacement">
+          </template>
+          <template #row="{ row }">
+            <FormField
+              label="Value on the replacement"
+              class="w-full md:w-auto"
+            >
               <StatValueInput
                 v-model="row.value"
                 :stat-key="row.stat"
-                class="w-24"
+                class="w-full md:w-24"
                 step="any"
               />
             </FormField>

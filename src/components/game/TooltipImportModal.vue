@@ -179,7 +179,7 @@ useEventListener(document, "paste", onPaste);
     @drop="onDrop"
   >
     <div class="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4">
-      <div class="flex flex-wrap items-baseline gap-2">
+      <div class="flex flow-wrap items-baseline gap-2">
         <span class="text-muted">Paste or drop a screenshot.</span>
         <span class="flex-1"></span>
         <BaseButton as="label" :disabled="busy"

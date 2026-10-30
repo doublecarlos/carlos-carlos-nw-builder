@@ -16,6 +16,7 @@ import { computed, useId, useTemplateRef, watch } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { filterAndRank } from "../../lib/text-filter";
 import { useMenuNavigation } from "../../composables/useMenuNavigation";
+import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 import type { ComboBoxOption } from "./ComboBox.vue";
@@ -42,6 +43,7 @@ defineSlots<{
 }>();
 
 const model = defineModel<string[]>({ default: () => [] });
+const { id: controlId, describedBy } = useFormFieldControl();
 
 const optionByValue = computed(
   () => new Map(props.options.map((option) => [option.value, option])),
@@ -171,8 +173,10 @@ function onPaste(event: ClipboardEvent) {
     </span>
 
     <input
+      :id="controlId"
       ref="input"
       v-model="query"
+      :aria-describedby="describedBy"
       data-testid="token-query"
       class="min-w-20 flex-1 border-0 bg-transparent px-0.5 py-0.5 outline-none"
       type="text"

@@ -7,9 +7,19 @@
 // `/builds/abc` would 404 on refresh. `?build=abc` always resolves, because the path never
 // changes. The hash is carried through untouched: nothing in the app puts anything there, and
 // dropping it would be a side effect this module has no reason to cause.
+//
+// Writes go beneath any open overlay's Back marker (lib/back-to-close.ts), which can make them
+// wait a moment for history to step back first. Until they land, `parse` answers with the
+// params they will write, so the app reads one consistent route either way.
+import { beneathBack } from "./back-to-close";
+
+/** The params of the last write still waiting to land, if any. */
+let pending: Record<string, string> | null = null;
 
 export const parse = (): Record<string, string> =>
-  Object.fromEntries(new URLSearchParams(window.location.search));
+  pending
+    ? { ...pending }
+    : Object.fromEntries(new URLSearchParams(window.location.search));
 
 const serialize = (params: Record<string, string | null | undefined>) => {
   const qs = new URLSearchParams();
@@ -38,15 +48,16 @@ export function apply(
   { push = true }: { push?: boolean } = {},
 ) {
   const current = parse();
-  const merged: Record<string, string | null | undefined> = {
-    ...current,
-    ...partial,
-  };
-  for (const key of Object.keys(merged)) {
-    if (merged[key] == null || merged[key] === "") delete merged[key];
+  const merged: Record<string, string> = {};
+  for (const [key, value] of Object.entries({ ...current, ...partial })) {
+    if (value != null && value !== "") merged[key] = value;
   }
   const changed = JSON.stringify(merged) !== JSON.stringify(current);
-  const url = serialize(merged);
-  if (push && changed) window.history.pushState(merged, "", url);
-  else window.history.replaceState(merged, "", url);
+  pending = merged;
+  beneathBack(() => {
+    const url = serialize(merged);
+    if (push && changed) window.history.pushState(merged, "", url);
+    else window.history.replaceState(merged, "", url);
+    if (pending === merged) pending = null;
+  });
 }
