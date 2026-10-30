@@ -131,8 +131,10 @@ function onRowKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
+  <!-- Tap-sized on a coarse pointer, so the row holds its tap-sized buttons. One that
+       overflowed would scroll the list when focused, and a scroll closes the row menu. -->
   <div
-    class="nav-row relative flex cursor-grab select-none items-center gap-1 h-9 rounded-md py-1 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
+    class="nav-row relative flex cursor-grab select-none items-center gap-1 h-9 rounded-md py-1 pointer-coarse:h-tap pointer-coarse:py-0 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
     :class="[
       `nav-row--${kind}`,
       active && 'is-active bg-accent-soft',
