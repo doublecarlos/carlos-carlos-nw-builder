@@ -3,7 +3,7 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { chooseItem, ensureSectionExpanded, openBuilder } from "../support/app";
 import { addBuild, addLayer, buildRow, layerRow } from "../support/nav";
-import { requireBox } from "../support/dragDrop";
+import { center, touchDrag } from "../support/touch";
 import {
   MIN_SUPPORTED_WIDTH,
   expectNoHorizontalScroll,
@@ -43,42 +43,6 @@ async function expectFillsViewport(page: Page, modal: Locator) {
   }));
   expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
   await expectNoHorizontalScroll(page);
-}
-
-/** Real touch input through CDP, so the browser sees a finger: pointer events arrive with
- *  `pointerType: "touch"` and an unclaimed move scrolls the page as a swipe would. */
-async function touchDrag(
-  page: Page,
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-  steps = 12,
-) {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [from],
-  });
-  for (let i = 1; i <= steps; i++) {
-    await cdp.send("Input.dispatchTouchEvent", {
-      type: "touchMove",
-      touchPoints: [
-        {
-          x: from.x + ((to.x - from.x) * i) / steps,
-          y: from.y + ((to.y - from.y) * i) / steps,
-        },
-      ],
-    });
-  }
-  await cdp.send("Input.dispatchTouchEvent", {
-    type: "touchEnd",
-    touchPoints: [],
-  });
-  await cdp.detach();
-}
-
-async function center(target: Locator) {
-  const box = await requireBox(target);
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
 test.describe("modals at the narrowest width", () => {
