@@ -1104,7 +1104,7 @@ watch(
          is positioned, so its dropdowns are stacked within it and cannot outrank a later sibling
          on their own -- the bar has to win the comparison for them. -->
     <div
-      class="sticky top-0 z-toolbar flex flex-col flex-wrap gap-2 border-b border-line bg-surface px-3.5 py-2"
+      class="sticky top-0 z-toolbar flex flex-col gap-2 border-b border-line bg-surface px-3.5 py-2"
     >
       <!-- A phone has no room to keep these on screen: they scroll with the list instead. -->
       <QuickOptions
@@ -1112,7 +1112,7 @@ watch(
         class="flex-1"
         :build="build"
       />
-      <div class="flex flex-wrap items-center gap-1.5">
+      <div class="flex flow-wrap items-center gap-1.5">
         <BaseInput
           v-model="filterText"
           type="search"

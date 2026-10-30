@@ -16,7 +16,7 @@ const emit = defineEmits<{ add: []; remove: [index: number] }>();
 <template>
   <RepeatableRows
     :rows="rows"
-    row-class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
+    row-class="stat-row flex md:flex-wrap items-center gap-1.5 mb-1"
     add-label="Add stat"
     remove-label="Remove stat"
     @add="emit('add')"

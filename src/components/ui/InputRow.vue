@@ -3,21 +3,25 @@
 // column is a stepper's width, so a bare input stretches to fill it and every description in a
 // stack starts at the same x. `note` renders muted after the description.
 //
-// When the description cannot keep 10rem beside the control, it moves onto its own line under
-// the control. This is a wrapping flex row rather than a container query: rows like
-// PointAssignmentRow size an InputRow to its content, and a size container there would
-// collapse to zero width.
+// A phone has no room for the column: the description reads first and the control sits under
+// it, left-aligned like the phone's other build rows.
 </script>
 
 <template>
   <div
     data-testid="input-row"
-    class="flex flex-wrap items-center gap-x-2 gap-y-0.5"
+    class="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-2 max-md:flex max-md:flex-col max-md:items-start max-md:gap-y-1"
   >
-    <div class="flex w-28 flex-none items-center justify-end gap-1">
+    <div
+      data-testid="input-row-control"
+      class="flex min-w-0 items-center justify-end gap-1 max-md:order-last max-md:max-w-full max-md:min-w-28 max-md:justify-start"
+    >
       <slot />
     </div>
-    <div class="flex min-w-0 flex-1 basis-40 flex-wrap items-baseline">
+    <div
+      data-testid="input-row-description"
+      class="min-w-0 flex flex-wrap items-baseline"
+    >
       <span>
         <slot name="description" />
       </span>

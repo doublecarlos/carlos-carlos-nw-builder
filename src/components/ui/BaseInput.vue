@@ -25,7 +25,9 @@ const model = defineModel<string | number | null>({ default: "" });
 
 /** A caller-given `id` falls through onto the input, so the field label must name that one. */
 const attrs = useAttrs();
-const id = useFormFieldControl(() => attrs.id as string | undefined);
+const { id, describedBy } = useFormFieldControl(
+  () => attrs.id as string | undefined,
+);
 
 /** Mirrors Vue's own `v-model.number`: mid-typing states like "-" or "1." are left as the raw
  *  string rather than snapped to NaN or 0. */
@@ -43,6 +45,7 @@ function onInput(event: Event) {
 <template>
   <input
     :id="id"
+    :aria-describedby="describedBy"
     :value="model"
     :type="type"
     class="rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"

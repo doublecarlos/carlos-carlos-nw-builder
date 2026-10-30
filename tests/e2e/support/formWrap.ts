@@ -127,7 +127,8 @@ export function raggedRows(scope: Locator): Promise<string[]> {
 }
 
 /** Ad-hoc `flex-wrap` rows under `scope` that broke unevenly: some of their items moved to a
- *  later line while others share one. A row stacked one item per line reads as intended. */
+ *  later line while others share one. A row stacked one item per line reads as intended, and
+ *  a `flow-wrap` row is a flow of independent items by design (see base.css). */
 export function brokenFlexRows(scope: Locator): Promise<string[]> {
   return scope.evaluate((root) => {
     const found: string[] = [];
@@ -137,6 +138,8 @@ export function brokenFlexRows(scope: Locator): Promise<string[]> {
       if (!style.display.endsWith("flex") || style.flexWrap !== "wrap")
         continue;
       if (style.flexDirection.startsWith("column")) continue;
+      if ([...row.classList].some((name) => name.endsWith("flow-wrap")))
+        continue;
       const items = [...row.children].filter(
         (child) =>
           child.checkVisibility() &&

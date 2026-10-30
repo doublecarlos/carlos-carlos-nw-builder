@@ -172,7 +172,7 @@ async function onImportFile(event: Event) {
   <!-- Wraps only below lg, and only to give a notice a row of its own. The padding clears a
        phone's notch and rounded corners; the insets are zero everywhere else. -->
   <header
-    class="flex items-center gap-2.5 border-b border-line bg-surface pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-2 pl-[max(0.5rem,env(safe-area-inset-left))] max-lg:flex-wrap"
+    class="flex items-center gap-2.5 border-b border-line bg-surface pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-2 pl-[max(0.5rem,env(safe-area-inset-left))] max-lg:flow-wrap"
     data-testid="app-header"
   >
     <!-- Below lg the nav lives in a drawer, and this is the way in. -->

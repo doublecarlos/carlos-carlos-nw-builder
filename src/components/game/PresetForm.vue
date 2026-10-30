@@ -331,6 +331,10 @@ function save() {
     preset: toPreset(draft.value, { id: presetId(draft.value), db: props.db }),
   });
 }
+/** A slot-value row: remove, the slot, then its value. A phone keeps the slot beside the
+ *  remove button and puts the value under the slot, so the row never breaks unevenly. */
+const SLOT_ROW =
+  "flex gap-1.5 md:flex-wrap max-md:grid max-md:grid-cols-[auto_minmax(0,1fr)]";
 </script>
 
 <template>
@@ -382,13 +386,14 @@ function save() {
       <div
         v-for="(row, index) in draft.paramRows"
         :key="index"
-        class="preset-row mb-1 flex flex-wrap items-center gap-1.5"
+        class="preset-row mb-1 items-center"
+        :class="SLOT_ROW"
       >
         <IconButton title="Remove" @click="removeParamRow(index)"
           ><Trash
         /></IconButton>
         <ComboBox
-          class="w-52"
+          class="md:w-52"
           :model-value="row.slotId"
           :options="paramSlotOptions"
           placeholder="- pick a slot -"
@@ -397,6 +402,7 @@ function save() {
         <BuildParamInput
           v-if="paramSlotDef(row.slotId)"
           v-model="row.value"
+          class="max-md:col-start-2"
           :slot-def="paramSlotDef(row.slotId)!"
         />
       </div>
@@ -413,13 +419,14 @@ function save() {
       <div
         v-for="(row, index) in draft.itemRows"
         :key="index"
-        class="preset-row mb-1 flex flex-wrap items-center gap-1.5"
+        class="preset-row mb-1 items-center"
+        :class="SLOT_ROW"
       >
         <IconButton title="Remove" @click="removeItemRow(index)"
           ><Trash
         /></IconButton>
         <ComboBox
-          class="w-52"
+          class="md:w-52"
           :model-value="row.slotId"
           :options="itemSlotOptions"
           placeholder="- pick a slot -"
@@ -428,7 +435,7 @@ function save() {
         <ItemPicker
           v-if="itemSlotDef(row.slotId)"
           v-model="row.choice"
-          class="w-64"
+          class="max-md:col-start-2 md:w-64"
           :items="db.forSlot(row.slotId)"
           :selected-item="db.get(row.choice)"
           :db="db"
@@ -436,7 +443,7 @@ function save() {
         <span
           v-for="config in db.get(row.choice)?.dynamicStats ?? []"
           :key="config.stat"
-          class="flex items-center gap-1"
+          class="flex items-center gap-1 max-md:col-start-2"
         >
           <BaseInput
             v-model.number="row.values[config.stat]"
@@ -460,13 +467,14 @@ function save() {
       <div
         v-for="(row, index) in draft.assignmentRows"
         :key="index"
-        class="preset-row mb-1.5 flex flex-wrap items-start gap-1.5"
+        class="preset-row mb-1.5 items-start"
+        :class="SLOT_ROW"
       >
         <IconButton title="Remove" @click="removeAssignmentRow(index)"
           ><Trash
         /></IconButton>
         <ComboBox
-          class="w-52"
+          class="md:w-52"
           :model-value="row.slotId"
           :options="assignmentSlotOptions"
           placeholder="- pick a slot -"
@@ -474,6 +482,7 @@ function save() {
         />
         <PointAssignmentInput
           v-if="assignmentSlotDef(row.slotId)"
+          class="max-md:col-start-2"
           :slot-def="assignmentSlotDef(row.slotId)!"
           :values="row.counts"
           @change="
@@ -581,13 +590,14 @@ function save() {
       <div
         v-for="(row, index) in draft.clearRows"
         :key="index"
-        class="preset-clear-row mb-1 flex flex-wrap items-center gap-1.5"
+        class="preset-clear-row mb-1 items-center"
+        :class="SLOT_ROW"
       >
         <IconButton title="Remove" @click="removeClearRow(index)"
           ><Trash
         /></IconButton>
         <ComboBox
-          class="w-52"
+          class="md:w-52"
           :model-value="row.slotId"
           :options="clearableSlotOptions"
           placeholder="- pick a slot -"

@@ -140,7 +140,7 @@ const stableGroup = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2.5">
+  <div class="flex flow-wrap items-center gap-2.5">
     <ItemPicker
       ref="picker"
       :placeholder="placeholder"

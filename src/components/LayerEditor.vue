@@ -1425,7 +1425,7 @@ onUnmounted(() => {
     data-undo-scope="editor"
   >
     <!-- Layer header strip -->
-    <div class="mb-2 flex flex-none flex-wrap items-center gap-1.5">
+    <div class="mb-2 flex flex-none flow-wrap items-center gap-1.5">
       <!-- With the actions in a menu, this row keeps the menu at its end and the tabs wrap
            below it. -->
       <div
@@ -1497,7 +1497,7 @@ onUnmounted(() => {
 
       <span
         v-if="layout.actions === 'bar'"
-        class="inline-flex flex-wrap gap-1.5 items-center text-lg"
+        class="inline-flex flow-wrap gap-1.5 items-center text-lg"
       >
         <HistoryButtons
           testid="editor"

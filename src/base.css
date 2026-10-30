@@ -164,6 +164,13 @@
   }
 }
 
+/* A wrapping flow by design: independent items (checkboxes, chips, toolbar buttons) where any
+ * break reads fine. Form control rows outside ui/ do not wrap (see eslint.config.js); a flow
+ * that should says so with this instead of `flex-wrap`, and the e2e wrap checks skip it. */
+@utility flow-wrap {
+  flex-wrap: wrap;
+}
+
 @layer base {
   html {
     font-size: 14px;

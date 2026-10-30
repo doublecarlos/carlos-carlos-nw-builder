@@ -1,7 +1,6 @@
 // Representative editor forms at phone widths, checked for the ways a form wraps badly: a button
 // label broken over lines, anything scrolling sideways, and a FormGrid or SegmentedControl whose
-// items on one visual row disagree on top or height. The primitives must pass everywhere; the
-// ad-hoc rows still waiting for them are listed in KNOWN_ADHOC.
+// items on one visual row disagree on top or height, or an ad-hoc row broken unevenly.
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { openBuilder } from "../support/app";
 import { addLayer, layerRow } from "../support/nav";
@@ -41,61 +40,31 @@ async function newInSlotsTab(
   await expect(form(page)).toBeVisible();
 }
 
-/** Every offender under `scope`, primitives and ad-hoc rows alike. */
-async function offenders(scope: Locator) {
-  return [
-    ...(await wrappedButtons(scope)),
-    ...(await sidewaysScroll(scope)),
-    ...(await raggedRows(scope)),
-    ...(await brokenFlexRows(scope)),
-  ];
-}
-
-/** The primitives' own offenders: a wrapped segment, or a ragged FormGrid/SegmentedControl. */
-async function primitiveOffenders(scope: Locator) {
-  return [
-    ...(await wrappedButtons(scope, '[data-testid="segmented-group"] button')),
-    ...(await raggedRows(scope)),
-  ];
-}
-
-/**
- * Ad-hoc rows that still wrap, by form, each matched as a substring of its offender text.
- * TODO: part B moves these rows onto the primitives; drop each entry as its row migrates.
- */
-const BONUS_ROWS = [
-  // BonusInputRowList: id, type, label and default on one wrapping row.
-  "repeatable-row wraps as ? | Id | Type",
-  // NamedFormulaRowList: name and formula on one wrapping row.
-  "repeatable-row wraps as ? | Name / Formula",
-];
-const KNOWN_ADHOC: Record<string, string[]> = {
-  item: [
-    // FormBar: the item's header actions break under the title.
-    "span.flex.flex-1.flex-wrap.items-center wraps as ? | Show all fields",
-    // Class restrictions: a checkbox flow, possibly fine as is.
-    "wraps as Barbarian | Bard",
-  ],
-  bonus: BONUS_ROWS,
-  // BonusRows: a tier's header (name, measure, threshold) breaks mid-row.
-  "bonus tiers": [...BONUS_ROWS, "wraps as Tier "],
-  "bonus variants": BONUS_ROWS,
-  "bonus problem": BONUS_ROWS,
-};
-
-/** What wraps under `scope`: the primitives' offenders, and ad-hoc ones not yet known. */
+/** Every offender under `scope`, named by `name` so a failure says which form broke. */
 async function wrapReport(scope: Locator, name: string) {
-  const known = KNOWN_ADHOC[name] ?? [];
   return {
     name,
-    primitives: await primitiveOffenders(scope),
-    adHoc: (await offenders(scope)).filter(
-      (offender) => !known.some((entry) => offender.includes(entry)),
-    ),
+    offenders: [
+      ...(await wrappedButtons(scope)),
+      ...(await sidewaysScroll(scope)),
+      ...(await raggedRows(scope)),
+      ...(await brokenFlexRows(scope)),
+    ],
   };
 }
 
-const clean = (name: string) => ({ name, primitives: [], adHoc: [] });
+const clean = (name: string) => ({ name, offenders: [] });
+
+/** Picks an option of the ComboBox with `testid` under `scope`. */
+async function pick(
+  page: Page,
+  scope: Locator,
+  testid: string,
+  option: string,
+) {
+  await scope.getByTestId(testid).first().tap();
+  await page.getByRole("option", { name: option, exact: true }).tap();
+}
 
 for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
   test.describe(`at ${width}px`, () => {
@@ -125,6 +94,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       await page.getByTestId("tab-bonuses").tap();
       await page.getByTestId("new-bonus").tap();
       await form(page).getByTestId("add-bonus-input").first().tap();
+      await pick(page, form(page), "bonus-input-type", "number");
       await form(page).getByTestId("add-bonus-formula").first().tap();
       await page.getByLabel("Add grant").tap();
       const payload = form(page).getByTestId("grant-payload");
@@ -158,6 +128,24 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       await openLayer(page);
       await newInSlotsTab(page, "new-slot");
       expect(await wrapReport(form(page), "slot")).toEqual(clean("slot"));
+    });
+
+    test("slot form with inline options", async ({ page }) => {
+      await openLayer(page);
+      await newInSlotsTab(page, "new-slot");
+      await pick(page, form(page), "slot-type-input", "list");
+      await form(page).getByRole("button", { name: "Add an option" }).tap();
+      await expect(form(page).getByTestId("slot-option-label-0")).toBeVisible();
+      expect(await wrapReport(form(page), "slot options")).toEqual(
+        clean("slot options"),
+      );
+    });
+
+    test("filter form", async ({ page }) => {
+      await openLayer(page);
+      await page.getByTestId("tab-filters").tap();
+      await page.getByTestId("new-filter").tap();
+      expect(await wrapReport(form(page), "filter")).toEqual(clean("filter"));
     });
 
     test("preset form", async ({ page }) => {

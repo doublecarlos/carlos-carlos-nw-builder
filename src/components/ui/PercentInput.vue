@@ -37,7 +37,7 @@ const props = withDefaults(
   },
 );
 
-const controlId = useFormFieldControl(() => props.inputId);
+const { id: controlId, describedBy } = useFormFieldControl(() => props.inputId);
 
 const model = defineModel<number | string>({ default: "" });
 
@@ -98,6 +98,7 @@ function nudge(direction: number, event: KeyboardEvent) {
     <input
       :id="controlId"
       ref="input"
+      :aria-describedby="describedBy"
       class="peer w-full border border-line rounded-md pr-5 text-right tabular-nums text-accent focus:text-text bg-surface"
       type="text"
       inputmode="decimal"

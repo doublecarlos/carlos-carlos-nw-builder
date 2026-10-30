@@ -4,7 +4,8 @@
 export interface SegmentChrome {
   /** Left plus right padding of one segment. */
   paddingX: number;
-  /** One border line; joined segments share the line between them. */
+  /** One border line. In a row every segment draws both side lines except the last, which
+   *  shares its left line with the segment before it. */
   border: number;
 }
 
@@ -18,7 +19,7 @@ export function oneRowWidth(labelWidths: number[], chrome: SegmentChrome) {
     (sum, width) => sum + width + chrome.paddingX,
     0,
   );
-  return content + (labelWidths.length + 1) * chrome.border;
+  return content + (2 * labelWidths.length - 1) * chrome.border;
 }
 
 /** Whether a one-row control of `rowWidth` fits the `available` width. */

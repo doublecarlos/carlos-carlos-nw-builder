@@ -123,7 +123,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
       <slot />
     </BaseCheckbox>
 
-    <div v-else class="flex items-center gap-1.5 max-md:flex-wrap">
+    <div v-else class="flex items-center gap-1.5 max-md:flow-wrap">
       <NumberStepper
         v-if="stepper"
         :id="inputId"

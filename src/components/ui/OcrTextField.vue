@@ -38,7 +38,9 @@ const model = defineModel<string>({ default: "" });
 defineOptions({ inheritAttrs: false });
 
 const attrs = useAttrs();
-const controlId = useFormFieldControl(() => attrs.id as string | undefined);
+const { id: controlId, describedBy } = useFormFieldControl(
+  () => attrs.id as string | undefined,
+);
 
 const wrapper = useTemplateRef<HTMLElement>("wrapper");
 const control = useTemplateRef<HTMLTextAreaElement>("control");
@@ -115,6 +117,7 @@ async function onPaste(event: ClipboardEvent) {
       v-bind="$attrs"
       :id="controlId"
       ref="control"
+      :aria-describedby="describedBy"
       :value="model"
       :rows="rows"
       :placeholder="placeholder"

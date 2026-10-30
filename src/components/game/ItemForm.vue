@@ -625,7 +625,7 @@ function showsGroup(group: FieldGroup): boolean {
           ><Trash
         /></IconButton>
       </FormSection>
-      <div class="flex flex-wrap items-center gap-1.5 mb-2">
+      <div class="flex items-center gap-1.5 mb-2">
         <IconButton
           v-if="!descriptionActive"
           title="Add description"
@@ -674,7 +674,7 @@ function showsGroup(group: FieldGroup): boolean {
       <FormSection data-testid="group-allowed-class"
         >Class restrictions</FormSection
       >
-      <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+      <div class="mb-1.5 flex flow-wrap gap-x-3 gap-y-0.5">
         <BaseCheckbox
           v-for="cls in classes"
           :key="cls.value"
@@ -694,7 +694,7 @@ function showsGroup(group: FieldGroup): boolean {
         >For boons, leveling attribute scores, and other point assignment
         slots.</FormSectionDescription
       >
-      <div class="flex flex-wrap items-center gap-1.5 mb-2">
+      <div class="flex flex-col items-start gap-1.5 mb-2">
         <IconButton
           v-if="!repetitionActive"
           title="Add inline repetition"
@@ -711,7 +711,7 @@ function showsGroup(group: FieldGroup): boolean {
         /></IconButton>
         <FormGrid
           v-if="repetitionActive"
-          class="flex-1"
+          class="w-full"
           data-testid="inline-repetition-fields"
         >
           <FormField label="Min">
@@ -756,10 +756,12 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('insignia')">
       <FormSection data-testid="group-insignia">Insignia</FormSection>
-      <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <div
+        class="mb-1.5 flex items-center gap-x-4 gap-y-1.5 max-md:flex-col max-md:items-stretch md:flex-wrap"
+      >
         <FormField label="Insignia shape">
           <ComboBox
-            class="w-44"
+            class="md:w-44"
             data-testid="item-insignia-shape"
             :options="recipeOptions"
             :model-value="draft.insigniaShape"
@@ -768,7 +770,7 @@ function showsGroup(group: FieldGroup): boolean {
         </FormField>
         <FormField label="Preferred version">
           <ComboBox
-            class="w-80"
+            class="md:w-80"
             data-testid="item-preferred-variant"
             :options="preferredVariantOptions"
             :model-value="draft.preferredVariant"
@@ -785,7 +787,7 @@ function showsGroup(group: FieldGroup): boolean {
 
       <RepeatableRows
         :rows="draft.insigniaSlots"
-        row-class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+        row-class="insignia-slot-row mb-1 flex md:flex-wrap items-center gap-1.5"
         add-label="Add insignia slot"
         remove-label="Remove insignia slot"
         add-testid="item-add-insignia-slot"
@@ -834,7 +836,7 @@ function showsGroup(group: FieldGroup): boolean {
       >
       <RepeatableRows
         :rows="draft.insigniaRecipe"
-        row-class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+        row-class="insignia-recipe-row mb-1 flex items-center gap-1.5"
         add-label="Add recipe shape"
         remove-label="Remove recipe shape"
         add-testid="item-add-recipe-shape"
@@ -904,7 +906,7 @@ function showsGroup(group: FieldGroup): boolean {
       </FormSectionDescription>
       <RepeatableRows
         :rows="draft.defaultParams"
-        row-class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+        row-class="default-param-row flex md:flex-wrap items-center gap-1.5 mb-1"
         add-label="Add default build parameter"
         remove-label="Remove default build parameter"
         @add="addDefaultParam"
@@ -942,7 +944,7 @@ function showsGroup(group: FieldGroup): boolean {
       </FormSectionDescription>
       <RepeatableRows
         :rows="draft.publishes"
-        row-class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+        row-class="publishes-row flex md:flex-wrap items-center gap-1.5 mb-1"
         add-label="Add published value"
         remove-label="Remove published value"
         @add="addPublishes"
@@ -978,14 +980,16 @@ function showsGroup(group: FieldGroup): boolean {
         Builds using a retired item will still work, and the Build Editor will
         offer the replacement set below.
       </FormSectionDescription>
-      <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <div
+        class="mb-1.5 flex items-center gap-x-4 gap-y-1.5 max-md:flex-col max-md:items-stretch md:flex-wrap"
+      >
         <BaseCheckbox
           v-model="draft.hideFromPicker"
           data-testid="item-hide-from-picker"
         >
           Retire item
         </BaseCheckbox>
-        <div class="flex min-w-80 flex-1 items-center gap-1.5">
+        <div class="flex flex-1 items-center gap-1.5 md:min-w-80">
           <span class="whitespace-nowrap text-muted">Replaced by</span>
           <ComboBox
             class="min-w-0 flex-1"
@@ -1000,7 +1004,7 @@ function showsGroup(group: FieldGroup): boolean {
       <template v-if="draft.replacedBy">
         <RepeatableRows
           :rows="draft.replacedByValues"
-          row-class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+          row-class="replaced-by-value-row flex md:flex-wrap items-center gap-1.5 mb-1"
           add-label="Add carried value"
           remove-label="Remove carried value"
           add-testid="item-add-carried-value"

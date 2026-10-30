@@ -33,10 +33,18 @@ const slots = useSlots();
 const indent = computed(() => (slots.leading ? "pl-6 pr-1.5" : "px-1.5"));
 const field = useTemplateRef<HTMLInputElement>("field");
 const messagesId = useId();
-const controlId = useFormFieldControl();
+const { id: controlId, describedBy } = useFormFieldControl();
 
 const hasError = computed(() =>
   props.issues.some((issue) => (issue.level ?? "error") === "error"),
+);
+
+/** The issue list while there are issues, then the field's hint. */
+const describedByIds = computed(
+  () =>
+    [props.issues.length ? messagesId : undefined, describedBy.value]
+      .filter(Boolean)
+      .join(" ") || undefined,
 );
 
 /** The text cut at every issue boundary, each run knowing whether an issue covers it. An
@@ -103,7 +111,7 @@ defineExpose({ insert });
         :class="[hasError ? 'border-danger' : 'border-line', indent]"
         :placeholder="placeholder"
         :aria-invalid="hasError || undefined"
-        :aria-describedby="issues.length ? messagesId : undefined"
+        :aria-describedby="describedByIds"
         :data-testid="testid"
       />
       <span

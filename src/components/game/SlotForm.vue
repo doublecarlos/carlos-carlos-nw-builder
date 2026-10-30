@@ -540,21 +540,21 @@ function save() {
           <div
             v-for="(row, index) in draft.options"
             :key="index"
-            class="slot-option-row mb-1 flex flex-wrap items-center gap-1.5"
+            class="slot-option-row mb-1 flex items-center gap-1.5 md:flex-wrap"
           >
             <IconButton title="Remove" @click="removeOption(index)"
               ><Trash
             /></IconButton>
             <BaseInput
               v-model="row.label"
-              class="w-40"
+              class="min-w-0 flex-1 md:w-40 md:flex-none"
               type="text"
               placeholder="Label"
               :data-testid="`slot-option-label-${index}`"
             />
             <BaseInput
               v-model="row.value"
-              class="w-40"
+              class="min-w-0 flex-1 md:w-40 md:flex-none"
               type="text"
               placeholder="Value"
               :data-testid="`slot-option-value-${index}`"
@@ -655,7 +655,7 @@ function save() {
       </FormField>
     </FormGrid>
 
-    <div v-if="fields.has('pickerFlags')" class="mb-2 flex flex-wrap gap-x-4">
+    <div v-if="fields.has('pickerFlags')" class="mb-2 flex flow-wrap gap-x-4">
       <BaseCheckbox
         v-model="draft.disallowEmpty"
         data-testid="slot-disallow-empty-input"

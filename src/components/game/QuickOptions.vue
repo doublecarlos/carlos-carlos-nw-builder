@@ -119,7 +119,7 @@ const chosenItem = (slot: ItemPickerSlot) =>
 <template>
   <div
     data-testid="quick-options"
-    class="build-values flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5"
+    class="build-values flex flex-1 flow-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5"
   >
     <template v-for="(slot, index) in quickSlots" :key="slot.id">
       <span
@@ -133,7 +133,7 @@ const chosenItem = (slot: ItemPickerSlot) =>
 
       <div
         v-if="slot.type === 'item_picker'"
-        class="flex items-center gap-1.5 whitespace-nowrap max-md:flex-wrap"
+        class="flex items-center gap-1.5 whitespace-nowrap max-md:flow-wrap"
         :data-testid="`quick-picker-${slot.id}`"
       >
         <BaseTooltip
@@ -164,7 +164,7 @@ const chosenItem = (slot: ItemPickerSlot) =>
 
       <div
         v-else-if="!isBooleanParam(slot)"
-        class="flex items-center gap-1.5 whitespace-nowrap max-md:flex-wrap"
+        class="flex items-center gap-1.5 whitespace-nowrap max-md:flow-wrap"
       >
         <BaseTooltip
           :text="differs(slot) ? (diffTitle(slot) ?? '') : ''"

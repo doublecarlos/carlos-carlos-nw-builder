@@ -6,8 +6,8 @@
 // the like) claims the field through useFormField.ts, so clicking the label focuses it and
 // assistive tech reads the pair. SegmentedControl names its group with the label instead.
 //
-// As a FormGrid cell the field spans two subgrid rows, label then control, so every control
-// on a visual row starts at the same y even when a neighbor's label wraps.
+// The hint shows muted under the control and describes the claiming control. It wraps to the
+// field's width rather than widening the field.
 import { provideFormField } from "../../composables/useFormField";
 
 const props = defineProps<{
@@ -15,19 +15,18 @@ const props = defineProps<{
   /** Keeps the label line empty when there is no label, so the control lines up with labeled
    *  neighbors on the same row. */
   labelSpacer?: boolean;
+  /** A short note on what to type, shown under the control. */
+  hint?: string;
 }>();
 
-const { inGrid, labelId, controlId } = provideFormField(() => !!props.label);
+const { labelId, hintId, controlId } = provideFormField(
+  () => !!props.label,
+  () => !!props.hint,
+);
 </script>
 
 <template>
-  <div
-    :class="
-      inGrid
-        ? 'row-span-2 grid grid-rows-subgrid gap-y-0.5'
-        : 'flex flex-col gap-0.5'
-    "
-  >
+  <div class="flex flex-col gap-0.5">
     <!-- A span when no labelable control claimed the field (a checkbox, an id display), so no
          `<label>` is left naming nothing; aria-labelledby can still point at it. -->
     <component
@@ -39,10 +38,9 @@ const { inGrid, labelId, controlId } = provideFormField(() => !!props.label);
       >{{ label }}</component
     >
     <span v-else-if="labelSpacer" aria-hidden="true">&nbsp;</span>
-    <span v-else-if="inGrid"></span>
-    <div v-if="inGrid" class="flex min-w-0 flex-col gap-0.5">
-      <slot />
-    </div>
-    <slot v-else />
+    <slot />
+    <p v-if="hint" :id="hintId" class="w-0 min-w-full text-sm text-muted">
+      {{ hint }}
+    </p>
   </div>
 </template>

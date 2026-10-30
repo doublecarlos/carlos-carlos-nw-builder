@@ -361,10 +361,12 @@ if (bonusDraftRegistry && props.registryId) {
       />
 
       <FormSection :nested="embedded">Stacking</FormSection>
-      <div class="flex flex-wrap items-center gap-1.5 mb-1">
+      <div
+        class="mb-1 flex items-center gap-1.5 max-md:flex-col max-md:items-stretch md:flex-wrap"
+      >
         <FormField label="Behavior">
           <ComboBox
-            class="w-64"
+            class="md:w-64"
             :model-value="draft.stacking"
             :options="stackingOptions"
             data-testid="bonus-stacking"
@@ -377,7 +379,7 @@ if (bonusDraftRegistry && props.registryId) {
               v-model.number="draft.maxStacks"
               type="number"
               min="0"
-              class="w-16"
+              class="md:w-16"
             />
           </FormField>
         </template>

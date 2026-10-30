@@ -1,25 +1,22 @@
 <script setup lang="ts">
-// A row of FormField instances on shared columns: ItemForm, BonusForm, SlotForm, PresetForm,
-// SectionForm, FilterForm.
+// A row of FormField instances: ItemForm, BonusForm, SlotForm, PresetForm, SectionForm,
+// FilterForm.
 //
-// The wrapper is the size container: the grid answers to its own width, not the viewport, so
-// the same form lays out the same in a desktop rail, a nested card or a phone. Below `@md` each
-// field takes a full-width line; from there the fields share equal columns of at least 10rem,
-// collapsing empty tracks so a short row still fills the width. Give it a definite width: as a
-// content-sized flex item, a size container collapses to nothing.
+// Wide, it is a wrapping flow where each field keeps the width its caller gives it (a `w-*`, a
+// growing `flex-1`). Narrow, the fields stack one per line at full width, and so do their
+// controls: a caller's widths are sized for the flow and are overridden there.
 //
-// The grid owns its cells' widths: a width class on a field is overridden. Each field spans a
-// label row and a control row (see FormField), so controls align even when labels wrap.
-import { provideFormGrid } from "../../composables/useFormField";
-
-provideFormGrid();
+// The wrapper is the size container, so the switch answers to the grid's own width rather than
+// the viewport: the same form lays out the same in a desktop rail, a nested card or a phone.
+// Give it a definite width (a block, or a growing flex item): a size container never grows to
+// fit its content, so as a content-sized flex item it collapses.
 </script>
 
 <template>
   <div class="@container">
     <div
       data-testid="form-grid"
-      class="grid grid-cols-1 gap-x-3 gap-y-2 *:row-span-2 *:w-auto! *:min-w-0! @md:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]"
+      class="flex flex-wrap gap-x-3 gap-y-2 @max-md:flex-col @max-md:*:w-full! @max-md:*:min-w-0! @max-md:*:flex-none! @max-md:[&>*>*:not(button)]:w-full!"
     >
       <slot />
     </div>

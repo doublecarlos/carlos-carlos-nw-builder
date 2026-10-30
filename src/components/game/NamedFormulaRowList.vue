@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // A repeatable list of a bonus's named formulas: a name, referenced as `$name` by any formula
 // of the bonus, and the formula it stands for. The same row-mutating shape as
-// `BonusInputRowList`. Inputs share the `$` names, so a name an input has is flagged.
+// `BonusInputRowList`, the name leading the row so a phone gives it the card's first line.
+// Inputs share the `$` names, so a name an input has is flagged.
 import BaseInput from "../ui/BaseInput.vue";
 import FormField from "../ui/FormField.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
@@ -41,7 +42,7 @@ function rowIssues(row: NamedFormulaDraft): FormulaInputIssue[] {
 <template>
   <RepeatableRows
     :rows="rows"
-    row-class="bonus-formula-row flex flex-wrap items-start gap-1.5 mb-1"
+    row-class="bonus-formula-row flex md:flex-wrap items-start gap-1.5 mb-1"
     labeled-fields
     add-label="Add formula"
     remove-label="Remove formula"
@@ -49,11 +50,11 @@ function rowIssues(row: NamedFormulaDraft): FormulaInputIssue[] {
     @add="emit('add')"
     @remove="(i) => emit('remove', i)"
   >
-    <template #row="{ row }">
+    <template #lead="{ row }">
       <FormField label="Name">
         <BaseInput
           v-model="row.name"
-          class="w-32 font-mono"
+          class="w-full font-mono md:w-32"
           type="text"
           placeholder="stacks"
           data-testid="bonus-formula-name"
@@ -71,7 +72,9 @@ function rowIssues(row: NamedFormulaDraft): FormulaInputIssue[] {
           >also an input of this bonus; rename the formula</span
         >
       </FormField>
-      <FormField label="Formula" class="min-w-72 flex-1">
+    </template>
+    <template #row="{ row }">
+      <FormField label="Formula" class="min-w-0 flex-1 md:min-w-72">
         <FormulaField
           v-model:formula="row.formula"
           v-model:label="row.label"

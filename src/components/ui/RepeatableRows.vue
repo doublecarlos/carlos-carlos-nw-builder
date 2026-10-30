@@ -19,7 +19,8 @@ defineProps<{
   addTestid?: string;
   /** The row's fields are FormFields with a label above: the pair sits under an equal blank
    *  label and centers on the fields, so a row that grows below its fields (a message, a
-   *  preview) leaves it in place. Pair with a top-aligned `rowClass`. */
+   *  preview) leaves it in place. Pair with a top-aligned `rowClass`. A phone card drops the
+   *  blank label and pins the pair as usual. */
   labeledFields?: boolean;
 }>();
 defineEmits<{ add: []; remove: [index: number] }>();
@@ -34,6 +35,8 @@ const slots = defineSlots<{
 /** The phone card: a full-width first line, then the rest beside the pinned pair. */
 const CARD =
   "repeatable-card max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-1.5 max-md:mb-1.5 max-md:rounded-md max-md:border max-md:border-line max-md:bg-surface-2 max-md:p-2";
+/** The pair's place in the phone card: bottom right, beside the rest of the row. */
+const PINNED = "max-md:col-start-2 max-md:row-start-2 max-md:self-end";
 </script>
 
 <template>
@@ -46,9 +49,15 @@ const CARD =
     <div
       v-if="labeledFields"
       class="flex flex-col gap-0.5"
+      :class="slots.lead && PINNED"
       data-testid="repeatable-row-actions"
     >
-      <span class="invisible" aria-hidden="true">&nbsp;</span>
+      <span
+        class="invisible"
+        :class="slots.lead && 'max-md:hidden'"
+        aria-hidden="true"
+        >&nbsp;</span
+      >
       <!-- The padding centers the icon buttons on a BaseInput, which is 6px taller. -->
       <div class="flex items-center gap-1.5 py-[3px]">
         <IconButton :title="addLabel" @click="$emit('add')"
@@ -61,7 +70,8 @@ const CARD =
     </div>
     <div
       v-else
-      class="flex items-center gap-1.5 md:contents max-md:col-start-2 max-md:row-start-2 max-md:self-end"
+      class="flex items-center gap-1.5 md:contents"
+      :class="PINNED"
       data-testid="repeatable-row-actions"
     >
       <IconButton :title="addLabel" @click="$emit('add')"><Plus /></IconButton>

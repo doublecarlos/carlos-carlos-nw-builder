@@ -110,7 +110,7 @@ const props = withDefaults(
   },
 );
 
-const controlId = useFormFieldControl(() => props.inputId);
+const { id: controlId, describedBy } = useFormFieldControl(() => props.inputId);
 
 defineSlots<{
   option?(props: { option: T; highlighted: boolean }): unknown;
@@ -509,6 +509,7 @@ for (const target of keyTargets) {
     <input
       :id="controlId"
       ref="input"
+      :aria-describedby="describedBy"
       data-testid="picker-input"
       class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       :class="[

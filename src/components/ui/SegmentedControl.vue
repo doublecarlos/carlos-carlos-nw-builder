@@ -126,7 +126,7 @@ watch(
 const groupStyle = computed(() =>
   props.fill || rowWidth.value === null
     ? undefined
-    : { width: `${Math.ceil(rowWidth.value)}px` },
+    : { width: `${rowWidth.value}px` },
 );
 </script>
 
@@ -157,7 +157,7 @@ const groupStyle = computed(() =>
             : 'bg-surface text-muted',
           stacked
             ? 'first:rounded-t-md last:rounded-b-md not-first:border-t-0'
-            : 'first:rounded-l-md last:rounded-r-md not-first:border-l-0',
+            : 'first:rounded-l-md last:rounded-r-md last:border-l-0',
           fill && !stacked && 'flex-1',
         ]"
         @click="model = option.value"
