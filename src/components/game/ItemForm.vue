@@ -791,19 +791,29 @@ function showsGroup(group: FieldGroup): boolean {
         @add="addInsigniaSlot"
         @remove="removeInsigniaSlot"
       >
-        <template #row="{ row, index }">
+        <template #lead="{ row, index }">
           <FormField :label="`Slot ${index + 1} shape`">
             <ComboBox
-              class="w-44"
+              class="w-full md:w-44"
               :data-testid="`item-insignia-slot-${index}`"
               :options="slotShapeOptions"
               :model-value="row.shape"
+              phone-screen
+              :screen-label="`Slot ${index + 1} shape`"
               @update:model-value="(v) => (row.shape = v)"
             />
           </FormField>
-          <FormField v-if="!row.shape || row.preferred" label="Prefers">
+        </template>
+        <template #row="{ row, index }">
+          <FormField
+            v-if="!row.shape || row.preferred"
+            label="Prefers"
+            class="w-full md:w-auto"
+          >
             <ComboBox
-              class="w-44"
+              class="w-full md:w-44"
+              phone-screen
+              screen-label="Prefers"
               :data-testid="`item-insignia-slot-preferred-${index}`"
               :options="preferredOptions"
               :model-value="row.preferred"
@@ -899,18 +909,23 @@ function showsGroup(group: FieldGroup): boolean {
         @add="addDefaultParam"
         @remove="removeDefaultParam"
       >
-        <template #row="{ row }">
+        <template #lead="{ row }">
           <ComboBox
-            class="w-52"
+            class="w-full md:w-52"
             :model-value="row.slotId"
             :options="defaultParamSlotOptions"
             placeholder="- pick a build parameter -"
+            phone-screen
+            screen-label="Build parameter"
             @update:model-value="(v) => (row.slotId = v)"
           />
+        </template>
+        <template #row="{ row }">
           <BuildParamInput
             v-if="slotForDefaultParam(row.slotId)"
             v-model="row.value"
             :slot-def="slotForDefaultParam(row.slotId)!"
+            phone-screen
             >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
           >
         </template>
@@ -932,17 +947,21 @@ function showsGroup(group: FieldGroup): boolean {
         @add="addPublishes"
         @remove="removePublishes"
       >
-        <template #row="{ row, index }">
+        <template #lead="{ row, index }">
           <BaseInput
             v-model="row.path"
-            class="w-52"
+            class="w-full md:w-52"
             type="text"
             placeholder="Context path, e.g. class"
+            aria-label="Context path"
             :data-testid="`publishes-path-${index}`"
           />
+        </template>
+        <template #row="{ row, index }">
           <BaseInput
             v-model="row.value"
-            class="w-52"
+            class="w-full md:w-52"
+            aria-label="Value"
             type="text"
             placeholder="Value"
             :data-testid="`publishes-value-${index}`"
@@ -987,21 +1006,28 @@ function showsGroup(group: FieldGroup): boolean {
           @add="addReplacedByValue"
           @remove="removeReplacedByValue"
         >
-          <template #row="{ row }">
+          <template #lead="{ row }">
             <FormField label="Carry stat">
               <ComboBox
-                class="combo--stat w-52"
+                class="combo--stat w-full md:w-52"
                 :model-value="row.stat"
                 :options="statPickerOptions"
                 placeholder="- pick a stat -"
+                phone-screen
+                screen-label="Carry stat"
                 @update:model-value="(v) => (row.stat = v)"
               />
             </FormField>
-            <FormField label="Value on the replacement">
+          </template>
+          <template #row="{ row }">
+            <FormField
+              label="Value on the replacement"
+              class="w-full md:w-auto"
+            >
               <StatValueInput
                 v-model="row.value"
                 :stat-key="row.stat"
-                class="w-24"
+                class="w-full md:w-24"
                 step="any"
               />
             </FormField>

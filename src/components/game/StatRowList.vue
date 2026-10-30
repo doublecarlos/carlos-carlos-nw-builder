@@ -22,18 +22,22 @@ const emit = defineEmits<{ add: []; remove: [index: number] }>();
     @add="emit('add')"
     @remove="(i) => emit('remove', i)"
   >
-    <template #row="{ row: stat }">
+    <template #lead="{ row: stat }">
       <ComboBox
-        class="combo--stat w-52"
+        class="combo--stat w-full md:w-52"
         :model-value="stat.key"
         :options="statPickerOptions"
         placeholder="- pick a stat -"
+        phone-screen
+        screen-label="Stat"
         @update:model-value="(v) => (stat.key = v)"
       />
+    </template>
+    <template #row="{ row: stat }">
       <StatValueInput
         v-model="stat.value"
         :stat-key="stat.key"
-        class="w-28"
+        class="w-full md:w-28"
         step="any"
         @keydown="focusNextCombo"
       />

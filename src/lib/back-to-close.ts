@@ -2,8 +2,10 @@
 //
 // Opening pushes a marker entry with the same URL, and Back pops it to close the overlay.
 // Closing any other way steps back over the marker, so no stray entry is left behind. Either pop
-// is swallowed before the app's own popstate handlers (App.vue's route sync) see it: they run
-// on the same window, and a capture listener at the target runs ahead of them.
+// is swallowed before the app's own popstate handlers (App.vue's route sync, LayerEditor's
+// selection guard) see it. Listeners on the window itself run in the order they were added,
+// whatever their capture flag, so the shared instance listens from module load, ahead of any
+// component's setup.
 //
 // One overlay holds Back at a time.
 
@@ -29,7 +31,6 @@ export function createBackToClose(host: BackHost) {
   let onBack: (() => void) | null = null;
   /** Resolves a release once the pop it started arrives. */
   let settling: (() => void) | null = null;
-  let listening = false;
 
   function onPopState(event: Event) {
     if (settling) {
@@ -44,14 +45,12 @@ export function createBackToClose(host: BackHost) {
     close();
   }
 
+  host.addEventListener("popstate", onPopState, { capture: true });
+
   /** Pushes the marker. `close` runs when Back pops it. Returns the release for closing any
    *  other way, which resolves once the marker is gone, so a caller about to change the route
    *  itself can wait for it. */
   function hold(close: () => void): () => Promise<void> {
-    if (!listening) {
-      host.addEventListener("popstate", onPopState, { capture: true });
-      listening = true;
-    }
     const state: unknown = host.history.state;
     host.history.pushState(
       { ...(state && typeof state === "object" ? state : {}), [MARKER]: true },
@@ -83,10 +82,10 @@ export function createBackToClose(host: BackHost) {
   return { hold };
 }
 
-let shared: ReturnType<typeof createBackToClose> | null = null;
+/** `createBackToClose` over the real window. */
+const shared = typeof window === "undefined" ? null : createBackToClose(window);
 
-/** `createBackToClose` over the real window, made on first use. */
 export function holdBack(close: () => void): () => Promise<void> {
-  shared ??= createBackToClose(window);
+  if (!shared) throw new Error("holdBack needs a window");
   return shared.hold(close);
 }

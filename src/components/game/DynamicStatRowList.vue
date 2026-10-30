@@ -12,6 +12,13 @@ import type { DynamicStatDraft } from "../../lib/bonus-draft";
 
 defineProps<{ rows: DynamicStatDraft[] }>();
 const emit = defineEmits<{ add: []; remove: [index: number] }>();
+
+/** The value fields, each typed in the stat's own units. */
+const BOUNDS = [
+  { key: "min", label: "Min" },
+  { key: "max", label: "Max" },
+  { key: "default", label: "Default" },
+] as const;
 </script>
 
 <template>
@@ -23,31 +30,36 @@ const emit = defineEmits<{ add: []; remove: [index: number] }>();
     @add="emit('add')"
     @remove="(i) => emit('remove', i)"
   >
-    <template #row="{ row }">
+    <template #lead="{ row }">
       <FormField label="Stat">
         <ComboBox
-          class="combo--stat w-52"
+          class="combo--stat w-full md:w-52"
           :model-value="row.stat"
           :options="statPickerOptions"
           placeholder="- pick a stat -"
+          phone-screen
+          screen-label="Stat"
           @update:model-value="(v) => (row.stat = v)"
         />
       </FormField>
-      <FormField label="Min">
-        <StatValueInput v-model="row.min" :stat-key="row.stat" class="w-24" />
-      </FormField>
-      <FormField label="Max">
-        <StatValueInput v-model="row.max" :stat-key="row.stat" class="w-24" />
-      </FormField>
-      <FormField label="Default">
-        <StatValueInput
-          v-model="row.default"
-          :stat-key="row.stat"
-          class="w-24"
-        />
-      </FormField>
-      <FormField label="Label (optional)">
-        <BaseInput v-model="row.label" class="w-40" type="text" />
+    </template>
+    <template #row="{ row }">
+      <!-- Equal columns on a phone, so the bounds line up from row to row. -->
+      <div class="grid w-full grid-cols-3 gap-1.5 md:contents">
+        <FormField
+          v-for="field in BOUNDS"
+          :key="field.key"
+          :label="field.label"
+        >
+          <StatValueInput
+            v-model="row[field.key]"
+            :stat-key="row.stat"
+            class="w-full md:w-24"
+          />
+        </FormField>
+      </div>
+      <FormField label="Label (optional)" class="w-full md:w-auto">
+        <BaseInput v-model="row.label" class="w-full md:w-40" type="text" />
       </FormField>
     </template>
     <template #empty>

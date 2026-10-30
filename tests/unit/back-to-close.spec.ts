@@ -37,7 +37,8 @@ function fakeWindow() {
     },
     addEventListener: target.addEventListener.bind(target),
   };
-  /** The app's own popstate handler, registered after the overlay's, as App.vue's is. */
+  /** The app's own popstate handler, registered after the shared instance listens at module
+   *  load, as App.vue's and LayerEditor's are. */
   const app = vi.fn();
   return {
     host,
@@ -96,6 +97,16 @@ describe("createBackToClose", () => {
 
     await release();
     expect(win.index()).toBe(1);
+  });
+
+  it("swallows the pop for an app handler added before the first hold", async () => {
+    const win = fakeWindow();
+    const { hold } = createBackToClose(win.host);
+    win.listen();
+
+    await hold(vi.fn())();
+    expect(win.index()).toBe(0);
+    expect(win.app).not.toHaveBeenCalled();
   });
 
   it("releasing twice steps back once", async () => {
