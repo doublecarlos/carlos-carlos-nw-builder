@@ -133,6 +133,9 @@
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+  /* Smallest comfortable touch target, as `min-h-tap`/`min-w-tap`/`size-tap`. */
+  --spacing-tap: 40px;
+
   /* Stacking layers, low to high. Anchored surfaces (menus, tooltips, popovers) teleport to
    * <body> rather than order themselves within a sticky/fixed ancestor's stacking context; see
    * BasePopover. Exceptions: ComboBoxMenu renders in place, fixed against its input (see its
@@ -141,6 +144,9 @@
   --z-index-base: 1;
   --z-index-sticky: 10;
   --z-index-toolbar: 20;
+  /* The off-canvas nav drawer and its backdrop: over the page and its sticky toolbars, but
+   * under menus, so a row menu opened from inside the drawer still paints on top of it. */
+  --z-index-drawer: 25;
   --z-index-menu: 30;
   --z-index-modal: 50;
   --z-index-popover: 60;
@@ -191,5 +197,27 @@
   }
   html.is-dragging * {
     cursor: grabbing !important;
+  }
+
+  /* Finger-sized controls on a coarse pointer, whatever the viewport width. In the base layer,
+   * so a control that has to stay compact can still opt out with a `pointer-coarse:` utility. */
+  @media (pointer: coarse) {
+    button,
+    [role="button"],
+    select,
+    summary {
+      min-height: var(--spacing-tap);
+      min-width: var(--spacing-tap);
+    }
+  }
+}
+
+/* iOS zooms the page into any focused field set below 16px. Unlayered so no text-size utility
+ * on a field can undercut it. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 }

@@ -18,7 +18,8 @@ import {
   watch,
 } from "vue";
 import BaseModal from "./ui/BaseModal.vue";
-import { useEventListener, useMediaQuery } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
+import * as viewport from "../stores/viewport";
 import * as confirm from "../stores/confirm";
 import * as draftGuard from "../stores/draftGuard";
 import ItemForm from "./game/ItemForm.vue";
@@ -97,7 +98,7 @@ const entriesWidth = rails.width("layerEntries");
 
 // The two panes only sit side by side from `lg` up; below it they stack, and a pinned width
 // would be a width on a full-bleed row. Matches the `lg:flex-row` on their container.
-const sideBySide = useMediaQuery("(min-width: 64rem)");
+const sideBySide = viewport.isDesktop;
 
 /** Only an open rail in a side-by-side layout gets a width of its own. */
 const entriesStyle = computed(() =>

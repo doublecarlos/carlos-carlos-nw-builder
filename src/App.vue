@@ -23,6 +23,7 @@ import * as layers from "./stores/layers";
 import * as stableBrowser from "./stores/stableBrowser";
 import RailGutter from "./components/ui/RailGutter.vue";
 import * as rails from "./stores/rails";
+import * as viewport from "./stores/viewport";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
 import { undoScope, useUndoScope } from "./composables/useUndoScope";
 import { useUndoRedoKeys } from "./composables/useUndoRedoKeys";
@@ -33,6 +34,7 @@ const resolved = engine.resolved;
 // Collapsing or narrowing a rail hands its width back to the editor column. The page's own
 // minimum tracks whatever the rails currently take, which is the point: once the three columns
 // no longer fit, the whole page scrolls sideways with the stat panel's last column cut off.
+// The floor only applies to the desktop layout; narrower viewports reflow instead.
 
 /** What the editor column itself needs, whatever the rails are doing. */
 const EDITOR_MIN_PX = 324;
@@ -77,8 +79,10 @@ const selectedLayer = computed(() => {
   return layers.layers.value.find((l) => l.id === sel.id) ?? null;
 });
 
-const minWidthPx = computed(
-  () => EDITOR_MIN_PX + navWidth.value + detailsWidth.value,
+const minWidthPx = computed(() =>
+  viewport.isDesktop.value
+    ? EDITOR_MIN_PX + navWidth.value + detailsWidth.value
+    : null,
 );
 
 // --- routing --------------------------------------------------------------------------
@@ -154,8 +158,8 @@ syncRoute({ push: false });
 <template>
   <!-- The active undo scope is reflected here so tests can read it off the DOM. -->
   <div
-    class="flex h-screen flex-col"
-    :style="{ minWidth: minWidthPx + 'px' }"
+    class="flex h-dvh flex-col"
+    :style="minWidthPx === null ? undefined : { minWidth: minWidthPx + 'px' }"
     :data-undo-scope-active="undoScope"
   >
     <AppHeader class="flex-none" />

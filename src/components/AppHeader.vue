@@ -94,8 +94,9 @@ async function onImportFile(event: Event) {
 </script>
 
 <template>
+  <!-- Below lg the controls wrap onto extra rows rather than push the page sideways. -->
   <header
-    class="flex items-center gap-2.5 border-b border-line bg-surface px-2 py-2"
+    class="flex items-center gap-2.5 border-b border-line bg-surface px-2 py-2 max-lg:flex-wrap"
     data-testid="app-header"
   >
     <!-- The one item here that may shrink. Every other child is a control with a fixed
