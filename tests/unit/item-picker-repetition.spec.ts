@@ -226,6 +226,79 @@ describe("a point_assignment carrier's sources", () => {
   });
 });
 
+describe("a point assignment at a high count", () => {
+  const POINTS = 500;
+  const rune: Item = {
+    id: "rune",
+    name: "Test Rune",
+    filter: "shards",
+    inlineRepetition: { min: 0, max: 1000, default: 0 },
+    bonuses: ["per-point", "capped"],
+  };
+  const pointSlot: PointAssignmentSlot = {
+    id: "gear.points",
+    label: "Points",
+    section: "gear",
+    type: "point_assignment",
+    filter: "shards",
+  };
+  const runeDb = db.build(
+    [rune],
+    [
+      {
+        id: "per-point",
+        name: "Per Point",
+        stacking: "perSource",
+        grants: [{ stats: { power: 2 } }],
+      },
+      {
+        id: "capped",
+        name: "Capped",
+        stacking: "perSource",
+        maxStacks: 10,
+        grants: [{ stats: { power: 7 } }],
+      },
+    ],
+    schema,
+    { ...slotsData, slots: [pointSlot] },
+  );
+  const build = testBuild({
+    choices: {},
+    assignments: { "gear.points": { [rune.id]: POINTS } },
+  });
+  const resolved = bonus.resolve(runeDb, build);
+  const entry = (id: string) => resolved.bonuses.find((b) => b.id === id)!;
+
+  it("collects one candidate per bonus, carrying the count", () => {
+    const { candidates, ctx } = bonus.collect(runeDb, build);
+    expect(candidates.map((c) => [c.bonusId, c.count])).toEqual([
+      ["per-point", POINTS],
+      ["capped", POINTS],
+    ]);
+    expect(ctx.bonusOccurrences.get("per-point")).toBe(POINTS);
+  });
+
+  it("stacks once per point", () => {
+    expect(entry("per-point").stacks).toBe(POINTS);
+    expect(entry("per-point").stats).toEqual({ power: 2 });
+    expect(entry("per-point").appliedStats).toEqual({ power: 2 * POINTS });
+  });
+
+  it("still caps at maxStacks", () => {
+    expect(entry("capped").stacks).toBe(10);
+    expect(entry("capped").appliedStats).toEqual({ power: 70 });
+  });
+
+  it("lists one source per point", () => {
+    expect(entry("per-point").sources).toHaveLength(POINTS);
+    expect(entry("per-point").sources[0]).toEqual({
+      name: rune.name,
+      slotId: pointSlot.id,
+      itemId: rune.id,
+    });
+  });
+});
+
 describe("what the engine computes", () => {
   /** One row's stats. Driven by `gem` (no bonuses), so this reads the item's own line rather
    *  than the bonus stats a row is also credited with. */

@@ -311,6 +311,44 @@ describe("history store", () => {
     expect(history._keys()).not.toContain(`build:${b.id}`);
   });
 
+  it("purging a copy an import replaced keeps the live build's history", async () => {
+    const { builds, history, selection, trash } = await freshStores();
+    const storage = await import("../../../src/storage/storage");
+    const b = builds.build.value!;
+    selection.selectBuild(b.id);
+    history.snapshot("build", b.id, "choice:ring1", "ring1 → X", b);
+    b.choices.ring1 = "X";
+
+    builds.upsertImported(
+      { ...storage.defaultBuild("Incoming"), id: b.id },
+      true,
+    );
+    trash.purge(trash.trashed.value[0]);
+
+    expect(builds.get(b.id)?.name).toBe("Incoming");
+    expect(history._keys()).toContain(`build:${b.id}`);
+  });
+
+  it("purging one of two trashed copies keeps the history for the other", async () => {
+    const { builds, history, selection, trash } = await freshStores();
+    const storage = await import("../../../src/storage/storage");
+    const b = builds.build.value!;
+    selection.selectBuild(b.id);
+    history.snapshot("build", b.id, "choice:ring1", "ring1 → X", b);
+    b.choices.ring1 = "X";
+    builds.createBuild();
+
+    builds.upsertImported(
+      { ...storage.defaultBuild("Incoming"), id: b.id },
+      true,
+    );
+    builds.deleteBuild(b.id);
+    expect(trash.trashed.value).toHaveLength(2);
+    trash.purge(trash.trashed.value[0]);
+
+    expect(history._keys()).toContain(`build:${b.id}`);
+  });
+
   // --- redo ----------------------------------------------------------------------------
 
   it("redo replays an undone step", async () => {
@@ -331,5 +369,42 @@ describe("history store", () => {
     expect(redoJson).not.toBeNull();
     const restored = JSON.parse(redoJson!);
     expect(restored.choices.ring1).toBe("X");
+  });
+});
+
+describe("history accessors", () => {
+  it("follow every change to the selected item's stack", async () => {
+    const { builds, history, selection } = await freshStores();
+    const b = builds.build.value!;
+    selection.selectBuild(b.id);
+    expect(history.canUndo.value).toBe(false);
+
+    history.snapshot("build", b.id, null, "ring1 → X", b);
+    expect(history.canUndo.value).toBe(true);
+    expect(history.undoLabel.value).toBe("ring1 → X");
+
+    history.undo("build", b.id, b);
+    expect(history.canUndo.value).toBe(false);
+    expect(history.canRedo.value).toBe(true);
+    expect(history.redoLabel.value).toBe("ring1 → X");
+
+    history.redo("build", b.id, b);
+    expect(history.canUndo.value).toBe(true);
+    expect(history.canRedo.value).toBe(false);
+
+    history._delete(`build:${b.id}`);
+    expect(history.canUndo.value).toBe(false);
+  });
+
+  it("stores plain JSON when handed a reactive build", async () => {
+    const { builds, history, selection } = await freshStores();
+    const b = builds.build.value!;
+    selection.selectBuild(b.id);
+    b.choices.ring1 = "X";
+
+    history.snapshot("build", b.id, null, "ring1 → Y", b);
+    const json = history.undo("build", b.id, b);
+
+    expect(JSON.parse(json!)).toEqual(JSON.parse(JSON.stringify(b)));
   });
 });

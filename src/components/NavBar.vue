@@ -25,7 +25,7 @@ import * as selection from "../stores/selection";
 import * as buildEditor from "../stores/buildEditor";
 import * as trash from "../stores/trash";
 import * as confirm from "../stores/confirm";
-import type { Build, TrashEntry } from "../types";
+import type { TrashEntry } from "../types";
 
 const root = useTemplateRef("root");
 const openMenu = ref<{ type: string; id: string } | null>(null);
@@ -328,8 +328,7 @@ function revertLayer(id: string) {
 function isLayerRevertable(id: string): boolean {
   const l = layers.layers.value.find((ll) => ll.id === id);
   if (!l?.downloaded?.snapshot) return false;
-  const current = { ...l, downloaded: undefined };
-  return JSON.stringify(current) !== JSON.stringify(l.downloaded.snapshot);
+  return !layers.isDownloaded(id);
 }
 
 function layerIndex(id: string) {
@@ -339,10 +338,8 @@ function layerIndex(id: string) {
 // --- trash actions --------------------------------------------------------------------
 
 function restoreTrashEntry(entry: TrashEntry) {
-  const item = trash.restore(entry);
-  if (!item) return;
-  if (entry.kind === "build") builds.importBuilds([item as Build], false);
-  else layers.importLayerText(JSON.stringify(item));
+  if (entry.kind === "build") builds.restoreFromTrash(entry);
+  else layers.restoreFromTrash(entry);
   closeMenu();
 }
 

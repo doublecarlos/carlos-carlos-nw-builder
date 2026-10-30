@@ -5,7 +5,8 @@ import { computed, ref, shallowRef } from "vue";
 import { afterPaint } from "../lib/after-paint";
 import * as draftGuard from "./draftGuard";
 import * as landing from "./landing";
-import { persistMeta as persistMetaOrder } from "./meta";
+import * as pendingEdits from "./pendingEdits";
+import { persistMeta, setSelectionSource } from "./meta";
 import type { Selection } from "../types";
 
 const SESSION_KEY = "nw:selection";
@@ -49,12 +50,12 @@ export const selection = computed(() => _selection.value);
 /** What the nav highlights: the pick in flight if there is one, else the selection. */
 export const highlighted = computed(() => _pending.value ?? _selection.value);
 
-function persistMeta() {
-  persistMetaOrder(_selection.value);
-}
+setSelectionSource(() => _selection.value);
 
-/** Lands a selection and clears any pick still in flight. */
+/** Lands a selection and clears any pick still in flight. A pending form edit commits first,
+ *  while the editor still points at the item it was typed into. */
 function applySelection(sel: Selection) {
+  pendingEdits.flushAll();
   _pending.value = null;
   _selection.value = sel;
   landing.enterBuilder();

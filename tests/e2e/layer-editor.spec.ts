@@ -493,3 +493,79 @@ test.describe("a bonus's 'Granted by' items", () => {
     await expect(page.getByTestId("item-name-input")).toHaveValue(ITEM);
   });
 });
+
+test.describe("pending live edits", () => {
+  /** Opens the head item in the selected layer's Items tab and returns its name input. */
+  async function openHeadItem(page: Page): Promise<Locator> {
+    await page.locator(".editor-search").fill(HEAD_ITEM);
+    await page
+      .locator(".editor-row")
+      .filter({ hasText: HEAD_ITEM })
+      .first()
+      .click();
+    const nameInput = page.getByTestId("item-name-input");
+    await expect(nameInput).toHaveValue(HEAD_ITEM);
+    return nameInput;
+  }
+
+  /** The Items tab row showing `name` with the "edited" badge. */
+  function editedRow(page: Page, name: string): Locator {
+    return page
+      .locator(".editor-row")
+      .filter({ hasText: name })
+      .filter({ has: page.getByTestId("badge").filter({ hasText: "edited" }) });
+  }
+
+  test("an edit right before a layer switch lands in the layer it was typed into", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await expect(
+      page.locator("strong").filter({ hasText: "Layer 1" }),
+    ).toBeVisible();
+
+    const nameInput = await openHeadItem(page);
+    const renamed = `${HEAD_ITEM} (renamed)`;
+    await nameInput.fill(renamed);
+
+    // Switch layers well before the edit's debounce fires.
+    await layerRow(page, "Layer 2").locator(".nav-name").click();
+    await expect(
+      page.locator("strong").filter({ hasText: "Layer 2" }),
+    ).toBeVisible();
+    await page.locator(".editor-search").fill(renamed);
+    await expect(editedRow(page, renamed)).toHaveCount(0);
+
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await expect(
+      page.locator("strong").filter({ hasText: "Layer 1" }),
+    ).toBeVisible();
+    await page.locator(".editor-search").fill(renamed);
+    await expect(editedRow(page, renamed)).toBeVisible();
+  });
+
+  test("undo right after typing takes back only the typing", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+
+    const nameInput = await openHeadItem(page);
+    const first = `${HEAD_ITEM} (first)`;
+    await nameInput.fill(first);
+    // Let the first edit commit and leave the history's merge window.
+    await expect(page.getByTestId("editor-undo")).toBeEnabled();
+    await page.waitForTimeout(1000);
+
+    await nameInput.fill(`${HEAD_ITEM} (second)`);
+    // The button runs the same item undo as Ctrl+Z, without the browser's own undo of the
+    // field it just left.
+    await page.getByTestId("editor-undo").click();
+
+    await expect(nameInput).toHaveValue(first);
+  });
+});

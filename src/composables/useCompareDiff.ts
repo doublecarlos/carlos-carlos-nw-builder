@@ -6,6 +6,7 @@ import { inputKey } from "../lib/build-inputs";
 import { pctInput } from "../lib/format";
 import { isDisabled } from "../lib/slot-toggle";
 import { slotsWithCompare } from "../lib/slot-availability";
+import { indexResolved, type ResolvedIndex } from "../lib/resolved-index";
 import { itemLabel, stableRef } from "../engine/insignia";
 import { inputEntries, type InputEntry } from "../engine/inputs";
 import type {
@@ -111,6 +112,11 @@ export function useCompareDiff(options: {
 }) {
   const { db, build, result, compareBuild, compareResult, itemIn } = options;
 
+  const ownIndex = computed(() => indexResolved(result.value));
+  const otherIndex = computed(() =>
+    compareResult.value ? indexResolved(compareResult.value) : null,
+  );
+
   /**
    * What a row effectively holds, which is not always what the build stored.
    *
@@ -121,19 +127,19 @@ export function useCompareDiff(options: {
   function effectiveChoice(
     slotId: string,
     source: Build | null,
-    resolved: ResolvedBuild | null,
+    index: ResolvedIndex | null,
   ) {
     const stored = source?.choices?.[slotId] || "";
     if (stored || stableRef(db.value, slotId)?.role !== "bonus") return stored;
-    return resolved?.rows.find((row) => row.slotId === slotId)?.item?.id ?? "";
+    return index?.rows.get(slotId)?.item?.id ?? "";
   }
 
   function otherChoice(slotId: string) {
-    return effectiveChoice(slotId, compareBuild.value, compareResult.value);
+    return effectiveChoice(slotId, compareBuild.value, otherIndex.value);
   }
 
   function ownChoice(slotId: string) {
-    return effectiveChoice(slotId, build.value, result.value);
+    return effectiveChoice(slotId, build.value, ownIndex.value);
   }
 
   /** Display text for the compare build's choice -- `otherChoice` above stays id-based (it
@@ -250,24 +256,23 @@ export function useCompareDiff(options: {
    * would otherwise not even be comparable apples-to-apples.
    */
   function bonusDiffsFor(slotId: string): { id: string; message: string }[] {
-    if (!compareBuild.value || !compareResult.value || differs(slotId))
-      return [];
+    const there = otherIndex.value?.bonusById;
+    if (!compareBuild.value || !there || differs(slotId)) return [];
     const item = itemIn(slotId);
     if (!item) return [];
+    const here = ownIndex.value.bonusById;
     const out: { id: string; message: string }[] = [];
     const seen = new Set<string>();
     for (const candidate of db.value.bonusesFor(item)) {
       const id = candidate.bonus.id;
       if (seen.has(id)) continue;
       seen.add(id);
-      const here =
-        result.value.bonuses.find((bonus) => bonus.id === id) ?? null;
-      const there =
-        compareResult.value.bonuses.find((bonus) => bonus.id === id) ?? null;
-      if (bonusStatusEqual(here, there)) continue;
+      const own = here.get(id) ?? null;
+      const other = there.get(id) ?? null;
+      if (bonusStatusEqual(own, other)) continue;
       out.push({
         id,
-        message: describeBonusDiff(here, there, candidate.bonus.name ?? id),
+        message: describeBonusDiff(own, other, candidate.bonus.name ?? id),
       });
     }
     return out;

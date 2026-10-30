@@ -1,7 +1,7 @@
 // Tests for stores/layers.ts: create/duplicate/delete/reorder, enable/disable,
 // ensureTargetLayer, allocatableIds, persistence.
 import { describe, expect, it, vi } from "vitest";
-import type { SectionPreset } from "../../../src/types";
+import type { AppMeta, SectionPreset } from "../../../src/types";
 
 async function freshStores() {
   vi.resetModules();
@@ -347,5 +347,131 @@ describe("layers.updatePreset", () => {
     layers.updatePreset(preset());
 
     expect(selection.selection.value).toEqual({ kind: "build", id: "b1" });
+  });
+});
+
+describe("isDownloaded", () => {
+  function reversedKeys<T extends object>(obj: T): T {
+    return Object.fromEntries(Object.entries(obj).reverse()) as T;
+  }
+
+  it("matches a snapshot whose keys are in a different order", async () => {
+    const { layers } = await freshStores();
+    const layer = layers.createLayer("A");
+    const snapshot = {
+      ...reversedKeys(layer),
+      overlay: reversedKeys(layer.overlay),
+    };
+    layers._init(
+      new Map([[layer.id, { ...layer, downloaded: { snapshot, at: 1 } }]]),
+      [layer.id],
+    );
+    expect(layers.isDownloaded(layer.id)).toBe(true);
+  });
+
+  it("reports an edited layer as not downloaded", async () => {
+    const { layers } = await freshStores();
+    const layer = layers.createLayer("A");
+    const snapshot = { ...layer, enabled: !layer.enabled };
+    layers._init(
+      new Map([[layer.id, { ...layer, downloaded: { snapshot, at: 1 } }]]),
+      [layer.id],
+    );
+    expect(layers.isDownloaded(layer.id)).toBe(false);
+  });
+
+  it("is false without a snapshot", async () => {
+    const { layers } = await freshStores();
+    const layer = layers.createLayer("A");
+    expect(layers.isDownloaded(layer.id)).toBe(false);
+  });
+});
+
+describe("layers.restoreFromTrash", () => {
+  it("restores a copy an import replaced under a fresh id, beside the live layer", async () => {
+    const { layers, selection, trash } = await freshStores();
+    const { layerOrder } = await import("../../../src/stores/meta");
+    const { defaultLayer } = await import("../../../src/storage/storage");
+    const live = layers.createLayer("Original");
+    layers.upsertImported({ ...defaultLayer("Incoming"), id: live.id }, true);
+
+    layers.restoreFromTrash(
+      trash.trashed.value.find((e) => e.item.id === live.id)!,
+    );
+
+    expect(layers.layers.value.map((l) => l.name)).toEqual([
+      "Incoming",
+      "Original",
+    ]);
+    const ids = layers.layers.value.map((l) => l.id);
+    expect(new Set(ids).size).toBe(2);
+    expect(new Set(layerOrder.value).size).toBe(layerOrder.value.length);
+    expect(selection.selection.value).toEqual({ kind: "layer", id: ids[1] });
+    expect(trash.trashed.value).toHaveLength(0);
+  });
+
+  it("keeps the id when no live layer holds it", async () => {
+    const { layers, trash } = await freshStores();
+    layers.createLayer("A");
+    const b = layers.createLayer("B");
+    layers.deleteLayer(b.id);
+
+    layers.restoreFromTrash(trash.trashed.value[0]);
+
+    expect(layers.layers.value.map((l) => l.id).at(-1)).toBe(b.id);
+  });
+});
+
+describe("stored meta", () => {
+  async function setup() {
+    vi.resetModules();
+    const { installWindowShim, installIdbShim } = await import("./window-shim");
+    installWindowShim();
+    const { stores } = installIdbShim();
+    const layers = await import("../../../src/stores/layers");
+    const selection = await import("../../../src/stores/selection");
+    layers._setLoading(false);
+    const storedMeta = async () => {
+      await new Promise((r) => setTimeout(r, 0));
+      return stores.get("meta")!.get("app") as AppMeta;
+    };
+    return { layers, selection, storedMeta };
+  }
+
+  it("keeps the selection when another layer is moved", async () => {
+    const { layers, selection, storedMeta } = await setup();
+    const a = layers.createLayer("A");
+    const b = layers.createLayer("B");
+    selection.selectLayer(a.id);
+
+    await layers.moveLayerTo(b.id, 0);
+
+    const meta = await storedMeta();
+    expect(meta.layerOrder).toEqual([b.id, a.id]);
+    expect(meta.lastSelection).toEqual({ kind: "layer", id: a.id });
+  });
+
+  it("drops a trashed layer that was not selected from the stored order", async () => {
+    const { layers, selection, storedMeta } = await setup();
+    const a = layers.createLayer("A");
+    const b = layers.createLayer("B");
+    selection.selectLayer(a.id);
+
+    layers.deleteLayer(b.id);
+
+    const meta = await storedMeta();
+    expect(meta.layerOrder).toEqual([a.id]);
+    expect(meta.lastSelection).toEqual({ kind: "layer", id: a.id });
+  });
+
+  it("stores an imported layer's position before it is selected", async () => {
+    const { layers, storedMeta } = await setup();
+    const { defaultLayer } = await import("../../../src/storage/storage");
+    const a = layers.createLayer("A");
+    const incoming = defaultLayer("Incoming");
+
+    layers.upsertImported(incoming, false);
+
+    expect((await storedMeta()).layerOrder).toEqual([a.id, incoming.id]);
   });
 });

@@ -10,6 +10,7 @@
 import { computed, ref, toRaw, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { onPageHide } from "../lib/page-lifecycle";
+import { downloadJson } from "../lib/download";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as landing from "./landing";
@@ -23,6 +24,7 @@ import type { BuildPlacement } from "./folders";
 import { buildOrder } from "./meta";
 import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
 import { db as engineDb } from "./resolved";
+import { applyChoice } from "../lib/apply-choice";
 import {
   unpackCatalog,
   unpackNotice,
@@ -32,11 +34,12 @@ import {
   clearSlotContents,
   pruneUnavailableSlots,
 } from "../lib/slot-availability";
-import type { Build, BuildNavEntry, BuildOption } from "../types";
+import type { Build, BuildNavEntry, BuildOption, TrashEntry } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
 
 const _builds = ref<Map<string, Build>>(new Map());
+trash.setLiveCheck("build", (id) => _builds.value.has(id));
 const _loading = ref(true);
 
 /** Every build in sidebar order -- folder contents expanded in place, so the flat list the
@@ -397,7 +400,7 @@ export function setChoiceFor(
   const b = _builds.value.get(id);
   if (!b) return;
   history.snapshot("build", id, `choice:${slotId}`, label, b);
-  b.choices[slotId] = itemId;
+  applyChoice(engineDb.value, b, slotId, itemId);
   markDirty(id);
   finishEdit(id);
 }
@@ -449,6 +452,24 @@ export function upsertImported(
   return unpacked;
 }
 
+/** The trash UI's Restore: puts a trashed build back at the bottom of the top level and
+ *  selects it. When a live build holds its id (an import replaced it), the restored copy gets
+ *  a fresh one, so both stay. Records nothing on the nav stack. */
+export function restoreFromTrash(entry: TrashEntry) {
+  if (entry.kind !== "build") return;
+  const item = toRaw(trash.restore(entry) as Build | null);
+  if (!item) return;
+  const b = _builds.value.has(item.id)
+    ? { ...item, id: storage.newId() }
+    : item;
+  const unpacked = unpackCatalog(b);
+  const landed = unpacked && unpackNotice([unpacked]);
+  pruneStored(b);
+  addBuild(b, { folderId: null, index: Number.MAX_SAFE_INTEGER });
+  selection.selectBuild(b.id);
+  showNotice([`Restored “${b.name}”`, landed].filter(Boolean).join(". "));
+}
+
 /** Selects an imported build, once the whole file has been written. */
 export function selectImported(id: string) {
   if (_builds.value.has(id)) selection.selectBuild(id);
@@ -458,13 +479,7 @@ export function downloadBuild(id: string) {
   const b = _builds.value.get(id);
   if (!b) return;
   const json = storage.toBuildJson(b, engineDb.value);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${b.name.replace(/[^\w.-]+/g, "-") || "build"}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadJson(`${b.name.replace(/[^\w.-]+/g, "-") || "build"}.json`, json);
 }
 
 // --- bootstrap --------------------------------------------------------------------------

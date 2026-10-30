@@ -7,15 +7,17 @@
 // stack. A layer leaving the pool always goes through the trash, so undoing a create and
 // undoing a delete are the same two primitives run in opposite directions: `trashLayer` and
 // `restoreLayer`. Neither records anything.
-import { computed, ref } from "vue";
+import { computed, ref, toRaw } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { onPageHide } from "../lib/page-lifecycle";
+import { downloadJson } from "../lib/download";
 import { reorderIndex } from "../composables/useDragAndDrop";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as navHistory from "./navHistory";
 import type { NavStepOutcome } from "./navHistory";
 import * as trash from "./trash";
+import * as pendingEdits from "./pendingEdits";
 import * as selection from "./selection";
 import { layerOrder, persistMeta } from "./meta";
 import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
@@ -26,11 +28,13 @@ import type {
   CatalogGroup,
   CatalogOverlay,
   SectionPreset,
+  TrashEntry,
 } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
 
 const _layers = ref<Map<string, Layer>>(new Map());
+trash.setLiveCheck("layer", (id) => _layers.value.has(id));
 
 export const layers = computed(() =>
   layerOrder.value.map((id) => _layers.value.get(id)!).filter(Boolean),
@@ -85,6 +89,7 @@ function addLayer(layer: Layer, index: number) {
     layer.id,
   );
   markDirty(layer.id);
+  persistMeta();
 }
 
 /** Moves a layer to the trash. Returns the index it had in the fold order, or null when there
@@ -97,6 +102,7 @@ function trashLayer(id: string): number | null {
   clearDirty(id);
   _layers.value.delete(id);
   layerOrder.value = layerOrder.value.filter((oid) => oid !== id);
+  persistMeta();
   storage.deleteLayerRecord(id).catch(() => {});
 
   trash._add("layer", layer);
@@ -324,6 +330,13 @@ export function updatePreset(preset: SectionPreset): Layer {
   return layer;
 }
 
+/** Whether the layer matches its last downloaded snapshot, ignoring key order. */
+export function isDownloaded(id: string): boolean {
+  const layer = _layers.value.get(id);
+  if (!layer?.downloaded?.snapshot) return false;
+  return storage.sameContent<Layer>(layer, layer.downloaded.snapshot);
+}
+
 export function revertToDownloaded(id: string) {
   const layer = _layers.value.get(id);
   if (!layer?.downloaded?.snapshot) return;
@@ -360,13 +373,7 @@ export function downloadLayer(id: string) {
   const layer = _layers.value.get(id);
   if (!layer) return;
   const json = storage.toLayerJson(layer);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${layer.name.replace(/[^\w.-]+/g, "-") || "layer"}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadJson(`${layer.name.replace(/[^\w.-]+/g, "-") || "layer"}.json`, json);
 }
 
 export function importLayerText(text: string) {
@@ -391,7 +398,10 @@ export function importLayerText(text: string) {
 export function upsertImported(layer: Layer, replacing: boolean) {
   const existing = _layers.value.get(layer.id);
   if (replacing && existing) trash._add("layer", existing);
-  else if (!existing) layerOrder.value.push(layer.id);
+  else if (!existing) {
+    layerOrder.value.push(layer.id);
+    persistMeta();
+  }
   _layers.value.set(layer.id, layer);
   markDirty(layer.id);
 }
@@ -399,6 +409,21 @@ export function upsertImported(layer: Layer, replacing: boolean) {
 /** Selects an imported layer, once the whole file has been written. */
 export function selectImported(id: string) {
   if (_layers.value.has(id)) selection.selectLayer(id);
+}
+
+/** The trash UI's Restore: puts a trashed layer back at the bottom and selects it. When a
+ *  live layer holds its id (an import replaced it), the restored copy gets a fresh one, so
+ *  both stay. Records nothing on the nav stack. */
+export function restoreFromTrash(entry: TrashEntry) {
+  if (entry.kind !== "layer") return;
+  const item = toRaw(trash.restore(entry) as Layer | null);
+  if (!item) return;
+  const layer = _layers.value.has(item.id)
+    ? { ...item, id: storage.newId("l") }
+    : item;
+  addLayer(layer, layerOrder.value.length);
+  selection.selectLayer(layer.id);
+  showNotice(`Restored “${layer.name}”`);
 }
 
 /**
@@ -409,8 +434,7 @@ export function selectImported(id: string) {
  *
  * Matching on content is what keeps one sender's five builds, or the same file imported
  * twice, down to a single layer. Records nothing on the nav stack: this is part of an import,
- * not a step the user took. `persistMeta` is handed the selection, since the order write
- * would otherwise forget it.
+ * not a step the user took.
  */
 export function adoptOverlay(
   name: string,
@@ -420,7 +444,6 @@ export function adoptOverlay(
   if (match) return { layer: match, reused: true };
   const layer: Layer = { ...storage.defaultLayer(name), overlay };
   addLayer(layer, 0);
-  persistMeta(selection.selection.value);
   return { layer, reused: false };
 }
 
@@ -456,8 +479,12 @@ async function flushSave() {
 }
 
 const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
-// A write still waiting on the debounce would be lost if the page goes away first.
-onPageHide(() => void flushSave());
+// A write still waiting on the debounce would be lost if the page goes away first. Open forms
+// commit their pending edits first, since those land in this store.
+onPageHide(() => {
+  pendingEdits.flushAll();
+  void flushSave();
+});
 
 function markDirty(id: string) {
   if (_loading) return;

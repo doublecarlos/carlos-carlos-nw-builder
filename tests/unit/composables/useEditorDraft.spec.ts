@@ -3,6 +3,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { computed, effectScope, nextTick, ref } from "vue";
 import { useEditorDraft } from "../../../src/composables/useEditorDraft";
+import * as pendingEdits from "../../../src/stores/pendingEdits";
 
 interface Entity {
   a: number;
@@ -51,6 +52,40 @@ describe("useEditorDraft source echo", () => {
     source.value = { a: 1, b: 3 };
     await nextTick();
     expect(buildDraft).toHaveBeenCalledOnce();
+    scope.stop();
+  });
+});
+
+describe("useEditorDraft pending edits", () => {
+  beforeEach(() => vi.stubGlobal("window", globalThis));
+  afterEach(() => vi.unstubAllGlobals());
+
+  function setupEmitting() {
+    const emit = vi.fn();
+    const scope = effectScope();
+    const form = scope.run(() =>
+      useEditorDraft<Entity, Entity, Entity>({
+        source: () => ({ a: 1, b: 2 }),
+        isNew: computed(() => false),
+        buildDraft: (value) => ({ a: value?.a ?? 0, b: value?.b ?? 0 }),
+        toEntity: (draft) => ({ a: draft.a, b: draft.b }),
+        diffLabel: () => "edit",
+        hasContent: () => true,
+        emit,
+        displayId: { sourceId: () => "id", computeId: () => "id" },
+      }),
+    )!;
+    return { emit, form, scope };
+  }
+
+  it("flushAll emits a debounced edit right away", async () => {
+    const { emit, form, scope } = setupEmitting();
+    form.draft.value.a = 5;
+    await nextTick();
+    expect(emit).not.toHaveBeenCalled();
+
+    pendingEdits.flushAll();
+    expect(emit).toHaveBeenCalledOnce();
     scope.stop();
   });
 });

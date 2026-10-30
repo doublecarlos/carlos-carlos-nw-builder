@@ -25,7 +25,8 @@ import {
   storedSlotIds,
 } from "../lib/slot-fields";
 import { slotShown } from "../lib/slot-availability";
-import { itemLabel, normalizeGroup, stableRef } from "../engine/insignia";
+import { itemLabel } from "../engine/insignia";
+import { applyChoice } from "../lib/apply-choice";
 import {
   expandSlots,
   listRowCount,
@@ -108,42 +109,10 @@ export function setChoice(slotId: string, id: string) {
     id ? `${slot} → ${label}` : `clear ${slot}`,
     b,
   );
-  if (id) {
-    b.choices[slotId] = id;
-    for (const [paramSlotId, value] of Object.entries(
-      item?.defaultParams ?? {},
-    )) {
-      const paramSlot = db.value.slotById.get(paramSlotId);
-      if (paramSlot?.type === "build_parameter")
-        setPath(b.context, paramSlot.path, value);
-    }
-  } else {
-    // Only on a clear. Swapping one pick for another keeps the off state, since the checkbox
-    // stays on screen; an emptied row shows none, so a state left there could not be undone.
-    clearSlotData(b, slotId);
-  }
-  normalizeStable(b, slotId);
+  // Applied here rather than by a watcher, which would re-apply itself to the state an undo had
+  // just restored.
+  applyChoice(db.value, b, slotId, id);
   builds.finishEdit(b.id);
-}
-
-/**
- * Re-pair a group's insignia with the slots they sit in: upgrade the ones whose slot prefers
- * their shape, drop the ones their slot does not take.
- *
- * Called from the action, not a watcher: a watcher would re-apply itself to the state an undo
- * had just restored. Changing a mount re-pairs the whole group, changing one insignia only its
- * own slot. It rides the caller's snapshot, so a mount swap and its evictions undo as one step.
- */
-function normalizeStable(b: Build, slotId: string) {
-  const ref = stableRef(db.value, slotId);
-  if (!ref || ref.role === "bonus") return;
-  for (const [target, id] of Object.entries(
-    normalizeGroup(db.value, b, ref.group),
-  )) {
-    if (ref.role === "insignia" && target !== slotId) continue;
-    if (id) b.choices[target] = id;
-    else clearSlotData(b, target);
-  }
 }
 
 /** Every row id of `listId` this build stores anything under -- what a clear has to drop, and
@@ -598,13 +567,14 @@ export function applyPreset(preset: SectionPreset) {
     }
   }
 
+  // Before `params`, so a param the preset names wins over a picked item's `defaultParams`.
+  for (const [slotId, itemId] of Object.entries(preset.choices ?? {})) {
+    applyChoice(db.value, b, slotId, itemId);
+  }
+
   for (const [slotId, value] of Object.entries(preset.params ?? {})) {
     const slot = db.value.slotById.get(slotId);
     if (slot?.type === "build_parameter") setPath(b.context, slot.path, value);
-  }
-
-  for (const [slotId, itemId] of Object.entries(preset.choices ?? {})) {
-    b.choices[slotId] = itemId;
   }
 
   for (const [slotId, value] of Object.entries(preset.values ?? {})) {

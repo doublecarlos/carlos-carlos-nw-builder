@@ -1,5 +1,5 @@
-// useCompareDiff's typed-value diffing (`inputDiffs`), and `paramDiffTitle`'s display string
-// for what the compare build holds.
+// useCompareDiff's typed-value diffing (`inputDiffs`), its per-row bonus outcome notes, and
+// `paramDiffTitle`'s display string for what the compare build holds.
 import { describe, it, expect } from "vitest";
 import { ref } from "vue";
 import * as db from "../../../src/data/db";
@@ -101,8 +101,8 @@ function build(overrides: Partial<Build> = {}): Build {
   };
 }
 
-function diffsFor(own: Build, other: Build, slotId: string) {
-  const { inputDiffs } = useCompareDiff({
+function compareOf(own: Build, other: Build) {
+  return useCompareDiff({
     db: ref(testDb),
     build: ref(own),
     result: ref(engine.resolveBuild(testDb, own)),
@@ -110,7 +110,19 @@ function diffsFor(own: Build, other: Build, slotId: string) {
     compareResult: ref(engine.resolveBuild(testDb, other)),
     itemIn: (id) => testDb.get(own.choices[id]) ?? null,
   });
-  return inputDiffs(slotId);
+}
+
+function diffsFor(own: Build, other: Build, slotId: string) {
+  return compareOf(own, other).inputDiffs(slotId);
+}
+
+function inCombat(on: boolean): Partial<Build> {
+  return {
+    context: {
+      role: "dps",
+      toggles: { combat: on },
+    } as unknown as Build["context"],
+  };
 }
 
 describe("inputDiffs", () => {
@@ -156,6 +168,26 @@ describe("inputDiffs", () => {
         otherLabel: "2",
       },
     ]);
+  });
+});
+
+describe("rowDiff bonuses", () => {
+  it("names a bonus whose outcome differs from the compare build's", () => {
+    const { rowDiff } = compareOf(
+      build(inCombat(true)),
+      build(inCombat(false)),
+    );
+    expect(rowDiff("gear.ring")?.bonuses).toEqual([
+      { id: "proc", message: "Proc is active here but not in “Other”." },
+    ]);
+  });
+
+  it("reports nothing while both builds resolve the bonus alike", () => {
+    const { rowHasDiff } = compareOf(
+      build(inCombat(true)),
+      build(inCombat(true)),
+    );
+    expect(rowHasDiff("gear.ring")).toBe(false);
   });
 });
 

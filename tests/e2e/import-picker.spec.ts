@@ -7,6 +7,7 @@ import {
   layerRow,
   recentlyDeletedHeader,
   renameViaSidebar,
+  restoreTrash,
 } from "./support/nav";
 
 /** An un-enveloped bundle: two builds and a layer, none of them known to the workspace. Ids
@@ -202,5 +203,31 @@ test.describe("a build already here under the same id", () => {
     await expect(page.locator(".nav-row--build")).toHaveCount(1);
     await expect(buildRow(page, "Alpha")).toBeVisible();
     await expect(recentlyDeletedHeader(page)).toBeVisible();
+  });
+
+  test("restoring the replaced copy keeps both builds", async ({ page }) => {
+    await openBuilder(page);
+    await renameViaSidebar(
+      page,
+      page.locator(".nav-row--build").first(),
+      "Alpha",
+    );
+    const exported = await exportedBuild(page);
+    await renameViaSidebar(page, buildRow(page, "Alpha"), "Stale name");
+    await importText(page, exported);
+    await page.getByTestId("import-build-replace").click();
+    await confirmImport(page);
+
+    await recentlyDeletedHeader(page).click();
+    await restoreTrash(page);
+
+    await expect(page.locator(".nav-row--build")).toHaveCount(2);
+    await expect(buildRow(page, "Alpha")).toHaveCount(1);
+    await expect(buildRow(page, "Stale name")).toHaveCount(1);
+
+    // Both are stored under their own ids, so both come back after a reload.
+    await page.reload();
+    await expect(buildRow(page, "Alpha")).toHaveCount(1);
+    await expect(buildRow(page, "Stale name")).toHaveCount(1);
   });
 });

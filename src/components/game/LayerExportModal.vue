@@ -17,6 +17,7 @@ import TabButton from "../ui/TabButton.vue";
 import * as catalog from "../../data/catalog";
 import * as layers from "../../stores/layers";
 import * as maintainer from "../../stores/maintainer";
+import { downloadText } from "../../lib/download";
 import type { CatalogOverlay } from "../../types";
 
 const props = defineProps<{
@@ -164,13 +165,7 @@ async function sendToLocalServer() {
 }
 
 function downloadExport() {
-  const blob = new Blob([exportText.value], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = exportName.value;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadText(exportName.value, exportText.value, "text/plain");
 }
 </script>
 
