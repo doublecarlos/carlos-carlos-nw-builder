@@ -1,7 +1,7 @@
 // End-to-end coverage for authoring a layout section in a layer: creating it, its default open
 // state in the build editor, reordering, reaching it from lint, and deleting it with or
 // without its slots.
-import { test, expect, type Locator, type Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
   chooseCombo,
@@ -43,9 +43,6 @@ async function createSection(
   await expect(page.getByText(`Saved section "${label}"`)).toBeVisible();
 }
 
-/** The build editor's expand/collapse arrow on a section header. */
-const arrowOf = (header: Locator) => header.locator("span:first-child");
-
 /** Adds one text slot to whatever section the outline has open. */
 async function addTextSlot(page: Page, text: string) {
   await newInOutline(page, "new-slot");
@@ -85,15 +82,27 @@ test("a section starts open or collapsed as authored, whatever UI state was save
   await addTextSlot(page, "Scratch notes");
 
   await backToBuild(page);
-  await expect(arrowOf(headerRow(page, "field-notes"))).toHaveText("▾");
-  await expect(arrowOf(headerRow(page, "scratch"))).toHaveText("▸");
+  await expect(headerRow(page, "field-notes")).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expect(headerRow(page, "scratch")).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
 
   // Toggling the layer off and on brings the sections back with the same defaults.
   await toggleLayerCheckbox(layerRow(page, "Layer 1"));
   await expect(headerRow(page, "field-notes")).toHaveCount(0);
   await toggleLayerCheckbox(layerRow(page, "Layer 1"));
-  await expect(arrowOf(headerRow(page, "field-notes"))).toHaveText("▾");
-  await expect(arrowOf(headerRow(page, "scratch"))).toHaveText("▸");
+  await expect(headerRow(page, "field-notes")).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expect(headerRow(page, "scratch")).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
 });
 
 test("a lint finding about a section opens that section", async ({ page }) => {

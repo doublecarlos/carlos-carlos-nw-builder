@@ -144,7 +144,7 @@ defineSlots<{
     ref="el"
     role="listbox"
     data-testid="picker-menu"
-    class="fixed z-menu overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
+    class="fixed z-menu animate-fade-in overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
     :class="menuClass"
     :style="style"
   >

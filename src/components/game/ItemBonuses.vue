@@ -13,11 +13,10 @@ import { ref, computed, provide } from "vue";
 import BonusForm from "./BonusForm.vue";
 import BonusComboBox from "./BonusComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
+import FoldChevron from "../ui/FoldChevron.vue";
 import {
   ArrowDown,
   ArrowUp,
-  ChevronDown,
-  ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
   Unlink,
@@ -325,8 +324,7 @@ function nudgeBonus(index: number, delta: -1 | 1) {
               data-testid="bonus-card-toggle"
               @click="toggleExpanded(slot)"
             >
-              <ChevronDown v-if="isExpanded(slot)" />
-              <ChevronRight v-else />
+              <FoldChevron :expanded="isExpanded(slot)" />
             </IconButton>
           </template>
           <template #after-title>

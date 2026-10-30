@@ -341,6 +341,7 @@ function itemForHover(slotId: string, itemId?: string): Item | null {
 
 const {
   hover,
+  fadeIn: hoverCardFadeIn,
   onRowEnter,
   onRowLeave,
   onCardEnter,
@@ -1278,7 +1279,7 @@ watch(
         </BuildSection>
 
         <!-- One card for the whole list, moved and refilled on hover. -->
-        <BasePopover ref="tooltip" :width="320">
+        <BasePopover ref="tooltip" :width="320" :animate="hoverCardFadeIn">
           <ItemCard
             v-if="hover && hoveredItem"
             :item="hoveredItem"

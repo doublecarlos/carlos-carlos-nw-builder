@@ -39,7 +39,7 @@ defineEmits<{ click: [event: MouseEvent] }>();
         ...(as === 'button' ? { type: 'button', disabled } : {}),
         ...$attrs,
       }"
-      class="[&_svg]:size-[1em] cursor-pointer inline-flex items-center justify-center rounded p-1 text-muted enabled:hover:bg-surface-2 enabled:hover:text-accent disabled:cursor-default disabled:opacity-35"
+      class="[&_svg]:size-[1em] cursor-pointer inline-flex items-center justify-center rounded p-1 text-muted transition-colors enabled:hover:bg-surface-2 enabled:hover:text-accent disabled:cursor-default disabled:opacity-35"
       :aria-label="label ?? title"
       @click="$emit('click', $event)"
     >

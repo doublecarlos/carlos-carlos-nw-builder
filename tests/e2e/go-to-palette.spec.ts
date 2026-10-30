@@ -142,7 +142,10 @@ test.describe("choosing a destination", () => {
   }) => {
     await openBuilder(page);
     await headerRow(page, "gear").click();
-    await expect(headerRow(page, "gear")).toContainText("▸");
+    await expect(headerRow(page, "gear")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
 
     await openPalette(page, "weapon offhand");
     await page.keyboard.press("Enter");
@@ -150,7 +153,10 @@ test.describe("choosing a destination", () => {
     // The one place navigating rewrites the layout, and deliberately: unlike Mod+arrow,
     // which lands on a header that exists either way, a row in a closed section has nothing
     // to land on at all.
-    await expect(headerRow(page, "gear")).toContainText("▾");
+    await expect(headerRow(page, "gear")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     await expect(slotRow(page, "gear.offhand")).toBeVisible();
   });
 
@@ -198,7 +204,10 @@ test.describe("choosing a destination", () => {
   }) => {
     await openBuilder(page);
     await headerRow(page, "boons").click();
-    await expect(headerRow(page, "boons")).toContainText("▸");
+    await expect(headerRow(page, "boons")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
 
     await openPalette(page, "boons");
     await page.keyboard.press("Enter");
@@ -211,7 +220,10 @@ test.describe("choosing a destination", () => {
     );
     await expect(headerRow(page, "boons")).toBeInViewport();
     // And it exists either way, so unlike a slot jump this leaves the section closed.
-    await expect(headerRow(page, "boons")).toContainText("▸");
+    await expect(headerRow(page, "boons")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 
   test("the last section is reachable, though it cannot scroll to the top", async ({

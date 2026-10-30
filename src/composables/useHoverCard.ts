@@ -40,6 +40,9 @@ export function useHoverCard(
   hasItem: (slotId: string, itemId?: string) => boolean,
 ) {
   const hover = ref<HoverPosition | null>(null);
+  /** Whether the open card faded in. The first card of a sweep does; one resuming the sweep
+   *  appears at once. */
+  const fadeIn = ref(true);
   /** The row waiting to open, kept for the hover timers and, while suppressed, for the pointer
    *  move that lifts suppression. Its rect is read at open time because the row may still be
    *  scrolling when the pointer enters it. */
@@ -60,10 +63,16 @@ export function useHoverCard(
 
   function openPending() {
     if (pending) {
+      // Decided only when the card opens, so a mounted card never replays its entrance.
+      if (!hover.value) fadeIn.value = !isResuming();
       tooltip.value?.place(pending.row.getBoundingClientRect(), pending.x);
       hover.value = { slotId: pending.slotId, itemId: pending.itemId };
     }
     pending = null;
+  }
+
+  function isResuming() {
+    return Date.now() - lastHideAt < HOVER_RESUME_MS;
   }
 
   const { start: startHoverTimer, stop: stopHoverTimer } = useTimeoutFn(
@@ -97,8 +106,7 @@ export function useHoverCard(
       notePointer(event.clientX, event.clientY);
       return;
     }
-    const resuming = Date.now() - lastHideAt < HOVER_RESUME_MS;
-    if (resuming) startHoverTimerNow();
+    if (isResuming()) startHoverTimerNow();
     else startHoverTimer();
   }
 
@@ -194,6 +202,7 @@ export function useHoverCard(
 
   return {
     hover,
+    fadeIn,
     onRowEnter,
     onRowLeave,
     onCardEnter,

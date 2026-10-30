@@ -105,12 +105,18 @@ watch([open, trigger], ([isOpen, el]) => {
   <span ref="wrapper" class="contents">
     <slot />
 
-    <BasePopover v-if="open" ref="popover" :width="width" fit-content>
+    <BasePopover
+      v-if="open"
+      ref="popover"
+      :width="width"
+      fit-content
+      :animate="false"
+    >
       <div
         :id="tooltipId"
         role="tooltip"
         data-testid="tooltip"
-        class="rounded-md border border-line bg-surface px-2 py-1 text-sm text-text shadow-lg"
+        class="animate-fade-in-fast rounded-md border border-line bg-surface px-2 py-1 text-sm text-text shadow-lg"
       >
         {{ text }}
       </div>

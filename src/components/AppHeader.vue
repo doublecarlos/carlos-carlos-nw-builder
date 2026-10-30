@@ -190,15 +190,26 @@ async function onImportFile(event: Event) {
 
     <!-- Wide enough for the layer editor's longer confirmations (tooltip-fill, duplicate);
          `:title` still covers anything past this width. -->
-    <span class="ml-auto flex items-center gap-1">
-      <BaseNotice
-        v-if="notice"
-        class="inline-block max-w-[32rem] overflow-hidden text-ellipsis whitespace-nowrap"
-        :title="notice"
-        @dismiss="showNotice('')"
+    <span class="relative ml-auto flex items-center gap-1">
+      <!-- Keyed by text, so a replacing notice enters again. The leaving one drops out of flow
+           so the new one takes its place at once. -->
+      <Transition
+        enter-active-class="transition duration-150 ease-snappy"
+        enter-from-class="opacity-0 translate-y-1"
+        leave-active-class="absolute transition-opacity duration-100"
+        leave-to-class="opacity-0"
       >
-        {{ notice }}
-      </BaseNotice>
+        <BaseNotice
+          v-if="notice"
+          :key="notice"
+          class="inline-block max-w-[32rem] overflow-hidden text-ellipsis whitespace-nowrap"
+          :title="notice"
+          data-testid="app-notice"
+          @dismiss="showNotice('')"
+        >
+          {{ notice }}
+        </BaseNotice>
+      </Transition>
       <BaseLink
         v-if="notice && noticeAction"
         data-testid="notice-action"

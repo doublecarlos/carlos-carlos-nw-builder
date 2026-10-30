@@ -28,7 +28,7 @@ const toneClasses: Record<"accent" | "danger" | "warn", string> = {
       :key="option.value"
       type="button"
       :data-testid="option.testid"
-      class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
+      class="border border-line px-2 py-0.5 transition-colors first:rounded-l-md last:rounded-r-md last:border-l-0"
       :class="
         model === option.value
           ? toneClasses[option.tone ?? 'accent']

@@ -274,7 +274,7 @@ if (bonusDraftRegistry && props.registryId) {
       </template>
     </DraftFormBar>
 
-    <template v-if="!collapsed">
+    <div v-if="!collapsed" class="animate-fade-in">
       <!-- The embedding item's per-attachment settings, ahead of the bonus's own definition. -->
       <slot />
       <FormSection :nested="embedded">Identification</FormSection>
@@ -399,6 +399,6 @@ if (bonusDraftRegistry && props.registryId) {
           <BonusOptionRow :option="option" />
         </template>
       </TokenInput>
-    </template>
+    </div>
   </div>
 </template>

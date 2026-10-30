@@ -23,8 +23,11 @@ const props = withDefaults(
      *  the card jump about. On is what a tooltip wants -- "Build menu" in a 240px box centered
      *  on a 20px kebab would hang off both sides of it and read as belonging to nothing. */
     fitContent?: boolean;
+    /** Fade in on open. Opacity only, so a fixed descendant (ComboBoxMenu) keeps the viewport
+     *  as its containing block. Repositioning an open panel never replays it. */
+    animate?: boolean;
   }>(),
-  { width: 256, fitContent: false },
+  { width: 256, fitContent: false, animate: true },
 );
 
 const el = useTemplateRef("el");
@@ -125,6 +128,7 @@ defineExpose({ place, close });
       v-if="pos"
       ref="el"
       class="fixed z-popover flex"
+      :class="animate && 'animate-fade-in'"
       :style="{
         left: pos.left + 'px',
         top: pos.top + 'px',

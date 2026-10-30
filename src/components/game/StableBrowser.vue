@@ -10,17 +10,12 @@ import { computed, ref, watch } from "vue";
 import BaseModal from "../ui/BaseModal.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import IconButton from "../ui/IconButton.vue";
+import FoldChevron from "../ui/FoldChevron.vue";
 import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
 import ClearableInput from "../ui/ClearableInput.vue";
 import DescriptionText from "../ui/DescriptionText.vue";
-import {
-  ChevronDown,
-  ChevronRight,
-  ChevronsDownUp,
-  ChevronsUpDown,
-  Plus,
-} from "@lucide/vue";
+import { ChevronsDownUp, ChevronsUpDown, Plus } from "@lucide/vue";
 import { STABLE_ROLE_FILTER } from "../../data/catalog";
 import { PREFERRED_MARK, readGroup } from "../../engine/insignia";
 import { stableCards, type StableCard } from "../../lib/stable-rows";
@@ -176,11 +171,10 @@ function create(filter: string) {
             :data-testid="'stable-card-toggle:' + card.id"
             @click="toggleCard(card.id)"
           >
-            <ChevronRight
-              v-if="isCollapsed(card)"
+            <FoldChevron
+              :expanded="!isCollapsed(card)"
               class="size-4 flex-none text-muted"
             />
-            <ChevronDown v-else class="size-4 flex-none text-muted" />
             <span class="shrink-0 font-semibold">{{ card.name }}</span>
             <span class="min-w-0 truncate text-muted">{{ card.meta }}</span>
             <!-- A narrowed card says what it is a subset of. -->
@@ -201,7 +195,7 @@ function create(filter: string) {
             >Use mount</BaseButton
           >
         </div>
-        <template v-if="!isCollapsed(card)">
+        <div v-if="!isCollapsed(card)" class="animate-fade-in">
           <div
             v-if="card.description.length"
             class="border-b border-line px-2.5 py-1.5"
@@ -244,7 +238,7 @@ function create(filter: string) {
               >
             </li>
           </ul>
-        </template>
+        </div>
       </div>
     </div>
 

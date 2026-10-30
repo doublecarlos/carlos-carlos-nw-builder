@@ -89,7 +89,7 @@ useEscapeToClose(() => emit("close"));
   <!-- Teleported so stacking never depends on where the modal was mounted. -->
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-modal flex justify-center bg-scrim"
+      class="fixed inset-0 z-modal flex animate-fade-in justify-center bg-scrim"
       :class="align === 'top' ? 'items-start pt-[12vh]' : 'items-center'"
       v-bind="$attrs"
       @click.self="emit('close')"
@@ -97,7 +97,11 @@ useEscapeToClose(() => emit("close"));
       <div
         ref="panel"
         class="flex flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-xl focus:outline-none"
-        :class="panelClass"
+        :class="[
+          // A top-aligned panel drops in from where it sits; scaling would shift its top edge.
+          align === 'top' ? 'animate-drop-in' : 'animate-pop-in',
+          panelClass,
+        ]"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="title ? titleId : undefined"
@@ -112,7 +116,7 @@ useEscapeToClose(() => emit("close"));
           <h2 :id="titleId" class="text-base font-semibold">{{ title }}</h2>
           <button
             type="button"
-            class="cursor-pointer text-muted hover:text-text"
+            class="cursor-pointer text-muted transition-colors hover:text-text"
             aria-label="Close"
             data-testid="modal-close"
             @click="emit('close')"

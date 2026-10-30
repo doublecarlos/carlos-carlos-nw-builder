@@ -13,6 +13,8 @@ export default defineConfig({
     baseURL: `http://localhost:${DEV_PORT}`,
     trace: "on-first-retry",
     viewport: { width: 1440, height: 900 },
+    // Keeps the suite fast and deterministic; motion.spec.ts opts back in.
+    contextOptions: { reducedMotion: "reduce" },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {

@@ -84,16 +84,25 @@ test("only showing changes opens a collapsed section holding one, like any filte
   await chooseCombo(page.locator(".compare-select"), "Build 1");
   await ensureSectionExpanded(page, "gear");
   await headerRow(page, "gear").click();
-  await expect(headerRow(page, "gear")).toContainText("▸");
+  await expect(headerRow(page, "gear")).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
 
   const onlyChanges = page.getByRole("checkbox", { name: "Only show changes" });
   await onlyChanges.check();
-  await expect(headerRow(page, "gear")).toContainText("▾");
+  await expect(headerRow(page, "gear")).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   await expect(slotRow(page, "gear.head")).toBeVisible();
 
   // The section's own collapsed state is back once the filter is gone.
   await onlyChanges.uncheck();
-  await expect(headerRow(page, "gear")).toContainText("▸");
+  await expect(headerRow(page, "gear")).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
 });
 
 test("copying a section from another build fills its slots", async ({

@@ -112,7 +112,10 @@ test.describe("Mod+arrow section cursor", () => {
   }) => {
     await openBuilder(page);
     await headerRow(page, "raceLeveling").click();
-    await expect(headerRow(page, "raceLeveling")).toContainText("▸");
+    await expect(headerRow(page, "raceLeveling")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     await parkCursorOnRow(page, "options.class");
 
     await page.keyboard.press("ControlOrMeta+ArrowDown");
@@ -123,7 +126,10 @@ test.describe("Mod+arrow section cursor", () => {
       "header:raceLeveling",
     );
     await page.keyboard.press("Enter");
-    await expect(headerRow(page, "raceLeveling")).toContainText("▾");
+    await expect(headerRow(page, "raceLeveling")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
   });
 
   test("stops at the last section rather than losing the cursor", async ({

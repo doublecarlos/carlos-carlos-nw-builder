@@ -1,7 +1,7 @@
-/* Design tokens only -- see AGENTS.md's "no global style definitions other than theme
- * variables" rule. Resets/element defaults come from Tailwind's own Preflight (imported
- * below); anything components actually share (buttons, badges, panels, ...) lives in its own
- * component under src/components/ui, not here.
+/* Design tokens only (colors, shadows, stacking layers, motion), per AGENTS.md's "no global
+ * style definitions other than theme variables" rule. Resets/element defaults come from
+ * Tailwind's own Preflight (imported below); anything components actually share (buttons,
+ * badges, panels, ...) lives in its own component under src/components/ui, not here.
  *
  * Colors stay CSS custom properties (not baked into `@theme` as literal values) so a runtime
  * `.dark` class toggle can swap them -- `@theme` just aliases into `--color-*` so Tailwind's
@@ -144,6 +144,42 @@
   --z-index-menu: 30;
   --z-index-modal: 50;
   --z-index-popover: 60;
+
+  /* Motion. Hover and color changes take 120ms, overlay entrances at most 150ms, and nothing
+   * passes 200ms. Entrances only: overlays still close on the frame they are dismissed. */
+  --default-transition-duration: 120ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
+  --animate-fade-in: fade-in 120ms var(--ease-snappy);
+  --animate-fade-in-fast: fade-in 100ms var(--ease-snappy);
+  --animate-pop-in: pop-in 140ms var(--ease-snappy);
+  --animate-drop-in: drop-in 140ms var(--ease-snappy);
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  /* Both end on `transform: none`, so no transformed ancestor outlives the entrance and traps a
+   * fixed descendant (ComboBoxMenu). */
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes drop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      transform: none;
+    }
+  }
 }
 
 /* Build values read heavier than their labels. Set on a container of build controls; an empty
@@ -191,5 +227,23 @@
   }
   html.is-dragging * {
     cursor: grabbing !important;
+  }
+
+  /* The theme toggle's cross-fade (stores/theme.ts). Document-level, so it lives here. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 150ms;
+    animation-timing-function: var(--ease-snappy);
+  }
+
+  /* Zero rather than a token length: every element's `transition-property` starts as `all`,
+   * so any nonzero duration here would make every layout change transition for a frame. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0s !important;
+      transition-duration: 0s !important;
+    }
   }
 }
