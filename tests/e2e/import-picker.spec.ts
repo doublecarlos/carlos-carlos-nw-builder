@@ -225,7 +225,27 @@ test.describe("a build already here under the same id", () => {
     await expect(buildRow(page, "Alpha")).toHaveCount(1);
     await expect(buildRow(page, "Stale name")).toHaveCount(1);
 
-    // Both are stored under their own ids, so both come back after a reload.
+    // Both are stored under their own ids, so both come back after a reload. Saves are
+    // debounced, so wait for both to reach IndexedDB before reloading.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            new Promise<number>((resolve, reject) => {
+              const open = indexedDB.open("nw");
+              open.onerror = () => reject(open.error);
+              open.onsuccess = () => {
+                const count = open.result
+                  .transaction("builds")
+                  .objectStore("builds")
+                  .count();
+                count.onsuccess = () => resolve(count.result);
+                count.onerror = () => reject(count.error);
+              };
+            }),
+        ),
+      )
+      .toBe(2);
     await page.reload();
     await expect(buildRow(page, "Alpha")).toHaveCount(1);
     await expect(buildRow(page, "Stale name")).toHaveCount(1);
