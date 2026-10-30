@@ -1,3 +1,12 @@
+/** The cursor anchor of the keyboard-cursor row (BuildSlot.vue) holding `el`, if any. */
+export function rowAnchorOf(el: Element | null): HTMLElement | null {
+  return (
+    el
+      ?.closest("[data-cursor-key]")
+      ?.querySelector<HTMLElement>("[data-cursor-anchor]") ?? null
+  );
+}
+
 /**
  * Blur an input back onto its row's cursor anchor when it lives in a keyboard-cursor row
  * (BuildSlot.vue), instead of leaving focus on `<body>`. Escape and Enter-to-choose in a
@@ -9,9 +18,7 @@
  * copy popover, layer editor's own ComboBoxes), so those keep their exact behavior.
  */
 export function blurToRowAnchor(input: HTMLInputElement | null) {
-  const anchor = input
-    ?.closest("[data-cursor-key]")
-    ?.querySelector<HTMLElement>("[data-cursor-anchor]");
+  const anchor = rowAnchorOf(input);
   if (anchor) anchor.focus();
   else input?.blur();
 }

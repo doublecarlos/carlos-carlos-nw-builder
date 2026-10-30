@@ -10,7 +10,9 @@ import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import IconButton from "../ui/IconButton.vue";
-import { PinOff, Replace, Table, Trash } from "@lucide/vue";
+import BaseButton from "../ui/BaseButton.vue";
+import { PinOff, Plus, Replace, Table, Trash } from "@lucide/vue";
+import { isPhone } from "../../stores/viewport";
 import * as buildEditor from "../../stores/buildEditor";
 import * as stableBrowser from "../../stores/stableBrowser";
 import {
@@ -53,7 +55,23 @@ const props = defineProps<{
   inputId?: string;
   /** Narrows the picker by the nested row's indent, keeping its right edge in line. */
   nested?: boolean;
+  /** The row's label, heading the picker's phone screen. */
+  label?: string;
+  /** Offer "New item" on the picker's phone screen, which emits `newItem`. */
+  canCreateItem?: boolean;
 }>();
+
+const emit = defineEmits<{
+  /** Author a new item for this row, the phone's stand in for Ctrl+click on an empty row. */
+  newItem: [];
+}>();
+
+/** Waits for the picker to close: the layer editor opening next changes the route, which must
+ *  not race the picker stepping back over its own history entry. */
+async function onNewItem(close: () => Promise<void>) {
+  await close();
+  emit("newItem");
+}
 
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
 
@@ -126,7 +144,7 @@ const stableGroup = computed(() => {
     <ItemPicker
       ref="picker"
       :placeholder="placeholder"
-      class="grow-0 min-w-40"
+      class="grow-0 min-w-40 max-md:grow max-md:basis-40"
       :class="[
         nested ? 'basis-74' : 'basis-80',
         disabled && '[&_input]:text-muted [&_input]:line-through',
@@ -143,8 +161,16 @@ const stableGroup = computed(() => {
       :bonus-preview="bonusPreview"
       :hide-preview="slotDef.hidePreview"
       :allow-empty="!slotDef.disallowEmpty"
+      phone-screen
+      :label="label"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
-    />
+    >
+      <template v-if="canCreateItem" #actions="{ close }">
+        <BaseButton data-testid="picker-new-item" @click="onNewItem(close)"
+          ><Plus />New item</BaseButton
+        >
+      </template>
+    </ItemPicker>
     <IconButton
       v-if="derivedBonusRow && choice()"
       title="Unpin and go back to this group's bonus"
@@ -208,7 +234,9 @@ const stableGroup = computed(() => {
       title="Preferred"
       >{{ PREFERRED_MARK }}</span
     >
+    <!-- A phone gives the row's width to the picker instead. -->
     <span
+      v-if="!isPhone"
       class="min-w-0 flex-1 truncate text-text"
       data-testid="slot-stat-summary"
       >{{ item ? statSummary : "" }}</span

@@ -10,7 +10,7 @@ import {
 } from "../../src/lib/aside-placement";
 
 const desktop = { width: 1440, height: 900 };
-const phone = { width: 360, height: 800 };
+const tablet = { width: 800, height: 1000 };
 const card = { width: 320, height: 400 };
 
 describe("placeAside", () => {
@@ -40,44 +40,44 @@ describe("placeAside", () => {
   });
 
   it("stacks below a menu that opened downward when neither side fits", () => {
-    const menu = { left: 24, top: 300, right: 348, bottom: 500 };
-    expect(asideStacks(menu, card.width, phone.width)).toBe(true);
+    const menu = { left: 200, top: 300, right: 712, bottom: 500 };
+    expect(asideStacks(menu, card.width, tablet.width)).toBe(true);
     const placement = placeAside({
       menu,
       aside: card,
-      viewport: phone,
+      viewport: tablet,
       menuUp: false,
     });
     expect(placement).toEqual({
-      left: 24,
+      left: 200,
       top: 500 + ASIDE_GAP,
-      maxHeight: phone.height - ASIDE_MARGIN - 500 - ASIDE_GAP,
+      maxHeight: tablet.height - ASIDE_MARGIN - 500 - ASIDE_GAP,
       hidden: false,
     });
   });
 
   it("stacks above a menu that opened upward", () => {
-    const menu = { left: 24, top: 400, right: 348, bottom: 700 };
+    const menu = { left: 200, top: 400, right: 712, bottom: 700 };
     const placement = placeAside({
       menu,
       aside: { width: 300, height: 200 },
-      viewport: phone,
+      viewport: tablet,
       menuUp: true,
     });
-    expect(placement.left).toBe(24);
+    expect(placement.left).toBe(200);
     expect(placement.top).toBe(400 - ASIDE_GAP - 200);
     expect(placement.maxHeight).toBe(400 - ASIDE_GAP - ASIDE_MARGIN);
   });
 
   it("hides a stacked aside with too little room left to be useful", () => {
     const menu = {
-      left: 24,
+      left: 200,
       top: 300,
-      right: 348,
-      bottom: phone.height - MIN_STACKED_HEIGHT,
+      right: 712,
+      bottom: tablet.height - MIN_STACKED_HEIGHT,
     };
     expect(
-      placeAside({ menu, aside: card, viewport: phone, menuUp: false }).hidden,
+      placeAside({ menu, aside: card, viewport: tablet, menuUp: false }).hidden,
     ).toBe(true);
   });
 });

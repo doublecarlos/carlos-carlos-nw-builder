@@ -117,29 +117,8 @@ test("tapping a row does not open the hover card", async ({ page }) => {
   await page.getByTestId("app-header").click({ position: { x: 4, y: 4 } });
 
   // A tap fires the row's `mouseenter` before its click, which is what would arm the card.
-  await slotRow(page, "gear.head").getByTestId("slot-stat-summary").hover();
+  await slotRow(page, "gear.head").locator(".slot-label").hover();
   // Past the hover card's opening delay.
   await page.waitForTimeout(500);
   await expect(page.getByTestId("item-card")).toHaveCount(0);
-});
-
-test("the picker's item card stacks under the list on a phone", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: MIN_SUPPORTED_WIDTH, height: 800 });
-  await openBuilder(page);
-  const row = slotRow(page, "gear.head");
-  await pickerInput(row).click();
-  await pickerInput(row).press("ArrowDown");
-
-  const aside = row.getByTestId("picker-aside");
-  const card = aside.getByTestId("item-card");
-  await expect(card).toBeVisible();
-  await expectWithinWidth(page, aside);
-  const menu = (await row.getByTestId("picker-menu").boundingBox())!;
-  const asideBox = (await aside.boundingBox())!;
-  const below = asideBox.y >= menu.y + menu.height;
-  const above = asideBox.y + asideBox.height <= menu.y;
-  expect(below || above).toBe(true);
-  await expectNoHorizontalScroll(page);
 });

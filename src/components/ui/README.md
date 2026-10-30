@@ -28,6 +28,7 @@ ordinary one.
 | CodeBlock                                 | Read-only, resizable JSON preview                                                          |
 | CodeSnippet                               | Simple code snippet component                                                              |
 | ComboBox / ComboBoxMenu / ComboBoxMenuRow | Typeable single-select over a small fixed option list, replacing `<select>`                |
+| ComboBoxScreen                            | ComboBox's full-screen phone presentation (`phoneScreen`), sized to the visual viewport    |
 | CompareLine                               | A compare build's value stacked under this build's own, inside one table cell              |
 | CreatableComboBox                         | Single-value combobox: pick a known option, or type one that doesn't exist yet             |
 | DescriptionText                           | Authored description paragraphs                                                            |

@@ -156,6 +156,8 @@ const chosenItem = (slot: ItemPickerSlot) =>
           :bonus-preview="pickerPreviews.get(slot.id)"
           :hide-preview="true"
           :allow-empty="!slot.disallowEmpty"
+          phone-screen
+          :label="slot.label"
           @update:model-value="buildEditor.setChoice(slot.id, $event)"
         />
       </div>
@@ -177,6 +179,7 @@ const chosenItem = (slot: ItemPickerSlot) =>
         </BaseTooltip>
         <BuildParamInput
           :slot-def="slot"
+          phone-screen
           :model-value="asStrNum(slot)"
           @update:model-value="buildEditor.setParam(slot, $event!)"
         />

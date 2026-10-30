@@ -23,11 +23,14 @@ import {
 // scrolling body) can't clip it. `--anchor-width` carries the parent's width for `menuClass`.
 //
 // The optional `aside` slot is a detail panel beside the menu, top-aligned with it, on whichever
-// side has room. When neither does it stacks past the menu instead (lib/aside-placement.ts). Pressing on it keeps focus in the input that owns the menu, and
-// its clicks stay its own: a host row reacting to them (BuildSlot's cursor parking) would
-// blur that input.
+// side has room. When neither does it stacks past the menu instead (lib/aside-placement.ts).
+// Pressing on it keeps focus in the input that owns the menu, and its clicks stay its own: a
+// host row reacting to them (BuildSlot's cursor parking) would blur that input.
+//
+// `fill` drops the floating shell for a plain list filling the rest of its parent, which is
+// how ComboBoxScreen shows the rows. It has no aside.
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     /** Grows the menu past the input's own width, up to a cap, instead of matching it exactly
      *  -- for callers (ItemPicker) whose row content (stat/bonus preview) needs more room than
@@ -38,8 +41,10 @@ withDefaults(
      *  `aria-activedescendant` at one of the rows inside. Omitted by callers that have not
      *  been wired for it yet -- the role still applies, only the association is missing. */
     listboxId?: string;
+    /** Fill the parent's remaining height in flow instead of floating by the input. */
+    fill?: boolean;
   }>(),
-  { menuClass: "w-(--anchor-width)", listboxId: undefined },
+  { menuClass: "w-(--anchor-width)", listboxId: undefined, fill: false },
 );
 
 /** Gap between the input and the menu, and the menu's minimum distance to the viewport edge. */
@@ -154,14 +159,18 @@ defineSlots<{
     ref="el"
     role="listbox"
     data-testid="picker-menu"
-    class="fixed z-menu overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
-    :class="menuClass"
-    :style="style"
+    class="overflow-y-auto bg-surface"
+    :class="
+      props.fill
+        ? 'min-h-0 flex-1 overscroll-contain'
+        : ['fixed z-menu rounded-md border border-line shadow-lg', menuClass]
+    "
+    :style="props.fill ? undefined : style"
   >
     <slot />
   </div>
   <div
-    v-if="$slots.aside"
+    v-if="$slots.aside && !props.fill"
     ref="aside"
     class="fixed z-menu flex"
     data-testid="picker-aside"

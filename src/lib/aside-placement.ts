@@ -1,7 +1,7 @@
 // Where a dropdown's detail panel (ComboBoxMenu's `aside`) goes relative to the open menu.
 //
 // Beside the menu when either side has room for it, top-aligned with it and slid up just enough
-// to end inside the viewport. When neither side does (a phone), it stacks on the far side of
+// to end inside the viewport. When neither side does (a tablet), it stacks on the far side of
 // the menu from the input instead, and the menu gives up half its room so both fit.
 
 export interface MenuRect {

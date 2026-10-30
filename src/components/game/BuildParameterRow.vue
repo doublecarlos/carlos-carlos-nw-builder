@@ -42,6 +42,7 @@ const paramValue = () =>
       class="grow-0 basis-80 min-w-40"
       :slot-def="slotDef"
       :wide="true"
+      phone-screen
       :input-id="inputId"
       :model-value="paramValue()"
       @update:model-value="buildEditor.setParam(slotDef, $event!)"

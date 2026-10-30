@@ -53,6 +53,8 @@ const props = defineProps<{
   // item_picker only -- a build_parameter row has no item of its own.
   item?: Item | null;
   statSummary?: string;
+  /** item_picker only: a new item can be seeded for this row (BuildEditor's `newItemSeedFor`). */
+  canCreateItem?: boolean;
   /** item_picker only: what the row reads as while empty. */
   placeholder?: string;
   /** Stands in for the row's authored label, which stays in slots.json for go-to and every
@@ -96,6 +98,8 @@ const emit = defineEmits<{
   rowclick: [event: MouseEvent, itemId?: string];
   /** The info button: show this row's item card. */
   info: [];
+  /** The picker's "New item" action, on a phone. */
+  newItem: [];
 }>();
 
 const anchor = useTemplateRef("anchor");
@@ -298,6 +302,9 @@ useCursorRowKeys(anchor, {
           :other-choice-quality="otherChoiceQuality"
           :bonus-diffs="bonusDiffs"
           :input-diffs="inputDiffs"
+          :label="labelOverride || slotDef.label"
+          :can-create-item="canCreateItem"
+          @new-item="emit('newItem')"
         />
       </div>
       <PointAssignmentRow

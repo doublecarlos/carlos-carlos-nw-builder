@@ -716,6 +716,8 @@ interface SlotRowData {
   hiddenReasons: ReadonlyMap<string, string> | null;
   errors: EngineError[];
   statSummary: string;
+  /** A new item can be seeded for this row (`newItemSeedFor`). */
+  canCreateItem: boolean;
   placeholder: string | undefined;
   labelOverride: string | undefined;
   diff: SlotDiff | undefined;
@@ -727,6 +729,7 @@ const EMPTY_ROW_DATA: SlotRowData = {
   hiddenReasons: null,
   errors: [],
   statSummary: "",
+  canCreateItem: false,
   placeholder: undefined,
   labelOverride: undefined,
   diff: undefined,
@@ -762,6 +765,7 @@ const rowDataBySlot = computed(() => {
         hiddenReasons: candidates.reasons,
         errors: errorsFor(slotDef.id),
         statSummary: statSummary(slotDef.id),
+        canCreateItem: newItemSeedFor(slotDef.id) !== null,
         placeholder: stablePlaceholder(slotDef.id),
         labelOverride: stableLabel(slotDef.id),
         diff: rowDiff(slotDef.id),
@@ -837,6 +841,12 @@ function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
   if (!(isMac ? event.metaKey : event.ctrlKey)) return;
   const item = itemId ? db.value.get(itemId) : itemIn(slotId);
   if (item) return openInLayerEditor(item.id);
+  openNewItemFor(slotId);
+}
+
+/** Opens the layer editor on a new item seeded for `slotId`, when the row has a seed. Ctrl+click
+ *  on an empty row, or the picker's "New item" on a phone. */
+function openNewItemFor(slotId: string) {
   const seed = newItemSeedFor(slotId);
   if (seed) void layerEditorUi.openNewItem(seed);
 }
@@ -1118,6 +1128,8 @@ watch(
           class="w-52 max-md:w-auto max-md:min-w-0 max-md:flex-1"
           data-testid="slot-filter-stat"
           :options="statFilterOptions"
+          phone-screen
+          screen-label="Filter by stat"
           :model-value="filterStat"
           @update:model-value="(v) => (filterStat = v)"
         />
@@ -1342,12 +1354,14 @@ watch(
               :hidden-reasons="rowDataFor(slotDef.id).hiddenReasons"
               :errors="rowDataFor(slotDef.id).errors"
               :stat-summary="rowDataFor(slotDef.id).statSummary"
+              :can-create-item="rowDataFor(slotDef.id).canCreateItem"
               :placeholder="rowDataFor(slotDef.id).placeholder"
               :label-override="rowDataFor(slotDef.id).labelOverride"
               :diff="rowDataFor(slotDef.id).diff"
               @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
               @leave="onRowLeave"
               @info="openItemSheet(slotDef.id)"
+              @new-item="openNewItemFor(slotDef.id)"
               @rowclick="
                 (event, itemId) => onRowClick(event, slotDef.id, itemId)
               "

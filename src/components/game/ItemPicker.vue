@@ -4,7 +4,7 @@
 // stat preview (plus, given `bonusPreview`, the bonus stats picking it would add now, and
 // the ones it's a step toward but hasn't unlocked yet) through ComboBox's `#option` slot --
 // or, with `hidePreview`, nothing but the name. The highlighted candidate's full ItemCard sits
-// beside the open menu (ComboBox's `#aside` slot).
+// beside the open menu (ComboBox's `#aside` slot), except on a phone.
 //
 // A native <datalist> was considered and rejected: it cannot show item level and a stat
 // preview per row, and its keyboard behavior is not controllable. This is ~120 lines instead.
@@ -30,6 +30,7 @@ import {
   type PreviewInputs,
 } from "../../lib/candidate-preview";
 import * as pickerLens from "../../stores/pickerLens";
+import { isPhone } from "../../stores/viewport";
 import { PREFERRED_MARK, itemDisplay } from "../../engine/insignia";
 import { qualityColor, toneStyle } from "../../lib/item-quality";
 import type { InsigniaGroup } from "../../engine/insignia";
@@ -86,6 +87,9 @@ const props = withDefaults(
      *  One id may appear under several. Anything the groups miss is appended ungrouped, so a
      *  stale grouping narrows the headings rather than losing a candidate. */
     groups?: readonly InsigniaGroup[] | null;
+    /** Open full-screen on a phone (ComboBox's `phoneScreen`), headed by `label`. */
+    phoneScreen?: boolean;
+    label?: string;
   }>(),
   {
     selectedItem: null,
@@ -99,6 +103,8 @@ const props = withDefaults(
     hiddenReasons: null,
     readonly: false,
     groups: null,
+    phoneScreen: false,
+    label: undefined,
   },
 );
 
@@ -327,7 +333,8 @@ function onHighlighted(value: string | null, source: HighlightSource) {
 
 const cardItem = computed(() => {
   const id = cardItemId.value;
-  if (!id || !pickerLens.showCard.value) return null;
+  // A phone has no room for the card beside the list, so it is never resolved there.
+  if (!id || !pickerLens.showCard.value || isPhone.value) return null;
   return props.items.find((item) => item.id === id) ?? null;
 });
 
@@ -374,12 +381,17 @@ defineExpose({
     :title-input="false"
     :readonly="readonly"
     :max-rows="maxRows"
+    :phone-screen="phoneScreen"
+    :screen-label="label"
     :menu-class="previewsHidden ? 'w-(--anchor-width)' : 'w-[min(32rem,90vw)]'"
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
     @update:query="query = $event"
     @update:highlighted="onHighlighted"
   >
+    <template v-if="$slots.actions" #actions="{ close }">
+      <slot name="actions" :close="close" />
+    </template>
     <template v-if="card" #aside>
       <ItemCard
         class="w-80 max-w-[90vw]"

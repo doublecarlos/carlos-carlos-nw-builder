@@ -32,10 +32,13 @@ const props = withDefaults(
      *  ancestor (BuildSlot's row label) points at something real. Left unset by QuickOptions,
      *  whose params label themselves inside the control. */
     inputId?: string;
+    /** A list param opens full-screen on a phone (ComboBox's `phoneScreen`). */
+    phoneScreen?: boolean;
   }>(),
   {
     wide: false,
     inputId: undefined,
+    phoneScreen: false,
   },
 );
 
@@ -96,6 +99,8 @@ defineExpose({ focus: focusControl, focusAndSeed });
       :input-id="inputId"
       :model-value="(model as string) ?? ''"
       :options="slotDef.options ?? []"
+      :phone-screen="phoneScreen"
+      :screen-label="slotDef.label"
       @update:model-value="model = $event as string"
     />
 
