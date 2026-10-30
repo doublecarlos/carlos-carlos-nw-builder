@@ -123,7 +123,7 @@ async function onPaste(event: ClipboardEvent) {
       :placeholder="placeholder"
       :class="
         type === 'input'
-          ? 'rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
+          ? 'rounded-md border border-line bg-surface py-0.5 pl-1.5 pr-7 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
           : 'w-full resize-y rounded-md border border-line bg-surface p-2 pr-7 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
       "
       @input="onInput"

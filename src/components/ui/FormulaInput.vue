@@ -30,7 +30,12 @@ const props = withDefaults(
 
 const model = defineModel<string>({ default: "" });
 const slots = useSlots();
-const indent = computed(() => (slots.leading ? "pl-6 pr-1.5" : "px-1.5"));
+// A coarse pointer grows a leading button to a tap target, so the text clears that instead.
+const indent = computed(() =>
+  slots.leading
+    ? "pl-6 pointer-coarse:pl-[calc(var(--spacing-tap)+0.25rem)] pr-1.5"
+    : "px-1.5",
+);
 const field = useTemplateRef<HTMLInputElement>("field");
 const messagesId = useId();
 const { id: controlId, describedBy } = useFormFieldControl();
