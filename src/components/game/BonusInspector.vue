@@ -299,15 +299,27 @@ const counts = computed(() => {
                 class="size-1.5 flex-none rounded-full"
                 :class="entry.dotClass"
               ></span>
+              <!-- A touch screen has no hover title, so an open entry spells out its whole
+                   title and qualifier instead of truncating them. -->
               <span
                 class="max-w-3/5 flex-none overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline"
-                :class="entry.muted && 'text-muted'"
+                :class="[
+                  entry.muted && 'text-muted',
+                  open[entry.id] &&
+                    'pointer-coarse:whitespace-normal pointer-coarse:wrap-break-word',
+                ]"
+                data-testid="bonus-entry-title"
                 >{{ entry.title }}</span
               >
               <span
                 v-if="entry.qualifier"
                 class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted"
+                :class="
+                  open[entry.id] &&
+                  'pointer-coarse:whitespace-normal pointer-coarse:wrap-break-word'
+                "
                 :title="entry.qualifier"
+                data-testid="bonus-entry-qualifier"
               >
                 {{ entry.qualifier }}
               </span>
