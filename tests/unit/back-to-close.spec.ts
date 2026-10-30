@@ -1,17 +1,27 @@
-// Back closing a phone overlay: a marker entry Back pops, and closing otherwise steps over it,
-// with neither pop reaching the app's own popstate handling.
+// Back closing an overlay: marker entries Back pops, closing otherwise steps over them, route
+// writes land beneath them, and none of those pops reaches the app's own popstate handling.
 import { describe, expect, it, vi } from "vitest";
-import { MARKER, createBackToClose } from "../../src/lib/back-to-close";
+import {
+  MARKER,
+  createBackToClose,
+  markerDepth,
+} from "../../src/lib/back-to-close";
+
+interface Entry {
+  state: unknown;
+  href: string;
+}
 
 /** A window with an in-memory history, whose traversals fire popstate a task later. */
-function fakeWindow() {
+function fakeWindow(
+  initial: Entry[] = [{ state: { build: "b1" }, href: "/?build=b1" }],
+) {
   const target = new EventTarget();
-  const entries: { state: unknown; href: string }[] = [
-    { state: { build: "b1" }, href: "/?build=b1" },
-  ];
-  let index = 0;
-  const traverse = (to: number) => {
-    if (to < 0 || to >= entries.length) return;
+  const entries: Entry[] = [...initial];
+  let index = entries.length - 1;
+  const go = (delta: number) => {
+    const to = index + delta;
+    if (delta === 0 || to < 0 || to >= entries.length) return;
     index = to;
     setTimeout(() => target.dispatchEvent(new Event("popstate")));
   };
@@ -25,10 +35,14 @@ function fakeWindow() {
         entries.push({ state, href: String(href ?? entries[index].href) });
         index += 1;
       },
-      replaceState(state: unknown) {
-        entries[index] = { ...entries[index], state };
+      replaceState(
+        state: unknown,
+        _unused: string,
+        href?: string | URL | null,
+      ) {
+        entries[index] = { state, href: String(href ?? entries[index].href) };
       },
-      back: () => traverse(index - 1),
+      go,
     },
     location: {
       get href() {
@@ -46,10 +60,23 @@ function fakeWindow() {
     listen: () => target.addEventListener("popstate", app),
     entries,
     index: () => index,
+    /** The hrefs from the first entry up to the current one. */
+    stack: () => entries.slice(0, index + 1).map((entry) => entry.href),
+    back: () => go(-1),
+    forward: () => go(1),
   };
 }
 
 const popped = () => new Promise((resolve) => setTimeout(resolve, 5));
+
+describe("markerDepth", () => {
+  it("reads a marker's depth and treats anything else as an ordinary entry", () => {
+    expect(markerDepth({ build: "b1", [MARKER]: 2 })).toBe(2);
+    expect(markerDepth({ build: "b1" })).toBe(0);
+    expect(markerDepth(null)).toBe(0);
+    expect(markerDepth({ [MARKER]: true })).toBe(0);
+  });
+});
 
 describe("createBackToClose", () => {
   it("pushes a marker with the same URL, and Back closes the overlay", async () => {
@@ -61,9 +88,9 @@ describe("createBackToClose", () => {
 
     expect(win.entries).toHaveLength(2);
     expect(win.entries[1].href).toBe("/?build=b1");
-    expect(win.entries[1].state).toEqual({ build: "b1", [MARKER]: true });
+    expect(win.entries[1].state).toEqual({ build: "b1", [MARKER]: 1 });
 
-    win.host.history.back();
+    win.back();
     await popped();
     expect(close).toHaveBeenCalledOnce();
     expect(win.app).not.toHaveBeenCalled();
@@ -84,19 +111,9 @@ describe("createBackToClose", () => {
 
     // A later Back is the app's again.
     win.host.history.pushState({ build: "b2" }, "", "/?build=b2");
-    win.host.history.back();
+    win.back();
     await popped();
     expect(win.app).toHaveBeenCalledOnce();
-  });
-
-  it("leaves history alone once a route change replaced the marker", async () => {
-    const win = fakeWindow();
-    const { hold } = createBackToClose(win.host);
-    const release = hold(vi.fn());
-    win.host.history.replaceState({ build: "b1", tab: "bonuses" });
-
-    await release();
-    expect(win.index()).toBe(1);
   });
 
   it("swallows the pop for an app handler added before the first hold", async () => {
@@ -127,12 +144,12 @@ describe("createBackToClose", () => {
     hold(inner);
     win.listen();
 
-    win.host.history.back();
+    win.back();
     await popped();
     expect(inner).toHaveBeenCalledOnce();
     expect(outer).not.toHaveBeenCalled();
 
-    win.host.history.back();
+    win.back();
     await popped();
     expect(outer).toHaveBeenCalledOnce();
     expect(win.index()).toBe(0);
@@ -150,10 +167,112 @@ describe("createBackToClose", () => {
     await releaseInner();
     expect(win.index()).toBe(1);
 
-    win.host.history.back();
+    win.back();
     await popped();
     expect(outer).toHaveBeenCalledOnce();
     expect(win.index()).toBe(0);
     expect(win.app).not.toHaveBeenCalled();
+  });
+
+  it("releasing the outer overlay first still leaves one marker for the inner", async () => {
+    const win = fakeWindow();
+    const { hold } = createBackToClose(win.host);
+    const releaseOuter = hold(vi.fn());
+    const inner = vi.fn();
+    hold(inner);
+
+    await releaseOuter();
+    expect(win.index()).toBe(1);
+
+    win.back();
+    await popped();
+    expect(inner).toHaveBeenCalledOnce();
+    expect(win.index()).toBe(0);
+  });
+
+  it("writes at once when no overlay is open", () => {
+    const win = fakeWindow();
+    const { beneath } = createBackToClose(win.host);
+    beneath(() =>
+      win.host.history.pushState({ build: "b2" }, "", "/?build=b2"),
+    );
+    expect(win.stack()).toEqual(["/?build=b1", "/?build=b2"]);
+  });
+
+  it("a route push under an open overlay lands beneath its marker", async () => {
+    const win = fakeWindow();
+    const { hold, beneath, idle } = createBackToClose(win.host);
+    const close = vi.fn();
+    hold(close);
+    win.listen();
+
+    beneath(() =>
+      win.host.history.pushState({ build: "b2" }, "", "/?build=b2"),
+    );
+    await idle();
+    expect(win.stack()).toEqual(["/?build=b1", "/?build=b2", "/?build=b2"]);
+    expect(markerDepth(win.host.history.state)).toBe(1);
+
+    // Back closes the overlay, then leaves the new route for the old one.
+    win.back();
+    await popped();
+    expect(close).toHaveBeenCalledOnce();
+    expect(win.app).not.toHaveBeenCalled();
+    win.back();
+    await popped();
+    expect(win.app).toHaveBeenCalledOnce();
+    expect(win.stack()).toEqual(["/?build=b1"]);
+  });
+
+  it("a route push as the overlay closes leaves only the route behind", async () => {
+    const win = fakeWindow();
+    const { hold, beneath, idle } = createBackToClose(win.host);
+    const release = hold(vi.fn());
+
+    beneath(() =>
+      win.host.history.pushState({ build: "b2" }, "", "/?build=b2"),
+    );
+    void release();
+    await idle();
+    expect(win.stack()).toEqual(["/?build=b1", "/?build=b2"]);
+  });
+
+  it("a route write while a release is stepping back waits for it", async () => {
+    const win = fakeWindow();
+    const { hold, beneath, idle } = createBackToClose(win.host);
+    const release = hold(vi.fn());
+
+    void release();
+    beneath(() =>
+      win.host.history.pushState({ build: "b2" }, "", "/?build=b2"),
+    );
+    expect(win.stack()).toEqual(["/?build=b1"]);
+    await idle();
+    expect(win.stack()).toEqual(["/?build=b1", "/?build=b2"]);
+  });
+
+  it("Forward onto a closed overlay's marker steps back off it", async () => {
+    const win = fakeWindow();
+    const { hold } = createBackToClose(win.host);
+    hold(vi.fn());
+    win.listen();
+
+    win.back();
+    await popped();
+    win.forward();
+    await popped();
+    await popped();
+    expect(win.index()).toBe(0);
+    expect(win.app).not.toHaveBeenCalled();
+  });
+
+  it("starting on a marker left by a reload steps back off it", async () => {
+    const win = fakeWindow([
+      { state: { build: "b1" }, href: "/?build=b1" },
+      { state: { build: "b1", [MARKER]: 1 }, href: "/?build=b1" },
+    ]);
+    const { idle } = createBackToClose(win.host);
+    await idle();
+    expect(win.index()).toBe(0);
   });
 });

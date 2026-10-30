@@ -110,6 +110,7 @@ function create(filter: string) {
     "
     panel-class="h-[80vh] w-[720px] max-w-[92vw]"
     data-testid="stable-browser"
+    :back-closes="group !== null"
     @close="emit('close')"
   >
     <div class="flex flex-none flex-wrap items-center gap-2 px-4 pt-3">

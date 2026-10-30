@@ -10,14 +10,7 @@
 // On a phone each leaf is one line of summary text instead, and tapping it opens that leaf's
 // controls stacked in a bottom sheet. Groups keep their block on both, drawn slimmer on a
 // phone so three levels still fit the narrowest screen.
-import {
-  computed,
-  onBeforeUnmount,
-  ref,
-  useId,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, ref, useId, useTemplateRef, watch } from "vue";
 import IconButton from "../ui/IconButton.vue";
 import DragHandle from "../ui/DragHandle.vue";
 import DropIndicator from "../ui/DropIndicator.vue";
@@ -50,7 +43,6 @@ import {
   type ConditionSummary,
 } from "../../lib/condition-summary";
 import { useConditionSummaryContext } from "../../composables/useConditionSummaryContext";
-import { holdBack } from "../../lib/back-to-close";
 import { isPhone } from "../../stores/viewport";
 import type { BonusOption } from "../../types";
 import type { InputOption } from "../../lib/bonus-draft";
@@ -428,23 +420,6 @@ watch(
 watch(isPhone, (phone) => {
   if (!phone) closeEditor();
 });
-
-// The phone's Back closes the sheet (lib/back-to-close.ts). A picker opened inside it holds
-// Back above it, so Back closes that picker first.
-let releaseBack: (() => Promise<void>) | null = null;
-watch(
-  sheetOpen,
-  (shown) => {
-    if (shown) {
-      releaseBack = holdBack(closeEditor);
-      return;
-    }
-    void releaseBack?.();
-    releaseBack = null;
-  },
-  { flush: "sync" },
-);
-onBeforeUnmount(() => void releaseBack?.());
 
 function deleteEditing() {
   const index = editingIndex.value;

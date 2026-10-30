@@ -7,6 +7,8 @@
 // win over a caller's plain width and height, so no call site carries its own phone sizing.
 // `phone="card"` keeps a short dialog (a confirmation) as a centered card instead.
 //
+// On a touch layout the browser's Back closes it, the same as Escape (lib/back-to-close.ts).
+//
 // Anchored surfaces are deliberately not built on this: none of them is modal. A hover surface
 // (BasePopover, BaseTooltip) never takes focus. BaseMenu takes it on open and returns it on
 // close. This component traps focus for a full dialog. In-flow panels are BaseDrawer.
@@ -14,6 +16,8 @@ import { onBeforeUnmount, onMounted, useId, useTemplateRef } from "vue";
 import { useScrollLock } from "@vueuse/core";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 import { trapTab } from "../../lib/focus-trap";
+import { useBackToClose } from "../../composables/useBackToClose";
+import { backClosesOverlays } from "../../stores/viewport";
 import { modalClosed, modalOpened } from "../../stores/modals";
 
 // Attrs land on the backdrop, not the panel: `data-testid` on the outer element is what lets
@@ -36,6 +40,9 @@ const props = withDefaults(
     /** The panel below md: `fill` takes the whole screen, `card` stays a centered box capped
      *  to the viewport, for a dialog too short to be worth a screen of its own. */
     phone?: "fill" | "card";
+    /** Whether the browser's Back closes it on a touch layout. Off for a caller whose open
+     *  state already has its own history entry. */
+    backCloses?: boolean;
   }>(),
   {
     title: undefined,
@@ -43,6 +50,7 @@ const props = withDefaults(
     panelClass: undefined,
     align: "center",
     phone: "fill",
+    backCloses: true,
   },
 );
 
@@ -78,6 +86,11 @@ defineExpose({ releaseFocus });
 
 // Locked for as long as this component lives; VueUse restores the previous overflow on unmount.
 useScrollLock(document.body, true);
+
+useBackToClose(
+  () => props.backCloses && backClosesOverlays.value,
+  () => emit("close"),
+);
 
 /** Tab wraps inside the panel: a modal owns the screen while it is open, so tabbing off its
  *  edge must not land on the page behind it. */

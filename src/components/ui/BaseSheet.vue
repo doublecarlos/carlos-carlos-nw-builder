@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // An off-canvas panel sliding in from a screen edge over a backdrop: a side drawer (App.vue's
 // nav below the desktop breakpoint) or a bottom sheet. Shares BaseModal's chrome: focus trap,
-// focus restore, body scroll lock, dialog semantics, and closing on Escape or a backdrop tap.
+// focus restore, body scroll lock, dialog semantics, and closing on Escape, a backdrop tap or,
+// on a touch layout, the browser's Back.
 //
 // Unlike BaseModal it does not silence the app's shortcuts: what a sheet holds is the app's own
 // working surface, moved off-canvas for lack of room. And Escape only closes it while focus is
@@ -15,6 +16,8 @@ import {
 } from "vue";
 import { useEventListener, useScrollLock } from "@vueuse/core";
 import { trapTab } from "../../lib/focus-trap";
+import { useBackToClose } from "../../composables/useBackToClose";
+import { backClosesOverlays } from "../../stores/viewport";
 import { useVisualViewport } from "../../composables/useVisualViewport";
 
 // Attrs land on the backdrop, as BaseModal's do, so a `data-testid` there names the whole sheet.
@@ -30,12 +33,16 @@ const props = withDefaults(
     label?: string;
     /** The panel's own size along the axis it is free in: width for a side, height for bottom. */
     panelClass?: string | string[];
+    /** Whether the browser's Back closes it on a touch layout. Off for a caller whose open
+     *  state already has its own history entry. */
+    backCloses?: boolean;
   }>(),
   {
     side: "left",
     title: undefined,
     label: undefined,
     panelClass: undefined,
+    backCloses: true,
   },
 );
 
@@ -74,6 +81,11 @@ const panel = useTemplateRef<HTMLElement>("panel");
 const returnFocusTo = document.activeElement as HTMLElement | null;
 
 useScrollLock(document.body, true);
+
+useBackToClose(
+  () => props.backCloses && backClosesOverlays.value,
+  () => emit("close"),
+);
 
 function onTab(event: KeyboardEvent) {
   trapTab(event, panel.value);

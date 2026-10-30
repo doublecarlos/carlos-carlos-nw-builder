@@ -10,6 +10,7 @@
 // - Phone (< md): a single pane at a time.
 //
 // Coarse pointer is independent of width: a touch laptop is desktop *and* coarse.
+import { computed } from "vue";
 import { useMediaQuery } from "@vueuse/core";
 
 /** Breakpoint widths, matching Tailwind's `md` and `lg`. */
@@ -32,3 +33,10 @@ export const isPhone = useMediaQuery(QUERIES.phone);
 
 /** The primary pointer is a finger, at whatever width. */
 export const coarsePointer = useMediaQuery(QUERIES.coarsePointer);
+
+/** Where the browser's Back closes an open overlay before it leaves the page: the narrow
+ *  layouts, and any touch screen, whose users reach for Back to dismiss things. A desktop with
+ *  a mouse keeps Back as plain navigation. */
+export const backClosesOverlays = computed(
+  () => !isDesktop.value || coarsePointer.value,
+);

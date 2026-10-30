@@ -83,6 +83,7 @@ import {
   type LayerEditorView,
 } from "../lib/layer-editor-layout";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
+import { useBackToClose } from "../composables/useBackToClose";
 import { provideEditorDb } from "../composables/useEditorDb";
 import type {
   CatalogGroup,
@@ -171,10 +172,24 @@ const entriesStyle = computed(() =>
 );
 
 /** Back from a phone's form to its list. Leaving unmounts the form, so a dirty draft asks
- *  first, the same as any other move away from it. */
-async function backToList() {
-  if (!(await draftGuard.confirmDiscard())) return;
+ *  first, the same as any other move away from it. False when the user stays. */
+async function backToList(): Promise<boolean> {
+  if (!(await draftGuard.confirmDiscard())) return false;
   view.value = "list";
+  return true;
+}
+
+// On a phone the browser's Back leaves the form for the list, through the same guard. That
+// marker is the editor's only history step: every route write replaces instead (`writeRoute`),
+// so Back runs form, list, then whatever came before the layer.
+useBackToClose(() => layout.value.back && view.value === "detail", backToList);
+
+/** Writes this editor's route params, replacing the entry instead of pushing on a phone. */
+function writeRoute(
+  params: router.RouterParams,
+  { push = true }: { push?: boolean } = {},
+) {
+  router.apply(params, { push: push && !layout.value.back });
 }
 
 /** Whether any group has an entry selected, which a phone shows as its form. */
@@ -771,7 +786,7 @@ async function switchTab(target: string) {
   // A phone lands on the new tab's list, the way into any of its entries.
   view.value = "list";
   const group = groupsOfTab(target)[0];
-  router.apply({
+  writeRoute({
     section: tabParam(target),
     ...routeParamsFor(group, selectedBySection[group]),
   });
@@ -794,7 +809,7 @@ async function select(
     selectedBySection[sibling] = null;
   selectedBySection[group] = row.key;
   slotsGroup.value = group;
-  router.apply(routeParamsFor(group, row.key), { push });
+  writeRoute(routeParamsFor(group, row.key), { push });
 }
 
 const selectedKey = computed(() => selectedBySection[activeGroup.value]);
@@ -808,7 +823,7 @@ async function newEntry(group: EditorGroup) {
   slotsGroup.value = group;
   newItemCounter.value++;
   view.value = "detail";
-  router.apply(routeParamsFor(group, null));
+  writeRoute(routeParamsFor(group, null));
 }
 
 function newItem() {
@@ -841,7 +856,7 @@ async function duplicateItem() {
   selectedBySection.items = null;
   newItemCounter.value++;
   view.value = "detail";
-  router.apply({ item: null });
+  writeRoute({ item: null });
   showNotice(`Duplicating "${item.name}". Edit and save to create a copy.`);
 }
 
@@ -855,7 +870,7 @@ async function createFromTooltip(draft: Partial<Item>) {
   duplicateItemSeed.value = { id: "", name: "", ...draft } as Item;
   newItemCounter.value++;
   view.value = "detail";
-  router.apply({ item: null });
+  writeRoute({ item: null });
   showTooltipImport.value = false;
   showNotice(
     `Filled ${Object.keys(draft).length} field(s) from the tooltip. Review and save to create the item.`,
@@ -892,7 +907,7 @@ async function duplicateBonus() {
   selectedBySection.bonuses = null;
   newItemCounter.value++;
   view.value = "detail";
-  router.apply({ bonus: null });
+  writeRoute({ bonus: null });
   showNotice(
     `Duplicating "${bonus.name || bonus.id}". Edit and save to create a copy.`,
   );
@@ -922,7 +937,7 @@ async function duplicateSlot() {
   slotsGroup.value = "slots";
   newItemCounter.value++;
   view.value = "detail";
-  router.apply(routeParamFor("slots", null));
+  writeRoute(routeParamFor("slots", null));
   showNotice(
     `Duplicating "${slot.label || slot.id}". Edit and save to create a copy.`,
   );
@@ -946,7 +961,7 @@ function saveEntry(
     catalog.upsert(overlay.value, group, id, entity),
   );
   selectedBySection[group] = id;
-  router.apply(routeParamFor(group, id));
+  writeRoute(routeParamFor(group, id));
   showNotice(`Saved ${noun} "${label}"`);
 }
 
@@ -976,7 +991,7 @@ function deleteEntry(group: EditorGroup) {
   );
   selectedBySection[group] = null;
   view.value = "list";
-  router.apply(routeParamFor(group, null));
+  writeRoute(routeParamFor(group, null));
   showNotice(`Removed ${noun} "${label}"`);
 }
 
@@ -1018,7 +1033,7 @@ async function resetAll(event: MouseEvent) {
     Object.assign(cleared, routeParamFor(group, null));
   }
   view.value = "list";
-  router.apply(cleared);
+  writeRoute(cleared);
   showNotice("Discarded every change. The layer is back to the shipped data.");
 }
 
@@ -1031,7 +1046,7 @@ async function jumpTo(group: EditorGroup, id: string) {
   selectedBySection[group] = id;
   slotsGroup.value = group;
   view.value = "detail";
-  router.apply({
+  writeRoute({
     section: tabParam(target),
     ...routeParamsFor(group, id),
   });
@@ -1098,7 +1113,7 @@ async function onDeleteBonusTop(event?: MouseEvent) {
   );
   selectedBySection.bonuses = null;
   view.value = "list";
-  router.apply(routeParamFor("bonuses", null));
+  writeRoute(routeParamFor("bonuses", null));
   showNotice(`Removed bonus "${label}"`);
 }
 const onRevertBonusTop = () => revertEntry("bonuses");
@@ -1184,7 +1199,7 @@ async function onDeleteSection(event?: MouseEvent) {
   );
   selectedBySection.sections = null;
   view.value = "list";
-  router.apply(routeParamFor("sections", null));
+  writeRoute(routeParamFor("sections", null));
   showNotice(`Removed section "${label}"`);
 }
 
@@ -1279,10 +1294,10 @@ async function importOverlay(event: Event) {
 }
 
 watch(statusFilter, (value) => {
-  router.apply({ status: value === "all" ? null : value }, { push: false });
+  writeRoute({ status: value === "all" ? null : value }, { push: false });
 });
 watch(query, (value) => {
-  router.apply({ q: value || null }, { push: false });
+  writeRoute({ q: value || null }, { push: false });
 });
 
 // Mirror every field this component owns into the per-layer store, so a later remount (a
@@ -1402,7 +1417,7 @@ watch(layerEditorUi.newItemSeed, () => {
 });
 
 onUnmounted(() => {
-  router.apply(
+  writeRoute(
     {
       item: null,
       bonus: null,
