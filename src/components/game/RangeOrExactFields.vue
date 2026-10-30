@@ -68,7 +68,8 @@ function setRangeMode(mode: RangeMode) {
 
 <template>
   <FormField
-    :label="fill ? 'Compare' : '&nbsp'"
+    :label="fill ? 'Compare' : undefined"
+    :label-spacer="!fill"
     :class="fill ? 'min-w-0 basis-full' : 'min-w-0'"
   >
     <SegmentedControl

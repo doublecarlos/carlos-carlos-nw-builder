@@ -12,10 +12,11 @@
 //
 // Progress and failure sit out of flow, over whatever follows the field. A control that grows
 // a line while it works moves everything below it, and this one works mid-edit.
-import { ref, useTemplateRef, nextTick } from "vue";
+import { ref, useAttrs, useTemplateRef, nextTick } from "vue";
 import { onClickOutside, useTimeoutFn } from "@vueuse/core";
 import { LoaderCircle } from "@lucide/vue";
 import OcrHint from "./OcrHint.vue";
+import { useFormFieldControl } from "../../composables/useFormField";
 import { imageFrom, insertText, tidyOcrText } from "../../lib/ocr-paste";
 
 const props = withDefaults(
@@ -35,6 +36,9 @@ const model = defineModel<string>({ default: "" });
 
 // `data-testid` and any extra classes belong on the control, not on the status wrapper.
 defineOptions({ inheritAttrs: false });
+
+const attrs = useAttrs();
+const controlId = useFormFieldControl(() => attrs.id as string | undefined);
 
 const wrapper = useTemplateRef<HTMLElement>("wrapper");
 const control = useTemplateRef<HTMLTextAreaElement>("control");
@@ -108,8 +112,9 @@ async function onPaste(event: ClipboardEvent) {
   <div ref="wrapper" class="relative min-w-0">
     <component
       :is="type"
-      ref="control"
       v-bind="$attrs"
+      :id="controlId"
+      ref="control"
       :value="model"
       :rows="rows"
       :placeholder="placeholder"

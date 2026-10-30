@@ -38,14 +38,14 @@ ordinary one.
 | FilterChip                                | An active filter set from elsewhere, as a chip with its own clear button                   |
 | FormulaInput                              | A one-line expression field marking each problem's range under it; `#leading` adornment    |
 | FormBar                                   | Sticky action bar at the top of an editing form                                            |
-| FormField                                 | Label-above-control stack, the basic form unit                                             |
-| FormGrid                                  | Wrapping row of FormField instances                                                        |
+| FormField                                 | Label-above-control stack; its `<label for>` names the first ui control inside             |
+| FormGrid                                  | FormFields on equal columns, one per line when narrow; owns its cells' widths              |
 | FormSection                               | Section heading inside an editing form                                                     |
 | FormSectionDescription                    | Section description inside an editing form                                                 |
 | HistoryButtons                            | The undo/redo icon pair for one history; tooltips name the step each would apply           |
 | IconButton                                | Icon-only button; `title` is its tooltip and, unless `label` is given, its accessible name |
 | IdField                                   | Read-only display of a frozen, generator-assigned id                                       |
-| InputRow                                  | A typed control in a fixed leading column, right-aligned, with its description after it    |
+| InputRow                                  | A typed control in a fixed leading column, its description after it (under it when narrow) |
 | ListAddRow                                | The add row after a list of cards: "+", other ways of adding, and the empty note           |
 | ListCardHeader                            | A reorderable card's header: grip, optional fold, "Noun N", then the row actions           |
 | LinkList                                  | A comma-separated run of BaseLinks inside a sentence, some entries optionally plain text   |
@@ -59,7 +59,7 @@ ordinary one.
 | PresetButtons                             | A row of one-click values next to a number field, the current one highlighted              |
 | RailGutter / RailToggle                   | A side rail's show/hide-and-resize edge, and the button that collapses/restores it         |
 | RepeatableRows                            | A list whose rows share one Add/Remove pair, with an empty state that still offers Add     |
-| SegmentedControl                          | "Pick exactly one of a few options", with a `tone` per option                              |
+| SegmentedControl                          | "Pick exactly one of a few options"; stacks its options when one row does not fit          |
 | TabButton / TabStrip                      | A row of tabs, each drawn as its own button rather than joined to the panel below          |
 | ThemeToggle                               | System -> Light -> Dark cycle button                                                       |
 | TokenInput                                | Token/chip input with autocomplete and optional free text                                  |
@@ -72,3 +72,21 @@ checkbox/radio/file input is a different control and is unaffected by that rule.
 
 Adding a primitive here: give it a header comment naming the concept and real call sites
 (the existing convention every file above follows), and add its row to this table.
+
+## Sizing to the container
+
+Form primitives size themselves to the space they are given, not to the viewport: the same form
+sits in a desktop rail, a nested bonus card, a sheet and a phone pane. Each primitive that
+changes layout establishes its own size container rather than relying on the form root, so it
+works wherever it is dropped:
+
+- FormGrid wraps its grid in an `@container` element and switches with container query
+  variants (`@md:`). Give it a definite width (a block, or a stretched or growing flex item): a
+  size container never grows to fit its content, so as a content-sized flex item it collapses.
+- InputRow is placed in content-sized rows, so it wraps instead: its description drops under
+  the control when it cannot keep 10rem beside it.
+- SegmentedControl measures instead: a breakpoint cannot know how long its labels are. It
+  compares the one-row width of its labels with its own width (`src/lib/segmented-fit.ts`).
+- FormField provides the label association (`src/composables/useFormField.ts`). A new text
+  control in this directory calls `useFormFieldControl` for its input id; a control that a
+  `<label for>` cannot name reads `useFormFieldLabelId` for `aria-labelledby` instead.

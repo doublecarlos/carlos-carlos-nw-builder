@@ -50,6 +50,7 @@ import { holdBack } from "../../lib/back-to-close";
 import { filterAndRank } from "../../lib/text-filter";
 import { createPointerMoveFilter } from "../../lib/pointer-moved";
 import { isPhone } from "../../stores/viewport";
+import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 import ComboBoxScreen from "./ComboBoxScreen.vue";
@@ -108,6 +109,8 @@ const props = withDefaults(
     screenLabel: "Choose",
   },
 );
+
+const controlId = useFormFieldControl(() => props.inputId);
 
 defineSlots<{
   option?(props: { option: T; highlighted: boolean }): unknown;
@@ -504,7 +507,7 @@ for (const target of keyTargets) {
 <template>
   <div class="relative">
     <input
-      :id="inputId"
+      :id="controlId"
       ref="input"
       data-testid="picker-input"
       class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"

@@ -6,6 +6,7 @@
 // acting on it; the marked text under the field shifts with it so the marks stay aligned.
 import { computed, nextTick, useId, useSlots, useTemplateRef } from "vue";
 import BaseLink from "./BaseLink.vue";
+import { useFormFieldControl } from "../../composables/useFormField";
 
 export interface FormulaInputIssue {
   /** Character offsets into the text. An empty range marks a position, such as the end. */
@@ -32,6 +33,7 @@ const slots = useSlots();
 const indent = computed(() => (slots.leading ? "pl-6 pr-1.5" : "px-1.5"));
 const field = useTemplateRef<HTMLInputElement>("field");
 const messagesId = useId();
+const controlId = useFormFieldControl();
 
 const hasError = computed(() =>
   props.issues.some((issue) => (issue.level ?? "error") === "error"),
@@ -91,6 +93,7 @@ defineExpose({ insert });
   <div class="flex min-w-0 flex-col gap-0.5">
     <div class="relative">
       <input
+        :id="controlId"
         ref="field"
         v-model="model"
         type="text"

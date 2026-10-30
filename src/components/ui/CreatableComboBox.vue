@@ -11,6 +11,7 @@ import { computed, watch, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { filterAndRank } from "../../lib/text-filter";
 import { useMenuNavigation } from "../../composables/useMenuNavigation";
+import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
@@ -30,6 +31,7 @@ const props = withDefaults(
 );
 
 const model = defineModel<string>({ default: "" });
+const controlId = useFormFieldControl();
 
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
@@ -116,6 +118,7 @@ onKeyStroke(
 <template>
   <div class="relative">
     <input
+      :id="controlId"
       ref="input"
       class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       type="text"

@@ -711,6 +711,7 @@ function showsGroup(group: FieldGroup): boolean {
         /></IconButton>
         <FormGrid
           v-if="repetitionActive"
+          class="flex-1"
           data-testid="inline-repetition-fields"
         >
           <FormField label="Min">

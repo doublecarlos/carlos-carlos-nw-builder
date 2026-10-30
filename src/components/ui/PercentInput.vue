@@ -12,6 +12,7 @@
 // to a precision far finer than any real game value.
 import { ref, computed, nextTick } from "vue";
 import { toDecimal, toPercent } from "../../lib/format";
+import { useFormFieldControl } from "../../composables/useFormField";
 
 /** Up to 4 decimals, trailing zeros trimmed: 9, 3.6, 9.85. The % sign is a fixed suffix in
  * the template, not part of this text, so it stays visible while typing too. */
@@ -35,6 +36,8 @@ const props = withDefaults(
     inputId: undefined,
   },
 );
+
+const controlId = useFormFieldControl(() => props.inputId);
 
 const model = defineModel<number | string>({ default: "" });
 
@@ -93,7 +96,7 @@ function nudge(direction: number, event: KeyboardEvent) {
 <template>
   <span class="relative inline-block">
     <input
-      :id="inputId"
+      :id="controlId"
       ref="input"
       class="peer w-full border border-line rounded-md pr-5 text-right tabular-nums text-accent focus:text-text bg-surface"
       type="text"
