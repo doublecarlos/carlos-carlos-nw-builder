@@ -172,10 +172,14 @@ const entriesStyle = computed(() =>
 );
 
 /** Back from a phone's form to its list. Leaving unmounts the form, so a dirty draft asks
- *  first, the same as any other move away from it. False when the user stays. */
+ *  first, the same as any other move away from it. False when the user stays.
+ *
+ *  The list keeps its entry marked, but the route stops naming it: a phone's route names an
+ *  entry only while its form shows, so a reload lands where the user was. */
 async function backToList(): Promise<boolean> {
   if (!(await draftGuard.confirmDiscard())) return false;
   view.value = "list";
+  writeRoute(routeParamsFor(activeGroup.value, null));
   return true;
 }
 
@@ -788,7 +792,10 @@ async function switchTab(target: string) {
   const group = groupsOfTab(target)[0];
   writeRoute({
     section: tabParam(target),
-    ...routeParamsFor(group, selectedBySection[group]),
+    ...routeParamsFor(
+      group,
+      layout.value.back ? null : selectedBySection[group],
+    ),
   });
 }
 
@@ -799,7 +806,10 @@ async function select(
   if (row.status === "removed") return;
   const group = GROUP_OF_KIND[row.kind];
   if (activeGroup.value === group && selectedBySection[group] === row.key) {
+    // A phone's marked row reopens its form, and the route names the entry again.
+    const reopening = layout.value.back && view.value === "list";
     view.value = "detail";
+    if (reopening) writeRoute(routeParamsFor(group, row.key), { push });
     return;
   }
   if (!(await draftGuard.confirmDiscard())) return;

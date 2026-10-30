@@ -80,6 +80,45 @@ test("an item opens full-width and Back returns to the list", async ({
   await expect(page.getByTestId("form-bar-title").first()).toHaveText(name);
 });
 
+test("the list's route names no entry, so a reload lands on the list", async ({
+  page,
+}) => {
+  await openLayer(page);
+  const name = (await rows(page)
+    .nth(3)
+    .locator(".editor-row-name")
+    .textContent())!;
+  await rows(page).nth(3).tap();
+  await expectFormView(page);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("item"))
+    .not.toBeNull();
+
+  await back(page).tap();
+  await expectListView(page);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("item"))
+    .toBeNull();
+  await page.reload();
+  await expectListView(page);
+
+  // Reopening the marked row names it again, and a reload keeps its form.
+  await rows(page).nth(3).tap();
+  await expectFormView(page);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("item"))
+    .not.toBeNull();
+  await page.reload();
+  await expectFormView(page);
+  await expect(page.getByTestId("form-bar-title").first()).toHaveText(name);
+
+  // A tab switch lands on a list too, with no entry in the route.
+  await page.getByTestId("tab-bonuses").tap();
+  await expectListView(page);
+  await page.reload();
+  await expectListView(page);
+});
+
 test("a slot opens full-width and Back returns to the outline", async ({
   page,
 }) => {
