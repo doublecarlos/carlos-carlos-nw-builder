@@ -82,7 +82,8 @@ Wide, the form primitives keep the desktop layout their callers size: a field's 
   it stacks one field per line, overriding the callers' widths on the fields and their
   controls. Give it a definite width (a block, or a growing flex item): a size container never
   grows to fit its content, so as a content-sized flex item it collapses.
-- InputRow puts its description first and the control under it on a phone (`max-md:`).
+- InputRow puts its description first and the control under it on a phone (`max-md:`), and
+  its `#presets` on a line of their own below that.
 - RepeatableRows turns a row with a `#lead` into a card on a phone; from `md` up the
   caller's `rowClass` lays the row out as before.
 - SegmentedControl measures instead: a breakpoint cannot know how long its labels are. It

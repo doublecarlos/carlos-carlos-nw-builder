@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // One typed value on a build-editor row (useSlotInputs.ts's `BuildInput`), rendered by its
 // `control`: a checkbox with its label, a stepper, a typed field noting its range, or a note
-// pointing to the row that holds the control. Presets follow the label. Writes go straight to
-// the store by the value's address.
+// pointing to the row that holds the control. Presets go in InputRow's slot for them, which
+// places them by layout. Writes go straight to the store by the value's address.
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import InputRow from "../ui/InputRow.vue";
@@ -76,11 +76,9 @@ function rangeNote() {
       :data-testid="input.testid"
       @update:model-value="onField"
     />
-    <template #description>
-      {{ input.spec.label }}
+    <template #description>{{ input.spec.label }}</template>
+    <template v-if="input.spec.presets?.length" #presets>
       <PresetButtons
-        v-if="input.spec.presets?.length"
-        class="ml-1.5"
         :presets="input.spec.presets"
         :format="input.spec.format"
         :model-value="input.value"

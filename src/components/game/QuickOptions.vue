@@ -164,7 +164,8 @@ const chosenItem = (slot: ItemPickerSlot) =>
 
       <div
         v-else-if="!isBooleanParam(slot)"
-        class="flex items-center gap-1.5 whitespace-nowrap max-md:flow-wrap"
+        class="flex items-center gap-1.5 whitespace-nowrap max-md:basis-full max-md:flex-col max-md:items-start max-md:gap-1"
+        :data-testid="`quick-param-${slot.id}`"
       >
         <BaseTooltip
           :text="differs(slot) ? (diffTitle(slot) ?? '') : ''"

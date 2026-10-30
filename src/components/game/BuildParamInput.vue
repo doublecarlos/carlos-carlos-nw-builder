@@ -123,7 +123,11 @@ defineExpose({ focus: focusControl, focusAndSeed });
       <slot />
     </BaseCheckbox>
 
-    <div v-else class="flex items-center gap-1.5 max-md:flow-wrap">
+    <!-- A phone stacks presets under the field, as InputRow does for bonus inputs. -->
+    <div
+      v-else
+      class="flex items-center gap-1.5 max-md:flex-col max-md:items-start max-md:gap-1"
+    >
       <NumberStepper
         v-if="stepper"
         :id="inputId"
