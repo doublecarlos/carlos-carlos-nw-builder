@@ -106,18 +106,16 @@ test.describe("modals at the narrowest width", () => {
     await openDrawer(page);
     await layerRow(page, "Layer 1").locator(".nav-name").click();
 
-    await page.getByTestId("layer-export-toggle").click();
+    await page.getByTestId("layer-actions").tap();
+    await page.getByTestId("layer-actions-export").tap();
     const exportModal = page.getByTestId("layer-export");
     await expect(exportModal).toBeVisible();
     await expectFillsViewport(page, exportModal);
     await exportModal.getByTestId("modal-close").click();
     await expect(exportModal).toHaveCount(0);
 
-    // Clicked from script: the layer editor's toolbar is not laid out for a phone yet, and
-    // this button sits past the screen's edge.
-    await page
-      .getByTestId("tooltip-import-toggle")
-      .evaluate((el: HTMLElement) => el.click());
+    await page.getByTestId("new-item").tap();
+    await page.getByTestId("tooltip-import-toggle").tap();
     const importModal = page.getByTestId("tooltip-import");
     await expect(importModal).toBeVisible();
     await expectFillsViewport(page, importModal);
