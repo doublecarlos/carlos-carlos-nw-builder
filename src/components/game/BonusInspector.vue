@@ -354,6 +354,7 @@ const counts = computed(() => {
                 v-if="leaf.need"
                 class="ml-1 align-middle"
                 title="Show the slots that could supply this"
+                :label="`Show the slots that could supply ${leaf.label}`"
                 :data-testid="`bonus-need-locate-${entry.id}-${i}`"
                 @click="locateNeed(leaf.need, leaf.label)"
               >
@@ -373,6 +374,7 @@ const counts = computed(() => {
                     v-if="child.need"
                     class="ml-1 align-middle"
                     title="Show the slots that could supply this"
+                    :label="`Show the slots that could supply ${child.label}`"
                     :data-testid="`bonus-need-locate-${entry.id}-${i}-${j}`"
                     @click="locateNeed(child.need, child.label)"
                   >

@@ -25,7 +25,7 @@ import { preference, cyclePreference } from "../../stores/theme";
 
 <template>
   <BaseTooltip :text="`${THEME_LABELS[preference]}`">
-    <BaseButton @click="cyclePreference">
+    <BaseButton :aria-label="THEME_LABELS[preference]" @click="cyclePreference">
       <component :is="THEME_ICONS[preference]" />
     </BaseButton>
   </BaseTooltip>

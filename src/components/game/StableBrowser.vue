@@ -108,7 +108,7 @@ function create(filter: string) {
     :title="
       group === null ? 'Stable reference' : `Browse stable for Mount ${group}`
     "
-    panel-class="h-[80vh] w-[720px]"
+    panel-class="h-[80vh] w-[720px] max-w-[92vw]"
     data-testid="stable-browser"
     @close="emit('close')"
   >

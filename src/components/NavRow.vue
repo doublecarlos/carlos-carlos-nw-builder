@@ -4,11 +4,16 @@
 // styling, menu and the keyboard contract live around it. The insertion line itself is a
 // list-level DropIndicator, not drawn per row. A `before` slot is kept for the layer enable
 // checkbox, a control rather than part of the name button.
+//
+// A mouse drags the whole row. A finger on the row scrolls the list, so a coarse pointer gets
+// a grip to drag from instead; the row's own handle props still do the work.
 import { computed, type Component, type Directive } from "vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import { EllipsisVertical } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
+import DragHandle from "./ui/DragHandle.vue";
+import { coarsePointer } from "../stores/viewport";
 import { isMac } from "../lib/platform";
 import {
   dragSource,
@@ -136,6 +141,11 @@ function onRowKeydown(event: KeyboardEvent) {
     ]"
     v-bind="rowProps"
   >
+    <DragHandle
+      v-if="coarsePointer && !renaming"
+      class="flex-none"
+      data-testid="nav-drag-handle"
+    />
     <slot name="before" />
 
     <BaseInput

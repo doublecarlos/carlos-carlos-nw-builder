@@ -954,7 +954,7 @@ async function resetAll(event: MouseEvent) {
     title: "Discard changes",
     message: `Discard all ${changedCount.value} unsaved change${changedCount.value === 1 ? "" : "s"} in this layer?`,
     confirmLabel: "Discard",
-    note: confirm.UNDO_NOTE,
+    note: confirm.undoNote(),
   });
   if (!ok) return;
   commit(null, "Discard all changes", catalog.emptyOverlay());
@@ -1024,7 +1024,7 @@ async function onDeleteBonusTop(event?: MouseEvent) {
     message: `Delete bonus “${label}”?`,
     confirmLabel: "Delete",
     danger: true,
-    note: confirm.UNDO_NOTE,
+    note: confirm.undoNote(),
     checkbox: members.length
       ? {
           label: `Also unlink from ${members.length} item${members.length === 1 ? "" : "s"}`,
@@ -1103,7 +1103,7 @@ async function onDeleteSection(event?: MouseEvent) {
     message: `Delete section “${label}”?`,
     confirmLabel: "Delete",
     danger: true,
-    note: confirm.UNDO_NOTE,
+    note: confirm.undoNote(),
     checkbox: members.length
       ? {
           label: `Also delete its slots and presets (${members.length})`,

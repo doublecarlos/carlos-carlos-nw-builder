@@ -7,6 +7,7 @@ import BaseTooltip from "./BaseTooltip.vue";
 
 <template>
   <BaseTooltip
+    tappable
     text="Paste a screenshot to read its text. Crop it first."
     :width="240"
   >

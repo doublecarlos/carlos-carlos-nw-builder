@@ -407,6 +407,7 @@ const rows = computed(() =>
                   v-if="need && !readonly"
                   class="ml-1 align-middle text-warn"
                   title="Show the slots that could supply this"
+                  :label="`Show the slots that could supply ${leaf.label}`"
                   data-testid="item-card-need-locate"
                   @click="emit('locate', need, leaf.label)"
                 >

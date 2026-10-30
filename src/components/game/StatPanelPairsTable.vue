@@ -44,6 +44,7 @@ defineProps<{
               <IconButton
                 v-if="row.onInfo"
                 title="Show sources"
+                :label="`Show sources for ${row.label}`"
                 class="stat-info-btn flex-none"
                 :data-stat-key="row.key"
                 @click="row.onInfo"

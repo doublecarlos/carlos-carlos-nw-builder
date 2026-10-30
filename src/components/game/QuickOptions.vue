@@ -136,7 +136,10 @@ const chosenItem = (slot: ItemPickerSlot) =>
         class="flex items-center gap-1.5 whitespace-nowrap max-md:flex-wrap"
         :data-testid="`quick-picker-${slot.id}`"
       >
-        <BaseTooltip :text="differs(slot) ? (diffTitle(slot) ?? '') : ''">
+        <BaseTooltip
+          :text="differs(slot) ? (diffTitle(slot) ?? '') : ''"
+          tappable
+        >
           <span
             :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"
             :tabindex="differs(slot) ? 0 : undefined"
@@ -161,7 +164,10 @@ const chosenItem = (slot: ItemPickerSlot) =>
         v-else-if="!isBooleanParam(slot)"
         class="flex items-center gap-1.5 whitespace-nowrap max-md:flex-wrap"
       >
-        <BaseTooltip :text="differs(slot) ? (diffTitle(slot) ?? '') : ''">
+        <BaseTooltip
+          :text="differs(slot) ? (diffTitle(slot) ?? '') : ''"
+          tappable
+        >
           <span
             :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"
             :tabindex="differs(slot) ? 0 : undefined"
@@ -182,7 +188,10 @@ const chosenItem = (slot: ItemPickerSlot) =>
         :model-value="paramValue(slot) as boolean"
         @update:model-value="buildEditor.setParam(slot, $event!)"
       >
-        <BaseTooltip :text="differs(slot) ? (diffTitle(slot) ?? '') : ''">
+        <BaseTooltip
+          :text="differs(slot) ? (diffTitle(slot) ?? '') : ''"
+          tappable
+        >
           <span
             :class="differs(slot) ? 'font-bold text-diff' : ''"
             :tabindex="differs(slot) ? 0 : undefined"

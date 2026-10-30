@@ -2,8 +2,14 @@
 // ConfirmDialog.vue renders whatever is pending. Keeps callers plain functions.
 import { computed, ref } from "vue";
 import { isMac } from "../lib/platform";
+import { coarsePointer } from "./viewport";
 
-export const UNDO_NOTE = `${isMac ? "⌘" : "Ctrl"}+Z undoes this.`;
+/** How a confirmed change comes back: the shortcut where there is a keyboard, Undo otherwise. */
+export function undoNote(): string {
+  return coarsePointer.value
+    ? "Undo reverses this."
+    : `${isMac ? "⌘" : "Ctrl"}+Z undoes this.`;
+}
 
 export interface ConfirmCheckbox {
   label: string;

@@ -877,7 +877,9 @@ function onCardLocate(need: SupplyNeed, label: string) {
 const editLabel = computed(() => {
   const target = layers.targetLayer.value;
   const where = target ? `“${target.name}”` : "a new layer";
-  return `Edit this item in ${where} (${modKey}+Click the row)`;
+  return viewport.coarsePointer.value
+    ? `Edit this item in ${where}`
+    : `Edit this item in ${where} (${modKey}+Click the row)`;
 });
 
 // A row that contributes nothing (switched off, or 0 copies) shows no summary at all, the way a
@@ -1106,7 +1108,11 @@ watch(
           type="search"
           data-testid="slot-filter-text"
           class="slot-filter-text min-w-40 max-md:basis-full"
-          :placeholder="`Filter slots… (${modKey}+/)`"
+          :placeholder="
+            viewport.coarsePointer.value
+              ? 'Filter slots…'
+              : `Filter slots… (${modKey}+/)`
+          "
         />
         <ComboBox
           class="w-52 max-md:w-auto max-md:min-w-0 max-md:flex-1"

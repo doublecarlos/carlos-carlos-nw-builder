@@ -12,6 +12,13 @@ const infoButton = (page: import("@playwright/test").Page) =>
 const tooltip = (page: import("@playwright/test").Page) =>
   page.getByTestId("tooltip");
 
+/** Focus as the keyboard gives it: a key goes down first, as with Tab, so the browser counts
+ *  the focus that follows as `:focus-visible`. A bare `focus()` after a click does not. */
+async function keyboardFocus(target: import("@playwright/test").Locator) {
+  await target.page().keyboard.press("Shift");
+  await target.focus();
+}
+
 test("a tooltip opens on hover and closes when the pointer leaves", async ({
   page,
 }) => {
@@ -29,15 +36,28 @@ test("a tooltip opens on keyboard focus, which `title` never did", async ({
 }) => {
   await openBuilder(page);
 
-  await infoButton(page).focus();
+  await keyboardFocus(infoButton(page));
 
   await expect(tooltip(page)).toBeVisible();
+});
+
+test("focus a script gives after a click opens no tooltip", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await page.getByTestId("app-header").click({ position: { x: 5, y: 5 } });
+
+  // What a modal does on close, handing focus back to the control that opened it.
+  await infoButton(page).focus();
+
+  await expect(infoButton(page)).toBeFocused();
+  await expect(tooltip(page)).toHaveCount(0);
 });
 
 test("Escape dismisses a tooltip", async ({ page }) => {
   await openBuilder(page);
 
-  await infoButton(page).focus();
+  await keyboardFocus(infoButton(page));
   await expect(tooltip(page)).toBeVisible();
 
   await page.keyboard.press("Escape");
@@ -49,7 +69,7 @@ test("the tooltip describes its trigger while open", async ({ page }) => {
   await openBuilder(page);
   const button = infoButton(page);
 
-  await button.focus();
+  await keyboardFocus(button);
 
   await expect(tooltip(page)).toBeVisible();
 

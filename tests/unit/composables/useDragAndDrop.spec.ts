@@ -7,6 +7,7 @@ import {
   separatorTop,
   autoscrollDelta,
   reorderIndex,
+  armsDrag,
 } from "../../../src/composables/useDragAndDrop";
 
 function row(top: number, bottom: number, into = false) {
@@ -121,5 +122,19 @@ describe("reorderIndex", () => {
 
   it("a target equal to the source index is unaffected (caller should treat this as a no-op)", () => {
     expect(reorderIndex(2, 2)).toBe(2);
+  });
+});
+
+describe("armsDrag", () => {
+  it("lets a mouse drag from anywhere the handle props are bound", () => {
+    expect(armsDrag("mouse", false)).toBe(true);
+    expect(armsDrag("mouse", true)).toBe(true);
+  });
+
+  it("lets a finger or pen drag only from a grip, so a swipe elsewhere scrolls", () => {
+    expect(armsDrag("touch", false)).toBe(false);
+    expect(armsDrag("pen", false)).toBe(false);
+    expect(armsDrag("touch", true)).toBe(true);
+    expect(armsDrag("pen", true)).toBe(true);
   });
 });

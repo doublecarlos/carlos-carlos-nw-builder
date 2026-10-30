@@ -16,13 +16,13 @@ ordinary one.
 | BaseInput                                 | The ordinary text/number/search field                                                      |
 | BaseLink                                  | An action link inline in running text, on the text baseline; `plain` writes it as text     |
 | BaseMenu / BaseMenuItem                   | Click-triggered menu shell: placement, click-outside, Escape, roving keyboard focus        |
-| BaseModal                                 | The app's one modal overlay: backdrop, focus trap, Escape, scroll lock                     |
+| BaseModal                                 | The one modal overlay; fills the screen below md, or stays a card with `phone="card"`      |
 | BaseNotice                                | Dismissible inline message                                                                 |
 | BasePanel                                 | Side-panel shell                                                                           |
 | BasePopover                               | Teleported overlay shell for tooltips, hover cards, click-triggered popovers               |
 | BaseSheet                                 | Off-canvas side drawer or bottom sheet: backdrop, focus trap, Escape, scroll lock          |
 | BaseTextarea                              | The ordinary multi-line text field                                                         |
-| BaseTooltip                               | Themed hover/focus tooltip, replacing `title`                                              |
+| BaseTooltip                               | Mouse-hover/keyboard-focus tooltip, never on tap; `tappable` for an info-only trigger      |
 | ClearableInput                            | A text filter field with an in-field clear button, wrapping BaseInput                      |
 | CheckMenu                                 | Menu of checkbox options that stays open as they are toggled; built on BaseMenu            |
 | CodeBlock                                 | Read-only, resizable JSON preview                                                          |
@@ -32,7 +32,7 @@ ordinary one.
 | CreatableComboBox                         | Single-value combobox: pick a known option, or type one that doesn't exist yet             |
 | DescriptionText                           | Authored description paragraphs                                                            |
 | DraftFormBar                              | Shared header bar (title, status badges, Save/Revert/Duplicate/Delete) for an editor form  |
-| DragHandle                                | The grip affordance on a draggable row; `touch-action: none` so touch drags don't scroll   |
+| DragHandle                                | The grip on a draggable row, `touch-none`; the only place a finger can start a drag        |
 | DropIndicator                             | The drag-and-drop insertion line for one `useDropList`                                     |
 | FilterChip                                | An active filter set from elsewhere, as a chip with its own clear button                   |
 | FormulaInput                              | A one-line expression field marking each problem's range under it; `#leading` adornment    |

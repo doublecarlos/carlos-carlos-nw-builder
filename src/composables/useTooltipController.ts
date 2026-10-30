@@ -24,8 +24,47 @@ function bindEscape() {
   escapeBound = true;
 }
 
+/** The pointer type behind the last press, or null once a key goes down after it. Lets a
+ *  focus caused by a tap be told apart from one the keyboard caused. */
+let lastPress: string | null = null;
+let modalityBound = false;
+
+/** Capture phase, so the press is recorded before any focus it causes reaches a trigger. */
+function bindModality() {
+  if (modalityBound || typeof document === "undefined") return;
+  document.addEventListener(
+    "pointerdown",
+    (event: PointerEvent) => (lastPress = event.pointerType),
+    true,
+  );
+  document.addEventListener("keydown", () => (lastPress = null), true);
+  modalityBound = true;
+}
+
+/** Pure. Whether focus landing on a trigger opens its tooltip: only keyboard focus does.
+ *  `:focus-visible` rules out a click, and a script's focus after one (a modal handing focus
+ *  back). The last press rules out a tap, since a tapped text field matches `:focus-visible`
+ *  too. */
+export function revealsOnFocus(
+  focusVisible: boolean,
+  press: string | null,
+): boolean {
+  return focusVisible && (press === null || press === "mouse");
+}
+
+/** True when `el`'s focus should open its tooltip, per `revealsOnFocus`. */
+export function focusReveals(el: Element): boolean {
+  return revealsOnFocus(el.matches(":focus-visible"), lastPress);
+}
+
+/** True when the last press was a finger or pen rather than a mouse. */
+export function pressedByTouch(): boolean {
+  return lastPress !== null && lastPress !== "mouse";
+}
+
 export function useTooltipController() {
   const token = Symbol("tooltip");
+  bindModality();
 
   const open = computed(() => active.value === token);
 
