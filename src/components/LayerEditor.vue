@@ -11,7 +11,6 @@ import {
   computed,
   defineAsyncComponent,
   h,
-  markRaw,
   onMounted,
   onUnmounted,
   reactive,
@@ -68,6 +67,7 @@ import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
 import * as rails from "../stores/rails";
 import { matchesQuery } from "../lib/text-filter";
+import { editorDb } from "../lib/editor-db";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
 import { provideEditorDb } from "../composables/useEditorDb";
 import type {
@@ -124,17 +124,9 @@ function commit(
   setOverlay(next);
 }
 
-/** The editor's own catalog: the layer under edit folds last whatever its `enabled` flag
- * says, so its entries reach the lists, forms and lint even while switched off. Dropped from
- * the engine's fold order first, so an enabled layer folds once and on top. `markRaw` as in
- * `engine.db`. */
+/** The editor's own catalog, see `editorDb`. */
 const db = computed(() =>
-  markRaw(
-    catalog.makeDb([
-      ...engine.overlays.value.filter((o) => o !== overlay.value),
-      overlay.value,
-    ]),
-  ),
+  editorDb(engine.overlays.value, () => engine.db.value, overlay.value),
 );
 
 // Nested controls that offer catalog-derived choices read this editor's catalog, not the engine's.

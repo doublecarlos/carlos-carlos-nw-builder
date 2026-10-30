@@ -67,13 +67,56 @@ interface Candidate extends BonusCandidate {
   itemId: string;
   slotId: string;
   order: number;
+  /** How many occurrences this one entry stands for: a repeated pick or a point assignment
+   *  is recorded once with its count. 0 only for a `zeroCandidates` anchor. */
+  count: number;
+}
+
+/** What `collect` gathers from one build, which `resolve` evaluates. */
+export interface Collected {
+  ctx: EvalContext;
+  rows: ResolvedRow[];
+  candidates: Candidate[];
+  zeroCandidates: Candidate[];
+  assignmentStatsBySlot: Map<string, AssignedItemStats[]>;
+  publishConflicts: PublishConflict[];
+}
+
+interface CatalogNames {
+  bonusNames: Map<string, string>;
+  itemNames: Map<string, string>;
+  paramLabels: Map<string, string>;
+}
+
+const namesCache = new WeakMap<Db, CatalogNames>();
+
+/** Display names conditions and formulas show instead of ids. They depend on the catalog
+ *  alone, so they are built once per `Db` and shared by every context resolved against it. */
+function catalogNames(db: Db): CatalogNames {
+  const memoized = namesCache.get(db);
+  if (memoized) return memoized;
+  const bonusNames = new Map<string, string>();
+  for (const [id, bonus] of db.bonusById) {
+    if (bonus.name) bonusNames.set(id, bonus.name);
+  }
+  const itemNames = new Map<string, string>();
+  for (const item of db.items) {
+    if (item.name) itemNames.set(item.id, item.name);
+  }
+  const paramLabels = new Map<string, string>();
+  for (const slot of db.slots) {
+    if (slot.type === "build_parameter") paramLabels.set(slot.path, slot.label);
+  }
+  const names = { bonusNames, itemNames, paramLabels };
+  namesCache.set(db, names);
+  return names;
 }
 
 // --- pass 1: collect ---
 
 /**
- * Pushes one `Candidate` per occurrence of one item's bonus attachment -- shared between the
- * item_picker/build_parameter branch and `collectInlineRepetition`'s point_assignment items,
+ * Pushes one `Candidate` per bonus attachment of one item, carrying its occurrence count.
+ * Shared between the item_picker/build_parameter branch and `collectInlineRepetition`'s point_assignment items,
  * the only difference being what `repetitions` (a bare-id attachment's count) resolves to.
  *
  * `repetitions === 0` means the *item itself* has zero real occurrences right now -- a
@@ -111,12 +154,9 @@ function collectAttachments(
       source: item.name,
       slotId,
       order,
+      count: repetitions,
     };
-    if (repetitions === 0) {
-      zeroCandidates.push(candidate);
-      continue;
-    }
-    for (let i = 0; i < repetitions; i++) candidates.push(candidate);
+    (repetitions === 0 ? zeroCandidates : candidates).push(candidate);
   }
 }
 
@@ -194,17 +234,7 @@ function collectInlineRepetition(
  * (The legacy engine deduped qualifiers by item name, but since every tag condition is
  * `atLeast: 1` that difference can never be observable.)
  */
-export function collect(
-  db: Db,
-  build: Build,
-): {
-  ctx: EvalContext;
-  rows: ResolvedRow[];
-  candidates: Candidate[];
-  zeroCandidates: Candidate[];
-  assignmentStatsBySlot: Map<string, AssignedItemStats[]>;
-  publishConflicts: PublishConflict[];
-} {
+export function collect(db: Db, build: Build): Collected {
   const context = build.context ?? {};
   const equipped = new Map<string, number>();
   const tags = new Map<string, number>();
@@ -302,10 +332,8 @@ export function collect(
   // the build has no value for falls back to its declared `default`, so a condition reads
   // exactly what the UI shows.
   const params = new Map<string, string | number | boolean>();
-  const paramLabels = new Map<string, string>();
   for (const slot of db.slots) {
     if (slot.type !== "build_parameter") continue;
-    paramLabels.set(slot.path, slot.label);
     const value = getPath(context, slot.path);
     const resolved = (value === undefined ? slot.default : value) as
       string | number | boolean | undefined;
@@ -354,17 +382,6 @@ export function collect(
     });
   }
 
-  // Populate bonus names from the db so conditions can display friendly names
-  // instead of internal IDs like "m32-impending-doom-celestial".
-  const bonusNames = new Map<string, string>();
-  for (const [id, bonus] of db.bonusById) {
-    if (bonus.name) bonusNames.set(id, bonus.name);
-  }
-  const itemNames = new Map<string, string>();
-  for (const item of db.items) {
-    if (item.name) itemNames.set(item.id, item.name);
-  }
-
   // The three dedicated leaves read their own `EvalContext` field rather than `params`, so a
   // published value has to reach both -- `class` is the one that actually travels this way
   // today (its param slot is an `item_picker` now), but the fallback keeps the two in step for
@@ -382,10 +399,8 @@ export function collect(
     equipped,
     tags,
     bonusOccurrences,
-    bonusNames,
-    itemNames,
+    ...catalogNames(db),
     params,
-    paramLabels,
     scalers,
   };
 
@@ -814,7 +829,12 @@ export function resolveInputValues(
   return out;
 }
 
-export function resolve(db: Db, build: Build): ResolvedBonuses {
+/** Resolves `build`. `collected` is `collect(db, build)` when the caller already has it. */
+export function resolve(
+  db: Db,
+  build: Build,
+  collected: Collected = collect(db, build),
+): ResolvedBonuses {
   const {
     ctx,
     rows,
@@ -822,7 +842,7 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
     zeroCandidates,
     assignmentStatsBySlot,
     publishConflicts,
-  } = collect(db, build);
+  } = collected;
 
   // Group by bonus id so stacking is decided once per bonus, not once per contributing slot.
   const groups = new Map<string, Group>();
@@ -859,22 +879,26 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
       inputValues,
     });
 
+    const occurrences = sources.reduce((sum, s) => sum + s.count, 0);
     let stacks = 1;
     if (group.bonus.stacking === "perSource") {
       stacks = group.bonus.maxStacks
-        ? Math.min(sources.length, group.bonus.maxStacks)
-        : sources.length;
+        ? Math.min(occurrences, group.bonus.maxStacks)
+        : occurrences;
     }
 
     return {
       id: group.id,
       bonus: group.bonus,
       bonusId: anchor.bonusId,
-      sources: sources.map((s) => ({
-        name: s.source,
-        slotId: s.slotId,
-        itemId: s.itemId,
-      })),
+      // One entry per occurrence, so a repeated pick lists as often as separate picks would.
+      sources: sources.flatMap((s) =>
+        Array.from({ length: s.count }, () => ({
+          name: s.source,
+          slotId: s.slotId,
+          itemId: s.itemId,
+        })),
+      ),
       slotId: anchor.slotId, // instancing slot, used for stat attribution
       active: result.active,
       gate: result.gate,

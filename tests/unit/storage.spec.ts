@@ -9,7 +9,13 @@ import * as storage from "../../src/storage/storage";
 import { APP_COMMIT } from "../../src/lib/app-info";
 import * as catalog from "../../src/data/catalog";
 import { NW_CATALOG_VERSION, NW_ITEMS } from "../../src/data/data";
-import type { AppMeta, CatalogOverlay, Build, Db } from "../../src/types";
+import type {
+  AppMeta,
+  CatalogOverlay,
+  Build,
+  Db,
+  Layer,
+} from "../../src/types";
 
 beforeEach(() => {
   installWindowShim();
@@ -825,6 +831,52 @@ describe("putBuild / putLayer / deleteBuildRecord / deleteLayerRecord / putTrash
     expect(trash).toHaveLength(1);
     expect(trash[0].kind).toBe("build");
     expect((trash[0].item as Build).name).toBe("Trashed");
+  });
+
+  it("loadAll migrates a trashed build stored in an older shape", async () => {
+    const stale = {
+      ...storage.defaultBuild("Trashed"),
+      occurrenceInputs: { "accursed-resolve": { "accursed-resolve": 1 } },
+    };
+    await storage.putTrash({
+      kind: "build",
+      item: stale as Build,
+      deletedAt: 1000,
+    });
+    const { trash } = await storage.loadAll();
+    const item = trash[0].item as Build;
+    expect(item.id).toBe(stale.id);
+    expect(item).not.toHaveProperty("occurrenceInputs");
+    expect(item.bonusValues).toEqual({
+      "accursed-resolve": { input: { active: true } },
+    });
+  });
+
+  it("loadAll migrates a trashed layer stored in an older shape", async () => {
+    await storage.putTrash({
+      kind: "layer",
+      item: {
+        id: "l1",
+        name: "Layer",
+        overlay: {
+          sectionPresets: {
+            p: {
+              id: "p",
+              label: "P",
+              section: "misc",
+              choices: { "misc.misc6": "a" },
+            },
+          },
+        },
+      } as unknown as Layer,
+      deletedAt: 1000,
+    });
+    const { trash } = await storage.loadAll();
+    const item = trash[0].item as Layer;
+    expect(item.enabled).toBe(true);
+    expect(item.overlay.sectionPresets.p?.choices).toEqual({
+      "misc.misc#1": "a",
+    });
   });
 
   it("deleteTrash removes a trash entry", async () => {

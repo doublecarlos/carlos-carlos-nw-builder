@@ -7,9 +7,13 @@ import {
   blurToHeader,
   undoButton,
   redoButton,
+  ensureSectionExpanded,
+  pickerInput,
+  slotRow,
 } from "./support/app";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const ARMS_ITEM = "M28 Ultraviolet Elven Gloves";
 
 /** The About dialog is the simplest overlay to raise: one header button, no import wizard. */
 const aboutDialog = (page: Page) => page.getByTestId("about-dialog");
@@ -101,4 +105,35 @@ test("a modal blocks the undo shortcut", async ({ page }) => {
   await page.keyboard.press("Control+z");
   await expect(undo).toBeDisabled();
   await expect(redo).toBeEnabled();
+});
+
+test("an undo stack survives a reload in the middle of it", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  const undo = undoButton(page);
+  const redo = redoButton(page);
+  const head = pickerInput(slotRow(page, "gear.head"));
+  const arms = pickerInput(slotRow(page, "gear.arms"));
+
+  await chooseItem(page, "gear.head", HEAD_ITEM);
+  await chooseItem(page, "gear.arms", ARMS_ITEM);
+  await blurToHeader(page);
+  await undo.click();
+  await expect(arms).toHaveValue("");
+
+  // The reload itself flushes the pending saves.
+  await page.reload();
+  await ensureSectionExpanded(page, "gear");
+  await expect(head).toHaveValue(HEAD_ITEM);
+  await expect(arms).toHaveValue("");
+  await expect(undo).toBeEnabled();
+  await expect(redo).toBeEnabled();
+
+  await redo.click();
+  await expect(arms).toHaveValue(ARMS_ITEM);
+  await undo.click();
+  await undo.click();
+  await expect(head).toHaveValue("");
+  await expect(undo).toBeDisabled();
 });

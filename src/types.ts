@@ -487,7 +487,7 @@ export interface Item {
   /** `build_parameter` slot id to the value it should take on whenever this item gets picked
    * through an `item_picker` slot -- e.g. a Paragon item defaulting Role and Forte to its
    * canonical spec. Same shape as `SectionPreset.params`. Applied once at pick time
-   * (`buildEditor.ts`'s `setChoice`); the fields stay ordinary editable params afterward, so a
+   * (`lib/apply-choice.ts`); the fields stay ordinary editable params afterward, so a
    * player can still override them for a "what-if" build.
    *
    * Values are optional because entries declare different key sets: the shipped JSON's

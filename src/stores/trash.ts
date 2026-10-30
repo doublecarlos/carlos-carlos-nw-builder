@@ -77,12 +77,27 @@ export function takeById(kind: "build" | "layer", id: string) {
   return idx === -1 ? null : take(idx);
 }
 
-/** Remove an entry from trash permanently. Also drops the item's undo history. */
+type Kind = TrashEntry["kind"];
+
+// Each store registers how to tell whether an id is live, so this module does not import the
+// stores that import it.
+const _isLive: Partial<Record<Kind, (id: string) => boolean>> = {};
+
+export function setLiveCheck(kind: Kind, isLive: (id: string) => boolean) {
+  _isLive[kind] = isLive;
+}
+
+/** Remove an entry from trash permanently. Also drops the item's undo history, unless a live
+ *  item or another trash entry holds the same id and so shares that history. */
 export function purge(entry: TrashEntry) {
   const idx = _trash.value.indexOf(entry);
   if (idx === -1) return;
   _trash.value.splice(idx, 1);
   storage.deleteTrash(trashKey(entry)).catch(() => {});
-  // Drop the history for this item.
-  history._delete(`${entry.kind}:${entry.item.id}`);
+  const { kind } = entry;
+  const { id } = entry.item;
+  const shared =
+    _isLive[kind]?.(id) ||
+    _trash.value.some((e) => e.kind === kind && e.item.id === id);
+  if (!shared) history._delete(`${kind}:${id}`);
 }

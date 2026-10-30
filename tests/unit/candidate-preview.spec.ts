@@ -38,6 +38,34 @@ describe("resolveWithCandidate", () => {
     expect(row?.item?.id).toBe(item.id);
     expect(build).toEqual(before);
   });
+
+  it("applies the candidate's defaultParams to the resolve, not to the build", () => {
+    const before = structuredClone(build);
+    const result = resolveWithCandidate(
+      shipped,
+      build,
+      "options.paragon",
+      "paragon-hellbringer",
+    );
+    expect(result.ctx.params.get("role")).toBe("dps");
+    expect(result.ctx.params.get("forte.primary")).toBe("power_p");
+    expect(build).toEqual(before);
+  });
+
+  it("previews an insignia as the variant its slot would upgrade it to", () => {
+    const stable = structuredClone(build);
+    // This mount's fourth slot is universal, preferring illuminated.
+    stable.choices["insignia.mount1"] = "stable-armored-pale-horse";
+    const result = resolveWithCandidate(
+      shipped,
+      stable,
+      "insignia.insignia1_4",
+      "aggression-illuminated",
+    );
+    const row = result.rows.find((r) => r.slotId === "insignia.insignia1_4");
+    expect(row?.item?.id).toBe("aggression-illuminated-pref");
+    expect(stable.choices["insignia.insignia1_4"]).toBeUndefined();
+  });
 });
 
 describe("bonusesForItem", () => {

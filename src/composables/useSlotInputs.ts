@@ -4,7 +4,7 @@
 // shown regardless, so the player can see and fix it. A bonus input renders on its anchor's
 // row only; the rows of its other copies get a note pointing there.
 import { computed, toValue, type MaybeRefOrGetter } from "vue";
-import { bonusById, inputs, resolved } from "../stores/resolved";
+import { inputCopies, inputsBySlot, resolvedIndex } from "../stores/resolved";
 import { inputKey } from "../lib/build-inputs";
 import { isCarried } from "../lib/bonus-inspector";
 import {
@@ -31,7 +31,10 @@ export interface BuildInput extends InputEntry {
 
 interface InputView {
   /** Whether the row shows the entry when nothing pins it. */
-  visible(entry: InputEntry, bonuses: Map<string, EvaluatedBonus>): boolean;
+  visible(
+    entry: InputEntry,
+    bonuses: ReadonlyMap<string, EvaluatedBonus>,
+  ): boolean;
   itemId(entry: InputEntry): string | undefined;
   testid(entry: InputEntry, slot: Slot): string;
   control(entry: InputEntry): BuildInput["control"];
@@ -99,6 +102,8 @@ const VIEWS: Record<InputKindId, InputView> = {
   },
 };
 
+const NO_BONUSES: ReadonlyMap<string, EvaluatedBonus> = new Map();
+
 /** `slot`'s typed values. `pinned` names addresses shown whatever their view says, such as
  *  the row's compare diffs. */
 export function useSlotInputs(
@@ -107,21 +112,17 @@ export function useSlotInputs(
 ) {
   return computed<BuildInput[]>(() => {
     const row = toValue(slot);
-    const own = inputs.value.filter((entry) => entry.slotId === row.id);
+    const own = inputsBySlot.value.get(row.id) ?? [];
     const notes = copyNotes(row);
     if (!own.length) return notes;
 
-    const result = resolved.value.ok ? resolved.value.result : null;
-    const bonuses = new Map(
-      (result?.bonuses ?? [])
-        .filter((bonus) => bonus.slotId === row.id)
-        .map((bonus) => [bonus.bonusId, bonus]),
-    );
+    const index = resolvedIndex.value;
+    const bonuses = index.slotBonuses.get(row.id) ?? NO_BONUSES;
     const forced = new Set(
       [
         ...toValue(pinned),
-        ...(result?.errors ?? []).flatMap((error) =>
-          error.slotId === row.id && error.address ? [error.address] : [],
+        ...(index.errors.get(row.id) ?? []).flatMap((error) =>
+          error.address ? [error.address] : [],
         ),
       ].map(inputKey),
     );
@@ -145,21 +146,17 @@ export function useSlotInputs(
 
 /** A note for each bonus input whose bonus also comes from `row` but renders elsewhere. */
 function copyNotes(row: Slot): BuildInput[] {
-  const result = resolved.value.ok ? resolved.value.result : null;
-  if (!result) return [];
-  return inputs.value.flatMap((entry) => {
-    if (entry.kind !== "bonusInput" || entry.slotId === row.id) return [];
+  const copies = inputCopies.value.get(row.id);
+  if (!copies) return [];
+  const { rows } = resolvedIndex.value;
+  return copies.flatMap(({ entry, itemId }) => {
     if (entry.address.store !== "bonusValues") return [];
     const { bonusId, key } = entry.address;
-    const copy = bonusById.value
-      .get(bonusId)
-      ?.sources.find((source) => source.slotId === row.id);
-    if (!copy) return [];
-    const anchor = result.rows.find((r) => r.slotId === entry.slotId);
+    const anchor = rows.get(entry.slotId);
     return [
       {
         ...entry,
-        anchor: { slotId: row.id, itemId: copy.itemId },
+        anchor: { slotId: row.id, itemId },
         testid: `bonus-input-note-${bonusId}-${key}`,
         control: "note" as const,
         note: `${entry.spec.label}: set on ${anchor?.slot.label ?? entry.slotId}`,

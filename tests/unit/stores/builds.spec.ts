@@ -22,7 +22,20 @@ async function freshStores() {
   const storage = await import("../../../src/storage/storage");
   // Every test starts from one "Build 1".
   builds.replaceActive(storage.defaultBuild("Build 1"));
-  return { builds, folders, landing, layers, selection, trash, buildEditor };
+  const meta = await import("../../../src/stores/meta");
+  const notice = await import("../../../src/stores/notice");
+  return {
+    builds,
+    folders,
+    landing,
+    layers,
+    selection,
+    trash,
+    buildEditor,
+    storage,
+    meta,
+    notice,
+  };
 }
 
 describe("builds store", () => {
@@ -220,5 +233,59 @@ describe("builds persistence guard", () => {
     const { builds } = await freshStores();
     // After freshStores, loading should already be false.
     expect(builds.loading.value).toBe(false);
+  });
+});
+
+describe("builds.restoreFromTrash", () => {
+  it("restores a copy an import replaced under a fresh id, beside the live build", async () => {
+    const { builds, trash, storage, meta, notice, selection } =
+      await freshStores();
+    const liveId = builds.build.value!.id;
+    builds.upsertImported(
+      { ...storage.defaultBuild("Incoming"), id: liveId },
+      true,
+    );
+
+    builds.restoreFromTrash(
+      trash.trashed.value.find((e) => e.item.id === liveId)!,
+    );
+
+    expect(builds.builds.value.map((b) => b.name)).toEqual([
+      "Incoming",
+      "Build 1",
+    ]);
+    const ids = builds.builds.value.map((b) => b.id);
+    expect(new Set(ids).size).toBe(2);
+    expect(new Set(meta.buildOrder.value).size).toBe(
+      meta.buildOrder.value.length,
+    );
+    expect(builds.get(liveId)?.name).toBe("Incoming");
+    expect(selection.selection.value).toEqual({ kind: "build", id: ids[1] });
+    expect(trash.trashed.value).toHaveLength(0);
+    expect(notice.notice.value).toBe("Restored “Build 1”");
+  });
+
+  it("keeps the id when no live build holds it", async () => {
+    const { builds, trash } = await freshStores();
+    builds.createBuild();
+    const id = builds.build.value!.id;
+    builds.deleteBuild(id);
+
+    builds.restoreFromTrash(trash.trashed.value[0]);
+
+    expect(builds.builds.value.map((b) => b.id).at(-1)).toBe(id);
+    expect(builds.build.value!.id).toBe(id);
+  });
+});
+
+describe("builds.upsertImported", () => {
+  it("appends a replacement whose target is already gone", async () => {
+    const { builds, storage, meta } = await freshStores();
+    const incoming = storage.defaultBuild("Incoming");
+
+    builds.upsertImported(incoming, true);
+
+    expect(meta.buildOrder.value).toContain(incoming.id);
+    expect(builds.builds.value.map((b) => b.name)).toContain("Incoming");
   });
 });

@@ -671,8 +671,25 @@ export async function loadAll(): Promise<{
   const layers: Layer[] = (rawLayers as unknown[]).map((l: unknown) =>
     normalizeLayer(unwrapEnvelope(l)),
   );
-  const trash: TrashEntry[] = (rawTrash as TrashEntry[]).filter(
-    (t) => isPlain(t) && (t.kind === "build" || t.kind === "layer"),
+  // Trashed items go through the same migrations as live ones, so a restore lands in the
+  // current shape. An entry missing its id or time is dropped, since its trash key is built
+  // from both.
+  const trash: TrashEntry[] = (rawTrash as unknown[]).flatMap(
+    (t): TrashEntry[] => {
+      if (
+        !isPlain(t) ||
+        !isPlain(t.item) ||
+        typeof t.item.id !== "string" ||
+        typeof t.deletedAt !== "number"
+      )
+        return [];
+      const { deletedAt } = t;
+      if (t.kind === "build")
+        return [{ kind: "build", item: normalize(t.item), deletedAt }];
+      if (t.kind === "layer")
+        return [{ kind: "layer", item: normalizeLayer(t.item), deletedAt }];
+      return [];
+    },
   );
 
   const buildIds = new Set(builds.map((b) => b.id));

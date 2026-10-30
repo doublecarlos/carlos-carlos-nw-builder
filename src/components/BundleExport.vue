@@ -11,6 +11,7 @@ import { db } from "../stores/resolved";
 import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 import { matchesQuery } from "../lib/text-filter";
+import { downloadJson } from "../lib/download";
 import type { BuildNavEntry } from "../types";
 import { Download, Folder } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
@@ -144,13 +145,7 @@ function exportBundle() {
     layers: selectedLayers,
     folders: selectedFolders,
   });
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `nw-bundle-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadJson(`nw-bundle-${new Date().toISOString().slice(0, 10)}.json`, json);
   emit("close");
 }
 

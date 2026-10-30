@@ -5,7 +5,7 @@
 //
 // The condition reads the build's stored picks, never the resolved results, so a slot's
 // visibility cannot depend on what the engine made of it.
-import { collect } from "../engine/bonus";
+import { collect, type Collected } from "../engine/bonus";
 import { evaluate } from "../engine/conditions";
 import { withDerivedBonuses } from "../engine/insignia";
 import { expandSlots, parseRowSlotId } from "./item-picker-list";
@@ -22,7 +22,18 @@ export function availabilityOf(slot: Slot): ConditionWhen | undefined {
 
 /** The context `availableWhen` is evaluated against, built from the stored picks. */
 export function availabilityContext(db: Db, build: Build): EvalContext {
-  return collect(db, withDerivedBonuses(db, build)).ctx;
+  return collectStored(db, build).collected.ctx;
+}
+
+/** A stored build with its derived bonuses folded in, and what `collect` gathers from it. */
+export interface CollectedBuild {
+  derived: Build;
+  collected: Collected;
+}
+
+function collectStored(db: Db, build: Build): CollectedBuild {
+  const derived = withDerivedBonuses(db, build);
+  return { derived, collected: collect(db, derived) };
 }
 
 export function slotAvailable(slot: Slot, ctx: EvalContext): boolean {
@@ -119,6 +130,9 @@ export interface PruneResult {
   cleared: string[];
   /** Ids of every slot whose condition fails for the pruned build. */
   hidden: ReadonlySet<string>;
+  /** The final pass's collect of the pruned build, for a resolve to reuse. Absent when no
+   *  slot carries a condition, since then no pass collects. */
+  collected?: CollectedBuild;
 }
 
 const NOTHING_HIDDEN: ReadonlySet<string> = new Set();
@@ -147,7 +161,8 @@ export function pruneUnavailableSlots(db: Db, build: Build): PruneResult {
   let current = build;
   const cleared: string[] = [];
   for (;;) {
-    const ctx = gated.length ? availabilityContext(db, current) : undefined;
+    const collected = gated.length ? collectStored(db, current) : undefined;
+    const ctx = collected?.collected.ctx;
     const failing = new Set(
       ctx
         ? gated
@@ -168,6 +183,7 @@ export function pruneUnavailableSlots(db: Db, build: Build): PruneResult {
         build: current,
         cleared,
         hidden: new Set(hidden.map((slot) => slot.id)),
+        collected,
       };
     if (current === build) current = withOwnSlotState(build);
     for (const slot of emptied) {

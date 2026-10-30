@@ -1,6 +1,7 @@
 // What a picker candidate would do if picked, for the picker's preview lines and item card.
 // Vue-free so it is unit-testable.
 import * as engine from "../engine/engine";
+import { withChoice } from "./apply-choice";
 import type {
   Build,
   Db,
@@ -110,17 +111,14 @@ function candidatePreview(
   };
 }
 
-/** Resolves `build` as if `itemId` were picked in `slotId`; every other choice is left alone. */
+/** Resolves `build` as if `itemId` were picked in `slotId`, side effects of the pick included. */
 export function resolveWithCandidate(
   db: Db,
   build: Build,
   slotId: string,
   itemId: string,
 ): ResolvedBonuses {
-  return engine.resolveBonuses(db, {
-    ...build,
-    choices: { ...build.choices, [slotId]: itemId },
-  });
+  return engine.resolveBonuses(db, withChoice(db, build, slotId, itemId));
 }
 
 /**

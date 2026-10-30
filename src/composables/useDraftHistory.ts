@@ -14,6 +14,7 @@ import {
   type ComputedRef,
 } from "vue";
 import * as formUndo from "../stores/formUndo";
+import * as pendingEdits from "../stores/pendingEdits";
 
 const DEBOUNCE_MS = 700;
 const UNDO_LIMIT = 50;
@@ -136,6 +137,9 @@ export function useDraftHistory<T>({
     { deep: true },
   );
 
+  // A selection switch, an undo or a page hide flushes this form's pending emit first.
+  const unregisterPendingEdit = pendingEdits.register(flushEmit);
+
   let unregisterFormUndo: (() => void) | undefined;
 
   function registerFormUndo() {
@@ -167,6 +171,7 @@ export function useDraftHistory<T>({
   onUnmounted(() => {
     window.clearTimeout(snapshotTimer);
     flushEmit();
+    unregisterPendingEdit();
     unregisterFormUndo?.();
   });
 

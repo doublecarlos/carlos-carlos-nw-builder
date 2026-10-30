@@ -17,10 +17,11 @@
 // ## Coalescing
 // Consecutive calls to `snapshot` with the same `key` inside a 700 ms window collapse into
 // one undo step. Pass `null` to force a distinct step.
-import { computed, ref } from "vue";
+import { computed, ref, shallowRef, toRaw, triggerRef } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { onPageHide } from "../lib/page-lifecycle";
 import * as idb from "../storage/idb";
+import * as pendingEdits from "./pendingEdits";
 import * as selection from "./selection";
 
 const UNDO_LIMIT = 50;
@@ -38,8 +39,9 @@ export interface ItemHistory {
   lastAt: number;
 }
 
-/** The map of all histories, keyed `<kind>:<id>`. */
-const _histories = ref<Map<string, ItemHistory>>(new Map());
+/** The map of all histories, keyed `<kind>:<id>`. The stacks are plain data mutated in place,
+ *  so the ref is shallow and each mutation triggers it by hand. */
+const _histories = shallowRef<Map<string, ItemHistory>>(new Map());
 
 /** True while hydration is still loading. During hydration, `snapshot` is a no-op. */
 let _loading = true;
@@ -67,10 +69,16 @@ async function flushSave() {
 }
 
 const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
-// A write still waiting on the debounce would be lost if the page goes away first.
-onPageHide(() => void flushSave());
+// A write still waiting on the debounce would be lost if the page goes away first. Open forms
+// commit their pending edits first, since those land in this store.
+onPageHide(() => {
+  pendingEdits.flushAll();
+  void flushSave();
+});
 
-function markDirty(key: string) {
+/** Notifies the accessors of an in-place change to `key`'s stack and queues its save. */
+function changed(key: string) {
+  triggerRef(_histories);
   if (_loading) return;
   _dirtyIds.add(key);
   flushSaveDebounced();
@@ -136,6 +144,11 @@ export const redoLabel = computed(() => {
 
 // --- snapshot / undo / redo ----------------------------------------------------------------
 
+/** Serializes the raw object, so the walk skips the reactive proxy's traps. */
+function serialize(current: unknown): string {
+  return JSON.stringify(toRaw(current));
+}
+
 /**
  * Records the current state **before** a change. `key` drives coalescing (700 ms window,
  * unchanged key collapses); `null` forces a distinct step. Clears `future`.
@@ -161,13 +174,13 @@ export function snapshot(
     h.past.length > 0;
 
   if (!coalesce) {
-    h.past.push({ json: JSON.stringify(current), label });
+    h.past.push({ json: serialize(current), label });
     if (h.past.length > UNDO_LIMIT) h.past.shift();
   }
   h.lastKey = key;
   h.lastAt = now;
   h.future.length = 0;
-  markDirty(sk);
+  changed(sk);
 }
 
 /**
@@ -185,9 +198,9 @@ export function undo(
   if (!h || !h.past.length) return null;
 
   const entry = h.past.pop()!;
-  h.future.push({ json: JSON.stringify(current), label: entry.label });
+  h.future.push({ json: serialize(current), label: entry.label });
   h.lastKey = null;
-  markDirty(sk);
+  changed(sk);
 
   selectForKey(sk);
   return entry.json;
@@ -208,9 +221,9 @@ export function redo(
   if (!h || !h.future.length) return null;
 
   const entry = h.future.pop()!;
-  h.past.push({ json: JSON.stringify(current), label: entry.label });
+  h.past.push({ json: serialize(current), label: entry.label });
   h.lastKey = null;
-  markDirty(sk);
+  changed(sk);
 
   selectForKey(sk);
   return entry.json;
@@ -239,6 +252,7 @@ export function _setLoading(value: boolean) {
 /** Delete a history entry (when an item is purged from the trash). */
 export function _delete(key: string) {
   _histories.value.delete(key);
+  triggerRef(_histories);
   _dirtyIds.delete(key);
   idb.remove("history", key).catch(() => {});
 }

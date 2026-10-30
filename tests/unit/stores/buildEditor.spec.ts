@@ -379,6 +379,41 @@ describe("buildEditor.applyPreset", () => {
     });
     expect(builds.build.value!.context.role).toBeUndefined();
   });
+
+  it("evicts an insignia the named mount does not take, as a hand pick would", async () => {
+    const { builds, buildEditor } = await freshStores();
+    const INSIGNIA = "insignia.insignia1_1";
+    buildEditor.setChoice(INSIGNIA, "aggression-barbed");
+    builds.build.value!.values[INSIGNIA] = { stat: { magnitude: 5 } };
+
+    // This mount's first slot is crescent, so the barbed insignia no longer fits.
+    buildEditor.applyPreset({
+      id: "stable-preset",
+      label: "Stable",
+      section: "insignia",
+      choices: { "insignia.mount1": "stable-armored-pale-horse" },
+    });
+
+    const build = builds.build.value!;
+    expect(build.choices["insignia.mount1"]).toBe("stable-armored-pale-horse");
+    expect(build.choices[INSIGNIA]).toBeUndefined();
+    expect(build.values[INSIGNIA]).toBeUndefined();
+  });
+
+  it("seeds a named item's defaultParams, under the preset's own params", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.applyPreset({
+      id: "paragon-preset",
+      label: "Paragon",
+      section: "options",
+      choices: { "options.paragon": "paragon-hellbringer" },
+      params: { "options.role": "healer" },
+    });
+
+    const context = builds.build.value!.context;
+    expect(context.role).toBe("healer");
+    expect(context.forte.primary).toBe("power_p");
+  });
 });
 
 // `clears` is the one preset field that removes rather than writes -- the same per-slot-type

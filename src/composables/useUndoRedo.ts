@@ -11,6 +11,7 @@ import * as buildEditor from "../stores/buildEditor";
 import * as layerEditor from "../stores/layerEditor";
 import * as formUndo from "../stores/formUndo";
 import * as navHistory from "../stores/navHistory";
+import * as pendingEdits from "../stores/pendingEdits";
 import * as selection from "../stores/selection";
 import { undoScope } from "./useUndoScope";
 
@@ -24,20 +25,23 @@ export interface UndoRedoBinding {
 }
 
 /** `buildEditor` and `layerEditor` read the same per-item history, keyed by the selection, so
- *  the state is shared and only the apply step differs by kind. */
+ *  the state is shared and only the apply step differs by kind. A pending form edit commits
+ *  first, so undo takes back the typing as its own step. */
 const itemStack: UndoRedoBinding = {
   canUndo: buildEditor.canUndo,
   canRedo: buildEditor.canRedo,
   undoLabel: buildEditor.undoLabel,
   redoLabel: buildEditor.redoLabel,
-  undo: () =>
-    selection.selection.value?.kind === "layer"
-      ? layerEditor.undo()
-      : buildEditor.undo(),
-  redo: () =>
-    selection.selection.value?.kind === "layer"
-      ? layerEditor.redo()
-      : buildEditor.redo(),
+  undo: () => {
+    pendingEdits.flushAll();
+    if (selection.selection.value?.kind === "layer") layerEditor.undo();
+    else buildEditor.undo();
+  },
+  redo: () => {
+    pendingEdits.flushAll();
+    if (selection.selection.value?.kind === "layer") layerEditor.redo();
+    else buildEditor.redo();
+  },
 };
 
 const navStack: UndoRedoBinding = {

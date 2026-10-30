@@ -10,7 +10,10 @@ import { assignedRows } from "../lib/inline-repetition";
 import { copyCounts } from "../lib/copy-counts";
 import { misplacedInsignia, withDerivedBonuses } from "./insignia";
 import { itemStatAddress, readInput } from "../lib/build-inputs";
-import { pruneUnavailableSlots } from "../lib/slot-availability";
+import {
+  pruneUnavailableSlots,
+  type PruneResult,
+} from "../lib/slot-availability";
 import { inputRanges, paramSpec, rangeError } from "./inputs";
 import type {
   Db,
@@ -655,8 +658,26 @@ function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
 /** Bonus resolution alone, for callers that read only `bonuses` (the picker's per-candidate
  *  previews). Skips the stat pipeline and error checks `resolveBuild` adds. */
 export function resolveBonuses(db: Db, stored: Build): ResolvedBonuses {
-  const { build } = pruneUnavailableSlots(db, stored);
-  return bonus.resolve(db, withDerivedBonuses(db, build));
+  const { build, collected } = collectPruned(
+    db,
+    pruneUnavailableSlots(db, stored),
+  );
+  return bonus.resolve(db, build, collected);
+}
+
+/** The pruned build with its derived bonuses folded in, and its `collect`. Reuses the prune's
+ *  final pass when it ran one, since that pass collected this exact build. */
+function collectPruned(
+  db: Db,
+  pruned: PruneResult,
+): { build: Build; collected: bonus.Collected } {
+  if (pruned.collected) {
+    const { derived, collected } = pruned.collected;
+    return { build: derived, collected };
+  }
+  // Derived here, not written to the build, so everything below sees an ordinary equipped item.
+  const build = withDerivedBonuses(db, pruned.build);
+  return { build, collected: bonus.collect(db, build) };
 }
 
 export function resolveBuild(db: Db, stored: Build): ResolvedBuild {
@@ -666,9 +687,8 @@ export function resolveBuild(db: Db, stored: Build): ResolvedBuild {
     console.warn(
       `resolveBuild cleared unavailable slots the stored build still holds: ${pruned.cleared.join(", ")}`,
     );
-  // Derived here, not written to the build, so everything below sees an ordinary equipped item.
-  const build = withDerivedBonuses(db, pruned.build);
-  const resolved = bonus.resolve(db, build);
+  const { build, collected } = collectPruned(db, pruned);
+  const resolved = bonus.resolve(db, build, collected);
   const ledger: LedgerEntry[] = [];
   const { rows, stages } = run(db, build, resolved, ledger);
   return {

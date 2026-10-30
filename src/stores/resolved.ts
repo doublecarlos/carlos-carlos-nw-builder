@@ -5,6 +5,14 @@ import * as catalog from "../data/catalog";
 import * as engine from "../engine/engine";
 import { inputEntries, type InputEntry } from "../engine/inputs";
 import { inspectorBonuses, isNearMiss } from "../lib/bonus-inspector";
+import {
+  emptyIndex,
+  groupBySlot,
+  indexResolved,
+  inputCopiesBySlot,
+  type InputCopy,
+  type ResolvedIndex,
+} from "../lib/resolved-index";
 import * as builds from "./builds";
 import * as layers from "./layers";
 import * as compare from "./compare";
@@ -88,12 +96,16 @@ export const hiddenSlots = computed<ReadonlySet<string>>(() =>
   resolved.value.ok ? resolved.value.result.hiddenSlots : NOTHING_HIDDEN,
 );
 
+/** The active build's per-slot lookups (lib/resolved-index.ts). Empty while the build fails
+ *  to resolve. */
+export const resolvedIndex = computed<ResolvedIndex>(() =>
+  resolved.value.ok ? indexResolved(resolved.value.result) : emptyIndex(),
+);
+
 /** Every resolved bonus by id, hidden ones included: an "overridden by" line can name an
  * excluder the inspector's own list leaves out. Empty while the build fails to resolve. */
-export const bonusById = computed<Map<string, EvaluatedBonus>>(() =>
-  resolved.value.ok
-    ? new Map(resolved.value.result.bonuses.map((bonus) => [bonus.id, bonus]))
-    : new Map(),
+export const bonusById = computed<Map<string, EvaluatedBonus>>(
+  () => resolvedIndex.value.bonusById,
 );
 
 /** Summarized here so the tab can show it without mounting the inspector. Reads the same
@@ -117,3 +129,13 @@ export const inputs = computed<InputEntry[]>(() => {
     ? inputEntries(db.value, b, resolved.value.result)
     : [];
 });
+
+/** `inputs` by the slot each value belongs to. */
+export const inputsBySlot = computed<Map<string, InputEntry[]>>(() =>
+  groupBySlot(inputs.value),
+);
+
+/** The bonus inputs each slot notes because their bonus also comes from it. */
+export const inputCopies = computed<Map<string, InputCopy[]>>(() =>
+  inputCopiesBySlot(inputs.value, bonusById.value),
+);
