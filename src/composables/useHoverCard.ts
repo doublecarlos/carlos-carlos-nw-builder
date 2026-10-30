@@ -1,4 +1,10 @@
-import { onScopeDispose, ref, type Ref } from "vue";
+import {
+  onScopeDispose,
+  ref,
+  toValue,
+  type MaybeRefOrGetter,
+  type Ref,
+} from "vue";
 import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import { isFormControl } from "./focus";
 import { useEscapeToClose } from "./useEscapeToClose";
@@ -34,10 +40,14 @@ export interface HoverPosition {
  *
  * `suppressUntilPointerMoves` is for programmatic scrolls (keyboard cursor, jumps): the row
  * left under a still pointer gets no card until the pointer moves.
+ *
+ * While `disabled` holds no card opens: a touch screen fires `mouseenter` on every tap, and a
+ * card dropping over the row just tapped would cover what the tap was for.
  */
 export function useHoverCard(
   tooltip: Ref<InstanceType<typeof BasePopover> | null>,
   hasItem: (slotId: string, itemId?: string) => boolean,
+  options: { disabled?: MaybeRefOrGetter<boolean> } = {},
 ) {
   const hover = ref<HoverPosition | null>(null);
   /** The row waiting to open, kept for the hover timers and, while suppressed, for the pointer
@@ -83,7 +93,8 @@ export function useHoverCard(
   }, HOVER_CLOSE_GRACE_MS);
 
   function onRowEnter(event: MouseEvent, slotId: string, itemId?: string) {
-    if (editing || !hasItem(slotId, itemId)) return;
+    if (toValue(options.disabled) || editing || !hasItem(slotId, itemId))
+      return;
     stopHoverTimer();
     stopHoverTimerNow();
     stopLeaveTimer();

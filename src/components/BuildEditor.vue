@@ -28,6 +28,8 @@ import CheckMenu from "./ui/CheckMenu.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
 import IconButton from "./ui/IconButton.vue";
 import QuickOptions from "./game/QuickOptions.vue";
+import EditorActionsMenu from "./game/EditorActionsMenu.vue";
+import BaseSheet from "./ui/BaseSheet.vue";
 import {
   ChevronsDownUp,
   ChevronsUpDown,
@@ -51,7 +53,8 @@ import {
   parentOf,
   type NestPosition,
 } from "../lib/slot-parent";
-import { useHoverCard } from "../composables/useHoverCard";
+import { useHoverCard, type HoverPosition } from "../composables/useHoverCard";
+import * as viewport from "../stores/viewport";
 import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
@@ -352,23 +355,45 @@ const {
 } = useHoverCard(
   tooltip,
   (slotId, itemId) => itemForHover(slotId, itemId) !== null,
+  { disabled: viewport.coarsePointer },
 );
 
-const hoveredItem = computed(() =>
-  hover.value ? itemForHover(hover.value.slotId, hover.value.itemId) : null,
+/** The row whose item the sheet shows, opened from that row's info button. The touch stand-in
+ *  for the hover card, which a tap never opens. */
+const sheetTarget = ref<HoverPosition | null>(null);
+
+/** The row either card is about. Both read everything below off this, so the sheet and the
+ *  hover card cannot show the same item differently. The sheet wins while open. */
+const cardTarget = computed(() => sheetTarget.value ?? hover.value);
+
+const cardItem = computed(() =>
+  cardTarget.value
+    ? itemForHover(cardTarget.value.slotId, cardTarget.value.itemId)
+    : null,
 );
 
-/** The values the engine resolves for the hovered item's own dynamic stats, read off the build
+/** The values the engine resolves for the card's item's own dynamic stats, read off the build
  *  the same way engine.ts does, so the card's typed rows show what was typed rather than the
  *  config's default. Per copy, like the card's fixed rows: the engine's own row total is this
  *  times the item's repetitions. Only for the slot's own pick; a point_assignment candidate
  *  has no typed value of its own. */
-const hoveredDynamicValues = computed(() => {
-  const item = hoveredItem.value;
-  const slotId = hover.value?.slotId;
+const cardDynamicValues = computed(() => {
+  const item = cardItem.value;
+  const slotId = cardTarget.value?.slotId;
   if (!item || !slotId || itemIn(slotId) !== item) return {};
   return dynamicValuesFor(slotId, item);
 });
+
+function openItemSheet(slotId: string) {
+  closeCard();
+  sheetTarget.value = { slotId };
+}
+
+/** Dismisses whichever card is showing. */
+function closeCards() {
+  closeCard();
+  sheetTarget.value = null;
+}
 
 /** stat -> one copy's value for each of `item`'s own dynamic stats at `slotId`. */
 function dynamicValuesFor(slotId: string, item: Item): Record<string, number> {
@@ -385,14 +410,33 @@ function dynamicValuesFor(slotId: string, item: Item): Record<string, number> {
 }
 
 /**
- * Every bonus the hovered item takes part in. A point_assignment candidate at 0 points still
+ * Every bonus the card's item takes part in. A point_assignment candidate at 0 points still
  * has a (reachable, inactive) entry here -- `collect()`'s `collectAttachments` walks every
  * candidate in the slot regardless of its own count, not just the ones with points spent
  * (bonus.ts's own comment on why).
  */
-const hoveredBonuses = computed(() => {
-  const item = hoveredItem.value;
+const cardBonuses = computed(() => {
+  const item = cardItem.value;
   return item ? bonusesForItem(db.value, item, bonusById.value) : [];
+});
+
+/** Everything ItemCard takes, for either card, or null when there is nothing to show. */
+const cardProps = computed(() => {
+  const item = cardItem.value;
+  const target = cardTarget.value;
+  if (!item || !target) return null;
+  return {
+    item,
+    bonuses: cardBonuses.value,
+    scalers: itemScalers(item),
+    dynamicValues: cardDynamicValues.value,
+    db: db.value,
+    slotLabel: db.value.slotFor(target.slotId)?.label ?? "",
+    editLabel: editLabel.value,
+    stableGroup: cardStableGroup.value,
+    bonusById: bonusById.value,
+    context: result.value.context,
+  };
 });
 
 // --- quick compare ---------------------------------------------------------------------
@@ -627,16 +671,18 @@ const derivedBonuses = computed(() => {
 });
 
 /** Gates the card's way into the browser, which has nothing to apply to without a group. */
-const hoveredStableGroup = computed(() => {
-  const slotId = hover.value?.slotId;
+const cardStableGroup = computed(() => {
+  const slotId = cardTarget.value?.slotId;
   return slotId ? (insignia.stableRef(db.value, slotId)?.group ?? null) : null;
 });
 
 /** Lands on the side the card was already showing, filtered to the item it was about. */
 function openStableFromCard() {
-  const group = hoveredStableGroup.value;
-  const item = hoveredItem.value;
+  const group = cardStableGroup.value;
+  const item = cardItem.value;
   if (!group || !item) return;
+  // The sheet would trap focus away from the browser opening over it.
+  sheetTarget.value = null;
   stableBrowser.openFor(group, {
     tab: item.insigniaSlots ? "mount" : "bonus",
     query: item.name,
@@ -803,26 +849,26 @@ function openInLayerEditor(itemId: string) {
 
 /** The card is dismissed first: it would otherwise hang over the editor it just opened. */
 function onCardEdit() {
-  const item = hoveredItem.value;
+  const item = cardItem.value;
   if (!item) return;
-  closeCard();
+  closeCards();
   openInLayerEditor(item.id);
 }
 
 /** Same dismissal: the row the jump lands on may be the one the card is hanging over. */
 function onCardGoToSlot(slotId: string) {
-  closeCard();
+  closeCards();
   goTo.requestJump({ slotId });
 }
 
 function onCardInspect(bonusId: string) {
-  closeCard();
+  closeCards();
   details.inspectBonus(bonusId);
 }
 
 /** Same dismissal: the filter rewrites the list under the card, likely dropping its own row. */
 function onCardLocate(need: SupplyNeed, label: string) {
-  closeCard();
+  closeCards();
   slotFilter.showSuppliersOf(need, label);
 }
 
@@ -1048,17 +1094,22 @@ watch(
     <div
       class="sticky top-0 z-toolbar flex flex-col flex-wrap gap-2 border-b border-line bg-surface px-3.5 py-2"
     >
-      <QuickOptions class="flex-1" :build="build" />
+      <!-- A phone has no room to keep these on screen: they scroll with the list instead. -->
+      <QuickOptions
+        v-if="!viewport.isPhone.value"
+        class="flex-1"
+        :build="build"
+      />
       <div class="flex flex-wrap items-center gap-1.5">
         <BaseInput
           v-model="filterText"
           type="search"
           data-testid="slot-filter-text"
-          class="slot-filter-text min-w-40"
+          class="slot-filter-text min-w-40 max-md:basis-full"
           :placeholder="`Filter slots… (${modKey}+/)`"
         />
         <ComboBox
-          class="w-52"
+          class="w-52 max-md:w-auto max-md:min-w-0 max-md:flex-1"
           data-testid="slot-filter-stat"
           :options="statFilterOptions"
           :model-value="filterStat"
@@ -1070,6 +1121,18 @@ watch(
           @click="clearAllFilters"
           ><FilterX />clear filters</BaseButton
         >
+        <EditorActionsMenu
+          v-if="viewport.isPhone.value"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          :undo-label="undoLabel"
+          :redo-label="redoLabel"
+          :all-expanded="allSectionsExpanded"
+          :none-expanded="noSectionsExpanded"
+          @undo="undo()"
+          @redo="redo()"
+          @set-all="setAll"
+        />
         <BaseBadge
           v-if="buildEditor.retired.value.length"
           variant="warn"
@@ -1122,7 +1185,10 @@ watch(
             filteredSlotCount === 1 ? "" : "es"
           }}</BaseBadge
         >
-        <span class="ml-auto flex flex-wrap items-center gap-1.5 text-[16px]">
+        <span
+          v-if="!viewport.isPhone.value"
+          class="ml-auto flex flex-wrap items-center gap-1.5 text-[16px]"
+        >
           <HistoryButtons
             testid="editor"
             :can-undo="canUndo"
@@ -1183,6 +1249,11 @@ watch(
       data-testid="editor-column"
       @scroll="onBuildScroll"
     >
+      <QuickOptions
+        v-if="viewport.isPhone.value"
+        class="mx-3.5 mt-3.5"
+        :build="build"
+      />
       <!-- The list's padding lives here rather than on the scroll container: a scroll
              container does not clip inside its own padding, so section headers sticking at
              `top: 0` would have rows scrolling visibly through the band above them. -->
@@ -1270,6 +1341,7 @@ watch(
               :diff="rowDataFor(slotDef.id).diff"
               @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
               @leave="onRowLeave"
+              @info="openItemSheet(slotDef.id)"
               @rowclick="
                 (event, itemId) => onRowClick(event, slotDef.id, itemId)
               "
@@ -1280,17 +1352,8 @@ watch(
         <!-- One card for the whole list, moved and refilled on hover. -->
         <BasePopover ref="tooltip" :width="320">
           <ItemCard
-            v-if="hover && hoveredItem"
-            :item="hoveredItem"
-            :bonuses="hoveredBonuses"
-            :scalers="itemScalers(hoveredItem)"
-            :dynamic-values="hoveredDynamicValues"
-            :db="db"
-            :slot-label="db.slotFor(hover.slotId)?.label ?? ''"
-            :edit-label="editLabel"
-            :stable-group="hoveredStableGroup"
-            :bonus-by-id="bonusById"
-            :context="result.context"
+            v-if="hover && !sheetTarget && cardProps"
+            v-bind="cardProps"
             @edit="onCardEdit"
             @go-to-slot="onCardGoToSlot"
             @locate="onCardLocate"
@@ -1300,6 +1363,26 @@ watch(
             @mouseleave="onCardLeave"
           />
         </BasePopover>
+
+        <!-- The same card for a touch screen, opened from a row's info button. -->
+        <BaseSheet
+          v-if="sheetTarget && cardProps"
+          side="bottom"
+          title="Item details"
+          data-testid="item-card-sheet"
+          @close="sheetTarget = null"
+        >
+          <div class="flex min-h-0 flex-1 flex-col p-2">
+            <ItemCard
+              v-bind="cardProps"
+              @edit="onCardEdit"
+              @go-to-slot="onCardGoToSlot"
+              @locate="onCardLocate"
+              @inspect="onCardInspect"
+              @open-stable="openStableFromCard"
+            />
+          </div>
+        </BaseSheet>
       </section>
     </main>
   </div>

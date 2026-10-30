@@ -133,14 +133,14 @@ test("the builder does not scroll sideways at the device width", async ({
   await expectShellFits(page);
 });
 
-// The editor pane's own content is not checked at this width yet: the build editor's toolbar
-// still overflows it by a few pixels.
-test("the drawer and stats pane fit the narrowest supported width", async ({
+test("the editor, drawer and stats pane fit the narrowest supported width", async ({
   page,
 }) => {
   await page.setViewportSize({ width: MIN_SUPPORTED_WIDTH, height: 740 });
   await openBuilder(page);
   await expect(page.getByTestId("pane-switch")).toBeVisible();
+  await expect(editorColumn(page)).toBeVisible();
+  await expectNoHorizontalScroll(page);
   await expectShellFits(page);
 });
 

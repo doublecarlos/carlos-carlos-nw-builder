@@ -63,8 +63,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
     await expect(page.getByTestId("header-go-to").locator("kbd")).toBeHidden();
     await expect(page.getByTestId("header-shortcuts")).toHaveCount(0);
 
-    // The editor pane's toolbar is not yet fitted to 360px, so the page-wide check runs on
-    // the stats pane.
+    await expectNoHorizontalScroll(page);
     await page.getByTestId("pane-stats").click();
     await expectNoHorizontalScroll(page);
   });

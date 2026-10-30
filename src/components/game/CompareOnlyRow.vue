@@ -33,11 +33,14 @@ defineProps<{
   >
     <NestGuide v-if="nest" :nest="nest" />
     <span
-      class="col-start-1 w-44 min-w-0 truncate self-start py-0.5 text-muted"
+      class="col-start-1 w-44 min-w-0 truncate self-start py-0.5 text-muted max-md:col-span-full max-md:w-auto"
       :class="nest ? 'pl-8.5' : 'pl-2.5'"
       >{{ slotDef.label }}</span
     >
-    <div class="min-w-0 [grid-column:2/-1] py-0.5" :class="nest && 'pl-6'">
+    <div
+      class="min-w-0 [grid-column:2/-1] py-0.5 max-md:[grid-column:1/-1]"
+      :class="nest ? 'pl-6 max-md:pl-8.5' : 'max-md:pl-2.5'"
+    >
       <p class="italic text-muted">Not available in this build</p>
       <p class="slot-diff-note mt-0.5 text-muted">
         {{ compareName }}:

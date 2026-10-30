@@ -15,7 +15,8 @@ const props = defineProps<{
    *  `default` (mirrors how a missing `build_parameter` value falls back to `slot.default`). */
   values: Record<string, number>;
   /** True when the caller laid out a shared column grid (the build editor's section): the
-   *  steppers become its items, one per column. PresetForm.vue leaves this off and wraps. */
+   *  steppers become its items, one per column. PresetForm.vue leaves this off and wraps, and
+   *  so does a phone, whose section has a single track. */
   subgrid?: boolean;
 }>();
 
@@ -69,7 +70,7 @@ defineExpose({ focus, focusAndSeed });
     ref="root"
     :class="
       subgrid
-        ? 'grid col-span-full min-w-0 [grid-template-columns:subgrid]'
+        ? 'grid col-span-full min-w-0 [grid-template-columns:subgrid] max-md:flex max-md:flex-wrap max-md:gap-x-4 max-md:gap-y-2'
         : 'flex flex-wrap gap-4'
     "
   >

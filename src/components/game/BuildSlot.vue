@@ -25,6 +25,9 @@ import { isFormControl } from "../../composables/focus";
 import { isDisabled } from "../../lib/slot-toggle";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, useTemplateRef } from "vue";
+import { Info } from "@lucide/vue";
+import IconButton from "../ui/IconButton.vue";
+import { coarsePointer } from "../../stores/viewport";
 import type {
   RowSlot,
   Item,
@@ -91,6 +94,8 @@ const emit = defineEmits<{
   enter: [event: MouseEvent, itemId?: string];
   leave: [];
   rowclick: [event: MouseEvent, itemId?: string];
+  /** The info button: show this row's item card. */
+  info: [];
 }>();
 
 const anchor = useTemplateRef("anchor");
@@ -158,6 +163,9 @@ function onToggle(event: Event) {
       !(event.target as HTMLInputElement).checked,
     );
 }
+/** A touch screen gets no hover card, so a row holding an item offers it from a button. */
+const showInfo = computed(() => coarsePointer.value && !!props.item);
+
 const controlId = computed(() => `slot-${props.slotDef.id}`);
 const labelId = computed(() => `slot-${props.slotDef.id}-label`);
 
@@ -209,7 +217,7 @@ useCursorRowKeys(anchor, {
          row's first line once diff notes make the row taller. The left padding lives here, not
          on the row: on the row it would push the label into the shared label-to-control gap. -->
     <div
-      class="col-start-1 flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5"
+      class="col-start-1 flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5 max-md:col-span-full max-md:w-auto"
       :class="nest ? 'pl-8.5' : 'pl-2.5'"
     >
       <!-- A point_assignment row has no single control to point `for` at (it is a row of
@@ -236,12 +244,20 @@ useCursorRowKeys(anchor, {
         :data-testid="'slot-toggle:' + slotDef.id"
         @change="onToggle"
       />
+      <IconButton
+        v-if="showInfo"
+        class="shrink-0"
+        :title="`Show the item in ${labelOverride || slotDef.label}`"
+        :data-testid="'slot-info:' + slotDef.id"
+        @click.stop="emit('info')"
+        ><Info
+      /></IconButton>
     </div>
 
     <!-- Nested controls step in too, so the control column itself shows the tree. -->
     <div
-      class="build-values min-w-0 grid [grid-column:2/-1] [grid-template-columns:subgrid]"
-      :class="nest && 'pl-6'"
+      class="build-values min-w-0 grid [grid-column:2/-1] [grid-template-columns:subgrid] max-md:[grid-column:1/-1]"
+      :class="nest ? 'pl-6 max-md:pl-8.5' : 'max-md:pl-2.5'"
       :role="labelsOneControl ? undefined : 'group'"
       :aria-labelledby="labelsOneControl ? undefined : labelId"
     >

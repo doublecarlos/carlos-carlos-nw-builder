@@ -72,7 +72,7 @@ function confirm() {
       <template #trigger="{ toggle, attrs }">
         <BaseTooltip text="Copy this section from another build">
           <BaseButton class="section-copy-btn" v-bind="attrs" @click="toggle">
-            <Copy />Copy from…
+            <Copy /><span class="max-md:sr-only">Copy from…</span>
           </BaseButton>
         </BaseTooltip>
       </template>

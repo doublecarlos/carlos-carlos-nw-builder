@@ -8,6 +8,11 @@ import {
   type CSSProperties,
 } from "vue";
 import { useElementBounding, useWindowSize } from "@vueuse/core";
+import {
+  asideStacks,
+  placeAside,
+  stackedMenuRoom,
+} from "../../lib/aside-placement";
 
 // Floating dropdown shell used by ComboBox.vue. Same interaction (type to filter, arrow keys,
 // Enter, Escape), just different row content via the `#option` slot. `data-testid` rather than
@@ -17,9 +22,8 @@ import { useElementBounding, useWindowSize } from "@vueuse/core";
 // `fixed` against its parent's rect, so a scrolling ancestor (a point section's horizontally
 // scrolling body) can't clip it. `--anchor-width` carries the parent's width for `menuClass`.
 //
-// The optional `aside` slot is a detail panel beside the menu, top-aligned with it. It sits on
-// whichever side has room and stays hidden when neither does, since covering the menu would be
-// worse than not showing it. Pressing on it keeps focus in the input that owns the menu, and
+// The optional `aside` slot is a detail panel beside the menu, top-aligned with it, on whichever
+// side has room. When neither does it stacks past the menu instead (lib/aside-placement.ts). Pressing on it keeps focus in the input that owns the menu, and
 // its clicks stay its own: a host row reacting to them (BuildSlot's cursor parking) would
 // blur that input.
 
@@ -61,54 +65,60 @@ const measure = () => {
 onMounted(measure);
 onUpdated(measure);
 
+const asideEl = useTemplateRef("aside");
+const menuBox = useElementBounding(el);
+const asideBox = useElementBounding(asideEl);
+
 /** Drops below the input, or opens upward when the rows don't fit below and there is more
- *  room above. Either way the menu is capped to the space on its side. */
-const style = computed<CSSProperties>(() => {
+ *  room above. */
+const opening = computed(() => {
   const below = viewportHeight.value - bottom.value - GAP - MARGIN;
   const above = top.value - GAP - MARGIN;
   const up = contentHeight.value > below && above > below;
-  const room = Math.max(up ? above : below, 0);
+  return { up, room: Math.max(up ? above : below, 0) };
+});
+
+const menuRect = computed(() => ({
+  left: menuBox.left.value,
+  top: menuBox.top.value,
+  right: menuBox.right.value,
+  bottom: menuBox.bottom.value,
+}));
+
+/** An aside too wide for either side of the menu stacks past it, taking half the room. */
+const stacked = computed(
+  () =>
+    asideBox.width.value > 0 &&
+    asideStacks(menuRect.value, asideBox.width.value, viewportWidth.value),
+);
+
+/** Capped to the space on its side of the input. */
+const style = computed<CSSProperties>(() => {
+  const { up, room } = opening.value;
+  const cap = stacked.value ? stackedMenuRoom(room) : room;
   return {
     left: `${left.value}px`,
     "--anchor-width": `${width.value}px`,
-    maxHeight: `min(20rem, ${room}px)`,
+    maxHeight: `min(20rem, ${cap}px)`,
     ...(up
       ? { bottom: `${viewportHeight.value - top.value + GAP}px` }
       : { top: `${bottom.value + GAP}px` }),
   };
 });
 
-const asideEl = useTemplateRef("aside");
-const menuBox = useElementBounding(el);
-const asideBox = useElementBounding(asideEl);
-
-/** Gap between the menu and the aside panel. */
-const ASIDE_GAP = 6;
-
 const asideStyle = computed<CSSProperties>(() => {
-  const asideWidth = asideBox.width.value;
-  const right = menuBox.right.value + ASIDE_GAP;
-  const leftSide = menuBox.left.value - ASIDE_GAP - asideWidth;
-  const asideLeft =
-    right + asideWidth <= viewportWidth.value - MARGIN
-      ? right
-      : leftSide >= MARGIN
-        ? leftSide
-        : null;
-  // Slid up just enough to end inside the viewport, never above its top margin.
-  const asideTop = Math.max(
-    Math.min(
-      menuBox.top.value,
-      viewportHeight.value - MARGIN - asideBox.height.value,
-    ),
-    MARGIN,
-  );
+  const placement = placeAside({
+    menu: menuRect.value,
+    aside: { width: asideBox.width.value, height: asideBox.height.value },
+    viewport: { width: viewportWidth.value, height: viewportHeight.value },
+    menuUp: opening.value.up,
+  });
   return {
-    left: `${asideLeft ?? 0}px`,
-    top: `${asideTop}px`,
-    maxHeight: `min(32rem, ${viewportHeight.value - 2 * MARGIN}px)`,
+    left: `${placement.left}px`,
+    top: `${placement.top}px`,
+    maxHeight: `${placement.maxHeight}px`,
     // Hidden rather than removed, so its size stays measurable for the next placement.
-    visibility: asideLeft === null ? "hidden" : undefined,
+    visibility: placement.hidden ? "hidden" : undefined,
   };
 });
 
