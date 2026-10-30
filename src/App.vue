@@ -335,7 +335,7 @@ syncRoute({ push: false });
         v-model="shell.phonePane.value"
         :options="PANE_OPTIONS"
         fill
-        class="flex-none border-t border-line bg-surface px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        class="flex-none border-t border-line bg-surface pt-2 pr-[max(0.5rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))]"
         data-testid="pane-switch"
       />
     </template>

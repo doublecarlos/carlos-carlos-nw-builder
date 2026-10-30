@@ -1,28 +1,32 @@
-<script setup lang="ts">
-// System -> Light -> Dark -> System, one click at a time. Icon mirrors the current preference
-// (monitor for system, sun for light, moon for dark).
-import BaseButton from "./BaseButton.vue";
-import BaseTooltip from "./BaseTooltip.vue";
+<script lang="ts">
 import { Monitor, Moon, Sun } from "@lucide/vue";
-import { preference, cyclePreference } from "../../stores/theme";
 
-const labels = {
+/** How each preference is named and drawn, shared with AppHeader's overflow menu entry. */
+export const THEME_LABELS = {
   system: "Theme: System",
   light: "Theme: Light",
   dark: "Theme: Dark",
 } as const;
 
-const icon = {
+export const THEME_ICONS = {
   system: Monitor,
   light: Sun,
   dark: Moon,
 } as const;
 </script>
 
+<script setup lang="ts">
+// System -> Light -> Dark -> System, one click at a time. Icon mirrors the current preference
+// (monitor for system, sun for light, moon for dark).
+import BaseButton from "./BaseButton.vue";
+import BaseTooltip from "./BaseTooltip.vue";
+import { preference, cyclePreference } from "../../stores/theme";
+</script>
+
 <template>
-  <BaseTooltip :text="`${labels[preference]}`">
+  <BaseTooltip :text="`${THEME_LABELS[preference]}`">
     <BaseButton @click="cyclePreference">
-      <component :is="icon[preference]" />
+      <component :is="THEME_ICONS[preference]" />
     </BaseButton>
   </BaseTooltip>
 </template>

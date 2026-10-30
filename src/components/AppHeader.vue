@@ -1,10 +1,15 @@
 <script setup lang="ts">
 // Full-width header bar: app title, export/import, an auto-save indicator, theme toggle,
 // notice, and the About/shortcut overlays.
-import { computed, ref, useTemplateRef } from "vue";
-import ThemeToggle from "./ui/ThemeToggle.vue";
+//
+// Below lg it stays one row: `headerLayout` moves whatever does not fit into an overflow menu,
+// the title shrinks to its mark on a phone, and a notice drops onto a row of its own.
+import { computed, ref, useTemplateRef, type Component } from "vue";
+import ThemeToggle, { THEME_ICONS, THEME_LABELS } from "./ui/ThemeToggle.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseLink from "./ui/BaseLink.vue";
+import BaseMenu from "./ui/BaseMenu.vue";
+import BaseMenuItem from "./ui/BaseMenuItem.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import AboutDialog from "./AboutDialog.vue";
@@ -17,6 +22,7 @@ import StableBrowser from "./game/StableBrowser.vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import {
   Download,
+  EllipsisVertical,
   Gamepad2,
   Info,
   Keyboard,
@@ -42,8 +48,12 @@ import * as buildEditor from "../stores/buildEditor";
 import * as layerEditorUi from "../stores/layerEditorUi";
 import * as landing from "../stores/landing";
 import * as shell from "../stores/shell";
+import * as viewport from "../stores/viewport";
+import { preference, cyclePreference } from "../stores/theme";
 import GoToPalette from "./GoToPalette.vue";
 import { isMac } from "../lib/platform";
+import { viewportKind } from "../lib/shell-layout";
+import { headerLayout, type HeaderAction } from "../lib/header-layout";
 
 const importFileInput = useTemplateRef("importFileInput");
 const modKey = isMac ? "⌘" : "Ctrl";
@@ -83,6 +93,63 @@ function onTool(action: string) {
   if (action === "stable") stableBrowser.openReference();
 }
 
+const layout = computed(() =>
+  headerLayout(
+    viewportKind(viewport.isDesktop.value, viewport.isPhone.value),
+    viewport.coarsePointer.value,
+  ),
+);
+const inBar = (action: HeaderAction) => layout.value.bar.has(action);
+
+interface MenuEntry {
+  label: string;
+  icon: Component;
+  run: () => void;
+  /** Stays open after the click, for an entry worth pressing more than once. */
+  keepOpen?: boolean;
+}
+
+/** Each action as an overflow menu entry; its bar markup is in the template. */
+const menuEntries = computed<Record<HeaderAction, MenuEntry>>(() => ({
+  export: { label: "Export", icon: Download, run: triggerExportBundle },
+  import: { label: "Import", icon: Upload, run: triggerImport },
+  importFromGame: {
+    label: "Import from game",
+    icon: Gamepad2,
+    run: openGameImport,
+  },
+  stable: {
+    label: "Mount stable reference",
+    icon: Table,
+    run: () => stableBrowser.openReference(),
+  },
+  shortcuts: {
+    label: "Keyboard shortcuts",
+    icon: Keyboard,
+    run: () => shortcutHelp.toggle(),
+  },
+  about: {
+    label: "About",
+    icon: Info,
+    run: () => (showAbout.value = true),
+  },
+  theme: {
+    label: THEME_LABELS[preference.value],
+    icon: THEME_ICONS[preference.value],
+    run: cyclePreference,
+    keepOpen: true,
+  },
+}));
+
+const overflowMenu = useTemplateRef("overflowMenu");
+
+/** Closes first, so a dialog the entry opens takes the menu trigger as its focus return. */
+function onMenuEntry(action: HeaderAction) {
+  const entry = menuEntries.value[action];
+  if (!entry.keepOpen) overflowMenu.value?.close();
+  entry.run();
+}
+
 function applyStableMount(applied: { group: number; mount: string }) {
   const slotId = mountSlotId(engine.db.value, applied.group);
   if (slotId) buildEditor.setChoice(slotId, applied.mount);
@@ -102,15 +169,12 @@ async function onImportFile(event: Event) {
 </script>
 
 <template>
-  <!-- Below lg the controls wrap onto extra rows rather than push the page sideways. -->
+  <!-- Wraps only below lg, and only to give a notice a row of its own. The padding clears a
+       phone's notch and rounded corners; the insets are zero everywhere else. -->
   <header
-    class="flex items-center gap-2.5 border-b border-line bg-surface px-2 py-2 max-lg:flex-wrap"
+    class="flex items-center gap-2.5 border-b border-line bg-surface pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-2 pl-[max(0.5rem,env(safe-area-inset-left))] max-lg:flex-wrap"
     data-testid="app-header"
   >
-    <!-- The one item here that may shrink. Every other child is a control with a fixed
-         intrinsic width, so without this the bar's own minimum grows with each one added and
-         a narrow window scrolls sideways -- and of everything up here, the title is what a
-         narrow window can most afford to lose the tail of. -->
     <!-- Below lg the nav lives in a drawer, and this is the way in. -->
     <BaseButton
       v-if="navAvailable"
@@ -123,19 +187,39 @@ async function onImportFile(event: Event) {
       ><Menu
     /></BaseButton>
 
-    <h1 class="flex min-w-0 items-center text-base font-semibold tracking-wide">
-      <img class="inline" src="/icon-512.png" alt="" width="32" height="32" />
-      <span class="min-w-0 flex-1 truncate">Carlos Carlos' NW Builder</span>
+    <!-- The one item here that may shrink. Every other child is a control with a fixed
+         intrinsic width, so without this the bar's own minimum grows with each one added and
+         a narrow window scrolls sideways. A phone keeps only the mark. -->
+    <h1
+      class="flex min-w-0 items-center text-base font-semibold tracking-wide"
+      data-testid="header-title"
+    >
+      <img
+        class="inline flex-none"
+        src="/icon-512.png"
+        alt=""
+        width="32"
+        height="32"
+      />
+      <span class="min-w-0 flex-1 truncate max-md:sr-only"
+        >Carlos Carlos' NW Builder</span
+      >
     </h1>
 
-    <BaseButton data-testid="header-export-bundle" @click="triggerExportBundle"
+    <BaseButton
+      v-if="inBar('export')"
+      data-testid="header-export-bundle"
+      @click="triggerExportBundle"
       ><Download />Export</BaseButton
     >
     <BundleExport v-if="showBundleExport" @close="showBundleExport = false" />
 
     <!-- The app's only file entry point, so it says what it takes: `importFileText` sniffs
          the file and routes it, rather than the caller picking a kind up front. -->
-    <BaseTooltip text="Import a build, layer or bundle file.">
+    <BaseTooltip
+      v-if="inBar('import')"
+      text="Import a build, layer or bundle file."
+    >
       <BaseButton data-testid="header-import" @click="triggerImport"
         ><Upload />Import</BaseButton
       >
@@ -144,12 +228,16 @@ async function onImportFile(event: Event) {
     <!-- Mounted here for every entry point, as the game-import wizard is. -->
     <ImportPicker v-if="pendingImport" :plan="pendingImport" />
 
-    <BaseButton data-testid="header-import-from-game" @click="openGameImport"
+    <BaseButton
+      v-if="inBar('importFromGame')"
+      data-testid="header-import-from-game"
+      @click="openGameImport"
       ><Gamepad2 />Import from game</BaseButton
     >
     <GameImport v-if="gameImportOpen" />
 
     <BaseButton
+      v-if="inBar('stable')"
       data-testid="header-tools"
       aria-haspopup="menu"
       :aria-expanded="!!toolsOrigin"
@@ -185,36 +273,42 @@ async function onImportFile(event: Event) {
       @change="onImportFile"
     />
 
-    <span class="h-4 w-px bg-line" />
+    <span class="h-4 w-px bg-line max-md:hidden" />
 
     <!-- Shaped like the search box it opens, rather than an icon button: a palette nobody
          knows the shortcut for is a palette nobody uses, so the affordance states the binding
-         it is standing in for. -->
+         it is standing in for. A phone has no room for the box and a touch screen has no
+         keyboard for the binding, so each drops the part it cannot use. -->
     <button
       type="button"
-      class="flex flex-none cursor-pointer items-center gap-1.5 rounded-md border border-line bg-surface px-1.5 py-0.5 text-muted hover:border-accent hover:text-text"
+      class="flex flex-none cursor-pointer items-center justify-center gap-1.5 rounded-md border border-line bg-surface px-1.5 py-0.5 text-muted hover:border-accent hover:text-text max-md:border-transparent"
       data-testid="header-go-to"
       @click="goTo.open()"
     >
       <Search class="h-[14px] w-[14px]" />
-      <span>Go to…</span>
+      <span class="max-md:sr-only">Go to…</span>
       <kbd
-        class="rounded border border-line bg-surface-2 px-1 text-xs whitespace-nowrap"
+        class="rounded border border-line bg-surface-2 px-1 text-xs whitespace-nowrap max-md:hidden pointer-coarse:hidden"
         >{{ modKey }}+K</kbd
       >
     </button>
     <GoToPalette v-if="goTo.isOpen.value" />
 
-    <span class="h-4 w-px bg-line" />
+    <span class="h-4 w-px bg-line max-md:hidden" />
 
     <AutosaveIndicator />
 
     <!-- Wide enough for the layer editor's longer confirmations (tooltip-fill, duplicate);
-         `:title` still covers anything past this width. -->
-    <span class="ml-auto flex items-center gap-1">
+         `:title` still covers anything past this width. Below lg the bar has no width to
+         spare, so the notice takes a full row of its own and wraps there instead. -->
+    <span
+      class="ml-auto flex items-center gap-1 max-lg:order-last max-lg:ml-0 max-lg:basis-full"
+      :class="notice ? undefined : 'max-lg:hidden'"
+      data-testid="header-notice"
+    >
       <BaseNotice
         v-if="notice"
-        class="inline-block max-w-[32rem] overflow-hidden text-ellipsis whitespace-nowrap"
+        class="inline-block min-w-0 lg:max-w-[32rem] lg:overflow-hidden lg:text-ellipsis lg:whitespace-nowrap"
         :title="notice"
         @dismiss="showNotice('')"
       >
@@ -230,9 +324,12 @@ async function onImportFile(event: Event) {
 
     <span class="flex-1"></span>
 
-    <span class="h-4 w-px bg-line" />
+    <span
+      v-if="inBar('shortcuts') || inBar('about')"
+      class="h-4 w-px bg-line"
+    />
 
-    <BaseTooltip text="Keyboard shortcuts (?)">
+    <BaseTooltip v-if="inBar('shortcuts')" text="Keyboard shortcuts (?)">
       <BaseButton
         data-testid="header-shortcuts"
         aria-label="Keyboard shortcuts"
@@ -241,7 +338,7 @@ async function onImportFile(event: Event) {
       /></BaseButton>
     </BaseTooltip>
 
-    <BaseTooltip text="About">
+    <BaseTooltip v-if="inBar('about')" text="About">
       <BaseButton
         data-testid="header-about"
         aria-label="About"
@@ -250,7 +347,34 @@ async function onImportFile(event: Event) {
       /></BaseButton>
     </BaseTooltip>
 
-    <ThemeToggle class="w-30 justify-center" />
+    <ThemeToggle v-if="inBar('theme')" class="w-30 justify-center" />
+
+    <BaseMenu
+      v-if="layout.menu.length"
+      ref="overflowMenu"
+      fit-content
+      label="More actions"
+      panel-class="flex min-w-48 flex-col p-1"
+      :ignore="['[data-testid=header-menu]']"
+    >
+      <template #trigger="{ toggle, attrs }">
+        <BaseButton
+          data-testid="header-menu"
+          aria-label="More actions"
+          v-bind="attrs"
+          @click="toggle"
+          ><EllipsisVertical
+        /></BaseButton>
+      </template>
+      <BaseMenuItem
+        v-for="action in layout.menu"
+        :key="action"
+        :icon="menuEntries[action].icon"
+        :data-testid="`header-menu-${action}`"
+        @click="onMenuEntry(action)"
+        >{{ menuEntries[action].label }}</BaseMenuItem
+      >
+    </BaseMenu>
 
     <ShortcutHelp v-if="shortcutHelp.isOpen.value" />
     <AboutDialog v-if="showAbout" @close="showAbout = false" />
