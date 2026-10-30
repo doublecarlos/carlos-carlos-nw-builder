@@ -2,12 +2,8 @@
 // Recently-deleted section inside the left sidebar. Pure presentation.
 import NavContextMenu from "./NavContextMenu.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
-import {
-  ChevronDown,
-  ChevronRight,
-  EllipsisVertical,
-  RotateCcw,
-} from "@lucide/vue";
+import FoldChevron from "./ui/FoldChevron.vue";
+import { EllipsisVertical, RotateCcw } from "@lucide/vue";
 import type { Component } from "vue";
 import type { TrashEntry } from "../types";
 
@@ -50,13 +46,12 @@ defineEmits<{
       <span
         class="inline-flex items-center gap-1 text-sm font-semibold uppercase text-muted"
       >
-        <ChevronDown v-if="expanded" class="size-[14px]" />
-        <ChevronRight v-else class="size-[14px]" />
+        <FoldChevron :expanded="expanded" class="size-[14px]" />
         Recently deleted ({{ entries.length }})
       </span>
     </div>
 
-    <div v-if="expanded" class="overflow-y-auto">
+    <div v-if="expanded" class="animate-fade-in overflow-y-auto">
       <div
         v-for="entry in entries"
         :key="`${entry.kind}_${entry.item.id}_${entry.deletedAt}`"

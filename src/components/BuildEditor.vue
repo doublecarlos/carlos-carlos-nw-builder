@@ -348,6 +348,7 @@ function itemForHover(slotId: string, itemId?: string): Item | null {
 const {
   hover,
   pinned,
+  fadeIn: hoverCardFadeIn,
   pin,
   togglePinned,
   onRowEnter,
@@ -1454,7 +1455,7 @@ watch(
         <!-- One card for the whole list, moved and refilled on hover. A pinned one steps aside
              while a picker is open, so it never covers the menu or its preview, and returns
              where it was. -->
-        <BasePopover ref="tooltip" :width="320">
+        <BasePopover ref="tooltip" :width="320" :animate="hoverCardFadeIn">
           <ItemCard
             v-if="
               hover && !sheetTarget && cardProps && !(pinned && anyPickerOpen)

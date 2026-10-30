@@ -488,6 +488,7 @@ const {
   tooltip,
   openKey,
   pinned,
+  fadeIn,
   pin,
   closeCard,
   onCardEnter,
@@ -765,7 +766,7 @@ const {
       data-stat-table="ehp"
     />
 
-    <BasePopover ref="tooltip" :width="320">
+    <BasePopover ref="tooltip" :width="320" :animate="fadeIn">
       <StatPanelSourceCard
         v-if="openKey && !(pinned && anyPickerOpen)"
         :label="openLabel"

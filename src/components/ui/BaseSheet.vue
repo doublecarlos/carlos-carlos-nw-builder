@@ -56,10 +56,10 @@ if (import.meta.env.DEV && !props.title && !props.label) {
 }
 
 const SIDE_CLASSES: Record<"left" | "right" | "bottom", string> = {
-  left: "inset-y-0 left-0 max-w-[85vw] border-r",
-  right: "inset-y-0 right-0 max-w-[85vw] border-l",
+  left: "inset-y-0 left-0 max-w-[85vw] border-r animate-slide-in-left",
+  right: "inset-y-0 right-0 max-w-[85vw] border-l animate-slide-in-right",
   bottom:
-    "inset-x-0 bottom-0 max-h-[85dvh] rounded-t-lg border-t pb-[env(safe-area-inset-bottom)]",
+    "inset-x-0 bottom-0 max-h-[85dvh] rounded-t-lg border-t pb-[env(safe-area-inset-bottom)] animate-slide-in-bottom",
 };
 
 /** Share of the visible height a bottom sheet may take. */
@@ -120,7 +120,7 @@ onBeforeUnmount(() => {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 bg-scrim"
+      class="fixed inset-0 animate-fade-in bg-scrim"
       :class="aboveModal ? 'z-popover' : 'z-drawer'"
       v-bind="$attrs"
       @click.self="emit('close')"
@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
           <h2 :id="titleId" class="text-base font-semibold">{{ title }}</h2>
           <button
             type="button"
-            class="cursor-pointer px-1 text-muted hover:text-text"
+            class="cursor-pointer px-1 text-muted transition-colors hover:text-text"
             aria-label="Close"
             data-testid="sheet-close"
             @click="emit('close')"

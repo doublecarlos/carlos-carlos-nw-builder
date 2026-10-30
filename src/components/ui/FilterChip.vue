@@ -18,7 +18,7 @@ defineEmits<{ clear: [] }>();
     <slot />
     <button
       type="button"
-      class="ml-1 cursor-pointer font-semibold"
+      class="ml-1 cursor-pointer font-semibold transition-colors hover:text-accent"
       :aria-label="clearLabel"
       :data-testid="`${testid}-clear`"
       @click="$emit('clear')"

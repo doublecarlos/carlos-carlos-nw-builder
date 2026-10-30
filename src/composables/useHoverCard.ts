@@ -71,6 +71,9 @@ export function useHoverCard<T extends object>(
 ) {
   const hover = shallowRef<T | null>(null);
   const pinned = ref(false);
+  /** Whether the open card faded in. The first card of a sweep does; one resuming the sweep
+   *  appears at once. */
+  const fadeIn = ref(true);
   /** The row waiting to open, kept for the hover timers and, while suppressed, for the pointer
    *  move that lifts suppression. Its rect is read at open time because the row may still be
    *  scrolling when the pointer enters it. */
@@ -100,10 +103,16 @@ export function useHoverCard<T extends object>(
 
   function openPending() {
     if (pending) {
+      // Decided only when the card opens, so a mounted card never replays its entrance.
+      if (!hover.value) fadeIn.value = !isResuming();
       placeBeside(pending.row, pending.x);
       hover.value = pending.target;
     }
     pending = null;
+  }
+
+  function isResuming() {
+    return Date.now() - lastHideAt < HOVER_RESUME_MS;
   }
 
   const { start: startHoverTimer, stop: stopHoverTimer } = useTimeoutFn(
@@ -142,8 +151,7 @@ export function useHoverCard<T extends object>(
       notePointer(event.clientX, event.clientY);
       return;
     }
-    const resuming = Date.now() - lastHideAt < HOVER_RESUME_MS;
-    if (resuming) startHoverTimerNow();
+    if (isResuming()) startHoverTimerNow();
     else startHoverTimer();
   }
 
@@ -202,6 +210,7 @@ export function useHoverCard<T extends object>(
     stopHoverTimerNow();
     stopLeaveTimer();
     pending = null;
+    if (!hover.value) fadeIn.value = true;
     placeBeside(anchor, undefined, align ?? options.align);
     hover.value = target;
     pinned.value = true;
@@ -269,6 +278,7 @@ export function useHoverCard<T extends object>(
   return {
     hover,
     pinned,
+    fadeIn,
     pin,
     togglePinned,
     onRowEnter,

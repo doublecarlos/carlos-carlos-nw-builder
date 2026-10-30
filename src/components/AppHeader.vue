@@ -299,18 +299,28 @@ async function onImportFile(event: Event) {
          `:title` still covers anything past this width. Below lg the bar has no width to
          spare, so the notice takes a full row of its own and wraps there instead. -->
     <span
-      class="ml-auto flex items-center gap-1 max-lg:order-last max-lg:ml-0 max-lg:basis-full"
+      class="relative ml-auto flex items-center gap-1 max-lg:order-last max-lg:ml-0 max-lg:basis-full"
       :class="notice ? undefined : 'max-lg:hidden'"
       data-testid="header-notice"
     >
-      <BaseNotice
-        v-if="notice"
-        class="inline-block min-w-0 lg:max-w-[32rem] lg:overflow-hidden lg:text-ellipsis lg:whitespace-nowrap"
-        :title="notice"
-        @dismiss="showNotice('')"
+      <!-- Keyed by text, so a replacing notice enters again. The leaving one drops out of flow
+           so the new one takes its place at once. -->
+      <Transition
+        enter-active-class="transition duration-150 ease-snappy"
+        enter-from-class="opacity-0 translate-y-1"
+        leave-active-class="absolute transition-opacity duration-100"
+        leave-to-class="opacity-0"
       >
-        {{ notice }}
-      </BaseNotice>
+        <BaseNotice
+          v-if="notice"
+          :key="notice"
+          class="inline-block min-w-0 lg:max-w-[32rem] lg:overflow-hidden lg:text-ellipsis lg:whitespace-nowrap"
+          :title="notice"
+          @dismiss="showNotice('')"
+        >
+          {{ notice }}
+        </BaseNotice>
+      </Transition>
       <BaseLink
         v-if="notice && noticeAction"
         data-testid="notice-action"

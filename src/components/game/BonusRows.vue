@@ -478,7 +478,7 @@ function toggleJson(gIndex: number) {
         </template>
       </ListCardHeader>
 
-      <template v-if="isExpanded(grant)">
+      <div v-if="isExpanded(grant)" class="animate-fade-in">
         <BaseTextarea
           v-if="grant.mode === 'json'"
           v-model="grant.json"
@@ -853,7 +853,7 @@ function toggleJson(gIndex: number) {
             </div>
           </div>
         </template>
-      </template>
+      </div>
     </div>
   </div>
   <ListAddRow

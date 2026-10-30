@@ -81,6 +81,7 @@ export function useStatSourcePopover(
     tooltip,
     openKey,
     pinned: card.pinned,
+    fadeIn: card.fadeIn,
     pin: card.pin,
     closeCard: card.closeCard,
     onCardEnter: card.onCardEnter,

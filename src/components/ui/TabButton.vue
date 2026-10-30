@@ -17,7 +17,7 @@ const toneClasses = computed(() =>
 <template>
   <button
     type="button"
-    class="flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5"
+    class="flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 transition-colors"
     :class="toneClasses"
     :aria-pressed="active"
   >

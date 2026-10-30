@@ -39,7 +39,7 @@ const action = computed(() =>
     <button
       v-bind="$attrs"
       type="button"
-      class="cursor-pointer rounded p-0.5 text-muted hover:bg-surface-2 hover:text-accent [&_svg]:size-[14px]"
+      class="cursor-pointer rounded p-0.5 text-muted transition-colors hover:bg-surface-2 hover:text-accent [&_svg]:size-[14px]"
       :aria-label="action"
       :aria-expanded="!collapsed"
       :data-testid="`rail-toggle-${side}`"

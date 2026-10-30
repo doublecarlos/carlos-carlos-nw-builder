@@ -62,9 +62,10 @@ if (import.meta.env.DEV && !props.title && !props.label) {
 
 /** Below md, `fill` drops the desktop size for the full screen, padded clear of the notch and
  *  home bar, and `card` keeps it but capped to the screen. Variant utilities sort after plain
- *  ones, so these beat a caller's `w-[720px]` or `max-h-[85vh]`. */
+ *  ones, so these beat a caller's `w-[720px]` or `max-h-[85vh]`, and a full-screen panel
+ *  fades in rather than scaling, which would bare the screen's edges. */
 const PHONE_CLASSES = {
-  fill: "max-md:h-dvh max-md:max-h-none max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:pt-[env(safe-area-inset-top)] max-md:pr-[env(safe-area-inset-right)] max-md:pb-[env(safe-area-inset-bottom)] max-md:pl-[env(safe-area-inset-left)]",
+  fill: "max-md:h-dvh max-md:max-h-none max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:pt-[env(safe-area-inset-top)] max-md:pr-[env(safe-area-inset-right)] max-md:pb-[env(safe-area-inset-bottom)] max-md:pl-[env(safe-area-inset-left)] max-md:animate-fade-in",
   card: "max-md:max-h-[calc(100dvh-2rem)] max-md:max-w-[calc(100vw-2rem)]",
 } as const;
 
@@ -118,7 +119,7 @@ useEscapeToClose(() => emit("close"));
   <!-- Teleported so stacking never depends on where the modal was mounted. -->
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-modal flex justify-center bg-scrim"
+      class="fixed inset-0 z-modal flex animate-fade-in justify-center bg-scrim"
       :class="[
         align === 'top' ? 'items-start pt-[12vh]' : 'items-center',
         phone === 'fill' && 'max-md:pt-0',
@@ -129,7 +130,12 @@ useEscapeToClose(() => emit("close"));
       <div
         ref="panel"
         class="flex flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-xl focus:outline-none"
-        :class="[panelClass, PHONE_CLASSES[phone]]"
+        :class="[
+          // A top-aligned panel drops in from where it sits; scaling would shift its top edge.
+          align === 'top' ? 'animate-drop-in' : 'animate-pop-in',
+          panelClass,
+          PHONE_CLASSES[phone],
+        ]"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="title ? titleId : undefined"
@@ -144,7 +150,7 @@ useEscapeToClose(() => emit("close"));
           <h2 :id="titleId" class="text-base font-semibold">{{ title }}</h2>
           <button
             type="button"
-            class="cursor-pointer text-muted hover:text-text"
+            class="cursor-pointer text-muted transition-colors hover:text-text"
             aria-label="Close"
             data-testid="modal-close"
             @click="emit('close')"

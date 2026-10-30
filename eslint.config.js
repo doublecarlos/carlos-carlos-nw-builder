@@ -8,6 +8,12 @@ import pluginVitest from "@vitest/eslint-plugin";
 import pluginPlaywright from "eslint-plugin-playwright";
 import skipFormatting from "@vue/eslint-config-prettier/skip-formatting";
 
+// Motion budget (see base.css): animate specific properties, and nothing over 200ms.
+const MOTION_CLASSES = [
+  "transition-all",
+  "/^duration-(?:[3-9]\\d\\d|\\d{4,})$/",
+];
+
 export default defineConfigWithVueTs(
   {
     name: "app/files-to-lint",
@@ -41,13 +47,22 @@ export default defineConfigWithVueTs(
   },
 
   {
+    name: "app/motion-budget",
+    files: ["src/**/*.vue"],
+    rules: {
+      "vue/no-restricted-class": ["error", ...MOTION_CLASSES],
+    },
+  },
+
+  {
     name: "app/z-index-scale",
     files: ["src/**/*.vue"],
     // TabButton's active-tab lift is the recorded exception; see its own comment.
     ignores: ["src/components/ui/TabButton.vue"],
     rules: {
-      // Use base.css's --z-index-* scale instead of a bare z-<number>.
-      "vue/no-restricted-class": ["error", "/^z-[0-9]+$/"],
+      // Use base.css's --z-index-* scale instead of a bare z-<number>. Repeats the motion
+      // patterns, since this block's rule options replace the ones above.
+      "vue/no-restricted-class": ["error", "/^z-[0-9]+$/", ...MOTION_CLASSES],
     },
   },
 

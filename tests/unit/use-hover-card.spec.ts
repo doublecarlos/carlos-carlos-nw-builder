@@ -1,6 +1,6 @@
 // The hover card opens on row enter after a delay, resumes instantly when sweeping between
 // rows, and stays shut after a programmatic scroll until the pointer moves. A pinned card stays
-// put until closed.
+// put until closed. Only the first card of a sweep fades in.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { effectScope, ref } from "vue";
 import { useHoverCard } from "../../src/composables/useHoverCard";
@@ -204,6 +204,34 @@ describe("useHoverCard", () => {
       mouseMove(53, 52);
       vi.advanceTimersByTime(HOVER_DELAY_MS * 2);
       expect(card.hover.value).toBeNull();
+      dispose();
+    });
+  });
+
+  describe("fadeIn", () => {
+    it("fades the first card in, not one resuming the sweep", () => {
+      const { card, dispose } = setup();
+      card.onRowEnter(rowEnterEvent(), { slotId: "head" });
+      vi.advanceTimersByTime(HOVER_DELAY_MS);
+      expect(card.fadeIn.value).toBe(true);
+
+      card.closeCard();
+      vi.advanceTimersByTime(100);
+      card.onRowEnter(rowEnterEvent(), { slotId: "neck" });
+      vi.advanceTimersByTime(0);
+      expect(card.fadeIn.value).toBe(false);
+      dispose();
+    });
+
+    it("fades a card opened pinned from a button, even mid-sweep", () => {
+      const { card, dispose } = setup();
+      card.onRowEnter(rowEnterEvent(), { slotId: "head" });
+      vi.advanceTimersByTime(HOVER_DELAY_MS);
+      card.closeCard();
+      card.togglePinned({ slotId: "neck" }, {
+        getBoundingClientRect: () => ({}) as DOMRect,
+      } as HTMLElement);
+      expect(card.fadeIn.value).toBe(true);
       dispose();
     });
   });
