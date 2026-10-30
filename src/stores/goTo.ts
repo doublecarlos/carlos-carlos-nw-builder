@@ -9,6 +9,7 @@
 // place): the palette states a destination, and whichever editor is up consumes it. Same shape
 // stores/slotFilter.ts already uses for the Bonuses tab's reach into the slot list.
 import { readonly, ref } from "vue";
+import * as shell from "./shell";
 
 const _isOpen = ref(false);
 
@@ -41,7 +42,10 @@ const _jump = ref<JumpTarget | null>(null);
 
 export const jump = readonly(_jump);
 
+/** Also brings the editor pane up on a phone, so a jump asked for from the stats pane lands
+ *  where it can be seen. */
 export function requestJump(target: JumpTarget) {
+  shell.showPane("editor");
   _jump.value = target;
 }
 

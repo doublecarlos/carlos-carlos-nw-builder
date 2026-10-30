@@ -9,6 +9,13 @@ export const navDrawerOpen = ref(false);
 
 export const phonePane = ref<PhonePane>("editor");
 
+/** Brings `pane` up on a phone. Called by the stores whose requests land in one pane, so an
+ *  action taken from the other pane follows its result there. Wider layouts show both panes,
+ *  and the value only decides where a later phone layout opens. */
+export function showPane(pane: PhonePane) {
+  phonePane.value = pane;
+}
+
 export function openNavDrawer() {
   navDrawerOpen.value = true;
 }

@@ -64,8 +64,8 @@ const nearMissOnly = ref(false);
 const open = reactive<Record<string, boolean>>({});
 
 /** Narrows the build editor's slot list to the rows that could supply what one unmet
- *  condition counts (an item, a tag, an occurrence of another bonus). The list is in the next
- *  column over, already on screen, so there is nothing to navigate to. */
+ *  condition counts (an item, a tag, an occurrence of another bonus). The store brings the
+ *  list on screen, so there is nothing to navigate to here. */
 function locateNeed(need: SupplyNeed, label: string) {
   slotFilter.showSuppliersOf(need, label);
 }
