@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { DEV_PORT } from "./ports";
+import { DEV_PORT } from "./ports.ts";
 
 // Vitest owns tests/unit; this suite drives a real browser against a live dev server, so it
 // stays a separate config with its own testDir, not just a different `include` glob.
