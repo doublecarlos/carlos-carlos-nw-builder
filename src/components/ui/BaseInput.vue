@@ -11,7 +11,7 @@
 //
 // A dedicated control like OcrTextField or PercentInput is still the right call for anything
 // genuinely novel; this only owns the ordinary case.
-import { useAttrs } from "vue";
+import { useAttrs, useTemplateRef } from "vue";
 import { useFormFieldControl } from "../../composables/useFormField";
 
 const props = withDefaults(
@@ -40,11 +40,22 @@ function onInput(event: Event) {
   const value = (event.target as HTMLInputElement).value;
   model.value = props.type === "number" ? looseToNumber(value) : value;
 }
+
+const input = useTemplateRef<HTMLInputElement>("input");
+
+/** Focuses the field and selects its text, ready to be typed over. */
+function select() {
+  input.value?.focus();
+  input.value?.select();
+}
+
+defineExpose({ select });
 </script>
 
 <template>
   <input
     :id="id"
+    ref="input"
     :aria-describedby="describedBy"
     :value="model"
     :type="type"

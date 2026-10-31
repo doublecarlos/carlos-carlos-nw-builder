@@ -7,7 +7,7 @@
 //
 // A mouse drags the whole row. A finger on the row scrolls the list, so a coarse pointer gets
 // a grip to drag from instead; the row's own handle props still do the work.
-import { computed, type Component, type Directive } from "vue";
+import { computed, useTemplateRef, watch, type Component } from "vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import { EllipsisVertical } from "@lucide/vue";
@@ -19,13 +19,6 @@ import {
   dragSource,
   type DragHandleProps,
 } from "../composables/useDragAndDrop";
-
-const vRenameFocus: Directive<HTMLInputElement> = {
-  mounted(el) {
-    el.focus();
-    el.select();
-  },
-};
 
 const props = defineProps<{
   id: string;
@@ -71,6 +64,17 @@ const emit = defineEmits<{
   "menu-action": [action: string, id: string, skipConfirm: boolean];
   "menu-close": [];
 }>();
+
+// A rename opens with the whole name selected, ready to be typed over.
+const renameInput =
+  useTemplateRef<InstanceType<typeof BaseInput>>("renameInput");
+watch(
+  () => props.renaming,
+  (renaming) => {
+    if (renaming) renameInput.value?.select();
+  },
+  { flush: "post", immediate: true },
+);
 
 const rowProps = computed(() => ({
   ...props.rowProps,
@@ -152,7 +156,7 @@ function onRowKeydown(event: KeyboardEvent) {
 
     <BaseInput
       v-if="renaming"
-      v-rename-focus
+      ref="renameInput"
       :model-value="renameText"
       type="text"
       class="nav-rename min-w-0 flex-1 focus:outline-none"

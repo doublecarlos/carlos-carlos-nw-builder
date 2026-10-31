@@ -2,7 +2,7 @@
 // Shared button look, replacing base.css's `.btn`/`.link`/`.btn--primary`/`.is-on`/`.is-danger`
 // vocabulary. `as="label"` covers the one spot (DataEditor's file-picker) that needs button
 // chrome around a native `<label>` instead of a `<button>`.
-import { computed } from "vue";
+import { computed, useTemplateRef } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -41,11 +41,16 @@ const classes = computed(() => {
     props.variant === "primary" && "font-semibold",
   ];
 });
+
+const root = useTemplateRef<HTMLElement>("root");
+
+defineExpose({ focus: () => root.value?.focus() });
 </script>
 
 <template>
   <component
     :is="as"
+    ref="root"
     v-bind="as === 'button' ? { type: 'button', disabled } : {}"
     :class="classes"
   >

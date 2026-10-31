@@ -10,7 +10,6 @@
 import {
   computed,
   defineAsyncComponent,
-  h,
   onMounted,
   onUnmounted,
   reactive,
@@ -29,25 +28,18 @@ import PresetForm from "./game/PresetForm.vue";
 import SectionForm from "./game/SectionForm.vue";
 import SlotForm from "./game/SlotForm.vue";
 import LayerExportModal from "./game/LayerExportModal.vue";
-/** Async so the window -- and the tooltip parser it pulls in -- stays out of the main chunk
+/** Async so the window and the tooltip parser it pulls in stay out of the main chunk
  *  alongside the OCR engine it loads. It only ever renders behind a `v-if`.
  *
- *  `delay: 0` and a placeholder because otherwise the button appears to do nothing at all
- *  until the chunk arrives. */
-const TooltipImportModal = defineAsyncComponent({
-  loader: () => import("./game/TooltipImportModal.vue"),
-  loadingComponent: () =>
-    h(
-      BaseModal,
-      {
-        title: "Read an item from a tooltip",
-        panelClass: "w-[760px] max-w-[92vw]",
-        onClose: () => (showTooltipImport.value = false),
-      },
-      () => h("p", { class: "p-4 text-muted" }, "Loading…"),
-    ),
-  delay: 0,
-});
+ *  The template shows a placeholder modal until the chunk arrives, since otherwise the
+ *  button appears to do nothing at all. */
+const tooltipImportLoaded = ref(false);
+const TooltipImportModal = defineAsyncComponent(() =>
+  import("./game/TooltipImportModal.vue").then((mod) => {
+    tooltipImportLoaded.value = true;
+    return mod;
+  }),
+);
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
 import LayerSlotOutline from "./game/LayerSlotOutline.vue";
@@ -1594,6 +1586,14 @@ onUnmounted(() => {
       @apply="applyFromTooltip"
       @close="showTooltipImport = false"
     />
+    <BaseModal
+      v-if="showTooltipImport && !tooltipImportLoaded"
+      title="Read an item from a tooltip"
+      panel-class="w-[760px] max-w-[92vw]"
+      @close="showTooltipImport = false"
+    >
+      <p class="p-4 text-muted">Loading…</p>
+    </BaseModal>
 
     <LayerValidationDrawer
       v-if="findings.length"
