@@ -7074,7 +7074,14 @@
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
-      "race-ability-score:sun-elf"
+      "race-ability-score:sun-elf",
+      "race-ability-score:moon-elf",
+      "race-ability-score:halfling",
+      "race-ability-score:half-elf",
+      "race-ability-score:drow",
+      "race-ability-score:menzoberranzan-renegade",
+      "race-ability-score:dragonborn",
+      "race-ability-score:metallic-ancestry-dragonborn"
     ],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -7086,7 +7093,11 @@
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
-      "race-ability-score:half-orc"
+      "race-ability-score:half-orc",
+      "race-ability-score:halfling",
+      "race-ability-score:tiefling",
+      "race-ability-score:dragonborn",
+      "race-ability-score:metallic-ancestry-dragonborn"
     ],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -7098,7 +7109,10 @@
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
-      "race-ability-score:sun-elf"
+      "race-ability-score:sun-elf",
+      "race-ability-score:moon-elf",
+      "race-ability-score:dragonborn",
+      "race-ability-score:metallic-ancestry-dragonborn"
     ],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -7111,7 +7125,10 @@
       "race-ability-score",
       "race-ability-score:aasimar",
       "race-ability-score:gith",
-      "race-ability-score:wood-elf"
+      "race-ability-score:wood-elf",
+      "race-ability-score:tiefling",
+      "race-ability-score:dragonborn",
+      "race-ability-score:metallic-ancestry-dragonborn"
     ],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -7124,7 +7141,10 @@
       "race-ability-score",
       "race-ability-score:aasimar",
       "race-ability-score:gith",
-      "race-ability-score:half-orc"
+      "race-ability-score:half-orc",
+      "race-ability-score:dwarf",
+      "race-ability-score:dragonborn",
+      "race-ability-score:metallic-ancestry-dragonborn"
     ],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -7136,7 +7156,13 @@
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
-      "race-ability-score:wood-elf"
+      "race-ability-score:wood-elf",
+      "race-ability-score:drow",
+      "race-ability-score:menzoberranzan-renegade",
+      "race-ability-score:dragonborn",
+      "race-ability-score:metallic-ancestry-dragonborn",
+      "race-ability-score:dwarf",
+      "race-ability-score:half-elf"
     ],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -7189,6 +7215,28 @@
     "bonuses": ["race-ability-score-warning"]
   },
   {
+    "id": "race-dragonborn",
+    "name": "Dragonborn",
+    "filter": "race",
+    "power_p": 0.03,
+    "strike_p": 0.03,
+    "inc_healing_p": 0.05
+  },
+  {
+    "id": "race-drow",
+    "name": "Drow",
+    "filter": "race",
+    "dex": 2,
+    "deflect_sev_p": 0.05
+  },
+  {
+    "id": "race-dwarf",
+    "name": "Dwarf",
+    "filter": "race",
+    "con": 2,
+    "defense_p": 0.05
+  },
+  {
     "id": "race-gith",
     "name": "Gith",
     "filter": "race",
@@ -7197,11 +7245,29 @@
     "stamina_regen": 0.05
   },
   {
+    "id": "race-half-elf",
+    "name": "Half Elf",
+    "filter": "race",
+    "con": 2,
+    "sev_p": 0.03,
+    "deflect_p": 0.03,
+    "gold": 0.03,
+    "bonuses": ["dilettante"]
+  },
+  {
     "id": "race-half-orc",
     "name": "Half Orc",
     "filter": "race",
     "dex": 2,
     "sev_p": 0.05
+  },
+  {
+    "id": "race-halfling",
+    "name": "Halfling",
+    "filter": "race",
+    "dex": 2,
+    "deflect_p": 0.05,
+    "control_resist_p": 0.25
   },
   {
     "id": "race-human",
@@ -7222,12 +7288,44 @@
     "out_healing_p": 0.01
   },
   {
+    "id": "race-menzoberranzan-renegade",
+    "name": "Menzoberranzan Renegade",
+    "filter": "race",
+    "dex": 2,
+    "deflect_sev_p": 0.05
+  },
+  {
+    "id": "race-metallic-ancestry-dragonborn",
+    "name": "Metallic Ancestry Dragonborn",
+    "filter": "race",
+    "power_p": 0.03,
+    "strike_p": 0.03,
+    "inc_healing_p": 0.03,
+    "hit_points_p": 0.03
+  },
+  {
+    "id": "race-moon-elf",
+    "name": "Moon Elf",
+    "filter": "race",
+    "int": 2,
+    "control_resist_p": 0.25,
+    "ap_gain": 0.03,
+    "stamina_regen": 0.03
+  },
+  {
     "id": "race-sun-elf",
     "name": "Sun Elf",
     "filter": "race",
     "int": 2,
     "control_resist_p": 0.25,
     "ap_gain": 0.05
+  },
+  {
+    "id": "race-tiefling",
+    "name": "Tiefling",
+    "filter": "race",
+    "cha": 2,
+    "bonuses": ["bloodhunt"]
   },
   {
     "id": "race-wood-elf",
