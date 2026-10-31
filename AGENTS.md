@@ -11,7 +11,7 @@
 You are **required** to:
 
 - Follow Vue JS best practices, checking vue-related skills if available
-- Implement tests as needed, both UI and unit tests
+- Add or update tests for the behavior you changed, following `# Tests`
 - Run `npm run fix` to perform formatting and linting
 - Run `npm run typecheck` to perform typechecking
 - Run `npm run test` to perform unit testing
@@ -35,6 +35,40 @@ You **MUST NOT**:
 - Code comments should be concise, direct and describe the design intent of what the code is doing now instead of comparing the code with an old implementation or refering to a github issue ID.
 - An editor form's draft shape, its entity conversion and its change labels live in `src/lib/*-draft.ts`, not in the SFC - the SFC owns markup and reactive wiring only. See `src/lib/item-draft.ts` for the worked example.
 - When adding a case to something that already handles two or more sibling cases, check whether it wants a descriptor table instead of another branch. No lint rule catches this one; `GROUPS` in `src/components/LayerEditor.vue` is the worked example, where four parallel selection refs, row builders and save/delete/revert handlers collapsed onto one entry per overlay group.
+
+# Tests
+
+Tests here are guardrails: they catch unintended changes and side effects while agents edit the
+code. A failure has to mean "something changed that the task didn't intend", so a test must not
+fail on routine, intended edits.
+
+## Writing tests
+
+Before writing a test, ask what change would make it fail. If an ordinary edit would (adding
+catalog data, rewording copy, an unrelated restyle), rewrite the test or skip it.
+
+- **Pin decisions, not incidental output.** A deliberate product choice (which actions show at
+  which width, an engine rule, a migration's mapping) is worth pinning. A value that just happens
+  to come out of the code (a CSS variable string, a generated file's bytes) isn't.
+- **Don't pin shipped data.** No counts, exact lists or values from `data/*.json`. Engine and lib
+  tests build their own small catalog. Shipped data is guarded by `catalog.validate*` and the
+  golden fixture.
+- **Guard layout with relations, not numbers.** "Stays on one row", "below X", "inside the
+  viewport", "not covered", "no sideways scroll" are fine. Exact widths, offsets, colors,
+  borders, opacity or font weight aren't.
+- **Assert state through semantics,** not CSS classes: role, `aria-*`, `data-*`, values, text.
+- **Don't test trivial code,** like a ref holding a value or shapes TypeScript already enforces.
+- **No sleeps.** Wait on something observable, or control time with `page.clock` / fake timers.
+- **Say why it matters.** A short comment on the behavior being guarded, so whoever sees it fail
+  can tell whether their change was supposed to affect it.
+
+## When a test fails
+
+- Decide whether the task meant to change that behavior. If it didn't, fix the code, not the test.
+- If it did, update the test, and list every changed or deleted expectation in your report.
+  Never change an expectation just to make a test pass without saying so.
+- If a test keeps failing on intended edits, report it as a bad guardrail instead of quietly
+  adjusting it each time.
 
 # Code layout
 
