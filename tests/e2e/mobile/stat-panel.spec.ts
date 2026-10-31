@@ -69,13 +69,25 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412, 900]) {
 
     await expectNoHorizontalScroll(page);
     await expectColumnFits(page);
-    // The long compare name truncates in its cell instead of widening the table.
+    // The long compare name truncates in its cell instead of widening the table: every table
+    // is as wide with the name's lines as without them. A table may still scroll in its own
+    // box when its numbers need the room, which depends on the font.
     for (const scroll of await tableScrolls(page).all()) {
-      const { scrollWidth, clientWidth } = await scroll.evaluate((el) => ({
-        scrollWidth: el.scrollWidth,
-        clientWidth: el.clientWidth,
-      }));
-      expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+      const { nameLines, withName, withoutName } = await scroll.evaluate(
+        (el, name) => {
+          const withName = el.scrollWidth;
+          const lines = [
+            ...el.querySelectorAll<HTMLElement>('[data-testid="compare-line"]'),
+          ].filter((line) => line.title === name);
+          for (const line of lines) line.style.display = "none";
+          const withoutName = el.scrollWidth;
+          for (const line of lines) line.style.display = "";
+          return { nameLines: lines.length, withName, withoutName };
+        },
+        LONG_NAME,
+      );
+      expect(nameLines).toBeGreaterThan(0);
+      expect(withName).toBe(withoutName);
     }
 
     await page.getByRole("button", { name: /Bonuses/ }).click();
