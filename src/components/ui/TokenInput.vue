@@ -13,10 +13,14 @@
 // the value is matched too: a token is committed by value, so typing one exactly has to find
 // its row rather than offer it as "new".
 import { computed, useId, useTemplateRef, watch } from "vue";
-import { onKeyStroke } from "@vueuse/core";
+import { onClickOutside, onKeyStroke } from "@vueuse/core";
 import { filterAndRank } from "../../lib/text-filter";
 import { useMenuNavigation } from "../../composables/useMenuNavigation";
 import { useFormFieldControl } from "../../composables/useFormField";
+import { useOcrPaste } from "../../composables/useOcrPaste";
+import { imageFrom } from "../../lib/ocr-paste";
+import OcrHint from "./OcrHint.vue";
+import OcrStatus from "./OcrStatus.vue";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 import type { ComboBoxOption } from "./ComboBox.vue";
@@ -28,9 +32,14 @@ const props = withDefaults(
     options?: ComboBoxOption[];
     placeholder?: string;
     allowFree?: boolean;
+    /** Turns a pasted screenshot into a token: given its recognized text (folded onto one
+     *  line), returns the value to add, or `null` when the text holds none. Without it an
+     *  image paste is not read. */
+    fromImage?: (text: string) => string | null;
   }>(),
   {
     options: () => [],
+    fromImage: undefined,
     placeholder: "Type to search…",
     allowFree: true,
   },
@@ -53,8 +62,15 @@ const optionByValue = computed(
 const labelFor = (value: string) =>
   optionByValue.value.get(value)?.label ?? value;
 
+const { busy, error, clearError, fail, readPaste } = useOcrPaste();
+
+const root = useTemplateRef("root");
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
+
+onClickOutside(root, () => {
+  if (error.value) clearError();
+});
 
 const { open, query, highlight, pointAt } = useMenuNavigation({
   target: input,
@@ -100,6 +116,10 @@ watch(entries, () => {
   highlight.value = 0;
 });
 
+watch(query, () => {
+  if (error.value) clearError();
+});
+
 function add(value: string) {
   const token = value.trim();
   if (!token || model.value.includes(token)) return;
@@ -141,7 +161,17 @@ onKeyStroke(
   { target: input },
 );
 
-function onPaste(event: ClipboardEvent) {
+async function onPaste(event: ClipboardEvent) {
+  // Decided before any await: a text paste must be claimed synchronously or it has already
+  // happened.
+  if (props.fromImage && imageFrom(event.clipboardData?.items)) {
+    const text = await readPaste(event, true);
+    if (!text) return;
+    const value = props.fromImage(text);
+    if (value) add(value);
+    else fail("No usable value was found in that image.");
+    return;
+  }
   const text = event.clipboardData?.getData("text") ?? "";
   if (!text.includes(",")) return;
   event.preventDefault();
@@ -151,6 +181,7 @@ function onPaste(event: ClipboardEvent) {
 
 <template>
   <div
+    ref="root"
     class="relative flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-line bg-surface px-1.5 py-1 cursor-text focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
     @mousedown.self="input?.focus()"
   >
@@ -195,6 +226,9 @@ function onPaste(event: ClipboardEvent) {
       @blur="open = false"
       @paste="onPaste"
     />
+
+    <span v-if="fromImage" class="leading-none"><OcrHint /></span>
+    <OcrStatus :busy="busy" :error="error" />
 
     <ComboBoxMenu v-if="menuOpen" ref="menu" :listbox-id="listboxId">
       <ComboBoxMenuRow

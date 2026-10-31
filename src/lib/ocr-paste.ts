@@ -36,6 +36,19 @@ export function tidyOcrText(text: string, singleLine: boolean): string {
     .trim();
 }
 
+/**
+ * The game id in recognized tooltip text: the token after a "Def:" label, or the whole text
+ * when it is a crop of just the id. `null` when neither applies. The label is not anchored to
+ * a line start: the game prints several fields side by side ("RepairVersion: 0 Def: Head_X
+ * DispNameMsgKey: ..."), so the id is the one token that follows it.
+ */
+export function gameIdFrom(text: string): string | null {
+  const labeled = text.match(/\bdef\s*[:.]\s*([A-Za-z0-9][\w-]*)/i)?.[1];
+  if (labeled) return labeled;
+  const bare = text.trim();
+  return /^[A-Za-z0-9][\w-]*$/.test(bare) ? bare : null;
+}
+
 export interface TextInsertion {
   value: string;
   /** Where the caret belongs afterwards: the end of what was inserted. */

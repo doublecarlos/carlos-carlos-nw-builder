@@ -7,7 +7,10 @@
     "il": 1800,
     "awareness": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_E_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_E_V2_R6_Account",
+      "Enchantment_Standard_E_R6_Account"
+    ],
     "tags": ["gem:amethyst"]
   },
   {
@@ -18,7 +21,10 @@
     "il": 1800,
     "ca": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_E_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_E_V2_R6_Account",
+      "Enchantment_Standard_E_R6_Account"
+    ],
     "tags": ["gem:amethyst"]
   },
   {
@@ -29,7 +35,10 @@
     "il": 1800,
     "acc": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_C_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_C_V2_R6_Account",
+      "Enchantment_Standard_C_R6_Account"
+    ],
     "tags": ["gem:citrine"]
   },
   {
@@ -40,7 +49,10 @@
     "il": 1800,
     "deflect": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_C_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_C_V2_R6_Account",
+      "Enchantment_Standard_C_R6_Account"
+    ],
     "tags": ["gem:citrine"]
   },
   {
@@ -51,7 +63,10 @@
     "il": 1800,
     "deflect_sev": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_A_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_A_V2_R6_Account",
+      "Enchantment_Standard_A_R6_Account"
+    ]
   },
   {
     "id": "1-cobalt-severity",
@@ -61,7 +76,10 @@
     "il": 1800,
     "severity": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_A_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_A_V2_R6_Account",
+      "Enchantment_Standard_A_R6_Account"
+    ]
   },
   {
     "id": "1-garnet-defense",
@@ -71,7 +89,10 @@
     "il": 1800,
     "defense": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_B_V2_R6_Account",
+      "Enchantment_Standard_B_R6_Account"
+    ]
   },
   {
     "id": "1-garnet-forte",
@@ -81,7 +102,10 @@
     "il": 1800,
     "forte": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_B_V2_R6_Account",
+      "Enchantment_Standard_B_R6_Account"
+    ]
   },
   {
     "id": "1-garnet-power",
@@ -91,7 +115,10 @@
     "il": 1800,
     "power": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_B_V2_R6_Account",
+      "Enchantment_Standard_B_R6_Account"
+    ]
   },
   {
     "id": "1-jade-crit",
@@ -101,7 +128,10 @@
     "il": 1800,
     "strike": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_D_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_D_V2_R6_Account",
+      "Enchantment_Standard_D_R6_Account"
+    ],
     "tags": ["gem:jade"]
   },
   {
@@ -112,7 +142,10 @@
     "il": 1800,
     "crit_avoid": 2700,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_D_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_D_V2_R6_Account",
+      "Enchantment_Standard_D_R6_Account"
+    ],
     "tags": ["gem:jade"]
   },
   {
@@ -124,7 +157,10 @@
     "acc": 1485,
     "severity": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_F_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_F_V2_R6_Account",
+      "Enchantment_Standard_F_R6_Account"
+    ],
     "tags": ["gem:aquamarine"]
   },
   {
@@ -136,7 +172,10 @@
     "crit_avoid": 1485,
     "deflect": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_F_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_F_V2_R6_Account",
+      "Enchantment_Standard_F_R6_Account"
+    ],
     "tags": ["gem:aquamarine"]
   },
   {
@@ -148,7 +187,10 @@
     "deflect": 1485,
     "deflect_sev": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_N_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_N_V2_R6_Account",
+      "Enchantment_Standard_N_R6_Account"
+    ],
     "tags": ["gem:bloodstone"]
   },
   {
@@ -160,7 +202,10 @@
     "power": 1485,
     "ca": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_N_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_N_V2_R6_Account",
+      "Enchantment_Standard_N_R6_Account"
+    ],
     "tags": ["gem:bloodstone"]
   },
   {
@@ -172,7 +217,10 @@
     "ca": 1485,
     "severity": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_J_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_J_V2_R6_Account",
+      "Enchantment_Standard_J_R6_Account"
+    ]
   },
   {
     "id": "2-diamond-defense-crit-avoid",
@@ -183,7 +231,10 @@
     "defense": 1485,
     "crit_avoid": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_J_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_J_V2_R6_Account",
+      "Enchantment_Standard_J_R6_Account"
+    ]
   },
   {
     "id": "2-kyanite-awareness-crit-avoid",
@@ -194,7 +245,10 @@
     "awareness": 1485,
     "crit_avoid": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_O_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_O_V2_R6_Account",
+      "Enchantment_Standard_O_R6_Account"
+    ]
   },
   {
     "id": "2-kyanite-strike-severity",
@@ -205,7 +259,10 @@
     "strike": 1485,
     "severity": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_O_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_O_V2_R6_Account",
+      "Enchantment_Standard_O_R6_Account"
+    ]
   },
   {
     "id": "2-moonstone-defense-awareness",
@@ -216,7 +273,10 @@
     "defense": 1485,
     "awareness": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_L_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_L_V2_R6_Account",
+      "Enchantment_Standard_L_R6_Account"
+    ]
   },
   {
     "id": "2-moonstone-power-ca",
@@ -227,7 +287,10 @@
     "power": 1485,
     "ca": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_L_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_L_V2_R6_Account",
+      "Enchantment_Standard_L_R6_Account"
+    ]
   },
   {
     "id": "2-onyx-ca-severity",
@@ -238,7 +301,10 @@
     "ca": 1485,
     "severity": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_M_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_M_V2_R6_Account",
+      "Enchantment_Standard_M_R6_Account"
+    ]
   },
   {
     "id": "2-onyx-crit-avoid-deflect-severity",
@@ -249,7 +315,10 @@
     "crit_avoid": 1485,
     "deflect_sev": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_M_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_M_V2_R6_Account",
+      "Enchantment_Standard_M_R6_Account"
+    ]
   },
   {
     "id": "2-opal-awareness-deflect",
@@ -260,7 +329,10 @@
     "awareness": 1485,
     "deflect": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_K_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_K_V2_R6_Account",
+      "Enchantment_Standard_K_R6_Account"
+    ]
   },
   {
     "id": "2-opal-power-strike",
@@ -271,7 +343,10 @@
     "power": 1485,
     "strike": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_K_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_K_V2_R6_Account",
+      "Enchantment_Standard_K_R6_Account"
+    ]
   },
   {
     "id": "2-peridot-acc-strike",
@@ -282,7 +357,10 @@
     "acc": 1485,
     "strike": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_I_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_I_V2_R6_Account",
+      "Enchantment_Standard_I_R6_Account"
+    ]
   },
   {
     "id": "2-peridot-defense-deflect-severity",
@@ -293,7 +371,10 @@
     "defense": 1485,
     "deflect_sev": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_I_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_I_V2_R6_Account",
+      "Enchantment_Standard_I_R6_Account"
+    ]
   },
   {
     "id": "2-ruby-defense-deflect",
@@ -304,7 +385,10 @@
     "defense": 1485,
     "deflect": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_H_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_H_V2_R6_Account",
+      "Enchantment_Standard_H_R6_Account"
+    ]
   },
   {
     "id": "2-ruby-power-accuracy",
@@ -315,7 +399,10 @@
     "power": 1485,
     "acc": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_H_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_H_V2_R6_Account",
+      "Enchantment_Standard_H_R6_Account"
+    ]
   },
   {
     "id": "2-sapphire-awareness-deflect-severity",
@@ -326,7 +413,10 @@
     "awareness": 1485,
     "deflect_sev": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_G_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_G_V2_R6_Account",
+      "Enchantment_Standard_G_R6_Account"
+    ]
   },
   {
     "id": "2-sapphire-ca-strike",
@@ -337,7 +427,10 @@
     "ca": 1485,
     "strike": 1485,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_G_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_G_V2_R6_Account",
+      "Enchantment_Standard_G_R6_Account"
+    ]
   },
   {
     "id": "3-ammolite-defense-awareness-crit-avoid",
@@ -349,7 +442,10 @@
     "awareness": 1080,
     "crit_avoid": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_P_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_P_V2_R6_Account",
+      "Enchantment_Standard_P_R6_Account"
+    ]
   },
   {
     "id": "3-ammolite-power-ca-strike",
@@ -361,7 +457,10 @@
     "ca": 1080,
     "strike": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_P_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_P_V2_R6_Account",
+      "Enchantment_Standard_P_R6_Account"
+    ]
   },
   {
     "id": "3-bismuth-acc-ca-severity",
@@ -373,7 +472,10 @@
     "ca": 1080,
     "severity": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_S_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_S_V2_R6_Account",
+      "Enchantment_Standard_S_R6_Account"
+    ]
   },
   {
     "id": "3-bismuth-defense-awareness-deflect",
@@ -385,7 +487,10 @@
     "awareness": 1080,
     "deflect": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_S_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_S_V2_R6_Account",
+      "Enchantment_Standard_S_R6_Account"
+    ]
   },
   {
     "id": "3-bone-filligree-acc-ca-strike",
@@ -397,7 +502,10 @@
     "ca": 1080,
     "strike": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_U_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_U_V2_R6_Account",
+      "Enchantment_Standard_U_R6_Account"
+    ]
   },
   {
     "id": "3-bone-filligree-awareness-deflect-deflect-severity",
@@ -409,7 +517,10 @@
     "deflect": 1080,
     "deflect_sev": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_U_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_U_V2_R6_Account",
+      "Enchantment_Standard_U_R6_Account"
+    ]
   },
   {
     "id": "3-fire-agate-awareness-crit-avoid-deflect",
@@ -421,7 +532,10 @@
     "crit_avoid": 1080,
     "deflect": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_Q_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_Q_V2_R6_Account",
+      "Enchantment_Standard_Q_R6_Account"
+    ],
     "tags": ["gem:fire_agate"]
   },
   {
@@ -434,7 +548,10 @@
     "strike": 1080,
     "severity": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_Q_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Standard_Q_V2_R6_Account",
+      "Enchantment_Standard_Q_R6_Account"
+    ],
     "tags": ["gem:fire_agate"]
   },
   {
@@ -447,7 +564,10 @@
     "strike": 1080,
     "severity": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_R_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_R_V2_R6_Account",
+      "Enchantment_Standard_R_R6_Account"
+    ]
   },
   {
     "id": "3-mother-of-pearl-awareness-crit-avoid-deflect-severity",
@@ -459,7 +579,10 @@
     "crit_avoid": 1080,
     "deflect_sev": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_R_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_R_V2_R6_Account",
+      "Enchantment_Standard_R_R6_Account"
+    ]
   },
   {
     "id": "3-netherite-defense-deflect-deflect-severity",
@@ -471,7 +594,10 @@
     "deflect": 1080,
     "deflect_sev": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_V_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_V_V2_R6_Account",
+      "Enchantment_Standard_V_R6_Account"
+    ]
   },
   {
     "id": "3-netherite-power-acc-ca",
@@ -483,7 +609,10 @@
     "acc": 1080,
     "ca": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_V_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_V_V2_R6_Account",
+      "Enchantment_Standard_V_R6_Account"
+    ]
   },
   {
     "id": "3-rubellite-tourmaline-defense-crit-avoid-deflect-severity",
@@ -495,7 +624,10 @@
     "crit_avoid": 1080,
     "deflect_sev": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_T_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_T_V2_R6_Account",
+      "Enchantment_Standard_T_R6_Account"
+    ]
   },
   {
     "id": "3-rubellite-tourmaline-power-ca-severity",
@@ -507,7 +639,10 @@
     "ca": 1080,
     "severity": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_T_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_T_V2_R6_Account",
+      "Enchantment_Standard_T_R6_Account"
+    ]
   },
   {
     "id": "3-skullite-defense-crit-avoid-deflect",
@@ -519,7 +654,10 @@
     "crit_avoid": 1080,
     "deflect": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_W_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_W_V2_R6_Account",
+      "Enchantment_Standard_W_R6_Account"
+    ]
   },
   {
     "id": "3-skullite-power-accuracy-strike",
@@ -531,7 +669,10 @@
     "acc": 1080,
     "strike": 1080,
     "combined_rating": 1620,
-    "gameIds": ["Enchantment_Standard_W_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Standard_W_V2_R6_Account",
+      "Enchantment_Standard_W_R6_Account"
+    ]
   },
   {
     "id": "a-due",
@@ -580,7 +721,10 @@
     "filter": "enchantment_bonus",
     "quality": "celestial",
     "ap_gain": 0.06,
-    "gameIds": ["Enchantment_Bonus_A_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Bonus_A_V2_R6_Account",
+      "Enchantment_Bonus_A_R6_Account"
+    ]
   },
   {
     "id": "acute-senses-ca",
@@ -760,7 +904,8 @@
     "quality": "celestial",
     "il": 1750,
     "severity": 2625,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Armorpen"]
   },
   {
     "id": "arti-assasin-s-dice",
@@ -869,7 +1014,8 @@
     "il": 1750,
     "power": 933.3333333333334,
     "forte": 2625,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_M31_Passive_Dragon_Chicken"]
   },
   {
     "id": "avian-aura-group-celestial",
@@ -967,7 +1113,8 @@
     "il": 1750,
     "ca": 1312.5,
     "severity": 1312.5,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Combatadv_Critsev"]
   },
   {
     "id": "bloodbrass-pistol",
@@ -2428,7 +2575,10 @@
     "filter": "companion_enchantment",
     "quality": "celestial",
     "il": 1800,
-    "gameIds": ["Enchantment_Companion_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Companion_V2_R6_Account",
+      "Enchantment_Companion_R6_Account"
+    ]
   },
   {
     "id": "compy-s-instincts-alpha-compy-power-utility",
@@ -2733,7 +2883,8 @@
     "quality": "celestial",
     "il": 1750,
     "power": 2625,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Power"]
   },
   {
     "id": "doomsayer",
@@ -2928,7 +3079,8 @@
     "il": 1750,
     "power": 1312.5,
     "severity": 1312.5,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Power_Armorpen"]
   },
   {
     "id": "ferocity-celestial",
@@ -2937,6 +3089,7 @@
     "quality": "celestial",
     "il": 1750,
     "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Ferocity"],
     "dynamicStats": [
       {
         "stat": "overall_damage",
@@ -3190,6 +3343,22 @@
     ]
   },
   {
+    "id": "golden-deep-crow-s-presence",
+    "name": "Golden Deep Crow's Presence",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "awareness_p": 0.09,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Deepcrow_Baby_Gold_Player_Bonus"],
+    "longDescription": "Golden Deep Crow's companion power. Role: Any.",
+    "tags": [
+      "companion_power:defense",
+      "companion_power:offense",
+      "companion_power:utility"
+    ]
+  },
+  {
     "id": "grace-ring",
     "name": "Grace Ring",
     "filter": "group_buff",
@@ -3251,7 +3420,8 @@
     "quality": "celestial",
     "il": 1750,
     "forte": 2625,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Forte"]
   },
   {
     "id": "honeyed-bread-defense",
@@ -4023,7 +4193,10 @@
     "quality": "celestial",
     "il": 3000,
     "outgoing_damage": 0.15,
-    "gameIds": ["Enchantment_Combat_G_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Combat_G_V2_R6_Account",
+      "Enchantment_Combat_G_R6_Account"
+    ],
     "bonuses": ["lightning-flash"]
   },
   {
@@ -4512,7 +4685,8 @@
     "il": 2600,
     "acc": 2535,
     "severity": 2340,
-    "combined_rating": 2340
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Alldps_Stat_2"]
   },
   {
     "id": "m31-thayan-sword-knot-acc-ca-forte",
@@ -4523,7 +4697,8 @@
     "acc": 1268,
     "ca": 1248,
     "forte": 1228,
-    "combined_rating": 2340
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Alldps_Stat_3"]
   },
   {
     "id": "m31-thayan-talisman-ca-strike",
@@ -4533,7 +4708,8 @@
     "il": 2600,
     "ca": 1950,
     "strike": 2340,
-    "combined_rating": 2340
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Alldps_Stat_1"]
   },
   {
     "id": "m31-threads-of-the-arch-thrall-power-strike-severity",
@@ -4826,6 +5002,7 @@
     "strike": 3150,
     "forte": 2362,
     "combined_rating": 4725,
+    "gameIds": ["Secondary_M32_Cleric_All_R6"],
     "allowedClass": ["cleric"],
     "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m32-cleric-s-impending-doom-celestial"]
@@ -4841,6 +5018,7 @@
     "out_healing": 2100,
     "base_damage_flat": 200,
     "combined_rating": 4725,
+    "gameIds": ["Primary_M32_Cleric_All_R6"],
     "allowedClass": ["cleric"],
     "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m32-cleric-s-impending-doom-celestial"]
@@ -5123,7 +5301,8 @@
     "il": 2850,
     "strike": 2565,
     "severity": 2565,
-    "combined_rating": 2565
+    "combined_rating": 2565,
+    "gameIds": ["Companion_Equipment_M33_Alldps_Stat_2"]
   },
   {
     "id": "m33-frostforged-sword-knot-of-the-companion-acc-ca-forte",
@@ -5134,7 +5313,8 @@
     "acc": 1389,
     "ca": 1368,
     "forte": 1347,
-    "combined_rating": 2565
+    "combined_rating": 2565,
+    "gameIds": ["Companion_Equipment_M33_Alldps_Stat_3"]
   },
   {
     "id": "m33-frostforged-talisman-of-the-companion-ca-sev",
@@ -5273,7 +5453,8 @@
     "il": 3000,
     "forte": 1418,
     "out_healing": 2340,
-    "combined_rating": 2700
+    "combined_rating": 2700,
+    "gameIds": ["Companion_Equipment_M33_Allheal_Stat_2_R5"]
   },
   {
     "id": "m33-true-ice-ring-of-the-companion-strike-sev",
@@ -5283,7 +5464,8 @@
     "il": 3000,
     "strike": 2700,
     "severity": 2700,
-    "combined_rating": 2700
+    "combined_rating": 2700,
+    "gameIds": ["Companion_Equipment_M33_Alldps_Stat_2_R5"]
   },
   {
     "id": "m33-true-ice-sword-knot-of-the-companion-acc-ca-forte",
@@ -5294,7 +5476,8 @@
     "acc": 1462,
     "ca": 1440,
     "forte": 1418,
-    "combined_rating": 2700
+    "combined_rating": 2700,
+    "gameIds": ["Companion_Equipment_M33_Alldps_Stat_3_R5"]
   },
   {
     "id": "m33-true-ice-talisman-of-the-companion-ca-sev",
@@ -6496,7 +6679,10 @@
     "filter": "enchantment_bonus",
     "quality": "celestial",
     "movement": 0.18,
-    "gameIds": ["Enchantment_Bonus_C_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Bonus_C_V2_R6_Account",
+      "Enchantment_Bonus_C_R6_Account"
+    ]
   },
   {
     "id": "mystic-aura-group-celestial",
@@ -6512,7 +6698,8 @@
     "il": 1750,
     "power": 1312.5,
     "acc": 1312.5,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Power_Accuracy_Aura"]
   },
   {
     "id": "mystifying-strikes",
@@ -6570,7 +6757,8 @@
     "quality": "celestial",
     "il": 1750,
     "ca": 2625,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Combatadv"]
   },
   {
     "id": "orb-of-imposition",
@@ -6599,7 +6787,8 @@
     "il": 1750,
     "ca": 1312.5,
     "awareness": 1312.5,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Combatadv_Awareness_Aura"]
   },
   {
     "id": "paladin-aura",
@@ -6956,7 +7145,8 @@
     "il": 1750,
     "strike": 1312.5,
     "severity": 1312.5,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Armorpen_Crit"]
   },
   {
     "id": "predator-s-focus-strike-ca-golden-armored-griffon-celestial",
@@ -6966,7 +7156,8 @@
     "il": 1750,
     "ca": 1312.5,
     "strike": 1312.5,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Combatadv_Crit"]
   },
   {
     "id": "predator-s-instinct",
@@ -7330,7 +7521,8 @@
     "filter": "overload",
     "quality": "epic",
     "il": 1,
-    "outgoing_damage": 0.05
+    "outgoing_damage": 0.05,
+    "gameIds": ["Enchantment_Overload_Damage_Bonus"]
   },
   {
     "id": "rapid-accuracy-accuracy-celestial",
@@ -7339,7 +7531,8 @@
     "quality": "celestial",
     "il": 1750,
     "acc": 2625,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Accuracy"]
   },
   {
     "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
@@ -7388,7 +7581,10 @@
     "filter": "enchantment_bonus",
     "quality": "celestial",
     "recharge": 0.06,
-    "gameIds": ["Enchantment_Bonus_E_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Bonus_E_V2_R6_Account",
+      "Enchantment_Bonus_E_R6_Account"
+    ]
   },
   {
     "id": "redoublement",
@@ -7460,7 +7656,10 @@
     "il": 3500,
     "incoming_damage": -0.12,
     "hit_points_mult": 0.15,
-    "gameIds": ["Enchantment_Combat_L_V2_R6_Account"]
+    "gameIds": [
+      "Enchantment_Combat_L_V2_R6_Account",
+      "Enchantment_Combat_L_R6_Account"
+    ]
   },
   {
     "id": "rimefire-weaving",
@@ -7498,7 +7697,8 @@
     "il": 1750,
     "power": 1312.5,
     "defense": 1312.5,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Power_Defense_Aura"]
   },
   {
     "id": "runic-aura-group-celestial",
@@ -7513,7 +7713,8 @@
     "quality": "celestial",
     "il": 1750,
     "strike": 2625,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Crit"]
   },
   {
     "id": "sambocade-movement",
@@ -7587,7 +7788,10 @@
     "il": 3500,
     "incoming_damage": -0.12,
     "hit_points_mult": 0.15,
-    "gameIds": ["Enchantment_Combat_Q_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Combat_Q_V2_R6_Account",
+      "Enchantment_Combat_Q_R6_Account"
+    ],
     "bonuses": ["shattered-resolve-stacks"]
   },
   {
@@ -9046,7 +9250,10 @@
     "quality": "celestial",
     "il": 3500,
     "outgoing_damage": 0.15,
-    "gameIds": ["Enchantment_Combat_M_V2_R6_Account"],
+    "gameIds": [
+      "Enchantment_Combat_M_V2_R6_Account",
+      "Enchantment_Combat_M_R6_Account"
+    ],
     "bonuses": ["swift-synergy"]
   },
   {
@@ -9170,7 +9377,8 @@
     "il": 1750,
     "acc": 1312.5,
     "ca": 1312.5,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Accuracy_Combatadv"]
   },
   {
     "id": "undying-overlord",
@@ -9350,6 +9558,7 @@
     "il": 900,
     "sev_p": 0.09,
     "combined_rating": 900,
+    "gameIds": ["Pet_Wolf_Player_Bonus"],
     "longDescription": "Wolf companion power. Role: Offense, Utility.",
     "tags": ["companion_power:offense", "companion_power:utility"]
   },
