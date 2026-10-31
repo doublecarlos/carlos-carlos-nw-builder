@@ -4,11 +4,12 @@
 // swallow.
 import type { Locator, Page } from "@playwright/test";
 
-/** A locator's bounding box, or an error if it isn't rendered. Scrolls into view first, since
- *  `boundingBox()` does not, unlike Playwright's actions. Without that, a row inside a nested
- *  scroll container could yield off-screen coordinates. */
+/** A locator's bounding box, or an error if it isn't rendered. Scrolls it to the middle of its
+ *  scroll containers first, since `boundingBox()` does not scroll. Centered rather than just in
+ *  view: a point near a container's edge sits in the drag's autoscroll zone, and a slow frame
+ *  would scroll the target away before the drop. */
 export async function requireBox(target: Locator) {
-  await target.scrollIntoViewIfNeeded();
+  await target.evaluate((el) => el.scrollIntoView({ block: "center" }));
   const box = await target.boundingBox();
   if (!box) throw new Error("Element is not visible");
   return box;
