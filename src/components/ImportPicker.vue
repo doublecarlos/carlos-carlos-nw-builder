@@ -69,8 +69,9 @@ function setAllConflicts(resolution: Resolution) {
   }
 }
 
-const confirmButton = useTemplateRef<{ $el: HTMLElement }>("confirmButton");
-onMounted(() => confirmButton.value?.$el.focus());
+const confirmButton =
+  useTemplateRef<InstanceType<typeof BaseButton>>("confirmButton");
+onMounted(() => confirmButton.value?.focus());
 
 function runImport() {
   importFile.applyImport(props.plan, {

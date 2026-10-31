@@ -32,7 +32,7 @@ test("/ types a literal slash instead of stealing focus while renaming", async (
   const row = buildRow(page, "Build 1");
   await row.locator(".nav-name").dblclick();
 
-  // The rename input selects all its text on mount (see NavBuilds.vue's vRenameFocus), so
+  // The rename input selects all its text when it opens (see NavRow.vue), so
   // typing "/" replaces the selection rather than appending to it -- same as the existing
   // "rename input auto-focuses and selects all text" case in nav.spec.ts.
   const input = page.locator(".nav-rename");

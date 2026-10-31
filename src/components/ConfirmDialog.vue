@@ -16,7 +16,7 @@ watch(pending, async (request) => {
   if (!request) return;
   checked.value = request.checkbox?.checked ?? false;
   await nextTick();
-  (accept.value?.$el as HTMLElement | undefined)?.focus();
+  accept.value?.focus();
 });
 </script>
 

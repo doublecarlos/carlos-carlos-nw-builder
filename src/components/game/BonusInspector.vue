@@ -238,8 +238,7 @@ watch(
     open[id] = true;
     await nextTick();
     // Centered, so the sticky filter bar never covers it.
-    const root: HTMLElement | undefined = panel.value?.$el;
-    root
+    panel.value?.root
       ?.querySelector(`[data-bonus-id="${CSS.escape(id)}"]`)
       ?.scrollIntoView({ block: "center" });
   },
