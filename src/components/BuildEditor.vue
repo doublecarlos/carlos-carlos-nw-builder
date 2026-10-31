@@ -708,8 +708,7 @@ function stablePlaceholder(slotId: string): string | undefined {
 
 /** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
  *  (`slotCandidateList` and `statSummary` aren't cheap). Scoped to *expanded* sections only,
- *  matching BuildSection.vue's own `v-if="expanded"`, so a collapsed section's rows stay
- *  uncomputed. */
+ *  so a collapsed section's rows are not recomputed while hidden. */
 interface SlotRowData {
   item: Item | null;
   items: Item[];
@@ -735,14 +734,24 @@ const EMPTY_ROW_DATA: SlotRowData = {
   diff: undefined,
 };
 
+/** Row data of sections that were expanded and then collapsed. Their bodies stay mounted
+ *  (hidden), so they keep showing the last data instead of recomputing on every change; the
+ *  next expand recomputes before the section is shown again. */
+const lastRowData = new Map<string, SlotRowData>();
+
 const rowDataBySlot = computed(() => {
   const map = new Map<string, SlotRowData>();
   // One context for the whole pass: the copy tally and published class are the same for every
   // row.
   const candidateContext = slotCandidateContext(db.value, build.value);
   for (const section of sections.value) {
-    if (!sectionExpanded(section.id)) continue;
+    const open = sectionExpanded(section.id);
     for (const slotDef of section.slots) {
+      if (!open) {
+        const kept = lastRowData.get(slotDef.id);
+        if (kept) map.set(slotDef.id, kept);
+        continue;
+      }
       if (
         slotDef.type === "separator" ||
         slotDef.type === "text" ||
@@ -750,7 +759,9 @@ const rowDataBySlot = computed(() => {
       )
         continue;
       if (compareOnly.value.has(slotDef.id)) {
-        map.set(slotDef.id, { ...EMPTY_ROW_DATA, diff: rowDiff(slotDef.id) });
+        const row = { ...EMPTY_ROW_DATA, diff: rowDiff(slotDef.id) };
+        map.set(slotDef.id, row);
+        lastRowData.set(slotDef.id, row);
         continue;
       }
       const candidates = slotCandidateList(
@@ -759,7 +770,7 @@ const rowDataBySlot = computed(() => {
         build.value,
         candidateContext,
       );
-      map.set(slotDef.id, {
+      const row: SlotRowData = {
         item: itemIn(slotDef.id),
         items: candidates.items,
         hiddenReasons: candidates.reasons,
@@ -769,7 +780,9 @@ const rowDataBySlot = computed(() => {
         placeholder: stablePlaceholder(slotDef.id),
         labelOverride: stableLabel(slotDef.id),
         diff: rowDiff(slotDef.id),
-      });
+      };
+      map.set(slotDef.id, row);
+      lastRowData.set(slotDef.id, row);
     }
   }
   return map;
@@ -966,11 +979,18 @@ function focusRow(row: Element, preventScroll = false) {
   suppressUntilPointerMoves();
 }
 
+/** Cursor rows under `scope`, minus the ones inside a collapsed (hidden) section body. */
+function cursorRows(scope: ParentNode | null | undefined) {
+  return Array.from(scope?.querySelectorAll("[data-cursor-key]") ?? []).filter(
+    (row) => row.checkVisibility(),
+  );
+}
+
 function moveCursorByRow(dir: 1 | -1) {
-  const rows = root.value?.querySelectorAll("[data-cursor-key]");
-  if (!rows?.length) return;
+  const rows = cursorRows(root.value);
+  if (!rows.length) return;
   const current = activeElement.value?.closest("[data-cursor-key]");
-  const idx = current ? Array.from(rows).indexOf(current) : -1;
+  const idx = current ? rows.indexOf(current) : -1;
   focusRow(rows[Math.min(Math.max(idx + dir, 0), rows.length - 1)]);
 }
 
@@ -994,7 +1014,7 @@ function moveCursorBySection(dir: 1 | -1) {
   const target =
     sectionEls[Math.min(Math.max(idx + dir, 0), sectionEls.length - 1)];
   // A section's own cursor rows in order: its header first, then whatever slots it renders.
-  const rows = target.querySelectorAll("[data-cursor-key]");
+  const rows = cursorRows(target);
   const row = rows[1] ?? rows[0];
   if (row) focusRow(row);
 }
