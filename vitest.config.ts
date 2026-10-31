@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
-import { APP_DEFINES } from "./build-info";
+import { APP_DEFINES } from "./build-info.ts";
 
 export default defineConfig({
   plugins: [vue()],

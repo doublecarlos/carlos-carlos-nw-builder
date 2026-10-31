@@ -3,9 +3,9 @@ import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
-import { DEV_PORT } from "./ports";
-import { APP_DEFINES } from "./build-info";
-import { writebackPlugin } from "./scripts/writeback";
+import { DEV_PORT } from "./ports.ts";
+import { APP_DEFINES } from "./build-info.ts";
+import { writebackPlugin } from "./scripts/writeback.ts";
 
 const require_ = createRequire(import.meta.url);
 
