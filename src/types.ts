@@ -1006,6 +1006,8 @@ export type Selection = { kind: "build" | "layer"; id: string };
 export interface HistoryEntry {
   json: string;
   label: string;
+  /** The entry holds the whole item rather than its usual part (a layer's overlay). */
+  whole?: true;
 }
 
 export interface ItemHistory {

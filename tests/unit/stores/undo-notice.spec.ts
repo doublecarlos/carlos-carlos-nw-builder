@@ -19,13 +19,23 @@ async function freshStores() {
   const history = await import("../../../src/stores/history");
   const layers = await import("../../../src/stores/layers");
   const notice = await import("../../../src/stores/notice");
+  const layerEditor = await import("../../../src/stores/layerEditor");
+  const selection = await import("../../../src/stores/selection");
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
   const storage = await import("../../../src/storage/storage");
   // Every test starts from one "Build 1".
   builds.replaceActive(storage.defaultBuild("Build 1"));
-  return { builds, buildEditor, history, layers, notice };
+  return {
+    builds,
+    buildEditor,
+    history,
+    layers,
+    notice,
+    layerEditor,
+    selection,
+  };
 }
 
 const emptyOverlay = (): CatalogOverlay => ({
@@ -105,6 +115,27 @@ describe("undo notices", () => {
         .p1,
     ).toEqual(preset());
     expect(notice.noticeAction.value).toBeNull();
+  });
+
+  // The revert sits on the same stack as overlay edits, so Ctrl+Z on the selected layer must
+  // take it back as a whole layer, not write the layer into its own overlay.
+  it("Ctrl+Z after reverting a layer brings its overlay back, and redo reverts again", async () => {
+    const { layers, layerEditor, selection } = await freshStores();
+    const layer = layers.createLayer("Reverted");
+    const snapshot: LayerSnapshot = { ...layer, overlay: emptyOverlay() };
+    const overlay = emptyOverlay();
+    overlay.sectionPresets = { p1: preset() };
+    layers.updateOverlay(layer.id, overlay);
+    layer.downloaded = { at: Date.now(), snapshot };
+    selection.selectLayer(layer.id);
+    const current = () => layers.layers.value.find((l) => l.id === layer.id)!;
+
+    layers.revertToDownloaded(layer.id);
+    layerEditor.undo();
+    expect(current().overlay.sectionPresets.p1).toEqual(preset());
+
+    layerEditor.redo();
+    expect(current().overlay.sectionPresets).toEqual({});
   });
 
   it("overwriting a preset offers a notice that restores its old contents", async () => {

@@ -2,40 +2,34 @@
 // undo/redo composable.  Skips when a form control has focus so the browser's
 // native undo in those fields is not hijacked, and while a modal is open so an
 // overlay's own controls are not edited out from under it.
-import { computed } from "vue";
-import { useMagicKeys, whenever } from "@vueuse/core";
+//
+// Outside those, the app owns the keys and prevents the default. The browser's native undo
+// would otherwise also replay the last typing into a field that has since lost focus.
+// A plain `keydown` listener, since `useMagicKeys` listens passively and cannot prevent it.
+import { useEventListener } from "@vueuse/core";
 import { isFormControl } from "./focus";
 import { useUndoRedo } from "./useUndoRedo";
 import { isModalOpen } from "../stores/modals";
 
 export function useUndoRedoKeys() {
   const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } = useUndoRedo();
-  const keys = useMagicKeys();
 
-  const undoPressed = computed(
-    () => !keys.shift.value && (keys.ctrl_z.value || keys.meta_z.value),
-  );
-  const redoPressed = computed(
-    () =>
-      keys.ctrl_shift_z.value || keys.meta_shift_z.value || keys.ctrl_y.value,
-  );
+  useEventListener(window, "keydown", (event: KeyboardEvent) => {
+    if (event.altKey) return;
+    const key = event.key.toLowerCase();
+    const mod = event.ctrlKey || event.metaKey;
+    const isUndo = mod && !event.shiftKey && key === "z";
+    const isRedo =
+      (mod && event.shiftKey && key === "z") ||
+      (event.ctrlKey && !event.shiftKey && key === "y");
+    if (!isUndo && !isRedo) return;
+    if (isModalOpen.value || isFormControl(document.activeElement)) return;
 
-  whenever(undoPressed, () => {
-    if (
-      !isModalOpen.value &&
-      !isFormControl(document.activeElement) &&
-      canUndo.value
-    )
-      undo();
-  });
-
-  whenever(redoPressed, () => {
-    if (
-      !isModalOpen.value &&
-      !isFormControl(document.activeElement) &&
-      canRedo.value
-    )
-      redo();
+    event.preventDefault();
+    // One step per press, not one per key repeat.
+    if (event.repeat) return;
+    if (isUndo && canUndo.value) undo();
+    if (isRedo && canRedo.value) redo();
   });
 
   return { canUndo, canRedo, undoLabel, redoLabel, undo, redo };

@@ -24,11 +24,7 @@ function activeScope(page: Page) {
   return page.locator("[data-undo-scope-active]");
 }
 
-/**
- * Picks the head row's first candidate and returns its name. Chosen by keyboard alone: text
- * typed into the picker lands on the browser's own undo stack, which Ctrl+Z replays from
- * anywhere in the document and would clear the field for reasons of its own.
- */
+/** Picks the head row's first candidate by keyboard and returns its name. */
 async function pickFirstHead(page: Page): Promise<string> {
   await parkCursorOnRow(page, "gear.head");
   await page.keyboard.press("Enter");

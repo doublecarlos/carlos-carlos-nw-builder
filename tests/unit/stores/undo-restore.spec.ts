@@ -22,8 +22,16 @@ async function freshStores() {
 }
 
 /** A persisted stack holding one entry, on the undo side or the redo side. */
-function stackWith(side: "past" | "future", snapshot: unknown): ItemHistory {
-  const entry = { json: JSON.stringify(snapshot), label: "edit" };
+function stackWith(
+  side: "past" | "future",
+  snapshot: unknown,
+  whole = false,
+): ItemHistory {
+  const entry = {
+    json: JSON.stringify(snapshot),
+    label: "edit",
+    ...(whole && { whole: true as const }),
+  };
   return {
     past: side === "past" ? [entry] : [],
     future: side === "future" ? [entry] : [],
@@ -106,7 +114,7 @@ describe("layer undo restores", () => {
       "past",
       legacyOverlay,
     );
-    layers.undoOverlayFor(id);
+    layers.undoFor(id);
     expect(current().overlay.sectionPresets.p?.choices).toEqual({
       "misc.misc#1": "a",
     });
@@ -117,9 +125,9 @@ describe("layer undo restores", () => {
     const layer = stores.layers.createLayer("L");
     const legacyLayer = { ...layer, overlay: legacyOverlay };
     stores.history._init(
-      new Map([[`layer:${layer.id}`, stackWith("past", legacyLayer)]]),
+      new Map([[`layer:${layer.id}`, stackWith("past", legacyLayer, true)]]),
     );
-    stores.layers.undoLayerFor(layer.id);
+    stores.layers.undoFor(layer.id);
     const restored = stores.layers.layers.value.find((l) => l.id === layer.id)!;
     expect(restored.name).toBe("L");
     expect(restored.overlay.sectionPresets.p?.choices).toEqual({

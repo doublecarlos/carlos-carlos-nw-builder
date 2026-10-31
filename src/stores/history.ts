@@ -30,6 +30,8 @@ const COALESCE_MS = 700;
 export interface HistoryEntry {
   json: string;
   label: string;
+  /** The entry holds the whole item rather than its usual part (a layer's overlay). */
+  whole?: true;
 }
 
 export interface ItemHistory {
@@ -149,12 +151,34 @@ function serialize(current: unknown): string {
   return JSON.stringify(toRaw(current));
 }
 
+function entryOf(
+  current: unknown,
+  label: string,
+  whole: boolean,
+): HistoryEntry {
+  const entry: HistoryEntry = { json: serialize(current), label };
+  if (whole) entry.whole = true;
+  return entry;
+}
+
+/** The entry the next undo or redo on this stack would restore, or null. */
+export function peek(
+  kind: "build" | "layer",
+  id: string,
+  direction: "undo" | "redo",
+): HistoryEntry | null {
+  const h = _histories.value.get(keyFor(kind, id));
+  const stack = direction === "undo" ? h?.past : h?.future;
+  return stack?.at(-1) ?? null;
+}
+
 /**
  * Records the current state **before** a change. `key` drives coalescing (700 ms window,
  * unchanged key collapses); `null` forces a distinct step. Clears `future`.
  *
  * `current` is the state to serialize - for builds the full build object, for layers the
- * overlay. The caller passes it in so this module doesn't need to import builds/layers.
+ * overlay, or the whole layer with `whole` set. The caller passes it in so this module doesn't
+ * need to import builds/layers.
  */
 export function snapshot(
   kind: "build" | "layer",
@@ -162,6 +186,7 @@ export function snapshot(
   key: string | null,
   label: string,
   current: unknown,
+  whole = false,
 ) {
   if (_loading) return;
   const sk = keyFor(kind, id);
@@ -174,7 +199,7 @@ export function snapshot(
     h.past.length > 0;
 
   if (!coalesce) {
-    h.past.push({ json: serialize(current), label });
+    h.past.push(entryOf(current, label, whole));
     if (h.past.length > UNDO_LIMIT) h.past.shift();
   }
   h.lastKey = key;
@@ -198,7 +223,7 @@ export function undo(
   if (!h || !h.past.length) return null;
 
   const entry = h.past.pop()!;
-  h.future.push({ json: serialize(current), label: entry.label });
+  h.future.push(entryOf(current, entry.label, entry.whole === true));
   h.lastKey = null;
   changed(sk);
 
@@ -221,7 +246,7 @@ export function redo(
   if (!h || !h.future.length) return null;
 
   const entry = h.future.pop()!;
-  h.past.push({ json: serialize(current), label: entry.label });
+  h.past.push(entryOf(current, entry.label, entry.whole === true));
   h.lastKey = null;
   changed(sk);
 
