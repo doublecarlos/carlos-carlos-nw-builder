@@ -68,7 +68,13 @@ test("filtering to a nested slot keeps its parent as context", async ({
 
   await expect(slotRow(page, "gear.mainhandMod")).toBeVisible();
   await expect(slotRow(page, "gear.mainhand")).toBeVisible();
-  await expect(slotRow(page, "gear.mainhand")).toHaveClass(/opacity-60/);
+  // The parent shows only as context, not as a match of its own.
+  await expect(slotRow(page, "gear.mainhand")).toHaveAttribute(
+    "data-filter-context",
+  );
+  await expect(slotRow(page, "gear.mainhandMod")).not.toHaveAttribute(
+    "data-filter-context",
+  );
   await expect(page.getByTestId("slot-filter-count")).toHaveText("1 match");
 });
 

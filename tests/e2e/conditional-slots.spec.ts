@@ -158,7 +158,7 @@ test.describe("comparing against a build that has the slot", () => {
 
     const highlight = page.getByRole("checkbox", { name: "Highlight changes" });
     await highlight.check();
-    await expect(compareOnlyRow(page)).toHaveClass(/is-diff/);
+    await expect(compareOnlyRow(page)).toHaveAttribute("data-diff");
     await expect(compareOnlyRow(page)).toContainText(
       "Not available in this build",
     );

@@ -171,6 +171,7 @@ function onRowKeydown(event: KeyboardEvent) {
         type="button"
         class="nav-name flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 overflow-hidden py-0.5 text-left focus:outline-none"
         :class="disabled && 'text-muted'"
+        :aria-current="active ? 'true' : undefined"
         :data-nav-key="id"
         :data-nav-kind="kind"
         @click="emit('activate', id)"

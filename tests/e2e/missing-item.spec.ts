@@ -43,15 +43,15 @@ test("disable layer → missing marker → re-enable restores the item", async (
   // Disable the layer via the nav checkbox.
   await toggleLayerCheckbox(layer);
 
-  // The slot should now show a red border (invalid) indicating the missing item.
+  // The slot now flags the missing item as invalid.
   const headSlot = slotRow(page, "gear.head");
   const input = pickerInput(headSlot);
-  await expect(input).toHaveClass(/border-danger/);
+  await expect(input).toHaveAttribute("aria-invalid", "true");
 
   // Re-enable the layer.
   await toggleLayerCheckbox(layer);
 
-  // The slot should be restored (no error border, value back).
-  await expect(input).not.toHaveClass(/border-danger/);
+  // The slot is restored: valid again, value back.
+  await expect(input).not.toHaveAttribute("aria-invalid");
   await expect(pickerInput(headSlot)).toHaveValue(UNIQUE_ITEM);
 });

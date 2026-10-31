@@ -90,6 +90,19 @@ const inputDiffs = computed(() => props.diff?.inputs ?? []);
 const paramDiffers = computed(() => props.diff?.param);
 const otherParamLabel = computed(() => props.diff?.otherParamLabel);
 
+// The row tints and carries `data-diff` while highlighting is on and anything here differs.
+const showsDiff = computed(
+  () =>
+    props.highlightDiff &&
+    !!(
+      choiceDiffers.value ||
+      inputDiffs.value.length > 0 ||
+      paramDiffers.value ||
+      toggleDiffers.value ||
+      (bonusDiffs.value?.length ?? 0) > 0
+    ),
+);
+
 const emit = defineEmits<{
   /** `itemId` is set only for a point_assignment row's per-item hover target
    *  (PointAssignmentInput.vue's own `item-enter`), forwarded straight through. */
@@ -203,14 +216,10 @@ useCursorRowKeys(anchor, {
         ? 'border-b-0'
         : 'border-b border-line/45 last:border-b-0',
       isHovered && 'is-hovered bg-accent-soft/40',
-      highlightDiff &&
-        (choiceDiffers ||
-          inputDiffs.length > 0 ||
-          paramDiffers ||
-          toggleDiffers ||
-          (bonusDiffs?.length ?? 0) > 0) &&
-        'is-diff bg-diff/20',
+      showsDiff && 'is-diff bg-diff/20',
     ]"
+    :data-diff="showsDiff || undefined"
+    :data-disabled="disabled || undefined"
     :data-cursor-key="'slot:' + slotDef.id"
     @mouseenter="emit('enter', $event)"
     @mouseleave="emit('leave')"

@@ -29,6 +29,7 @@ defineProps<{
         : 'border-b border-line/45 last:border-b-0',
       highlightDiff && 'is-diff bg-diff/20',
     ]"
+    :data-diff="highlightDiff || undefined"
     :data-testid="'compare-only:' + slotDef.id"
   >
     <NestGuide v-if="nest" :nest="nest" />

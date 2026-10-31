@@ -82,7 +82,7 @@ test("deleting a folder takes its builds with it when the box stays ticked", asy
     folderRow(page, "Folder 1"),
     "into",
   );
-  await expect(buildRowNesting(page, "Build 2")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 2")).toHaveAttribute("data-nested");
 
   const menu = await openRowMenu(folderRow(page, "Folder 1"));
   await menu.getByRole("button", { name: "Delete folder" }).click();

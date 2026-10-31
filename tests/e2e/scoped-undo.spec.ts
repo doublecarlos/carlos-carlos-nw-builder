@@ -18,6 +18,7 @@ import {
   buildRow,
   confirmDangerAction,
   openRowMenu,
+  navName,
 } from "./support/nav";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
@@ -53,7 +54,10 @@ test("Ctrl+Z with a nav row focused restores a deleted build", async ({
   await focusNavRow(page, "Build 1");
   await page.keyboard.press("Control+z");
   await expect(buildRow(page, "Build 2")).toBeVisible();
-  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 });
 
 test("Ctrl+Z in the editor reverts the slot and keeps the build selected", async ({
@@ -61,7 +65,10 @@ test("Ctrl+Z in the editor reverts the slot and keeps the build selected", async
 }) => {
   await openBuilder(page);
   await addBuild(page);
-  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(HEAD_ITEM);
@@ -75,7 +82,10 @@ test("Ctrl+Z in the editor reverts the slot and keeps the build selected", async
 
   await page.keyboard.press("Control+z");
   await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue("");
-  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
   await expect(buildRow(page, "Build 1")).toBeVisible();
 });
 

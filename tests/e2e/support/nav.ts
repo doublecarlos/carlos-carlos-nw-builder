@@ -10,10 +10,15 @@ export function folderRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--folder").filter({ hasText: name });
 }
 
-/** The build row itself. Nested rows carry `nav-row--nested` alongside `nav-row--build`,
- *  which is what tests assert on to tell a foldered build from a top-level one. */
+/** The build row itself. Rows inside a folder carry `data-nested`, which tells a foldered
+ *  build from a top-level one. */
 export function buildRowNesting(page: Page, name: string): Locator {
   return buildRow(page, name);
+}
+
+/** A row's name button, which carries `aria-current` while the row is the selected one. */
+export function navName(row: Locator): Locator {
+  return row.locator(".nav-name");
 }
 
 export function layerRow(page: Page, name: string): Locator {

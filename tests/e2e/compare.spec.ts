@@ -39,12 +39,12 @@ test("highlighting a diff and applying it copies the compare build's choice", as
   await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
   const row = slotRow(page, "gear.head");
-  await expect(row).toHaveClass(/is-diff/);
+  await expect(row).toHaveAttribute("data-diff");
   await expect(row.locator(".slot-diff-note")).toContainText(HEAD_ITEM);
 
   await row.getByRole("button", { name: "apply" }).click();
   await expect(pickerInput(row)).toHaveValue(HEAD_ITEM);
-  await expect(row).not.toHaveClass(/is-diff/);
+  await expect(row).not.toHaveAttribute("data-diff");
 });
 
 test("only showing changes is reported in the filter bar and cleared with the filters", async ({
@@ -142,7 +142,7 @@ test.describe("build_parameter compare diff apply", () => {
     );
 
     const row = slotRow(page, "options.role");
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
 
     // The diff note should show build 1's value and have an apply button
     await expect(row.locator(".slot-diff-note")).toContainText("Tank");
@@ -170,7 +170,7 @@ test.describe("build_parameter compare diff apply", () => {
     await parkCursorOnRow(page, "options.role");
 
     const row = slotRow(page, "options.role");
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
     await expect(row.getByRole("button", { name: "apply" })).toBeVisible();
 
     // Click apply
@@ -178,7 +178,7 @@ test.describe("build_parameter compare diff apply", () => {
 
     // Should now match the compare build's value
     await expect(row.getByTestId("picker-input")).toHaveValue("Tank");
-    await expect(row).not.toHaveClass(/is-diff/);
+    await expect(row).not.toHaveAttribute("data-diff");
   });
 });
 
@@ -220,7 +220,7 @@ test.describe("point_assignment compare diff apply", () => {
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
     const row = slotRow(page, SLOT_ID);
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
     await expect(row.locator(".slot-diff-note")).toContainText("Power 1");
     await expect(row.getByRole("button", { name: "apply" })).toBeVisible();
   });
@@ -238,11 +238,11 @@ test.describe("point_assignment compare diff apply", () => {
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
     const row = slotRow(page, SLOT_ID);
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
     await row.getByRole("button", { name: "apply" }).click();
 
     await expect(assignmentInput(row, POWER_ID)).toHaveValue("1");
-    await expect(row).not.toHaveClass(/is-diff/);
+    await expect(row).not.toHaveAttribute("data-diff");
   });
 });
 
@@ -415,13 +415,13 @@ test.describe("a bonus's dynamic stat in compare", () => {
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
     const row = slotRow(page, RING_SLOT);
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
     await expect(row.locator(".slot-diff-note")).toContainText(
       "Typed defense: Defense 120",
     );
 
     await row.getByRole("button", { name: "apply" }).click();
     await expect(row.getByTestId("slot-dynamic:defense")).toHaveValue("120");
-    await expect(row).not.toHaveClass(/is-diff/);
+    await expect(row).not.toHaveAttribute("data-diff");
   });
 });

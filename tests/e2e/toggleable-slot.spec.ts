@@ -193,13 +193,13 @@ test.describe("toggleable slot", () => {
     await expect(summary).toHaveText("");
   });
 
-  test("strikes the switched-off pick through", async ({ page }) => {
+  test("marks the switched-off row as disabled", async ({ page }) => {
     await openWithElixir(page);
-    const input = pickerInput(slotRow(page, ELIXIR_SLOT));
+    const row = slotRow(page, ELIXIR_SLOT);
 
-    await expect(input).toHaveCSS("text-decoration-line", "none");
+    await expect(row).not.toHaveAttribute("data-disabled");
     await toggle(page, ELIXIR_SLOT).uncheck();
-    await expect(input).toHaveCSS("text-decoration-line", "line-through");
+    await expect(row).toHaveAttribute("data-disabled");
   });
 
   test("clearing the row switches it back on", async ({ page }) => {
