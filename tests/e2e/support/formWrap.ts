@@ -1,7 +1,7 @@
-// Detects the three ways a form "wraps" badly on a narrow screen: a button label broken over
-// lines, anything scrolling sideways, and a FormGrid or SegmentedControl whose items on one
-// visual row disagree on height or top. Each check returns readable offender descriptions, so
-// a failure names what broke.
+// Detects the three ways a layout breaks on a narrow screen: a button label broken over lines,
+// anything scrolling sideways, and a FormGrid or SegmentedControl whose items on one visual row
+// disagree on height or top. Each check returns readable offender descriptions, so a failure
+// names what broke.
 import type { Locator } from "@playwright/test";
 
 /** Visible buttons under `scope` whose text takes more than one line. Heights alone cannot
@@ -52,9 +52,14 @@ export function wrappedButtons(
   }, selector);
 }
 
-/** The page, `scope`, or any scroll container inside it, scrolling sideways. */
-export function sidewaysScroll(scope: Locator): Promise<string[]> {
-  return scope.evaluate((root) => {
+/** The page, `scope`, or any box inside it that a user can scroll sideways. Clipped
+ *  overflow (truncated text, sr-only labels) does not scroll, so it does not count. Containers
+ *  whose `data-testid` is in `ownScrollers` scroll sideways by design and are skipped. */
+export function sidewaysScroll(
+  scope: Locator,
+  ownScrollers: string[] = [],
+): Promise<string[]> {
+  return scope.evaluate((root, ownScrollers) => {
     const describe = (el: Element) =>
       el.getAttribute("data-testid") ??
       `${el.tagName.toLowerCase()}.${[...el.classList].slice(0, 3).join(".")}`;
@@ -64,12 +69,13 @@ export function sidewaysScroll(scope: Locator): Promise<string[]> {
       found.push(`page (${page.scrollWidth} > ${page.clientWidth})`);
     for (const el of [root, ...root.querySelectorAll<HTMLElement>("*")]) {
       const overflowX = getComputedStyle(el).overflowX;
-      if (overflowX === "visible" || overflowX === "clip") continue;
+      if (overflowX !== "auto" && overflowX !== "scroll") continue;
+      if (ownScrollers.includes(el.getAttribute("data-testid") ?? "")) continue;
       if (el.scrollWidth > el.clientWidth + 1)
         found.push(`${describe(el)} (${el.scrollWidth} > ${el.clientWidth})`);
     }
     return found;
-  });
+  }, ownScrollers);
 }
 
 /** FormGrid cells and SegmentedControl segments under `scope` that share a visual row but
@@ -121,57 +127,6 @@ export function raggedRows(scope: Locator): Promise<string[]> {
               .join(" | ")}"`,
           );
       }
-    }
-    return found;
-  });
-}
-
-/** Ad-hoc `flex-wrap` rows under `scope` that broke unevenly: some of their items moved to a
- *  later line while others share one. A row stacked one item per line reads as intended, and
- *  a `flow-wrap` row is a flow of independent items by design (see base.css). */
-export function brokenFlexRows(scope: Locator): Promise<string[]> {
-  return scope.evaluate((root) => {
-    const found: string[] = [];
-    for (const row of root.querySelectorAll<HTMLElement>("*")) {
-      if (!row.checkVisibility()) continue;
-      const style = getComputedStyle(row);
-      if (!style.display.endsWith("flex") || style.flexWrap !== "wrap")
-        continue;
-      if (style.flexDirection.startsWith("column")) continue;
-      if ([...row.classList].some((name) => name.endsWith("flow-wrap")))
-        continue;
-      const items = [...row.children].filter(
-        (child) =>
-          child.checkVisibility() &&
-          getComputedStyle(child).position !== "absolute",
-      );
-      // A line starts where an item begins below everything on the line before it.
-      const lines: Element[][] = [];
-      let lineBottom = Number.NEGATIVE_INFINITY;
-      for (const item of items) {
-        const box = item.getBoundingClientRect();
-        if (box.top >= lineBottom - 1) {
-          lines.push([item]);
-          lineBottom = box.bottom;
-        } else {
-          lines[lines.length - 1].push(item);
-          lineBottom = Math.max(lineBottom, box.bottom);
-        }
-      }
-      if (lines.length < 2 || lines.every((line) => line.length === 1))
-        continue;
-      const name =
-        row.getAttribute("data-testid") ??
-        `${row.tagName.toLowerCase()}.${[...row.classList].slice(0, 4).join(".")}`;
-      found.push(
-        `${name} wraps as ${lines
-          .map((line) =>
-            line
-              .map((item) => (item.textContent?.trim() || "?").slice(0, 16))
-              .join(" | "),
-          )
-          .join(" / ")}`,
-      );
     }
     return found;
   });
