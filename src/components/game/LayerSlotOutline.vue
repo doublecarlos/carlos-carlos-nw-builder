@@ -27,10 +27,10 @@ import LayerListHeader from "./LayerListHeader.vue";
 import {
   dragSource,
   reorderIndex,
-  useDragHandle,
+  useDragHandles,
   useDropList,
-  type DragSource,
 } from "../../composables/useDragAndDrop";
+import { useKeyedCache } from "../../composables/useKeyedCache";
 import {
   buildOutline,
   filterOutline,
@@ -119,7 +119,6 @@ const slotPlaces = computed(() => {
 const draggingSlot = computed(() => dragSource.value?.kind === SLOT_KIND);
 
 const sectionsDrop = useDropList({
-  containerId: SECTIONS_CONTAINER,
   accepts: (source) =>
     source.kind === SECTION_KIND || source.kind === SLOT_KIND,
   onDrop: (source, index, zone) => {
@@ -144,47 +143,41 @@ const sectionsDrop = useDropList({
 });
 
 // One drop list per section, cached by id so a render doesn't rebuild its computeds.
-const slotDrops = new Map<string, ReturnType<typeof useDropList>>();
-function slotsDrop(sectionId: string) {
-  let list = slotDrops.get(sectionId);
-  if (!list) {
-    const containerId = slotsContainerId(sectionId);
-    list = useDropList({
-      containerId,
-      // The orphan bucket accepts no drops; it registers only to keep the markup uniform.
-      accepts: (source) => source.kind === SLOT_KIND && !!sectionId,
-      onDrop: (source, index) =>
-        emit("move", {
-          kind: "slot",
-          key: source.key,
-          sectionId,
-          index:
-            source.containerId === containerId
-              ? reorderIndex(source.index, index)
-              : index,
-        }),
-    });
-    slotDrops.set(sectionId, list);
-  }
-  return list;
-}
+const slotsDrop = useKeyedCache((sectionId: string) => {
+  const containerId = slotsContainerId(sectionId);
+  return useDropList({
+    // The orphan bucket accepts no drops; it registers only to keep the markup uniform.
+    accepts: (source) => source.kind === SLOT_KIND && !!sectionId,
+    onDrop: (source, index) =>
+      emit("move", {
+        kind: "slot",
+        key: source.key,
+        sectionId,
+        index:
+          source.containerId === containerId
+            ? reorderIndex(source.index, index)
+            : index,
+      }),
+  });
+});
 
+const dragHandle = useDragHandles();
 function sectionHandleProps(key: string, index: number) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: SECTION_KIND,
     containerId: SECTIONS_CONTAINER,
     key,
     index,
-  }));
+  });
 }
 
 function slotHandleProps(key: string, sectionId: string, index: number) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: SLOT_KIND,
     containerId: slotsContainerId(sectionId),
     key,
     index,
-  }));
+  });
 }
 
 interface SlotRowView {

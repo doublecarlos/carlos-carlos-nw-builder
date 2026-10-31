@@ -18,10 +18,10 @@ import { matchesQuery } from "../lib/text-filter";
 import * as navHistory from "../stores/navHistory";
 import {
   dragSource,
-  useDragHandle,
+  useDragHandles,
   useDropList,
-  type DragSource,
 } from "../composables/useDragAndDrop";
+import { useKeyedCache } from "../composables/useKeyedCache";
 import type { Build, BuildFolder, BuildNavEntry } from "../types";
 
 const props = defineProps<{
@@ -113,7 +113,6 @@ function isOpen(folder: BuildFolder) {
 const canDropInto = computed(() => dragSource.value?.kind === "build");
 
 const rootDrop = useDropList({
-  containerId: "nav-builds",
   accepts: (source) => source.kind === "build" || source.kind === "folder",
   onDrop: (source, index, zone) => {
     if (zone === "into") {
@@ -129,36 +128,30 @@ const rootDrop = useDropList({
 
 // One drop list per folder, cached by id. `useDropList` owns a few `computed`s, so a cache
 // avoids rebuilding them every render. Entries for removed folders die with the component.
-const folderDrops = new Map<string, ReturnType<typeof useDropList>>();
-function folderDrop(id: string) {
-  let list = folderDrops.get(id);
-  if (!list) {
-    list = useDropList({
-      containerId: `nav-folder:${id}`,
-      accepts: (source) => source.kind === "build",
-      onDrop: (source, index) => emit("reorder", source.key, index, id),
-    });
-    folderDrops.set(id, list);
-  }
-  return list;
-}
+const folderDrop = useKeyedCache((id: string) =>
+  useDropList({
+    accepts: (source) => source.kind === "build",
+    onDrop: (source, index) => emit("reorder", source.key, index, id),
+  }),
+);
 
+const dragHandle = useDragHandles();
 function buildHandleProps(id: string, index: number, folderId: string | null) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "build",
     containerId: folderId ? `nav-folder:${folderId}` : "nav-builds",
     key: id,
     index,
-  }));
+  });
 }
 
 function folderHandleProps(id: string, index: number) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "folder",
     containerId: "nav-builds",
     key: id,
     index,
-  }));
+  });
 }
 </script>
 

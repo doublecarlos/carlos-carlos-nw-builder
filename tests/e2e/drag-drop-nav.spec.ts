@@ -213,7 +213,7 @@ test("a plain click on a build row still selects it, and so does a small wiggle"
     "true",
   );
 
-  // A couple of px of jitter stays under useDragHandle's move threshold, so this is a click.
+  // A couple of px of jitter stays under the drag handle's move threshold, so this is a click.
   const box = await requireBox(buildRow(page, "Build 2"));
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;

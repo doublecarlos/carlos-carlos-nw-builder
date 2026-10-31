@@ -11,11 +11,7 @@ import NavRow from "./NavRow.vue";
 import DropIndicator from "./ui/DropIndicator.vue";
 
 import { matchesQuery } from "../lib/text-filter";
-import {
-  useDragHandle,
-  useDropList,
-  type DragSource,
-} from "../composables/useDragAndDrop";
+import { useDragHandles, useDropList } from "../composables/useDragAndDrop";
 import type { Layer } from "../types";
 
 const props = defineProps<{
@@ -62,17 +58,17 @@ const filteredLayers = computed(() => {
 });
 
 const dropList = useDropList({
-  containerId: "nav-layers",
   accepts: (source) => source.kind === "layer",
   onDrop: (source, index) => emit("reorder", source.key, index),
 });
+const dragHandle = useDragHandles();
 function dragHandleProps(id: string, index: number) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "layer",
     containerId: "nav-layers",
     key: id,
     index,
-  }));
+  });
 }
 </script>
 

@@ -48,11 +48,11 @@ import type { BonusOption } from "../../types";
 import type { InputOption } from "../../lib/bonus-draft";
 import {
   dragSource,
-  useDragHandle,
+  useDragHandles,
   useDropList,
   reorderIndex,
-  type DragSource,
 } from "../../composables/useDragAndDrop";
+import { useKeyedCache } from "../../composables/useKeyedCache";
 
 /** Where one row currently lives, for cross-tree drag-and-drop transfers. `treeId` picks
  *  which grant/variant condition tree `path` is root-relative to (see condition-draft.ts's
@@ -187,32 +187,28 @@ function moveRowTo(index: number, toIndex: number) {
 // that branch's path.
 const containerId = computed(() => `${props.treeId}:${props.path.join(".")}`);
 
-// Built once per rendered list, not once per template read (this is read from three spots).
-// The `computed` stays correct even if `containerId` later changes, since the only reactive
-// read here is `containerId.value` (a sibling group dragged past this one shifts `path`).
-const rowsDropList = computed(() => {
-  const id = containerId.value;
-  return useDropList({
-    containerId: id,
-    accepts: (source) => source.kind === "condition-row",
-    onDrop: (source, index) => {
-      if (source.containerId === id) {
-        moveRowTo(source.index, index);
-        return;
-      }
-      const from = source.data as ConditionTreeLocation | undefined;
-      if (!from) return;
-      // Refuse to drop a group onto (or into) its own branch, which would nest it inside itself.
-      if (isDescendantPath(from.path, props.path)) return;
-      emit("transfer", {
-        source: from,
-        target: { treeId: props.treeId, path: [...props.path, index] },
-      });
-    },
-  });
+// `containerId` is read at drop time, since a sibling group dragged past this one shifts
+// `path` while the list stays the same.
+const rowsDropList = useDropList({
+  accepts: (source) => source.kind === "condition-row",
+  onDrop: (source, index) => {
+    if (source.containerId === containerId.value) {
+      moveRowTo(source.index, index);
+      return;
+    }
+    const from = source.data as ConditionTreeLocation | undefined;
+    if (!from) return;
+    // Refuse to drop a group onto (or into) its own branch, which would nest it inside itself.
+    if (isDescendantPath(from.path, props.path)) return;
+    emit("transfer", {
+      source: from,
+      target: { treeId: props.treeId, path: [...props.path, index] },
+    });
+  },
 });
+const dragHandle = useDragHandles();
 function dragHandleProps(index: number) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "condition-row",
     containerId: containerId.value,
     key: props.rows[index]?.uid ?? String(index),
@@ -221,7 +217,7 @@ function dragHandleProps(index: number) {
       treeId: props.treeId,
       path: [...props.path, index],
     } satisfies ConditionTreeLocation,
-  }));
+  });
 }
 function forwardTransfer(payload: {
   source: ConditionTreeLocation;
@@ -299,65 +295,54 @@ function moveBranchTo(row: ConditionRow, index: number, toIndex: number) {
 // exactly one branch (see newGroupRow), so it's never a valid transfer target. It is excluded
 // via `accepts` rather than left to fail inside `onDrop`, so it also never shows as a target.
 //
-// One `useDropList` per group row, cached by uid (a map, since several group rows can exist
-// at once). `replaceRowAndUpdateBranches` replaces a group row with a new object, same uid, on
+// One `useDropList` per group row, cached by uid, since several group rows can exist at
+// once. `replaceRowAndUpdateBranches` replaces a group row with a new object, same uid, on
 // every branch edit, so the closures below re-resolve the row by uid on each access rather
 // than closing over the reference that was live when the cache entry was built.
-const branchDropLists = new Map<string, ReturnType<typeof useDropList>>();
 function rowByUid(uid: string): ConditionRow | undefined {
   return props.rows.find((r) => r.uid === uid);
 }
-function branchesDropList(row: ConditionRow) {
-  let list = branchDropLists.get(row.uid);
-  if (!list) {
-    const uid = row.uid;
-    const id = `branches:${props.treeId}:${uid}`;
-    list = useDropList({
-      containerId: id,
-      accepts: (source) =>
-        source.kind === "condition-branch" && rowByUid(uid)?.op !== "not",
-      onDrop: (source, index) => {
-        const current = rowByUid(uid);
-        if (!current) return;
-        const rowIndex = props.rows.indexOf(current);
-        if (rowIndex === -1) return;
-        if (source.containerId === id) {
-          moveBranchTo(current, source.index, index);
-          return;
-        }
-        const from = source.data as ConditionBranchTreeLocation | undefined;
-        if (!from) return;
-        const targetGroupPath = [...props.path, rowIndex];
-        // Refuse to drop a branch into (or as a branch of) a group nested inside its own
-        // content, which would nest it inside itself. `from.groupPath`/`branchIndex` together
-        // address the branch's own rows-list, the same way a dragged row's `path` does.
-        if (
-          isDescendantPath(
-            [...from.groupPath, from.branchIndex],
-            targetGroupPath,
-          )
-        )
-          return;
-        emit("transferBranch", {
-          source: from,
-          target: {
-            treeId: props.treeId,
-            groupPath: targetGroupPath,
-            branchIndex: index,
-          },
-        });
-      },
-    });
-    branchDropLists.set(uid, list);
-  }
-  return list;
-}
+const branchDropList = useKeyedCache((uid: string) => {
+  const id = `branches:${props.treeId}:${uid}`;
+  return useDropList({
+    accepts: (source) =>
+      source.kind === "condition-branch" && rowByUid(uid)?.op !== "not",
+    onDrop: (source, index) => {
+      const current = rowByUid(uid);
+      if (!current) return;
+      const rowIndex = props.rows.indexOf(current);
+      if (rowIndex === -1) return;
+      if (source.containerId === id) {
+        moveBranchTo(current, source.index, index);
+        return;
+      }
+      const from = source.data as ConditionBranchTreeLocation | undefined;
+      if (!from) return;
+      const targetGroupPath = [...props.path, rowIndex];
+      // Refuse to drop a branch into (or as a branch of) a group nested inside its own
+      // content, which would nest it inside itself. `from.groupPath`/`branchIndex` together
+      // address the branch's own rows-list, the same way a dragged row's `path` does.
+      if (
+        isDescendantPath([...from.groupPath, from.branchIndex], targetGroupPath)
+      )
+        return;
+      emit("transferBranch", {
+        source: from,
+        target: {
+          treeId: props.treeId,
+          groupPath: targetGroupPath,
+          branchIndex: index,
+        },
+      });
+    },
+  });
+});
 function branchDragHandleProps(
   row: ConditionRow,
   groupIndex: number,
   branchIndex: number,
 ) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "condition-branch",
     containerId: `branches:${props.treeId}:${row.uid}`,
     key: String(branchIndex),
@@ -367,7 +352,7 @@ function branchDragHandleProps(
       groupPath: [...props.path, groupIndex],
       branchIndex,
     } satisfies ConditionBranchTreeLocation,
-  }));
+  });
 }
 
 // Phone: summary lines, and one leaf at a time in the editor sheet.
@@ -551,10 +536,12 @@ function addFromMenu(what: "leaf" | "all" | "any" | "not") {
             /></IconButton>
           </div>
           <div
-            v-bind="branchesDropList(row).listProps()"
+            v-bind="branchDropList(row.uid).listProps()"
             class="relative flex flex-col divide-y divide-dashed divide-line"
           >
-            <DropIndicator :pos="branchesDropList(row).separatorStyle.value" />
+            <DropIndicator
+              :pos="branchDropList(row.uid).separatorStyle.value"
+            />
 
             <div
               v-for="(branch, bi) in row.branches"
@@ -566,7 +553,7 @@ function addFromMenu(what: "leaf" | "all" | "any" | "not") {
                   dragSource?.key === String(bi) &&
                   'is-drag-source opacity-50',
               ]"
-              v-bind="branchesDropList(row).rowProps(bi)"
+              v-bind="branchDropList(row.uid).rowProps(bi)"
             >
               <div
                 v-if="row.op !== 'not'"

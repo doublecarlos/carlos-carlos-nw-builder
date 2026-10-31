@@ -7,13 +7,15 @@
 //
 // Each drop zone gets an `onDrop` callback and the call site mutates the array. Drag state is
 // a module-scope singleton so cross-component drops work without a common ancestor, with a
-// `Map<containerId, ListEntry>` replacing native DnD's event bubbling. A nested ConditionRows
-// branch supplies its own useDropList, even while empty, so "drop into" needs no primitive.
+// registry of lists replacing native DnD's event bubbling. Every list instance has its own
+// owner token, which its list, tail and row attributes carry, so the DOM always resolves to
+// the instance that rendered it. A nested ConditionRows branch supplies its own useDropList,
+// even while empty, so "drop into" needs no primitive.
 //
 // Vitest has no DOM, so only the pure helpers below are unit tested; DOM access is deferred to
 // the pointerdown handler and its listeners. Playwright covers the rest.
 
-import { computed, reactive, type ComponentPublicInstance } from "vue";
+import { computed, getCurrentScope, onScopeDispose, reactive } from "vue";
 
 export interface DragSource {
   /** Distinguishes payload shapes so a drop zone can reject sources it doesn't understand
@@ -56,14 +58,14 @@ interface RowRect {
 type Resolved = { zone: "gap"; gap: number } | { zone: "into"; index: number };
 
 interface ListEntry {
-  containerId: string;
-  el: HTMLElement;
+  owner: string;
   accepts: (source: DragSource) => boolean;
   onDrop: (source: DragSource, index: number, zone: DropZone) => void;
 }
 
 interface DragTarget {
-  containerId: string;
+  /** Owner token of the list the pointer resolved to. */
+  owner: string;
   /** Real (unfiltered) row indices, resolved against this list's own DOM rows. */
   resolved: Resolved;
   /** Separator position in the target list's own coordinate space, valid only when
@@ -77,7 +79,9 @@ interface DragBusState {
 }
 
 const state = reactive<DragBusState>({ source: null, target: null });
+/** Lists by owner token, registered for the life of the scope that built them. */
 const registry = new Map<string, ListEntry>();
+let nextOwner = 0;
 
 /** What is currently in flight, for call sites whose affordances depend on it. */
 export const dragSource = computed<DragSource | null>(() => state.source);
@@ -155,23 +159,26 @@ function findScrollableAncestor(el: HTMLElement | null): HTMLElement | null {
   return null;
 }
 
-/** Reads `entry`'s rows from the DOM and resolves the pointer against them. Rects are read per
- *  move, since autoscroll changes them. */
-function resolveInList(entry: ListEntry, x: number, y: number): DragTarget {
+/** Reads the rows of `entry`'s list element `listEl` from the DOM and resolves the pointer
+ *  against them. Rects are read per move, since autoscroll changes them. */
+function resolveInList(
+  entry: ListEntry,
+  listEl: HTMLElement,
+  x: number,
+  y: number,
+): DragTarget {
   const rowEls = Array.from(
-    entry.el.querySelectorAll<HTMLElement>(
-      `[data-drop-of="${entry.containerId}"]`,
-    ),
+    listEl.querySelectorAll<HTMLElement>(`[data-drop-of="${entry.owner}"]`),
   );
   // A row's element can sit inside a wrapper that is the root's direct child. Walk up to that
   // wrapper to compare it with the root's other direct children below.
   function ownDirectChild(el: HTMLElement): HTMLElement {
     let node = el;
-    while (node.parentElement && node.parentElement !== entry.el)
+    while (node.parentElement && node.parentElement !== listEl)
       node = node.parentElement;
     return node;
   }
-  const directChildren = Array.from(entry.el.children);
+  const directChildren = Array.from(listEl.children);
   const rects: RowRect[] = rowEls.map((el, i) => {
     const rect = el.getBoundingClientRect();
     // A folder renders its children list as a further direct child after its row. Extend
@@ -198,7 +205,7 @@ function resolveInList(entry: ListEntry, x: number, y: number): DragTarget {
 
   if (resolved.zone === "into") {
     return {
-      containerId: entry.containerId,
+      owner: entry.owner,
       resolved: { zone: "into", index: indices[resolved.index] },
       separatorTop: 0,
     };
@@ -210,13 +217,13 @@ function resolveInList(entry: ListEntry, x: number, y: number): DragTarget {
       : indices.length
         ? indices[indices.length - 1] + 1
         : 0;
-  const listRect = entry.el.getBoundingClientRect();
-  const lastChild = entry.el.lastElementChild;
+  const listRect = listEl.getBoundingClientRect();
+  const lastChild = listEl.lastElementChild;
   const listContentBottom = lastChild
     ? lastChild.getBoundingClientRect().bottom
     : listRect.bottom;
   return {
-    containerId: entry.containerId,
+    owner: entry.owner,
     resolved: { zone: "gap", gap: realGap },
     // Round to a whole pixel, or a 2px line at a fractional `top` anti-aliases across rows.
     separatorTop: Math.round(
@@ -240,10 +247,9 @@ function hitTest(x: number, y: number) {
   while (node) {
     const listEl: HTMLElement | null = node.closest("[data-drop-list]");
     if (!listEl) break;
-    const containerId = listEl.dataset.dropList!;
-    const entry = registry.get(containerId);
+    const entry = registry.get(listEl.dataset.dropList!);
     if (entry && entry.accepts(source)) {
-      resolved = resolveInList(entry, x, y);
+      resolved = resolveInList(entry, listEl, x, y);
       break;
     }
     node = listEl.parentElement;
@@ -251,7 +257,11 @@ function hitTest(x: number, y: number) {
   if (!resolved) {
     const tailEl: HTMLElement | null = hit?.closest("[data-drop-tail]") ?? null;
     const entry = tailEl && registry.get(tailEl.dataset.dropTail!);
-    if (entry && entry.accepts(source)) resolved = resolveInList(entry, x, y);
+    const listEl =
+      entry &&
+      document.querySelector<HTMLElement>(`[data-drop-list="${entry.owner}"]`);
+    if (entry && listEl && entry.accepts(source))
+      resolved = resolveInList(entry, listEl, x, y);
   }
   state.target = resolved;
 }
@@ -356,7 +366,7 @@ function endDrag() {
   state.source = null;
   state.target = null;
   if (!source || !target) return;
-  const entry = registry.get(target.containerId);
+  const entry = registry.get(target.owner);
   if (!entry) return;
   if (target.resolved.zone === "into") {
     entry.onDrop(source, target.resolved.index, "into");
@@ -378,7 +388,7 @@ function cancelDrag() {
  *  `pointerdown` only arms a drag; it starts after `DRAG_THRESHOLD` px, so a click or small
  *  wiggle still selects the row. Presses in an editable descendant or a `data-no-drag` element
  *  never arm. */
-export function useDragHandle(getSource: () => DragSource): DragHandleProps {
+function createDragHandle(getSource: () => DragSource): DragHandleProps {
   return {
     onPointerdown(event: PointerEvent) {
       if (event.button !== 0) return;
@@ -447,42 +457,53 @@ export function useDragHandle(getSource: () => DragSource): DragHandleProps {
   };
 }
 
-/** One reorderable list. `containerId` must be stable and unique per list instance. `accepts`
- *  usually checks `source.kind` and, for lists scoped to a parent (tiers/variants per grant),
- *  `source.containerId === containerId`. */
+/** Drag handles for a component's rows, built once in setup. A row passes its current source on
+ *  each render and gets the same handle object back while that source is unchanged, so a
+ *  re-render does not hand the row a new listener. */
+export function useDragHandles(): (source: DragSource) => DragHandleProps {
+  const handles = new Map<string, DragHandleProps>();
+  return (source) => {
+    const key = JSON.stringify(source);
+    let handle = handles.get(key);
+    if (!handle) {
+      handle = createDragHandle(() => source);
+      handles.set(key, handle);
+    }
+    return handle;
+  };
+}
+
+/** One reorderable list. `accepts` usually checks `source.kind` and, for lists scoped to a
+ *  parent (tiers/variants per grant), the source's `containerId`.
+ *
+ *  Registered until the calling scope is disposed, so build it in setup, or for a per-row list
+ *  inside the component's scope (`useKeyedCache`). */
 export function useDropList(options: {
-  containerId: string;
   accepts: (source: DragSource) => boolean;
   /** `zone` is `"into"` only for rows registered with `rowProps(i, { into: true })`; then
    *  `index` is that row's own index, not a gap. */
   onDrop: (source: DragSource, index: number, zone: DropZone) => void;
 }) {
-  function registerList(el: Element | ComponentPublicInstance | null) {
-    if (el) {
-      registry.set(options.containerId, {
-        containerId: options.containerId,
-        el: el as HTMLElement,
-        accepts: options.accepts,
-        onDrop: options.onDrop,
-      });
-    } else {
-      registry.delete(options.containerId);
-    }
-  }
+  const owner = `drop-${nextOwner++}`;
+  registry.set(owner, {
+    owner,
+    accepts: options.accepts,
+    onDrop: options.onDrop,
+  });
+  if (getCurrentScope()) onScopeDispose(() => registry.delete(owner));
+  else if (import.meta.env.DEV)
+    console.warn("useDropList outside an effect scope is never unregistered");
 
-  /** Bind on the list's root. Sets `data-drop-list` and registers the element so a hit inside
-   *  it resolves back to this list. */
+  /** Bind on the list's root. Sets `data-drop-list`, so a hit inside it resolves back to this
+   *  list. */
   function listProps() {
-    return {
-      "data-drop-list": options.containerId,
-      ref: registerList,
-    };
+    return { "data-drop-list": owner };
   }
 
   /** Bind on an element around the list whose empty space should drop into it: above the
    *  rows lands first, below them lands last. */
   function tailProps() {
-    return { "data-drop-tail": options.containerId };
+    return { "data-drop-tail": owner };
   }
 
   /** Bind on each row: `data-drop-row`, `data-drop-of`, and `data-drop-into` for an "into"
@@ -494,16 +515,14 @@ export function useDropList(options: {
   ): Record<string, string | undefined> {
     return {
       "data-drop-row": String(index),
-      "data-drop-of": options.containerId,
+      "data-drop-of": owner,
       "data-drop-into": opts?.into ? "" : undefined,
     };
   }
 
   /** True while this list is the resolved drop target. */
   const isActiveContainer = computed(
-    () =>
-      state.source !== null &&
-      state.target?.containerId === options.containerId,
+    () => state.source !== null && state.target?.owner === owner,
   );
 
   /** Resolved insertion gap (a real index in `0..size`) when the zone isn't `"into"`, else

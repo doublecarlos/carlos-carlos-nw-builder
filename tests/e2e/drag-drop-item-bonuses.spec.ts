@@ -1,6 +1,6 @@
 // End-to-end coverage for reordering an item's attached bonuses. Only attached bonuses are
 // reorderable (a pending, not-yet-saved one has no id to move), so this drives the shared
-// useDragHandle/useDropList wiring plus the up/down arrow buttons on the same list.
+// useDragHandles/useDropList wiring plus the up/down arrow buttons on the same list.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";

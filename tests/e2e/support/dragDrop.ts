@@ -44,7 +44,7 @@ async function point(target: Locator, edge: DragEdge) {
 }
 
 /** Starts a drag from `handle`, the element carrying the pointerdown binding. Presses its
- *  center, then moves past useDragHandle's move threshold to start the drag. */
+ *  center, then moves past the drag handle's move threshold to start the drag. */
 export async function beginDrag(handle: Locator): Promise<DragSession> {
   const page = handle.page();
   const box = await requireBox(handle);
@@ -53,7 +53,7 @@ export async function beginDrag(handle: Locator): Promise<DragSession> {
 
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  // Past useDragHandle's 4px move threshold, so this arms a real drag.
+  // Past the drag handle's 4px move threshold, so this arms a real drag.
   await page.mouse.move(startX, startY + 8, { steps: 2 });
 
   return {
