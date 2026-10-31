@@ -16,6 +16,7 @@ import {
   moveUp,
   recentlyDeletedHeader,
 } from "./support/nav";
+import { storedBuildOrder } from "./support/storage";
 
 // --- Builds -------------------------------------------------------------------------
 
@@ -119,9 +120,9 @@ test("Move up order survives a reload", async ({ page }) => {
 
   await moveUp(buildRow(page, "Build 2"));
 
-  // Wait for IDB write to complete before reload.
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(() => storedBuildOrder(page))
+    .toEqual(["Build 2", "Build 1"]);
 
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });

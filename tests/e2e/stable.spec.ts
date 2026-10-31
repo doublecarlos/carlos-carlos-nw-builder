@@ -729,8 +729,10 @@ test("a row carries its own combination beside its name", async ({ page }) => {
   await expect(mountRow).toContainText("universal");
 
   // Nothing pops up on hover any more.
+  await page.clock.install();
   await mountRow.getByText(MOUNT, { exact: true }).hover();
-  await page.waitForTimeout(600);
+  // Past any tooltip's opening delay.
+  await page.clock.fastForward(1000);
   await expect(page.getByTestId("tooltip")).toHaveCount(0);
 });
 

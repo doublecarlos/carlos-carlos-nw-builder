@@ -13,6 +13,7 @@ import {
   dropIndicators,
 } from "./support/nav";
 import { beginDrag, dragOnto, dropAt, requireBox } from "./support/dragDrop";
+import { storedBuildOrder } from "./support/storage";
 
 test("dragging a build row onto another reorders the build list", async ({
   page,
@@ -38,8 +39,9 @@ test("build drag order survives a reload", async ({ page }) => {
   await dragOnto(buildRow(page, "Build 1"), buildRow(page, "Build 2"));
   await expect(page.locator(".nav-row--build").nth(0)).toContainText("Build 2");
 
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(() => storedBuildOrder(page))
+    .toEqual(["Build 2", "Build 1"]);
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
 
