@@ -36,7 +36,7 @@
     <!-- Link previews. The URLs here are absolute on purpose: unfurlers fetch these tags out
          of context and many will not resolve a relative image against the page they came from,
          so a relative path costs the card its picture. Same origin as the canonical link above
-         and the Sitemap line in public/robots.txt; tests/unit/seo-metadata.spec.ts pins them
+         and the Sitemap line in public/robots.txt; tests/unit/static-files.spec.ts pins them
          to each other. -->
     <meta property="og:type" content="website" />
     <meta
@@ -87,7 +87,7 @@
     <!-- What a browser reads to offer "install": the app's name, its icons and the colors to
          paint the window chrome and the launch splash with. It is a plain JSON file with no
          room for comments of its own, so the reasoning for what is in it -- and the assertions
-         holding it to this head and to src/base.css -- live in tests/unit/manifest.spec.ts.
+         holding it to this head and to src/base.css -- live in tests/unit/static-files.spec.ts.
          The service worker precaches it along with everything else this page links to. -->
     <link rel="manifest" href="/manifest.webmanifest" />
 
