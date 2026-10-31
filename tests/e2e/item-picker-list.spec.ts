@@ -11,6 +11,7 @@ import {
   listAddButton,
 } from "./support/app";
 import { shippedItemName, shippedSlotLabel } from "./support/shippedData";
+import { storedBuilds } from "./support/storage";
 
 const LIST = "misc.misc";
 const LABEL = shippedSlotLabel(LIST);
@@ -66,9 +67,12 @@ test("an empty row survives a save and reload", async ({ page }) => {
   await addListRows(page, LIST, 3);
   await chooseItem(page, row(1), shippedItemName("vip-hp-bonus-self"));
 
-  // Wait for the IDB write to complete before reload.
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(async () => {
+      const [build] = await storedBuilds(page);
+      return [build?.listRows[LIST], build?.choices[row(1)]];
+    })
+    .toEqual([3, "vip-hp-bonus-self"]);
   await page.reload();
 
   await expect(slotRow(page, row(3))).toBeVisible();

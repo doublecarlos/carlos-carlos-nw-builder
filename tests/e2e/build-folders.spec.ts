@@ -14,6 +14,7 @@ import {
   renameViaSidebar,
 } from "./support/nav";
 import { beginDrag, dragOnto, dropAt, requireBox } from "./support/dragDrop";
+import { storedMeta } from "./support/storage";
 
 /** Drags a build row onto a folder header's middle band, which is "put it in this folder". */
 async function dropIntoFolder(
@@ -49,8 +50,11 @@ test("dragging a build onto a folder puts it inside, and it survives a reload", 
     /nav-row--nested/,
   );
 
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(async () =>
+      (await storedMeta(page))?.folders.map((f) => f.builds.length),
+    )
+    .toEqual([1]);
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
 
@@ -69,8 +73,9 @@ test("collapsing a folder hides its builds and the state survives a reload", asy
   await expect(buildRow(page, "Build 2")).toHaveCount(0);
   await expect(buildRow(page, "Build 1")).toBeVisible();
 
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(async () => (await storedMeta(page))?.folders.map((f) => f.collapsed))
+    .toEqual([true]);
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
 
