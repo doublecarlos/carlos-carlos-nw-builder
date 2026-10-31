@@ -780,11 +780,46 @@ function rowDataFor(slotId: string): SlotRowData {
 }
 
 function toggle(sectionId: string) {
+  if (expanded[sectionId] && !anyFilterActive.value) {
+    keepCollapsedInPlace(sectionEl(sectionId));
+  }
   expanded[sectionId] = !expanded[sectionId];
 }
 
 function setAll(open: boolean) {
+  if (!open && !anyFilterActive.value) keepCollapsedInPlace(stuckSectionEl());
   for (const section of db.value.sections) expanded[section.id] = open;
+}
+
+/** The section whose header is currently stuck at the top of the editor, if any. */
+function stuckSectionEl() {
+  const container = buildScrollEl.value;
+  if (!container) return null;
+  const top = container.getBoundingClientRect().top + container.clientTop;
+  for (const el of container.querySelectorAll<HTMLElement>(
+    "[data-section-id]",
+  )) {
+    const rect = el.getBoundingClientRect();
+    if (rect.top < top && rect.bottom > top) return el;
+  }
+  return null;
+}
+
+/** Collapsing a section whose header is stuck removes rows above the viewport, and the same
+ *  scrollTop would then land midway into a later section. Once collapsed, the section's top
+ *  is put back at the editor's top so the next section follows right below it. */
+function keepCollapsedInPlace(el: HTMLElement | null | undefined) {
+  const container = buildScrollEl.value;
+  if (!el || !container) return;
+  const offsetFromTop = () =>
+    el.getBoundingClientRect().top -
+    container.getBoundingClientRect().top -
+    container.clientTop;
+  if (offsetFromTop() >= 0) return;
+  cancelJumpScroll();
+  void nextTick(() => {
+    container.scrollTop += offsetFromTop();
+  });
 }
 
 /** What a brand-new item would need to become a candidate for this row: its `filter`, or its

@@ -79,6 +79,35 @@ test.describe("sticky section headers", () => {
       .evaluate((el) => getComputedStyle(el).paddingTop);
     expect(scrollerPadTop).toBe("0px");
   });
+
+  test("collapsing a section from its stuck header keeps your place", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await scrollSectionToTop(page, "boons");
+    await page
+      .getByTestId("editor-column")
+      .evaluate((el) => el.scrollBy(0, 400));
+    await expect.poll(() => headerInset(page, "boons")).toBe(0);
+
+    await headerRow(page, "boons").click();
+
+    // The same scrollTop would otherwise land midway into a later section. The collapsed
+    // header stays at the top (inside the section's border) and the next section starts
+    // right below it.
+    await expect.poll(() => headerInset(page, "boons")).toBeLessThanOrEqual(1);
+    expect(await headerInset(page, "boons")).toBeGreaterThanOrEqual(0);
+    const gap = await page.evaluate(() => {
+      const section = document.querySelector('[data-section-id="boons"]')!;
+      const next = section.nextElementSibling!;
+      return Math.round(
+        next.getBoundingClientRect().top -
+          section.getBoundingClientRect().bottom,
+      );
+    });
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThan(16);
+  });
 });
 
 test.describe("Mod+arrow section cursor", () => {
