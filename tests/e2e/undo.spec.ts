@@ -1,6 +1,7 @@
 // End-to-end coverage for undo/redo: edit a slot, undo, redo, and verify the undo/redo
 // button states follow along.
 import { test, expect, type Page } from "@playwright/test";
+import type { Item } from "../../src/types";
 import {
   openBuilder,
   chooseItem,
@@ -11,15 +12,18 @@ import {
   pickerInput,
   slotRow,
 } from "./support/app";
+import { TEST_HEAD, importTestHead } from "./support/testHead";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
-const ARMS_ITEM = "M28 Ultraviolet Elven Gloves";
+const HEAD_ITEM = TEST_HEAD.name;
+const ARMS: Item = { id: "test-arms", name: "Test Arms", filter: "gear_arms" };
+const ARMS_ITEM = ARMS.name;
 
 /** The About dialog is the simplest overlay to raise: one header button, no import wizard. */
 const aboutDialog = (page: Page) => page.getByTestId("about-dialog");
 
 test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await openBuilder(page);
+  await importTestHead(page);
   const undo = undoButton(page);
   const redo = redoButton(page);
 
@@ -45,6 +49,7 @@ test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
 // an undo.
 test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
   await openBuilder(page);
+  await importTestHead(page);
   const undo = undoButton(page);
   const redo = redoButton(page);
 
@@ -63,6 +68,7 @@ test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
 
 test.fixme("Ctrl+Y redoes after undo", async ({ page }) => {
   await openBuilder(page);
+  await importTestHead(page);
   const undo = undoButton(page);
   const redo = redoButton(page);
 
@@ -81,6 +87,7 @@ test.fixme("Ctrl+Y redoes after undo", async ({ page }) => {
 
 test("a modal blocks the undo shortcut", async ({ page }) => {
   await openBuilder(page);
+  await importTestHead(page);
   const undo = undoButton(page);
   const redo = redoButton(page);
 
@@ -111,6 +118,7 @@ test("an undo stack survives a reload in the middle of it", async ({
   page,
 }) => {
   await openBuilder(page);
+  await importTestHead(page, [ARMS]);
   const undo = undoButton(page);
   const redo = redoButton(page);
   const head = pickerInput(slotRow(page, "gear.head"));

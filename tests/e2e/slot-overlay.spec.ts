@@ -11,6 +11,7 @@ import {
 } from "./support/app";
 import { newInOutline, openSlotsTab } from "./support/layerEditor";
 import { addBuild, addLayer, layerRow } from "./support/nav";
+import { importTestCatalog } from "./support/testCatalog";
 
 /** Creates a layer, selects it, and opens the Slots tab. */
 async function openSlotsFor(page: Page) {
@@ -146,10 +147,18 @@ test("an item picker created in a layer offers its filter's items", async ({
 test("an item picker's default seeds a new build and comes back on clear", async ({
   page,
 }) => {
-  const RING = "M31 Sanguine Seal";
-  const OTHER_RING = "M31 Bloodlit Veil";
+  const RING = "Test Default Ring";
+  const OTHER_RING = "Test Other Ring";
   await openBuilder(page);
-  await openSlotsFor(page);
+  await importTestCatalog(page, {
+    items: [
+      { id: "test-default-ring", name: RING, filter: "gear_ring" },
+      { id: "test-other-ring", name: OTHER_RING, filter: "gear_ring" },
+    ],
+  });
+  // The slot goes in the layer the rings came in with.
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
+  await openSlotsTab(page);
 
   await newInOutline(page, "new-slot");
   await page.getByTestId("slot-label-input").fill("Spare Ring");

@@ -2,13 +2,33 @@
 // the item hover card, the bonus inspector and the stat source card.
 import { test, expect } from "@playwright/test";
 import { openBuilder, chooseItem } from "./support/app";
+import { importTestCatalog } from "./support/testCatalog";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ID = "test-ca-head";
+const HEAD_ITEM = "Test CA Head";
+const BONUS_ID = "test-ca-head-bonus";
 
 test("the bonus inspector renders a granted stat as a shared row", async ({
   page,
 }) => {
   await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: HEAD_ID,
+        name: HEAD_ITEM,
+        filter: "gear_head",
+        bonuses: [BONUS_ID],
+      },
+    ],
+    bonuses: [
+      {
+        id: BONUS_ID,
+        name: "Test CA Head Bonus",
+        grants: [{ stats: { ca_p: 0.1 } }],
+      },
+    ],
+  });
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await page.getByRole("button", { name: /^Bonuses/ }).click();
   // The active group sorts last, and the equipped item's one bonus grants Combat Advantage.

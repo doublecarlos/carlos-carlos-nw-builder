@@ -13,8 +13,32 @@ import {
   sidewaysScroll,
   wrappedButtons,
 } from "../support/formWrap";
+import { importTestCatalog } from "../support/testCatalog";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ITEM = "Test Head With A Long Enough Name To Wrap";
+
+/** A head with a long name, stats and a bonus, so its card and the stats have content. */
+const importHead = (page: Page) =>
+  importTestCatalog(page, {
+    items: [
+      {
+        id: "test-layout-head",
+        name: HEAD_ITEM,
+        filter: "gear_head",
+        strike: 1000,
+        forte: 1000,
+        combined_rating: 1000,
+        bonuses: ["test-layout-head-bonus"],
+      },
+    ],
+    bonuses: [
+      {
+        id: "test-layout-head-bonus",
+        name: "Test Layout Head Bonus",
+        grants: [{ stats: { ca_p: 0.1 } }],
+      },
+    ],
+  });
 
 const form = (page: Page) => page.getByTestId("layer-form-pane");
 
@@ -70,6 +94,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
 
     test("build editor, its menus and the item card", async ({ page }) => {
       await openBuilder(page);
+      await importHead(page);
       await chooseItem(page, "gear.head", HEAD_ITEM);
       expect(
         await offenders(page.getByTestId("editor-pane")),
@@ -113,6 +138,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
 
     test("stats pane", async ({ page }) => {
       await openBuilder(page);
+      await importHead(page);
       await chooseItem(page, "gear.head", HEAD_ITEM);
       await page.getByTestId("pane-stats").click();
       const stats = page.getByTestId("stat-panel-column");

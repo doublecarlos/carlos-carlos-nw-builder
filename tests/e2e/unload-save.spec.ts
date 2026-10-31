@@ -1,7 +1,8 @@
 // Edits still waiting on the save debounce are written out when the page goes away.
 import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";
-import { addLayer, buildRow, layerRow, renameViaSidebar } from "./support/nav";
+import { buildRow, layerRow, renameViaSidebar } from "./support/nav";
+import { TEST_HEAD, importTestHead } from "./support/testHead";
 
 test("a rename right before reload survives it", async ({ page }) => {
   await openBuilder(page);
@@ -14,11 +15,11 @@ test("a rename right before reload survives it", async ({ page }) => {
 });
 
 test("an item edit right before reload survives it", async ({ page }) => {
-  const item = "M29 Enchanted Depthweave Cap";
+  const item = TEST_HEAD.name;
   const renamed = `${item} (renamed)`;
   await openBuilder(page);
-  await addLayer(page);
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await importTestHead(page);
+  await layerRow(page, "Test head (imported)").locator(".nav-name").click();
   await page.locator(".editor-search").fill(item);
   await page.locator(".editor-row").filter({ hasText: item }).first().click();
   const nameInput = page.getByTestId("item-name-input");
