@@ -1,6 +1,7 @@
 // Shared helpers for Nav.vue's sidebar -- build/layer rows, menu helpers, filter, and
 // recently deleted.
 import { expect, type Locator, type Page } from "@playwright/test";
+import { openBuilder } from "./app";
 
 export function buildRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--build").filter({ hasText: name });
@@ -132,4 +133,24 @@ export async function restoreTrash(page: Page) {
     .getByRole("button", { name: "Restore" })
     .first()
     .click();
+}
+
+/** Opens the nav drawer below the desktop breakpoint, unless it is already open. */
+export async function openDrawer(page: Page) {
+  const drawer = page.getByTestId("nav-drawer");
+  if (!(await drawer.isVisible()))
+    await page.getByTestId("header-nav-toggle").click();
+  await expect(drawer).toBeVisible();
+}
+
+/** From a fresh app below the desktop breakpoint: adds a layer through the drawer and opens
+ *  its editor on the entry list. */
+export async function openNewLayer(page: Page) {
+  await openBuilder(page);
+  await openDrawer(page);
+  await addLayer(page);
+  // Adding a layer may close the drawer behind it.
+  await openDrawer(page);
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await expect(page.getByTestId("layer-entries-column")).toBeVisible();
 }

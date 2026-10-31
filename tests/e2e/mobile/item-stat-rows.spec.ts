@@ -1,12 +1,10 @@
 // The item form's stat rows on a phone: each row is a card of two lines, the picker on the
-// first and the value beside the Add/Remove pair on the second, and nothing scrolls sideways.
+// first and the value beside the Add/Remove pair on the second. Fit at phone widths is checked
+// in layout-sweep.spec.ts.
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { openBuilder, pickerScreen } from "../support/app";
-import { addLayer, confirmDialog, layerRow } from "../support/nav";
-import {
-  MIN_SUPPORTED_WIDTH,
-  expectNoHorizontalScroll,
-} from "../support/viewport";
+import { pickerScreen } from "../support/app";
+import { confirmDialog, openNewLayer } from "../support/nav";
+import { MIN_SUPPORTED_WIDTH } from "../support/viewport";
 
 const form = (page: Page) => page.getByTestId("layer-form-pane");
 /** Filled rows only: the empty state reuses the row class for its lone Add. */
@@ -16,12 +14,7 @@ const dynamicRows = (page: Page) =>
   form(page).locator(".dynamic-stat-row[data-testid=repeatable-row]");
 
 async function openNewItem(page: Page) {
-  await openBuilder(page);
-  await page.getByTestId("header-nav-toggle").click();
-  await addLayer(page);
-  if (!(await page.getByTestId("nav-drawer").isVisible()))
-    await page.getByTestId("header-nav-toggle").click();
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await openNewLayer(page);
   await page.getByTestId("new-item").tap();
   await page.getByTestId("show-all-fields").tap();
 }
@@ -44,48 +37,38 @@ async function addRows(rows: Locator, addLabel: string, count: number) {
   await expect(rows).toHaveCount(count);
 }
 
-/** The card's first line holds the picker, and the value and Add/Remove pair sit below it. */
-async function expectCard(row: Locator) {
+/** Where a row's parts sit: a two-line card has the picker inset on its first line, and the
+ *  value and Add/Remove pair below it. */
+async function cardLayout(row: Locator) {
   const card = await box(row);
   const lead = await box(row.getByTestId("repeatable-row-lead"));
   const rest = await box(row.getByTestId("repeatable-row-rest"));
   const actions = await box(row.getByTestId("repeatable-row-actions"));
-
-  expect(lead.x).toBeGreaterThan(card.x);
-  expect(rest.y).toBeGreaterThanOrEqual(lead.y + lead.height);
-  expect(actions.y).toBeGreaterThanOrEqual(lead.y + lead.height);
-  return { card };
+  const leadBottom = lead.y + lead.height;
+  return {
+    leadInset: lead.x > card.x,
+    restBelowLead: rest.y >= leadBottom,
+    actionsBelowLead: actions.y >= leadBottom,
+  };
 }
 
-async function expectFits(page: Page) {
-  await expectNoHorizontalScroll(page);
-  const { scrollWidth, clientWidth } = await form(page).evaluate((el) => ({
-    scrollWidth: el.scrollWidth,
-    clientWidth: el.clientWidth,
-  }));
-  expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
-}
+const TWO_LINE_CARD = {
+  leadInset: true,
+  restBelowLead: true,
+  actionsBelowLead: true,
+};
 
 for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
   test(`stat rows are two-line cards at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
     await openNewItem(page);
     await addRows(statRows(page), "Add stat", 3);
-
-    const cards = [];
     for (let i = 0; i < 3; i++)
-      cards.push(await expectCard(statRows(page).nth(i)));
-    for (let i = 1; i < 3; i++) {
-      // Cards stand apart rather than touching.
-      expect(cards[i]!.card.y).toBeGreaterThan(
-        cards[i - 1]!.card.y + cards[i - 1]!.card.height,
-      );
-    }
-    await expectFits(page);
+      expect(await cardLayout(statRows(page).nth(i))).toEqual(TWO_LINE_CARD);
 
     await addRows(dynamicRows(page), "Add dynamic stat", 2);
-    for (let i = 0; i < 2; i++) await expectCard(dynamicRows(page).nth(i));
-    await expectFits(page);
+    for (let i = 0; i < 2; i++)
+      expect(await cardLayout(dynamicRows(page).nth(i))).toEqual(TWO_LINE_CARD);
   });
 }
 
@@ -149,12 +132,7 @@ test("removing a stat card drops that row and keeps the others", async ({
 
 test("a tablet keeps the stat rows on one line", async ({ page }) => {
   await page.setViewportSize({ width: 820, height: 1180 });
-  await openBuilder(page);
-  await page.getByTestId("header-nav-toggle").click();
-  await addLayer(page);
-  if (!(await page.getByTestId("nav-drawer").isVisible()))
-    await page.getByTestId("header-nav-toggle").click();
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await openNewLayer(page);
   await page.getByTestId("new-item").click();
   await addRows(statRows(page), "Add stat", 1);
 

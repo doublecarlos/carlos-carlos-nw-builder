@@ -1,9 +1,14 @@
 // The layer editor on a phone: master-detail, where the entry list fills the pane and an open
-// entry's form replaces it until Back. The toolbar's actions fold into a menu, and nothing
-// scrolls sideways on the list or on any form.
+// entry's form replaces it until Back, and the toolbar's actions fold into a menu. Fit at phone
+// widths is checked in layout-sweep.spec.ts.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder } from "../support/app";
-import { addLayer, confirmDialog, layerRow } from "../support/nav";
+import {
+  confirmDialog,
+  layerRow,
+  openDrawer,
+  openNewLayer,
+} from "../support/nav";
 import {
   MIN_SUPPORTED_WIDTH,
   expectNoHorizontalScroll,
@@ -13,22 +18,6 @@ const list = (page: Page) => page.getByTestId("layer-entries-column");
 const form = (page: Page) => page.getByTestId("layer-form-pane");
 const back = (page: Page) => page.getByTestId("layer-form-back");
 const rows = (page: Page) => page.locator(".editor-row");
-
-async function openDrawer(page: Page) {
-  const drawer = page.getByTestId("nav-drawer");
-  if (!(await drawer.isVisible()))
-    await page.getByTestId("header-nav-toggle").click();
-  await expect(drawer).toBeVisible();
-}
-
-async function openLayer(page: Page) {
-  await openBuilder(page);
-  await openDrawer(page);
-  await addLayer(page);
-  await openDrawer(page);
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await expect(list(page)).toBeVisible();
-}
 
 async function expectListView(page: Page) {
   await expect(list(page)).toBeVisible();
@@ -42,7 +31,8 @@ async function expectFormView(page: Page) {
   await expect(list(page)).toHaveCount(0);
 }
 
-/** No sideways scroll on the page, nor inside the form's own scroller. */
+/** No sideways scroll on the page, nor inside the form's own scroller. Phone widths are covered
+ *  by layout-sweep.spec.ts; this checks the tablet's stacked layout. */
 async function expectFits(page: Page) {
   await expectNoHorizontalScroll(page);
   if (await form(page).count()) {
@@ -57,7 +47,7 @@ async function expectFits(page: Page) {
 test("an item opens full-width and Back returns to the list", async ({
   page,
 }) => {
-  await openLayer(page);
+  await openNewLayer(page);
   // The list fills the pane, so it scrolls inside and leaves no rail toggle behind.
   await expect(page.getByTestId("rail-toggle-left")).toHaveCount(0);
   const name = (await rows(page)
@@ -68,9 +58,6 @@ test("an item opens full-width and Back returns to the list", async ({
   await rows(page).nth(3).tap();
   await expectFormView(page);
   await expect(page.getByTestId("form-bar-title").first()).toHaveText(name);
-  const pane = (await form(page).boundingBox())!;
-  const listWidth = page.viewportSize()!.width;
-  expect(pane.width).toBeGreaterThan(listWidth * 0.85);
 
   await back(page).tap();
   await expectListView(page);
@@ -83,7 +70,7 @@ test("an item opens full-width and Back returns to the list", async ({
 test("the list's route names no entry, so a reload lands on the list", async ({
   page,
 }) => {
-  await openLayer(page);
+  await openNewLayer(page);
   const name = (await rows(page)
     .nth(3)
     .locator(".editor-row-name")
@@ -122,7 +109,7 @@ test("the list's route names no entry, so a reload lands on the list", async ({
 test("a slot opens full-width and Back returns to the outline", async ({
   page,
 }) => {
-  await openLayer(page);
+  await openNewLayer(page);
   await page.getByTestId("tab-slots").tap();
   const slot = page.locator('[data-outline-key^="slot:"]').first();
   const name = (await slot.locator(".editor-row-name").textContent())!;
@@ -136,7 +123,7 @@ test("a slot opens full-width and Back returns to the outline", async ({
 });
 
 test("a new entry opens its blank form", async ({ page }) => {
-  await openLayer(page);
+  await openNewLayer(page);
   await page.getByTestId("new-item").tap();
   await expectFormView(page);
   await expect(page.getByTestId("form-bar-title").first()).toHaveText(
@@ -156,7 +143,7 @@ test("a new entry opens its blank form", async ({ page }) => {
 test("a dirty draft vetoes Back until its discard is confirmed", async ({
   page,
 }) => {
-  await openLayer(page);
+  await openNewLayer(page);
   await page.getByTestId("new-item").tap();
   await page.getByTestId("item-name-input").fill("ZZZ Phone Draft");
 
@@ -178,7 +165,7 @@ test("a dirty draft vetoes Back until its discard is confirmed", async ({
 });
 
 test("the view survives a trip to a build and back", async ({ page }) => {
-  await openLayer(page);
+  await openNewLayer(page);
   await rows(page).first().tap();
   await expectFormView(page);
 
@@ -191,13 +178,11 @@ test("the view survives a trip to a build and back", async ({ page }) => {
 });
 
 test("the toolbar's actions sit in an overflow menu", async ({ page }) => {
-  await openLayer(page);
+  await openNewLayer(page);
   await expect(page.getByTestId("layer-export-toggle")).toHaveCount(0);
   await expect(page.getByTestId("editor-undo")).toHaveCount(0);
 
   const trigger = page.getByTestId("layer-actions");
-  const box = (await trigger.boundingBox())!;
-  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
   await trigger.tap();
   await expect(page.getByTestId("layer-actions-undo")).toBeDisabled();
   await expect(page.getByTestId("layer-actions-discard")).toBeDisabled();
@@ -221,50 +206,11 @@ test("the toolbar's actions sit in an overflow menu", async ({ page }) => {
   await expect(page.getByTestId("item-max-copies")).not.toHaveValue("7");
 });
 
-for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
-  test(`the list and the forms do not scroll sideways at ${width}px`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width, height: 800 });
-    await openLayer(page);
-    await expectFits(page);
-
-    await rows(page).first().tap();
-    await page.getByTestId("show-all-fields").tap();
-    await expectFits(page);
-    await back(page).tap();
-
-    // A bonus no item carries raises a finding, so the validation list shows too.
-    await page.getByTestId("tab-bonuses").tap();
-    await page.getByTestId("new-bonus").tap();
-    await page.getByTestId("bonus-name-input").fill("ZZZ Phone Bonus");
-    await page.getByRole("button", { name: "Save bonus" }).tap();
-    await expect(page.getByTestId("validation-drawer")).toBeVisible();
-    await expectFits(page);
-    await back(page).tap();
-    await expectFits(page);
-
-    await page.getByTestId("tab-filters").tap();
-    await rows(page).first().tap();
-    await expectFits(page);
-    await back(page).tap();
-
-    await page.getByTestId("tab-slots").tap();
-    await expectFits(page);
-    for (const kind of ["section", "slot", "preset"]) {
-      await page.locator(`[data-outline-key^="${kind}:"]`).first().tap();
-      await expectFormView(page);
-      await expectFits(page);
-      await back(page).tap();
-    }
-  });
-}
-
 test("a tablet keeps the stacked layout without sideways scroll", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 820, height: 1180 });
-  await openLayer(page);
+  await openNewLayer(page);
   await expect(form(page)).toBeVisible();
   await expect(back(page)).toHaveCount(0);
   await expect(page.getByTestId("layer-export-toggle")).toBeVisible();
