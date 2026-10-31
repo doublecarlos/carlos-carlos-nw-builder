@@ -163,36 +163,34 @@ describe("conditions.ts bonusOccurrences leaf uses bonusNames for friendly label
     const c = ctx(
       {},
       {
-        bonusOccurrences: new Map([["m32-impending-doom-celestial", 1]]),
-        bonusNames: new Map([
-          ["m32-impending-doom-celestial", "Impending Doom"],
-        ]),
+        bonusOccurrences: new Map([["test-doom", 1]]),
+        bonusNames: new Map([["test-doom", "Test Doom"]]),
       },
     );
     const result = explain(
       {
-        bonusOccurrences: { bonus: "m32-impending-doom-celestial", atLeast: 2 },
+        bonusOccurrences: { bonus: "test-doom", atLeast: 2 },
       },
       c,
     );
     expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("2 occurrences of Impending Doom");
+    expect(result.unmet[0].label).toBe("2 occurrences of Test Doom");
   });
 
   it("falls back to the bonus id when not in bonusNames", () => {
     const c = ctx(
       {},
       {
-        bonusOccurrences: new Map([["m32-unknown-bonus", 1]]),
+        bonusOccurrences: new Map([["test-unknown-bonus", 1]]),
         bonusNames: new Map(),
       },
     );
     const result = explain(
-      { bonusOccurrences: { bonus: "m32-unknown-bonus", atLeast: 2 } },
+      { bonusOccurrences: { bonus: "test-unknown-bonus", atLeast: 2 } },
       c,
     );
     expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("2 occurrences of m32-unknown-bonus");
+    expect(result.unmet[0].label).toBe("2 occurrences of test-unknown-bonus");
   });
 });
 
@@ -363,14 +361,14 @@ describe("conditions.ts compound operators explain themselves in one line", () =
   });
 
   it("not: keeps its children tree, so the expandable detail is unchanged", () => {
-    const c = ctx({}, { equipped: new Map([["mystic-aura-self", 1]]) });
+    const c = ctx({}, { equipped: new Map([["test-aura", 1]]) });
     const result = explain(
-      { not: { equipped: { item: "mystic-aura-self", atLeast: 1 } } },
+      { not: { equipped: { item: "test-aura", atLeast: 1 } } },
       c,
     );
-    expect(result.leaves[0].label).toBe("not 1× mystic-aura-self");
+    expect(result.leaves[0].label).toBe("not 1× test-aura");
     expect(result.leaves[0].children?.map((child) => child.label)).toEqual([
-      "1× mystic-aura-self",
+      "1× test-aura",
     ]);
   });
 
@@ -378,15 +376,12 @@ describe("conditions.ts compound operators explain themselves in one line", () =
     const c = ctx(
       {},
       {
-        equipped: new Map([["mystic-aura-self", 1]]),
-        itemNames: new Map([["mystic-aura-self", "Mystic Aura"]]),
+        equipped: new Map([["test-aura", 1]]),
+        itemNames: new Map([["test-aura", "Test Aura"]]),
       },
     );
-    const result = explain(
-      { not: { equipped: { item: "mystic-aura-self" } } },
-      c,
-    );
-    expect(result.leaves[0].label).toBe("not 1× Mystic Aura");
+    const result = explain({ not: { equipped: { item: "test-aura" } } }, c);
+    expect(result.leaves[0].label).toBe("not 1× Test Aura");
   });
 
   it("not: an ANDed group is negated as a whole, parenthesised", () => {
@@ -487,17 +482,14 @@ describe("conditions.ts equipped leaf labels", () => {
   });
 
   it("an item is shown by its display name", () => {
-    const c = ctx(
-      {},
-      { itemNames: new Map([["enemy-type-boss", "Enemy type: Boss"]]) },
-    );
-    const result = explain({ equipped: { item: "enemy-type-boss" } }, c);
-    expect(result.unmet[0].label).toBe("1× Enemy type: Boss");
+    const c = ctx({}, { itemNames: new Map([["test-boss", "Test Boss"]]) });
+    const result = explain({ equipped: { item: "test-boss" } }, c);
+    expect(result.unmet[0].label).toBe("1× Test Boss");
   });
 
   it("an item the context has no name for falls back to its id", () => {
-    const result = explain({ equipped: { item: "enemy-type-boss" } }, ctx({}));
-    expect(result.unmet[0].label).toBe("1× enemy-type-boss");
+    const result = explain({ equipped: { item: "test-boss" } }, ctx({}));
+    expect(result.unmet[0].label).toBe("1× test-boss");
   });
 });
 
@@ -510,10 +502,10 @@ describe("conditions.ts leaves name what would supply them", () => {
   });
 
   it("equipped by item", () => {
-    const result = explain({ equipped: { item: "runic-aura" } }, ctx({}));
+    const result = explain({ equipped: { item: "test-item" } }, ctx({}));
     expect(result.unmet[0].need).toEqual({
       kind: "item",
-      itemId: "runic-aura",
+      itemId: "test-item",
     });
   });
 
