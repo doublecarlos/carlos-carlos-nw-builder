@@ -1,6 +1,7 @@
-// The on-screen box a full-screen surface is sized to.
+// The on-screen box a full-screen surface is sized to, and how far a focused field's scroller
+// moves to keep the field inside it when the keyboard covers part of the screen.
 import { describe, expect, it } from "vitest";
-import { visibleBox } from "../../src/lib/visual-viewport";
+import { revealDelta, visibleBox } from "../../src/lib/visual-viewport";
 
 const window = { innerWidth: 412, innerHeight: 915 };
 
@@ -21,5 +22,26 @@ describe("visibleBox", () => {
       width: 412,
       height: 915,
     });
+  });
+});
+
+describe("revealDelta", () => {
+  // A 915px screen with the keyboard over its bottom half.
+  const box = { top: 0, left: 0, width: 412, height: 450 };
+
+  it("scrolls a field under the keyboard up into the visible box", () => {
+    expect(revealDelta({ top: 600, bottom: 640 }, box, 10)).toBe(200);
+  });
+
+  it("leaves a field that is already visible alone", () => {
+    expect(revealDelta({ top: 100, bottom: 140 }, box, 10)).toBe(0);
+  });
+
+  it("scrolls a field above the visible box down into it", () => {
+    expect(revealDelta({ top: -50, bottom: -10 }, box, 10)).toBe(-60);
+  });
+
+  it("keeps the top of a field taller than the box in view", () => {
+    expect(revealDelta({ top: 300, bottom: 1000 }, box, 10)).toBe(290);
   });
 });

@@ -123,6 +123,7 @@ onBeforeUnmount(() => {
     >
       <div
         ref="panel"
+        data-fits-visual-viewport
         class="absolute flex flex-col overflow-hidden border-line bg-surface shadow-xl focus:outline-none"
         :class="[SIDE_CLASSES[side], panelClass]"
         :style="panelStyle"

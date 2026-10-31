@@ -38,6 +38,7 @@ import {
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
 import { undoScope, useUndoScope } from "./composables/useUndoScope";
 import { useUndoRedoKeys } from "./composables/useUndoRedoKeys";
+import { useRevealFocusedField } from "./composables/useRevealFocusedField";
 
 const resolved = engine.resolved;
 
@@ -69,6 +70,9 @@ useGlobalShortcuts();
 // belongs to the whole page, not to any one of the toolbars showing an undo pair.
 useUndoScope();
 useUndoRedoKeys();
+
+// Typing on a touch screen: the pane switch makes way so it doesn't ride up over the field.
+const { typing } = useRevealFocusedField();
 
 // --- focus bar ---------------------------------------------------------------------------
 // Shows which region contains the current focus for undo/redo shortcuts.
@@ -339,6 +343,7 @@ syncRoute({ push: false });
 
       <SegmentedControl
         v-if="layout.paneSwitch"
+        v-show="!(typing && viewport.coarsePointer.value)"
         v-model="shell.phonePane.value"
         :options="PANE_OPTIONS"
         fill
