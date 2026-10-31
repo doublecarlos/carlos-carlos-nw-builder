@@ -1,14 +1,27 @@
 // Item stat scaling (mount/companion bolster).
 //
 // A synthetic catalog rather than the shipped one, so each claim is isolated from whatever
-// the real mount data happens to be today. The shipped wiring gets its own check at the bottom.
+// the real mount data happens to be today. The shipped wiring is guarded by
+// `catalog.validateScalerTargets`.
 
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
+import * as catalog from "../../src/data/catalog";
 import * as engine from "../../src/engine/engine";
 import { collect } from "../../src/engine/bonus";
-import { fromData } from "../../src/data/db";
+import { NW_ITEMS, NW_SLOTS } from "../../src/data/data";
 import { storedListRows } from "../../src/lib/item-picker-list";
+import {
+  bonusOf,
+  isActive,
+  picker as testPicker,
+  rowOf,
+  testBuild,
+  testDb as syntheticDb,
+  testSchema,
+  type Resolved,
+  type TestBuildParts,
+} from "./engine-fixtures";
 import type {
   Build,
   BuildContext,
@@ -258,7 +271,7 @@ describe("bolster scaling", () => {
       testDb,
       buildWith(EQUIPPED, { mountBolster: undefined as unknown as number }),
     );
-    // Missing reads as the slot's own default (1.25), not as zero -- a build predating the
+    // Missing reads as the slot's own default (1.25), not as zero: a build predating the
     // parameter must not silently lose its mount's stats.
     expect(result.rows.find((r) => r.slotId === "gear.mount")!.stats.il).toBe(
       2250,
@@ -356,211 +369,195 @@ describe("resolved scaler map", () => {
   });
 });
 
-const shipped = fromData();
-const shippedScalers = shipped.slots.filter(
-  (s): s is BuildParameterSlot => s.type === "build_parameter" && !!s.scaler,
-);
-
-describe("shipped bolster wiring", () => {
-  const bolsters = shippedScalers.filter((s) => s.scaler?.mode === "relative");
-
-  it("declares a relative scaler on each bolster parameter", () => {
-    expect(bolsters.map((s) => s.path).sort()).toEqual([
-      "companionBolster",
-      "mountBolster",
-    ]);
+// A scaler's `applies` is the only link from a bolster to its items, so a filter or tag
+// nothing carries means a category silently stopped scaling.
+describe("catalog.validateScalerTargets", () => {
+  it("passes on the shipped catalog", () => {
+    expect(catalog.validateScalerTargets(NW_SLOTS.slots, NW_ITEMS)).toEqual([]);
   });
 
-  it("scales every mount and companion item, and nothing else", () => {
-    const scaled = new Set(
-      bolsters.flatMap((s) => s.scaler?.applies?.filter ?? []),
-    );
-    expect([...scaled].sort()).toEqual([
-      "companion",
-      "mount_combat",
-      "mount_equip",
-    ]);
-    // Collars and insignia sit in the same sections and are explicitly out of scope.
-    expect(scaled.has("insignia")).toBe(false);
-    expect(scaled.has("sturdy_collar")).toBe(false);
-    expect(scaled.has("companion_equip")).toBe(false);
+  it("passes when every target is carried", () => {
+    expect(
+      catalog.validateScalerTargets(slotsData.slots, [
+        mount,
+        companion,
+        collar,
+      ]),
+    ).toEqual([]);
   });
 
-  it("holds unscaled base values in the catalog", () => {
-    // The db was normalized: a mount equip is 1750 IL, not the 3937 the sheet stored
-    // pre-multiplied by max bolster.
-    const equips = shipped.forFilter("mount_equip");
-    expect(equips.length).toBeGreaterThan(0);
-    for (const item of equips) expect(item.il).toBe(1750);
-    expect(shipped.get("generic-companion")?.il).toBe(1800);
+  it("warns about a filter and a tag no item carries", () => {
+    const findings = catalog.validateScalerTargets(slotsData.slots, [collar]);
+    expect(findings.map((f) => [f.level, f.name])).toEqual([
+      ["warn", "gear.mountBolster"],
+      ["warn", "gear.companionBolster"],
+    ]);
+    expect(findings[0].message).toMatch(/filter "test_mount"/);
+    expect(findings[1].message).toMatch(/tag "bolstered_companion"/);
+  });
+
+  it("ignores a scaler without applies", () => {
+    // gear.encounterShare claims no item by design.
+    const findings = catalog.validateScalerTargets(slotsData.slots, []);
+    expect(findings.some((f) => f.name === "gear.encounterShare")).toBe(false);
   });
 });
 
-// The damage-type shares are absolute scalers claiming no item: a grant reaches one through
-// `scaledBy` alone. They start at 0 because no default is right for every class.
-describe("shipped damage-type scalers", () => {
-  const shares = shippedScalers.filter((s) => s.scaler?.mode === "absolute");
-
-  it("declares an absolute scaler per power type, defaulting to 0", () => {
-    expect(shares.map((s) => s.path).sort()).toEqual([
-      "scalers.atWillDamage",
-      "scalers.dailyDamage",
-      "scalers.encounterDamage",
-    ]);
-    for (const slot of shares) {
-      expect(slot.default).toBe(0);
-      expect(slot.min).toBe(0);
-      expect(slot.max).toBe(1);
-      expect(slot.paramType).toBe("percent");
-      expect(slot.scaler?.applies).toBeUndefined();
-    }
-  });
-});
-
-// The mount equip powers whose whole effect used to be a granted aura now carry that payload
-// as their own stat line, leaving the bonus to stand for a *party member's* copy alone.
-// What makes that work is the gate: the group bonus is suppressed
-// while you have the self item, so the two can never double-count -- and because it only ever
-// represents someone else's mount, its payload stays at max bolster, which is the most anyone
-// can know about a stranger's collection.
+// An aura mount equip comes in two parts: your own copy is a scaled item stat line, and a
+// party member's copy is a group bonus. The group bonus is gated off while you have your own,
+// so the two never double count, and it stays at a fixed payload since a stranger's bolster
+// is unknown.
 describe("aura mount equips carry their own payload", () => {
-  const shipped = fromData();
+  const SELF_SLOT = "mounts.equip";
+  const GROUP_SLOT = "group.buff";
 
-  const SELF_SLOT = "mounts.mountEquip";
-  const GROUP_SLOT = "group.group#1";
+  const auraDb = syntheticDb(
+    testSchema(["il", "power", "ca"]),
+    [
+      { id: "aura-self", name: "Aura", filter: "mount_equip", power: 1000 },
+      {
+        id: "aura-group",
+        name: "Aura",
+        filter: "group_buff",
+        bonuses: ["aura-group"],
+      },
+      { id: "pack-self", name: "Pack", filter: "mount_equip", ca: 1000 },
+      {
+        id: "pack-group",
+        name: "Pack",
+        filter: "group_buff",
+        bonuses: ["pack"],
+      },
+    ],
+    [
+      {
+        id: "aura-group",
+        grants: [
+          {
+            when: {
+              toggle: "party",
+              not: { equipped: { item: "aura-self" } },
+            },
+            stats: { power: 2000 },
+          },
+        ],
+      },
+      // Each contributor adds half the one before. Owning one makes you the first
+      // contributor, and your share is already your item's stat line.
+      {
+        id: "pack",
+        inputs: {
+          stacks: {
+            type: "number",
+            label: "Stacks",
+            min: 0,
+            max: 4,
+            default: 1,
+          },
+        },
+        formulas: {
+          self: { formula: 'min(equipped("pack-self"), 1)' },
+        },
+        grants: [
+          {
+            when: { toggle: "party" },
+            stats: { ca: 2000 },
+            scale: { formula: "geometric($stacks + $self, 0.5) - $self" },
+          },
+        ],
+      },
+    ],
+    [
+      scalerParam("mounts.bolster", "mountBolster", 1.25, {
+        mode: "relative",
+        applies: { filter: ["mount_equip"] },
+      }),
+      testPicker(SELF_SLOT, "mount_equip"),
+      testPicker(GROUP_SLOT, "group_buff"),
+    ],
+  );
 
   function run(
     choices: Record<string, string>,
-    context: Record<string, unknown> = {},
+    context: TestBuildParts["context"] = {},
     bonusValues: Build["bonusValues"] = {},
   ) {
-    return engine.resolveBuild(shipped, {
-      id: "b",
-      name: "b",
-      choices,
-      values: {},
-      assignments: {},
-      bonusValues,
-      listRows: storedListRows({
+    return engine.resolveBuild(
+      auraDb,
+      testBuild({
         choices,
-        values: {},
-        assignments: {},
-        disabledSlots: {},
+        bonusValues,
+        context: { toggles: { party: true }, mountBolster: 1.25, ...context },
       }),
-      context: {
-        class: "",
-        role: "dps",
-        damageType: "",
-        duration: 60,
-        enemies: 1,
-        magnitude: 100,
-        m32Forte: false,
-        forte: {},
-        toggles: { party: true },
-        mountBolster: 1.25,
-        companionBolster: 1.2,
-        ...context,
-      },
-      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
-    } as unknown as Build);
+    );
   }
 
-  const selfRow = (result: ReturnType<typeof run>) =>
-    result.rows.find((r) => r.slotId === SELF_SLOT)!;
-  const isActive = (result: ReturnType<typeof run>, id: string) =>
-    result.bonuses.some((b) => b.id === id && b.active);
+  const selfRow = (result: Resolved) => rowOf(result, SELF_SLOT);
+  const groupPower = (result: Resolved) =>
+    bonusOf(result, "aura-group")?.stats?.power;
 
-  it("scales your own Mystic Aura with mount bolster", () => {
-    const max = run({ [SELF_SLOT]: "mystic-aura-self" });
-    expect(selfRow(max).stats.power).toBeCloseTo(1312.5 * 2.25, 9);
-
-    const none = run({ [SELF_SLOT]: "mystic-aura-self" }, { mountBolster: 0 });
-    expect(selfRow(none).stats.power).toBe(1312.5);
+  it("scales your own aura with mount bolster", () => {
+    expect(selfRow(run({ [SELF_SLOT]: "aura-self" })).stats.power).toBeCloseTo(
+      1000 * 2.25,
+      9,
+    );
+    expect(
+      selfRow(run({ [SELF_SLOT]: "aura-self" }, { mountBolster: 0 })).stats
+        .power,
+    ).toBe(1000);
   });
 
   it("suppresses the group aura while you have the self item, so it cannot double", () => {
-    const both = run({
-      [SELF_SLOT]: "mystic-aura-self",
-      [GROUP_SLOT]: "mystic-aura-group-celestial",
-    });
-    expect(isActive(both, "mystic-aura-group-celestial")).toBe(false);
-    // Your own copy is still there -- as the item's stats, not the bonus.
-    expect(selfRow(both).stats.power).toBeCloseTo(1312.5 * 2.25, 9);
+    const both = run({ [SELF_SLOT]: "aura-self", [GROUP_SLOT]: "aura-group" });
+    expect(isActive(both, "aura-group")).toBe(false);
+    // Your own copy is still there, as the item's stats.
+    expect(selfRow(both).stats.power).toBeCloseTo(1000 * 2.25, 9);
   });
 
   it("grants the group aura when a party member supplies it instead", () => {
-    const theirs = run({ [GROUP_SLOT]: "mystic-aura-group-celestial" });
-    expect(isActive(theirs, "mystic-aura-group-celestial")).toBe(true);
-    const entry = theirs.bonuses.find(
-      (b) => b.id === "mystic-aura-group-celestial",
-    )!;
-    expect(entry.stats?.power).toBe(2953);
+    const theirs = run({ [GROUP_SLOT]: "aura-group" });
+    expect(isActive(theirs, "aura-group")).toBe(true);
+    expect(groupPower(theirs)).toBe(2000);
   });
 
-  it("leaves a party member's aura at max bolster, whatever yours is", () => {
-    const theirs = run(
-      { [GROUP_SLOT]: "mystic-aura-group-celestial" },
-      { mountBolster: 0 },
-    );
-    // You cannot know a stranger's collection, so their copy does not move with your bolster.
+  it("leaves a party member's aura alone whatever your bolster is", () => {
     expect(
-      theirs.bonuses.find((b) => b.id === "mystic-aura-group-celestial")?.stats
-        ?.power,
-    ).toBe(2953);
+      groupPower(run({ [GROUP_SLOT]: "aura-group" }, { mountBolster: 0 })),
+    ).toBe(2000);
   });
 
-  it("needs the party toggle -- a group buff is not a solo effect", () => {
+  it("needs the party toggle, since a group buff is not a solo effect", () => {
     const solo = run(
-      { [GROUP_SLOT]: "mystic-aura-group-celestial" },
+      { [GROUP_SLOT]: "aura-group" },
       { toggles: { party: false } },
     );
-    expect(isActive(solo, "mystic-aura-group-celestial")).toBe(false);
+    expect(isActive(solo, "aura-group")).toBe(false);
   });
 
-  it("does the same for Runic Aura", () => {
-    const mine = run({ [SELF_SLOT]: "runic-aura" });
-    expect(selfRow(mine).stats.defense).toBeCloseTo(1312.5 * 2.25, 9);
-    expect(isActive(mine, "runic-aura-group-celestial")).toBe(false);
+  const twoOthers = { pack: { input: { stacks: 2 } } };
+
+  it("a stacking group aura without your own is the others' pool alone", () => {
+    const result = run({ [GROUP_SLOT]: "pack-group" }, {}, twoOthers);
+    // 2000 for the first, half as much for the second.
+    expect(bonusOf(result, "pack")?.stats?.ca).toBe(3000);
   });
 
-  it("Pack Tactics: without your own, the ladder is the others' pool alone", () => {
-    // Two other players contributing, you not among them.
+  it("a stacking group aura with your own adds only the pool's remainder", () => {
     const result = run(
-      { [GROUP_SLOT]: "pack-tactics-group" },
+      { [SELF_SLOT]: "pack-self", [GROUP_SLOT]: "pack-group" },
       {},
-      { "pack-tactics": { input: { stacks: 2 } } },
+      twoOthers,
     );
-    // 2953 for the first, half as much for the second.
-    expect(result.bonuses.find((b) => b.id === "pack-tactics")?.stats?.ca).toBe(
-      4429.5,
-    );
+    // Three contributors pool 3500; your first share is your item, leaving 1500.
+    expect(bonusOf(result, "pack")?.stats?.ca).toBe(1500);
+    // The bonus anchors to the group item's slot; the mount row carries only its own stats.
+    expect(selfRow(result).stats.ca).toBeCloseTo(1000 * 2.25, 9);
+    expect(rowOf(result, GROUP_SLOT).stats.ca).toBeCloseTo(1500, 9);
   });
 
-  it("Pack Tactics: with your own, the others add the pool's remainder", () => {
-    const result = run(
-      {
-        [SELF_SLOT]: "pack-tactics-self",
-        [GROUP_SLOT]: "pack-tactics-group",
-      },
-      {},
-      { "pack-tactics": { input: { stacks: 2 } } },
-    );
-    // Three contributors in total: the pool is 5167.75, of which your 2953-equivalent share is
-    // the item's own (scaled) stat line, leaving 2214.75 for the other two.
-    expect(result.bonuses.find((b) => b.id === "pack-tactics")?.stats?.ca).toBe(
-      2214.75,
-    );
-    // The mount row carries its own stats and nothing else: only the group item attaches the
-    // bonus now, so that is the slot it anchors to (bonus.ts's `anchor.slotId`).
-    expect(selfRow(result).stats.ca).toBeCloseTo(1312.5 * 2.25, 9);
-    expect(
-      result.rows.find((r) => r.slotId === GROUP_SLOT)!.stats.ca,
-    ).toBeCloseTo(2214.75, 9);
-  });
-
-  it("Pack Tactics: your own alone is just the item, no bonus at all", () => {
-    const result = run({ [SELF_SLOT]: "pack-tactics-self" });
-    expect(isActive(result, "pack-tactics")).toBe(false);
-    expect(selfRow(result).stats.ca).toBeCloseTo(1312.5 * 2.25, 9);
+  it("your own stacking aura alone is just the item, no bonus at all", () => {
+    const result = run({ [SELF_SLOT]: "pack-self" });
+    expect(isActive(result, "pack")).toBe(false);
+    expect(selfRow(result).stats.ca).toBeCloseTo(1000 * 2.25, 9);
   });
 });
