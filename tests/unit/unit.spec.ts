@@ -1,172 +1,283 @@
-// Unit tests for the bonus model's semantics (plan Part 2).
-//
-// The golden fixture proves the engine reproduces the sheet.
-// Each test names the behavior and, where relevant, the legacy bug it prevents.
+// The bonus model's semantics: occurrences, conditions, tiers, variants, stacking, exclusion
+// and the errors a build reports. Each rule runs on a synthetic catalog built for it, so a
+// failure means the rule changed, not the shipped data.
 
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
 import { isHiddenBonus } from "../../src/engine/bonus";
-import { storedListRows } from "../../src/lib/item-picker-list";
+import {
+  appliedStatOf,
+  bonusOf,
+  isActive,
+  picker,
+  statOf,
+  testBuild,
+  testDb,
+  testSchema,
+  type TestBuildParts,
+} from "./engine-fixtures";
 import type {
   Build,
   BuildContext,
   Bonus,
-  EvaluatedBonus,
   EngineError,
-  Grant,
-  ConditionWhen,
   Item,
   ItemPickerSlot,
   PointAssignmentSlot,
-  Schema,
   SlotsData,
 } from "../../src/types";
 
-const built = db.fromData();
-
-// A deliberately empty build: only what each test slots in is present, so nothing else can
-// perturb the numbers.
 const BASE_CONTEXT: BuildContext = {
   class: "warlock",
   role: "dps",
   duration: 60,
   enemies: 1,
   damageType: "magical",
-  // The shipped maxima, matching what `defaultBuild` seeds -- an item scaled by bolster
-  // should read here the way a real build reads it, not as if the collection were empty.
   magnitude: 100,
   m32Forte: false,
-  mountBolster: 1.25,
-  companionBolster: 1.2,
+  mountBolster: 0,
+  companionBolster: 0,
   forte: {},
-  toggles: {
-    combat: true,
-    party: true,
-    consumables: true,
-    artifactCall: true,
+  toggles: { combat: true, artifactCall: true },
+};
+
+const item = (id: string, filter: string, extra: Partial<Item> = {}): Item => ({
+  id,
+  name: id,
+  filter,
+  ...extra,
+});
+
+const bonuses: Bonus[] = [
+  // One bonus shared by two items: any number of copies grants it once.
+  { id: "single", grants: [{ stats: { strike_p: 0.09 } }] },
+  {
+    id: "gem-gated",
+    grants: [{ when: { equipped: { tag: "gem" } }, stats: { ca_p: 0.03 } }],
   },
-};
+  {
+    id: "long-fight",
+    grants: [
+      { stats: { strike_p: 0.06 } },
+      { when: { duration: { atLeast: 10 } }, stats: { mana_regen: 0.1 } },
+    ],
+  },
+  // 1.1% per full 5s, at most 6 intervals.
+  {
+    id: "per-interval",
+    grants: [
+      {
+        when: { toggle: "combat" },
+        stats: { strike_p: 0.011 },
+        scale: { formula: "intervals(duration, 5, 6)" },
+      },
+    ],
+  },
+  {
+    id: "tiered",
+    grants: [
+      {
+        tiers: [
+          { atLeast: 1, stats: { defense: 2500 } },
+          { atLeast: 2, stats: { defense: 3000 } },
+          { atLeast: 3, stats: { defense: 3500 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: "halving",
+    grants: [
+      {
+        stats: { movement: 0.1 },
+        scale: { formula: "geometric(min(occurrences(), 3), 0.5)" },
+      },
+    ],
+  },
+  // A two-piece set: a flat grant, a location grant and one role variant per role.
+  {
+    id: "set",
+    grants: [
+      {
+        when: { bonusOccurrences: { atLeast: 2 } },
+        stats: { overall_healing: 0.05, incoming_damage: -0.05 },
+      },
+      {
+        when: {
+          equipped: { item: "location-a" },
+          bonusOccurrences: { atLeast: 2 },
+        },
+        stats: { movement: 0.12 },
+      },
+      {
+        when: {
+          enemies: { exactly: 1 },
+          toggle: "combat",
+          bonusOccurrences: { atLeast: 2 },
+        },
+        variants: [
+          { when: { role: "dps" }, stats: { outgoing_damage: 0.006 } },
+          { when: { role: "healer" }, stats: { overall_healing: 0.006 } },
+          { when: { role: "tank" }, stats: { incoming_damage: -0.006 } },
+        ],
+        scale: { formula: "intervals(duration, 2, 10)" },
+      },
+    ],
+  },
+  // The first variant whose condition holds wins; the last is the fallback.
+  {
+    id: "location-variant",
+    grants: [
+      {
+        variants: [
+          {
+            when: { equipped: { item: "location-b" } },
+            stats: { outgoing_damage: 0.05 },
+          },
+          { stats: { outgoing_damage: 0.02 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: "per-source",
+    stacking: "perSource",
+    grants: [
+      {
+        when: { toggle: "artifactCall" },
+        stats: { enemy_incoming_damage: 0.207 },
+      },
+    ],
+  },
+  { id: "excluded", grants: [{ stats: { outgoing_damage: 0.09 } }] },
+  {
+    id: "excluder",
+    excludes: ["excluded"],
+    grants: [{ stats: { outgoing_damage: 0.035 } }],
+  },
+];
 
-/** Every test below writes `choices` by item *name* -- far more readable than the ids that
- * actually key `build.choices` -- so this resolves each one against the real shipped data
- * before handing it to the engine. Throws on a typo'd name rather than silently resolving to
- * nothing, which a bad string in `choices` would otherwise do. */
-function idOf(name: string): string {
-  const item = built.items.find((i) => i.name === name);
-  if (!item) throw new Error(`no shipped item named "${name}"`);
-  return item.id;
-}
+const items: Item[] = [
+  item("head", "gear_head", { bonuses: ["single"] }),
+  item("boots", "gear_boots", { bonuses: ["single"] }),
+  item("gem-ring", "gear_ring", { bonuses: ["gem-gated"] }),
+  item("tagged-gem", "gem", { tags: ["gem"] }),
+  item("bracers", "gear_arms", { bonuses: ["long-fight"] }),
+  item("interval-ring", "gear_ring", { bonuses: ["per-interval"] }),
+  item("tier-insignia", "insignia_bonus", { bonuses: ["tiered"] }),
+  item("halving-insignia", "insignia_bonus", {
+    bonuses: ["halving"],
+    maxCopies: 3,
+  }),
+  item("set-mainhand", "gear_mainhand", {
+    bonuses: ["set"],
+    allowedClass: ["warlock"],
+  }),
+  item("set-offhand", "gear_offhand", { bonuses: ["set"] }),
+  item("location-a", "location"),
+  item("location-b", "location"),
+  item("location-ring", "gear_ring", { bonuses: ["location-variant"] }),
+  item("call", "artifact_call", { bonuses: ["per-source"] }),
+  item("excluded-boots", "gear_boots", { bonuses: ["excluded"] }),
+  item("excluder-shirt", "gear_shirt", { bonuses: ["excluder"] }),
+  item("ca-mod", "mod", {
+    dynamicStats: [{ stat: "ca", min: 600, max: 3600, default: 600 }],
+  }),
+];
 
-/** Extended ResolvedBuild with test helpers. The engine doesn't create these;
- * `runBuild` adds them for convenience. */
-type RunResult = ReturnType<typeof engine.resolveBuild> & {
-  activeById: Map<string, EvaluatedBonus>;
-  statOf: (id: string, stat: string) => number | undefined;
-  appliedStatOf: (id: string, stat: string) => number | undefined;
-};
+const semanticsDb = testDb(
+  testSchema([
+    "strike_p",
+    "ca_p",
+    "ca",
+    "mana_regen",
+    "defense",
+    "movement",
+    "outgoing_damage",
+    "overall_healing",
+    "incoming_damage",
+    "enemy_incoming_damage",
+  ]),
+  items,
+  bonuses,
+  [
+    picker("gear.head", "gear_head"),
+    picker("gear.boots", "gear_boots"),
+    picker("gear.arms", "gear_arms"),
+    picker("gear.ring1", "gear_ring"),
+    picker("gear.mainhand", "gear_mainhand"),
+    picker("gear.offhand", "gear_offhand"),
+    picker("gear.shirt", "gear_shirt"),
+    picker("gear.mod", "mod"),
+    picker("gems.gem1", "gem"),
+    picker("gems.gem2", "gem"),
+    picker("gems.gem3", "gem"),
+    picker("insignia.bonus1", "insignia_bonus"),
+    picker("insignia.bonus2", "insignia_bonus"),
+    picker("insignia.bonus3", "insignia_bonus"),
+    picker("insignia.bonus4", "insignia_bonus"),
+    picker("options.location", "location"),
+    picker("artifactCall.call1", "artifact_call"),
+    picker("artifactCall.call2", "artifact_call"),
+  ],
+);
 
 function runBuild(
-  choicesByName: Record<string, string>,
-  contextOverrides: Partial<BuildContext> = {},
+  choices: Record<string, string>,
+  context: TestBuildParts["context"] = {},
   values: Build["values"] = {},
-): RunResult {
-  const choices = Object.fromEntries(
-    Object.entries(choicesByName).map(([slot, name]) => [slot, idOf(name)]),
+) {
+  return engine.resolveBuild(
+    semanticsDb,
+    testBuild({ choices, context, values }, BASE_CONTEXT),
   );
-  const context: BuildContext = { ...BASE_CONTEXT, ...contextOverrides };
-  if (contextOverrides.toggles) {
-    context.toggles = { ...BASE_CONTEXT.toggles, ...contextOverrides.toggles };
-  }
-  // Deliberately minimal -- only choices/values/context are exercised by resolveBuild, so
-  // this test fixture skips the rest of Build's fields (id/name/updated/compare).
-  const result = engine.resolveBuild(built, {
-    choices,
-    values,
-    context,
-    listRows: storedListRows({
-      choices,
-      values,
-      assignments: {},
-      disabledSlots: {},
-    }),
-  } as unknown as Build) as RunResult;
-  result.activeById = new Map(
-    result.bonuses
-      .filter((b: EvaluatedBonus) => b.active)
-      .map((b: EvaluatedBonus) => [b.id, b]),
-  );
-  // Per-stack payload, as the inspector shows it next to the stack count.
-  result.statOf = (id: string, stat: string) =>
-    result.activeById.get(id)?.stats?.[stat];
-  // What actually reaches the pipeline: payload × stacks.
-  result.appliedStatOf = (id: string, stat: string) =>
-    result.activeById.get(id)?.appliedStats?.[stat];
-  return result;
 }
 
 describe("bonus model semantics", () => {
-  // --- the bug that motivated the redesign -------------------------------------------
-  it("Critical Breaker applies once at one occurrence, and still once at two", () => {
-    // Legacy enumerated only `::1:2`, so wearing both copies computed `::2:2`, found no
-    // payload row and silently granted nothing. Confirmed 2026-07-26 as a single-item bonus:
-    // any number of copies grants it exactly once.
-    const ID = "m33-critical-breaker";
-    const one = runBuild({ "gear.head": "M33 Wintermarked Hunter Hood" });
-    const two = runBuild({
-      "gear.head": "M33 Wintermarked Hunter Hood",
-      "gear.boots": "M33 Wintermarked Marcher Poleyns",
-    });
-    expect(one.statOf(ID, "strike_p")).toBeCloseTo(0.09, 9);
-    expect(two.statOf(ID, "strike_p")).toBeCloseTo(0.09, 9);
-    const twoBonus = two.activeById.get(ID)!;
-    expect(twoBonus.stacks).toBe(1);
+  it("a shared bonus applies once at one occurrence, and still once at two", () => {
+    const one = runBuild({ "gear.head": "head" });
+    const two = runBuild({ "gear.head": "head", "gear.boots": "boots" });
+    expect(statOf(one, "single", "strike_p")).toBeCloseTo(0.09, 9);
+    expect(statOf(two, "single", "strike_p")).toBeCloseTo(0.09, 9);
+    expect(bonusOf(two, "single")!.stacks).toBe(1);
     expect(two.stages.sums.strike_p - one.stages.sums.strike_p).toBeCloseTo(
       0,
       9,
     );
   });
 
-  it("A gem-gated ring bonus survives three qualifying gems", () => {
-    // The `::1:3` bug: legacy enumerated only `::1:1` and `::1:2`, so a third distinct
-    // qualifying gem made the bonus vanish entirely.
-    const ID = "m33-frostsilver-coil-of-wrath-ca";
-    const ring = { "gear.ring1": "M33 Frostsilver Coil of Wrath" };
+  it("a tag-gated bonus survives three qualifying gems", () => {
+    // Counting each extra gem as a new occurrence once made the bonus vanish at three.
+    const ring = { "gear.ring1": "gem-ring" };
     const none = runBuild(ring);
-    const one = runBuild({
-      ...ring,
-      "enchantments.offense1": "Celestial Amethyst",
-    });
+    const one = runBuild({ ...ring, "gems.gem1": "tagged-gem" });
     const three = runBuild({
       ...ring,
-      "enchantments.offense1": "Celestial Amethyst",
-      "enchantments.offense2": "Celestial Amethyst",
-      "enchantments.defense1": "Celestial Amethyst",
+      "gems.gem1": "tagged-gem",
+      "gems.gem2": "tagged-gem",
+      "gems.gem3": "tagged-gem",
     });
-    expect(none.activeById.has(ID)).toBe(false);
-    expect(one.statOf(ID, "ca_p")).toBeCloseTo(0.03, 9);
-    expect(three.statOf(ID, "ca_p")).toBeCloseTo(0.03, 9);
+    expect(isActive(none, "gem-gated")).toBe(false);
+    expect(statOf(one, "gem-gated", "ca_p")).toBeCloseTo(0.03, 9);
+    expect(statOf(three, "gem-gated", "ca_p")).toBeCloseTo(0.03, 9);
   });
 
-  // --- condition language --------------------------------------------------------------
-  it("A duration threshold is inclusive", () => {
-    const ID = "m33-relentless-reserves";
-    const bracers = { "gear.arms": "M33 Wintermarked Skirmisher Bracers" };
+  it("a duration threshold is inclusive", () => {
     const at = (duration: number) =>
-      runBuild(bracers, { class: "rogue", duration });
-
-    expect(at(9).statOf(ID, "mana_regen")).toBeUndefined();
-    expect(at(10).statOf(ID, "mana_regen")).toBeCloseTo(0.1, 9);
-    expect(at(85).statOf(ID, "mana_regen")).toBeCloseTo(0.1, 9);
+      runBuild({ "gear.arms": "bracers" }, { duration });
+    expect(statOf(at(9), "long-fight", "mana_regen")).toBeUndefined();
+    expect(statOf(at(10), "long-fight", "mana_regen")).toBeCloseTo(0.1, 9);
+    expect(statOf(at(85), "long-fight", "mana_regen")).toBeCloseTo(0.1, 9);
   });
 
-  it("Duration scaling counts full intervals, up to the cap", () => {
-    // 1.1% per full 5s, at most 6 stacks.
-    const ID = "m32-critical-spiker";
-    const ring = { "gear.ring1": "M32 Deathsilver Ring of Submission" };
+  it("duration scaling counts full intervals, up to the cap", () => {
     const at = (duration: number) =>
-      runBuild(ring, { duration }).statOf(ID, "strike_p");
-
+      statOf(
+        runBuild({ "gear.ring1": "interval-ring" }, { duration }),
+        "per-interval",
+        "strike_p",
+      );
     expect(at(4)).toBeUndefined();
     expect(at(5)).toBeCloseTo(0.011, 9);
     expect(at(29)).toBeCloseTo(0.055, 9);
@@ -174,34 +285,27 @@ describe("bonus model semantics", () => {
     expect(at(85)).toBeCloseTo(0.066, 9);
   });
 
-  it("Toggles gate bonuses, and a two-toggle condition needs both", () => {
-    const ID = "m32-critical-spiker";
-    const ring = {
-      "gear.ring1": "M32 Deathsilver Ring of Submission",
-    };
-    expect(runBuild(ring).activeById.has(ID)).toBe(true);
+  it("a toggle gates its bonus", () => {
+    const ring = { "gear.ring1": "interval-ring" };
+    expect(isActive(runBuild(ring), "per-interval")).toBe(true);
     expect(
-      runBuild(ring, { toggles: { combat: false } }).activeById.has(ID),
+      isActive(runBuild(ring, { toggles: { combat: false } }), "per-interval"),
     ).toBe(false);
   });
 
-  // --- tiers, variants, stacking, exclusion ---------------------------------------------
-  it("Occurrence tiers are absolute and mutually exclusive, not cumulative", () => {
-    // Guardian's Spirit grants 2500 defense at one insignia and 3000 at two, not 5500.
-    const ID = "guardian-s-spirit";
-    const one = runBuild({ "insignia.bonus1": "Guardian's Spirit" });
+  it("occurrence tiers are absolute and mutually exclusive, not cumulative", () => {
+    const one = runBuild({ "insignia.bonus1": "tier-insignia" });
     const two = runBuild({
-      "insignia.bonus1": "Guardian's Spirit",
-      "insignia.bonus2": "Guardian's Spirit",
+      "insignia.bonus1": "tier-insignia",
+      "insignia.bonus2": "tier-insignia",
     });
-    expect(one.statOf(ID, "defense")).toBeCloseTo(2500, 9);
-    expect(one.activeById.get(ID)!.chose).toBe("tier:1");
-    expect(two.statOf(ID, "defense")).toBeCloseTo(3000, 9);
-    expect(two.activeById.get(ID)!.chose).toBe("tier:2");
+    expect(statOf(one, "tiered", "defense")).toBeCloseTo(2500, 9);
+    expect(bonusOf(one, "tiered")!.chose).toBe("tier:1");
+    expect(statOf(two, "tiered", "defense")).toBeCloseTo(3000, 9);
+    expect(bonusOf(two, "tiered")!.chose).toBe("tier:2");
   });
 
-  it("Halving insignia stacks scale geometrically, capped at three", () => {
-    const ID = "gladiator-s-guile";
+  it("halving stacks scale geometrically, capped at three", () => {
     const slots = [
       "insignia.bonus1",
       "insignia.bonus2",
@@ -209,56 +313,48 @@ describe("bonus model semantics", () => {
       "insignia.bonus4",
     ];
     const withCopies = (n: number) =>
-      runBuild(
-        Object.fromEntries(
-          slots.slice(0, n).map((slot) => [slot, "Gladiator's Guile"]),
+      statOf(
+        runBuild(
+          Object.fromEntries(
+            slots.slice(0, n).map((slot) => [slot, "halving-insignia"]),
+          ),
         ),
-      ).statOf(ID, "movement");
+        "halving",
+        "movement",
+      );
     expect(withCopies(1)).toBeCloseTo(0.1, 9);
     expect(withCopies(2)).toBeCloseTo(0.15, 9);
     expect(withCopies(3)).toBeCloseTo(0.175, 9);
     expect(withCopies(4)).toBeCloseTo(0.175, 9);
   });
 
-  it("Role variants select exactly one payload, summed with the bonus's other grants", () => {
-    // Grants restructuring (2026-07-27): this bonus is 4 grants now, not 4 separately-tracked
-    // bonuses -- a flat 2-occurrence grant (-5% incoming, +5% healing) is active alongside the
-    // role variant whenever 2 occurrences are equipped, so a role that is not the matching
-    // variant still carries the flat grant's own stats, just not the other roles'
-    // variant-specific ones.
-    const ID = "m28-voidtouched-set";
-    const gear = {
-      "gear.mainhand": "M28 Voidtouched Pactblade",
-      "gear.offhand": "M28 Voidtouched Tome",
-    };
-    const dps = runBuild(gear, { role: "dps" });
-    const healer = runBuild(gear, { role: "healer" });
-    const tank = runBuild(gear, { role: "tank" });
-    expect(dps.statOf(ID, "outgoing_damage")).toBeCloseTo(0.06, 9);
-    expect(dps.statOf(ID, "overall_healing")).toBeCloseTo(0.05, 9);
-    expect(healer.statOf(ID, "overall_healing")).toBeCloseTo(0.05 + 0.06, 9);
-    expect(tank.statOf(ID, "incoming_damage")).toBeCloseTo(-0.05 - 0.06, 9);
-    // healer's variant doesn't grant outgoing_damage - verify its stats don't include it
-    const healerBonus = healer.activeById.get(ID)!;
-    expect(healerBonus.stats?.outgoing_damage).toBeUndefined();
+  const SET = {
+    "gear.mainhand": "set-mainhand",
+    "gear.offhand": "set-offhand",
+  };
+
+  it("role variants select exactly one payload, summed with the bonus's other grants", () => {
+    // The flat grant applies for every role; only the matching role's variant adds to it.
+    const dps = runBuild(SET, { role: "dps" });
+    const healer = runBuild(SET, { role: "healer" });
+    const tank = runBuild(SET, { role: "tank" });
+    expect(statOf(dps, "set", "outgoing_damage")).toBeCloseTo(0.06, 9);
+    expect(statOf(dps, "set", "overall_healing")).toBeCloseTo(0.05, 9);
+    expect(statOf(healer, "set", "overall_healing")).toBeCloseTo(
+      0.05 + 0.06,
+      9,
+    );
+    expect(statOf(tank, "set", "incoming_damage")).toBeCloseTo(-0.05 - 0.06, 9);
+    expect(statOf(healer, "set", "outgoing_damage")).toBeUndefined();
   });
 
-  it("A variant grant under an unmet gate still explains every variant branch", () => {
-    // The set's role variants want a single enemy; against several the grant is inactive, and
-    // the hover card still needs each variant's own conditions to label its rungs.
-    const ID = "m28-voidtouched-set";
-    const result = runBuild(
-      {
-        "gear.mainhand": "M28 Voidtouched Pactblade",
-        "gear.offhand": "M28 Voidtouched Tome",
-      },
-      { role: "dps", enemies: 3 },
-    );
-    const gated = result.activeById
-      .get(ID)!
-      .grants!.find(
-        (grant) => grant.raw.variants && !grant.active && !grant.gate.ok,
-      )!;
+  it("a variant grant under an unmet gate still explains every variant branch", () => {
+    // Against several enemies the grant is inactive, and the hover card still needs each
+    // variant's own conditions to label its rungs.
+    const result = runBuild(SET, { role: "dps", enemies: 3 });
+    const gated = bonusOf(result, "set")!.grants!.find(
+      (grant) => grant.raw.variants && !grant.active && !grant.gate.ok,
+    )!;
     expect(gated.chose).toBeNull();
     expect(gated.variantBranches?.map((b) => b.leaves[0]?.label)).toEqual([
       "Role: dps",
@@ -272,135 +368,87 @@ describe("bonus model semantics", () => {
     ]);
   });
 
-  it("A bonus needing two occurrences needs both items equipped", () => {
-    const ID = "m28-voidtouched-set";
-    expect(
-      runBuild({ "gear.mainhand": "M28 Voidtouched Pactblade" }).activeById.has(
-        ID,
-      ),
-    ).toBe(false);
-    expect(
-      runBuild({
-        "gear.mainhand": "M28 Voidtouched Pactblade",
-        "gear.offhand": "M28 Voidtouched Tome",
-      }).activeById.has(ID),
-    ).toBe(true);
+  it("a bonus needing two occurrences needs both items equipped", () => {
+    expect(isActive(runBuild({ "gear.mainhand": "set-mainhand" }), "set")).toBe(
+      false,
+    );
+    expect(isActive(runBuild(SET), "set")).toBe(true);
   });
 
-  it("Location is an item_picker choice, read via an `equipped` condition", () => {
-    const gear = {
-      "gear.mainhand": "M28 Voidtouched Pactblade",
-      "gear.offhand": "M28 Voidtouched Tome",
-    };
-    const ID = "m28-voidtouched-set";
-    expect(runBuild(gear).statOf(ID, "movement")).toBeUndefined();
+  it("an item_picker choice is read through an `equipped` condition", () => {
+    expect(statOf(runBuild(SET), "set", "movement")).toBeUndefined();
     expect(
-      runBuild({ ...gear, "options.scenario#1": "Location: Wildspace" }).statOf(
-        ID,
+      statOf(
+        runBuild({ ...SET, "options.location": "location-a" }),
+        "set",
         "movement",
       ),
     ).toBeCloseTo(0.12, 9);
 
-    const predatorId = "m31-thayan-predator";
-    const ring = { "gear.ring1": "M31 Runebound Shackle" };
-    expect(runBuild(ring).statOf(predatorId, "outgoing_damage")).toBeCloseTo(
-      0.02,
-      9,
-    );
+    const ring = { "gear.ring1": "location-ring" };
     expect(
-      runBuild({ ...ring, "options.scenario#1": "Location: Thay" }).statOf(
-        predatorId,
+      statOf(runBuild(ring), "location-variant", "outgoing_damage"),
+    ).toBeCloseTo(0.02, 9);
+    expect(
+      statOf(
+        runBuild({ ...ring, "options.location": "location-b" }),
+        "location-variant",
         "outgoing_damage",
       ),
     ).toBeCloseTo(0.05, 9);
   });
 
   it("perSource stacking multiplies by contributing slots", () => {
-    // Replaces legacy `bonus_max_instances: 100` + `max_copies: 3`.
-    const ID = "mount-vortex-panther-necrotic";
-    const one = runBuild({
-      "artifactCall.artifactCall#1": "Mount: Vortex/Panther/Necrotic",
-    });
+    const one = runBuild({ "artifactCall.call1": "call" });
     const two = runBuild({
-      "artifactCall.artifactCall#1": "Mount: Vortex/Panther/Necrotic",
-      "artifactCall.artifactCall#2": "Mount: Vortex/Panther/Necrotic",
+      "artifactCall.call1": "call",
+      "artifactCall.call2": "call",
     });
-    const oneBonus = one.activeById.get(ID)!;
-    const twoBonus = two.activeById.get(ID)!;
-    expect(oneBonus.stacks).toBe(1);
-    expect(twoBonus.stacks).toBe(2);
-    const oneApplied = one.appliedStatOf(ID, "enemy_incoming_damage")!;
-    // `stats` stays the per-stack payload.
-    const twoStatOf = two.statOf(ID, "enemy_incoming_damage")!;
-    const oneStatOf = one.statOf(ID, "enemy_incoming_damage")!;
-    expect(twoStatOf).toBeCloseTo(oneStatOf, 9);
-    // but `appliedStats` doubles.
-    expect(two.appliedStatOf(ID, "enemy_incoming_damage")!).toBeCloseTo(
-      2 * oneApplied,
+    expect(bonusOf(one, "per-source")!.stacks).toBe(1);
+    expect(bonusOf(two, "per-source")!.stacks).toBe(2);
+    const stat = "enemy_incoming_damage";
+    // `stats` stays the per-stack payload, `appliedStats` doubles.
+    expect(statOf(two, "per-source", stat)).toBeCloseTo(
+      statOf(one, "per-source", stat)!,
+      9,
     );
-    // and the doubled value reaches the pipeline.
+    const oneApplied = appliedStatOf(one, "per-source", stat)!;
+    expect(appliedStatOf(two, "per-source", stat)).toBeCloseTo(2 * oneApplied);
+    // And the doubled value reaches the pipeline.
     expect(two.stages.sums.enemy_incoming_damage).toBeCloseTo(2 * oneApplied);
   });
 
-  it("Exclusion suppresses the excluded bonus", () => {
-    // Replaces legacy `bonus_overrides`.
-    const ID = "m31-bloodletting-ascendant";
-    const alone = runBuild({
-      "gear.boots": "M31 Greaves of the Crimson March",
-    });
+  it("exclusion suppresses the excluded bonus", () => {
+    const alone = runBuild({ "gear.boots": "excluded-boots" });
     const suppressed = runBuild({
-      "gear.boots": "M31 Greaves of the Crimson March",
-      "gear.shirt": "M33 Cracked Stormbind Tunic Shirt",
+      "gear.boots": "excluded-boots",
+      "gear.shirt": "excluder-shirt",
     });
-    expect(alone.activeById.has(ID)).toBe(true);
-    expect(suppressed.activeById.has(ID)).toBe(false);
-    expect(
-      suppressed.bonuses.find((b: EvaluatedBonus) => b.id === ID)?.excluded,
-    ).toBe(true);
+    expect(isActive(alone, "excluded")).toBe(true);
+    expect(isActive(suppressed, "excluded")).toBe(false);
+    expect(bonusOf(suppressed, "excluded")?.excluded).toBe(true);
   });
 
-  // --- order independence ----------------------------------------------------------------
-  it("Resolution does not depend on slot order", () => {
-    // The sheet counted instances by scanning rows above while checking overrides against all
-    // rows, so results could shift when rows moved.
-    const a = runBuild({
-      "gear.head": "M33 Wintermarked Hunter Hood",
-      "gear.boots": "M33 Wintermarked Marcher Poleyns",
-    });
-    const b = runBuild({
-      "gear.boots": "M33 Wintermarked Marcher Poleyns",
-      "gear.head": "M33 Wintermarked Hunter Hood",
-    });
+  it("resolution does not depend on slot order", () => {
+    const a = runBuild({ "gear.head": "head", "gear.boots": "boots" });
+    const b = runBuild({ "gear.boots": "boots", "gear.head": "head" });
     expect(a.stages.totals.strike_p).toBeCloseTo(b.stages.totals.strike_p, 9);
   });
 
-  // --- validation ---------------------------------------------------------------------
-  it("Dynamic stats use the typed value and warn when out of range", () => {
-    // FIX #6. Clamping silently rewrites the number the user typed, and would make the engine
-    // disagree with the sheet for no stated reason.
+  it("dynamic stats use the typed value and warn when out of range", () => {
+    // Clamping would silently rewrite the number the user typed.
     const dynamicCa = (result: ReturnType<typeof runBuild>) =>
       result.ledger.find(
         (entry) =>
           entry.kind === "dynamic" &&
-          entry.slotId === "gear.offhandMod2" &&
+          entry.slotId === "gear.mod" &&
           entry.stat === "ca",
       )?.value;
-    // The mod slot exists only under an artifact offhand.
-    const offhand = "M32 Codex of Eternal Chains (Celestial)";
-    const inRange = runBuild(
-      { "gear.offhand": offhand, "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
-      {},
-      { "gear.offhandMod2": { stat: { ca: 2000 } } },
-    );
-    const over = runBuild(
-      { "gear.offhand": offhand, "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
-      {},
-      { "gear.offhandMod2": { stat: { ca: 5800 } } },
-    );
+    const typed = (ca: number) =>
+      runBuild({ "gear.mod": "ca-mod" }, {}, { "gear.mod": { stat: { ca } } });
+    const inRange = typed(2000);
+    const over = typed(5800);
     expect(dynamicCa(inRange)).toBeCloseTo(2000, 9);
-    // Not errors.length === 0: BASE_CONTEXT leaves every leveling ability-score slot at its
-    // default (unassigned), which trips the unrelated "level-attr-warning" bonusRule -- this
-    // assertion only cares that an in-range typed value raises no outOfRange error.
     expect(
       inRange.errors.some((e: EngineError) => e.kind === "outOfRange"),
     ).toBe(false);
@@ -411,75 +459,29 @@ describe("bonus model semantics", () => {
   });
 
   it("maxCopies and class restrictions are reported", () => {
-    // Four groups: an insignia bonus caps at 3, so three copies is a legal stable.
     const tooMany = runBuild({
-      "insignia.bonus1": "Gladiator's Guile",
-      "insignia.bonus2": "Gladiator's Guile",
-      "insignia.bonus3": "Gladiator's Guile",
-      "insignia.bonus4": "Gladiator's Guile",
+      "insignia.bonus1": "halving-insignia",
+      "insignia.bonus2": "halving-insignia",
+      "insignia.bonus3": "halving-insignia",
+      "insignia.bonus4": "halving-insignia",
     });
     expect(
       tooMany.errors.some((e: EngineError) => e.kind === "maxCopies"),
     ).toBe(true);
     const wrongClass = runBuild(
-      { "gear.mainhand": "M28 Voidtouched Pactblade" },
+      { "gear.mainhand": "set-mainhand" },
       { class: "barbarian" },
     );
     expect(wrongClass.errors.some((e: EngineError) => e.kind === "class")).toBe(
       true,
     );
   });
-
-  it("Conditions read the build, never the results", () => {
-    // Design rule from plan §2.2 -- keeps evaluation single-pass and acyclic.
-    const seen = new Set<string>();
-    const walk = (when: ConditionWhen | undefined): void => {
-      if (!when) return;
-      for (const [key, value] of Object.entries(when)) {
-        if (key === "any" || key === "all")
-          (value as ConditionWhen[]).forEach(walk);
-        else if (key === "not") walk(value as ConditionWhen | undefined);
-        else seen.add(key);
-      }
-    };
-    const visit = (grant: Grant) => {
-      walk(grant.when);
-      (grant.variants ?? []).forEach((v: Grant) => walk(v.when));
-    };
-    for (const bonus of built.bonuses) bonus.grants?.forEach(visit);
-    const allowed = new Set([
-      "toggle",
-      "proc",
-      "role",
-      "class",
-      "damageType",
-      "duration",
-      "enemies",
-      "bonusOccurrences",
-      "equipped",
-      "input",
-    ]);
-    const unknown = [...seen].filter((k) => !allowed.has(k));
-    expect(unknown).toEqual([]);
-  });
 });
 
-// A point_assignment slot's count is meant to resolve exactly like N separate item_picker
-// picks of the same item -- a synthetic db (not the real shipped one) isolates that claim
-// with a bonus built specifically to prove stacking scales with the count.
+// A point_assignment slot's count resolves exactly like N separate item_picker picks of the
+// same item, with a bonus built to prove stacking scales with the count.
 describe("point_assignment resolution", () => {
-  const schema: Schema = {
-    stats: [],
-    statByKey: {},
-    statKeys: ["power_p"],
-    multiplicativeStats: [],
-    ratingStats: [],
-    abilityStats: [],
-    ratingConversion: [],
-    statContributions: [],
-    forteSplit: {},
-    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  };
+  const schema = testSchema(["power_p"]);
 
   const powerItem: Item = {
     id: "boon-power",
@@ -564,8 +566,7 @@ describe("point_assignment resolution", () => {
   });
 
   it("a count outside the row's min/max is flagged as outOfRange, not clamped", () => {
-    // Not achievable through the UI's own -/+ buttons (they clamp), but a hand-edited or
-    // imported build can carry one -- same reasoning as dynamicStat's own outOfRange check.
+    // The UI's own -/+ buttons clamp, but a hand-edited or imported build can carry one.
     const result = engine.resolveBuild(testDb, buildWith({ "boon-power": 6 }));
     expect(result.errors.some((e) => e.kind === "outOfRange")).toBe(true);
   });
@@ -579,24 +580,11 @@ describe("point_assignment resolution", () => {
   });
 });
 
-// A point_assignment item at 0 points is reachable (an anchor, same as the item_picker case)
-// rather than skipped entirely -- but reachable must not mean "resolved for real": a proc left
-// on must not activate the bonus just because the item itself is still walked for
-// reachability. A synthetic db mirrors the shipped "Deathly Rage" shape: a proc input gating
+// A point_assignment item at 0 points is still walked as an anchor, but that must not resolve
+// it for real: a proc left on must not activate the bonus. The bonus is a proc input gating
 // tiers on the boon's own rank.
 describe("a point_assignment item's bonus stays inactive while the item itself is at 0 points", () => {
-  const schema: Schema = {
-    stats: [],
-    statByKey: {},
-    statKeys: ["power_p"],
-    multiplicativeStats: [],
-    ratingStats: [],
-    abilityStats: [],
-    ratingConversion: [],
-    statContributions: [],
-    forteSplit: {},
-    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  };
+  const schema = testSchema(["power_p"]);
 
   const statsBonus: Bonus = {
     id: "boon-master-stats",
@@ -685,24 +673,11 @@ describe("a point_assignment item's bonus stays inactive while the item itself i
   });
 });
 
-// A bonus whose only source anywhere is currently a pick repeated 0 times still resolves --
-// inactive, via a sources-less "anchor" group (bonus.ts's `collectAttachments`/`resolve()`) --
-// rather than being absent from `result.bonuses` entirely. The anchor must never be counted
-// as a real source anywhere stacking/attribution reads `sources`, which the mixed-source tests
-// below exist to pin down.
+// A bonus whose only source is a pick repeated 0 times still resolves, inactive, through a
+// sources-less anchor group rather than vanishing from `result.bonuses`. The anchor must never
+// count as a real source wherever stacking or attribution reads `sources`.
 describe("a bonus reachable only through a currently-zero repetition count", () => {
-  const schema: Schema = {
-    stats: [],
-    statByKey: {},
-    statKeys: ["power_p"],
-    multiplicativeStats: [],
-    ratingStats: [],
-    abilityStats: [],
-    ratingConversion: [],
-    statContributions: [],
-    forteSplit: {},
-    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  };
+  const schema = testSchema(["power_p"]);
 
   const stackingBonus: Bonus = {
     id: "stacking-bonus",
@@ -791,8 +766,8 @@ describe("a bonus reachable only through a currently-zero repetition count", () 
     );
     const entry = result.bonuses.find((b) => b.id === "stacking-bonus");
     expect(entry?.active).toBe(true);
-    // Only dial-item's 2 real occurrences count -- other-dial-item's 0 contributes nothing to
-    // stacks, sources, or the applied stats, even though it's equipped in the same build.
+    // Only dial-item's 2 real occurrences count. other-dial-item at 0 adds nothing to stacks,
+    // sources or the applied stats, even though it's equipped.
     expect(entry?.stacks).toBe(2);
     expect(entry?.sources).toEqual([
       { name: "Dial Item", slotId: "slot1", itemId: "dial-item" },
@@ -832,25 +807,11 @@ describe("a bonus reachable only through a currently-zero repetition count", () 
   });
 });
 
-// Unlike every fixture above (a self-referential `bonusOccurrences` gate, which naturally
-// fails at 0 real occurrences on its own), this grant has no `when` at all -- e.g. Shattered
-// Resolve's flat per-stack payload. Without `evaluateBonus` also forcing the grant's own
-// `.active` false, it stays `true` on its own and gets multiplied by `entry.stacks` (0 while
-// inactive) instead of falling through to the near-miss preview -- showing 0 instead of what
-// one stack would actually give.
+// This grant has no `when` at all, so nothing but the bonus itself turns it off at 0 stacks.
+// The grant must read inactive then, so the preview shows what one stack would give instead
+// of the payload times 0 stacks.
 describe("an unconditional stacking grant reachable only through a currently-zero count", () => {
-  const schema: Schema = {
-    stats: [],
-    statByKey: {},
-    statKeys: ["power_p"],
-    multiplicativeStats: [],
-    ratingStats: [],
-    abilityStats: [],
-    ratingConversion: [],
-    statContributions: [],
-    forteSplit: {},
-    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  };
+  const schema = testSchema(["power_p"]);
 
   const unconditionalStackingBonus: Bonus = {
     id: "unconditional-stacking-bonus",
@@ -935,30 +896,12 @@ describe("an unconditional stacking grant reachable only through a currently-zer
   });
 });
 
-// A build_parameter's `linkedItem` is meant to resolve through the exact same
-// equip/tag/bonus-occurrence/bonus-candidate bookkeeping an item_picker pick does (bonus.ts's
-// `collect()` derives the row's "choice" from the param's current value instead of
-// `build.choices`, but everything downstream is shared) -- a synthetic db isolates both
-// authoring shapes: a `list` param's per-option item and a `boolean`
-// param's single item.
 describe("race restrictions ride on the generic equipped condition", () => {
-  const schema: Schema = {
-    stats: [],
-    statByKey: {},
-    statKeys: ["power_p", "hit_points"],
-    multiplicativeStats: [],
-    ratingStats: [],
-    abilityStats: [],
-    ratingConversion: [],
-    statContributions: [],
-    forteSplit: {},
-    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  };
+  const schema = testSchema(["power_p", "hit_points"]);
 
-  // Race restrictions are no longer a dedicated `allowedRace`/`kind: "race"` check -- race
-  // is an `item_picker` slot again, and a race-restricted item expresses its
-  // restriction the same way any other conditional problem does: a `hideFromPicker` grant
-  // gated on the generic `equipped` leaf against the race item's own id.
+  // Race is an item_picker slot, and a race-restricted item expresses its restriction like any
+  // other conditional problem: a `hideFromPicker` grant gated on the generic `equipped` leaf
+  // against the race item's own id.
   it("a race-restricted item flags a bonusRule problem via the generic equipped condition", () => {
     const halfOrcRaceItem: Item = {
       id: "race-test-half-orc",
@@ -1048,20 +991,9 @@ describe("race restrictions ride on the generic equipped condition", () => {
 // Both slot kinds (item_picker and point_assignment): an item-level mismatch check and a
 // point-threshold check.
 describe("problem grants (bonus-authored errors/warnings)", () => {
-  const schema: Schema = {
-    stats: [],
-    statByKey: {},
-    statKeys: ["power_p"],
-    multiplicativeStats: [],
-    ratingStats: [],
-    abilityStats: [],
-    ratingConversion: [],
-    statContributions: [],
-    forteSplit: {},
-    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  };
+  const schema = testSchema(["power_p"]);
 
-  // item_picker case: an error grant gated on the build's own class -- stands in for "the
+  // item_picker case: an error grant gated on the build's own class, standing in for "the
   // chosen race bonus doesn't match the race picked".
   const mismatchBonus: Bonus = {
     id: "class-mismatch-check",
@@ -1100,7 +1032,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     filter: "test_slot",
     bonuses: ["class-mismatch-check-labeled"],
   };
-  // A `hideFromPicker` problem grant -- signals that a consumer (ItemPicker.vue) should drop
+  // A `hideFromPicker` problem grant tells a consumer (ItemPicker.vue) to drop
   // the item from its dropdown while the condition holds, on top of the usual sidebar/inline
   // warning. The engine itself doesn't act on the flag; it just has to carry it through intact.
   const hideFromPickerBonus: Bonus = {
@@ -1130,7 +1062,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     filter: "test_slot",
   };
 
-  // point_assignment case: a warning gated on a tag threshold -- "warning if a tier 2 boon is
+  // point_assignment case: a warning gated on a tag threshold, "warning if a tier 2 boon is
   // picked but fewer than 10 points are spent on tier 1 boons".
   const tier1Item: Item = {
     id: "boon-tier1",
@@ -1267,7 +1199,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     expect(result.errors.some((e) => e.kind === "bonusRule")).toBe(false);
   });
 
-  // `hideFromPicker` is only meaningful to a UI consumer (ItemPicker.vue) -- the engine's job
+  // `hideFromPicker` is only meaningful to a UI consumer (ItemPicker.vue). The engine's job
   // is just to carry the flag through `EvaluatedBonus.problems` intact.
   it("threads a problem grant's hideFromPicker flag through to the resolved bonus", () => {
     const result = engine.resolveBuild(
