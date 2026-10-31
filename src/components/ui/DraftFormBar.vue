@@ -17,8 +17,8 @@ export interface FormBarAction {
 // the title (ItemBonuses' collapse chevron), `#after-title` holds the caller's badges and
 // chips, `#extra-actions` its own controls (ItemBonuses' Detach), `extraActions` its own
 // actions as entries (ItemForm's From screenshot).
-// Revert/Duplicate/Delete are icon buttons right after the title; Save is the one labeled
-// button, on the right. A wide bar is one row where a long title wraps in place. A narrow
+// Revert/Duplicate/Delete sit right after the title, as icons that gain their names when a
+// top-level bar is wide; Save is the one always-labeled button, on the right. A wide bar is one row where a long title wraps in place. A narrow
 // one (a container query, since the layer editor's list narrows the form at any width) puts
 // the title and badges on their own row, and the icon actions and right-hand group below.
 // `embedded`: an in-flow row inside another form's card, the same layout, just not sticky.
@@ -260,14 +260,23 @@ const builtInActions = computed<FormBarAction[]>(() =>
         class="flex shrink-0 items-center gap-1.5 text-[14px]"
         data-testid="form-bar-actions"
       >
+        <!-- A top-level bar with room names its actions; an embedded one stays icons, like
+             the caller's own extra actions beside them. -->
         <IconButton
           v-for="action in actions"
           :key="action.key"
+          class="gap-1"
           :title="action.title"
           :data-testid="action.testid"
           @click="action.run($event)"
         >
           <component :is="action.icon" />
+          <span
+            v-if="!embedded"
+            class="hidden @3xl:inline"
+            data-testid="form-bar-action-label"
+            >{{ action.title }}</span
+          >
         </IconButton>
         <slot name="extra-actions" />
       </span>

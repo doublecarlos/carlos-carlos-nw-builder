@@ -98,3 +98,18 @@ for (const width of [1024, 1440]) {
     await expectNoHorizontalScroll(page);
   });
 }
+
+test("a wide form bar names its actions, a narrow one keeps icons", async ({
+  page,
+}) => {
+  await openRenamedItem(page);
+  // The wide desktop form has room for each action's name beside its icon.
+  await page.setViewportSize({ width: 1600, height: 900 });
+  const labels = bar(page).getByTestId("form-bar-action-label");
+  await expect(labels.filter({ hasText: "Duplicate" })).toBeVisible();
+
+  // Squeezed beside the list, the names give way and the bar keeps one readable row of icons.
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await expect(labels.filter({ hasText: "Duplicate" })).toBeHidden();
+  await expectBarReadable(page);
+});
