@@ -72,10 +72,13 @@ test("the page behind it does not scroll, and scrolls again after", async ({
   await trigger(page).click();
   await expect(wizard(page)).toBeVisible();
 
+  // The scroll lock itself is the behavior under test.
+  // eslint-disable-next-line no-restricted-syntax
   await expect(page.locator("body")).toHaveCSS("overflow", "hidden");
 
   await page.keyboard.press("Escape");
   await expect(wizard(page)).toBeHidden();
+  // eslint-disable-next-line no-restricted-syntax
   await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
 });
 

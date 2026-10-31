@@ -122,6 +122,7 @@ test("a swipe on a row's body scrolls the list instead of dragging", async ({
   const scrollTop = () =>
     page.getByTestId("nav-builds-list").evaluate((list) => {
       let el: HTMLElement | null = list as HTMLElement;
+      // eslint-disable-next-line no-restricted-syntax
       while (el && getComputedStyle(el).overflowY !== "auto")
         el = el.parentElement;
       return el?.scrollTop ?? 0;

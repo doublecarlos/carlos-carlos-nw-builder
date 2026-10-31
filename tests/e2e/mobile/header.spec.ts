@@ -179,6 +179,7 @@ test("a long notice wraps under the header row instead of truncating", async ({
       scrollWidth: el.scrollWidth,
       clientWidth: el.clientWidth,
       height: el.getBoundingClientRect().height,
+      // eslint-disable-next-line no-restricted-syntax
       lineHeight: parseFloat(getComputedStyle(el).lineHeight),
     }));
   expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth);

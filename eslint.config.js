@@ -101,6 +101,31 @@ export default defineConfigWithVueTs(
     files: ["tests/e2e/**/*.spec.ts"],
   },
 
+  {
+    name: "app/e2e-no-style-pins",
+    files: ["tests/e2e/**/*.spec.ts"],
+    rules: {
+      // Computed styles pin incidental output. Assert layout through relations and state
+      // through aria-*/data-* (see AGENTS.md `# Tests`); disable per line when the style is
+      // the behavior itself.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression > MemberExpression.callee > Identifier.property[name='toHaveCSS']",
+          message:
+            "Avoid toHaveCSS: assert a relation, role, aria-* or data-* instead. See AGENTS.md `# Tests`.",
+        },
+        {
+          selector:
+            "CallExpression > Identifier.callee[name='getComputedStyle']",
+          message:
+            "Avoid getComputedStyle: assert a relation, role, aria-* or data-* instead. See AGENTS.md `# Tests`.",
+        },
+      ],
+    },
+  },
+
   // Must be last: turns off stylistic rules that Prettier already owns.
   skipFormatting,
 );

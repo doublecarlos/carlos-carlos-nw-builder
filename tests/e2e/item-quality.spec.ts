@@ -83,12 +83,14 @@ test("a stat source line is tinted by its item, and card stats are not", async (
   const card = page.getByTestId("item-card");
   const name = await card
     .getByTestId("item-card-name")
+    // eslint-disable-next-line no-restricted-syntax
     .evaluate((el) => getComputedStyle(el).color);
   const label = await card
     .getByTestId("stat-row")
     .first()
     .locator("span")
     .first()
+    // eslint-disable-next-line no-restricted-syntax
     .evaluate((el) => getComputedStyle(el).color);
   expect(label).not.toBe(name);
 });

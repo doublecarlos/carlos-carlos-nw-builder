@@ -25,6 +25,7 @@ async function bootWith(
   const boot = page.getByTestId("boot-screen");
   await expect(boot).toBeVisible();
   const background = await boot.evaluate(
+    // eslint-disable-next-line no-restricted-syntax
     (el) => getComputedStyle(el).backgroundColor,
   );
   const dark = await page

@@ -132,6 +132,7 @@ test("wrapping a control leaves its layout and classes alone", async ({
   await expect(button).toHaveClass(/flex-none/);
   expect(
     await button.evaluate(
+      // eslint-disable-next-line no-restricted-syntax
       (el) => getComputedStyle(el.parentElement!).display === "contents",
     ),
   ).toBe(true);

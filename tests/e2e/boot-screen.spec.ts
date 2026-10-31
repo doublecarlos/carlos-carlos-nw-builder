@@ -30,7 +30,9 @@ test("the first frame does not resize when the app's stylesheet arrives", async 
   await page.goto("/");
   await expect(page.getByTestId("boot-screen")).toBeVisible();
   const firstFrame = await page.evaluate(() => ({
+    // eslint-disable-next-line no-restricted-syntax
     fontSize: getComputedStyle(document.documentElement).fontSize,
+    // eslint-disable-next-line no-restricted-syntax
     lineHeight: getComputedStyle(document.querySelector(".boot")!).lineHeight,
   }));
   // Inherited from the browser rather than declared, which is the bug this guards.
@@ -40,7 +42,9 @@ test("the first frame does not resize when the app's stylesheet arrives", async 
   await page.goto("/");
   await expect(page.getByTestId("landing")).toBeVisible({ timeout: 15000 });
   const mounted = await page.evaluate(() => ({
+    // eslint-disable-next-line no-restricted-syntax
     fontSize: getComputedStyle(document.documentElement).fontSize,
+    // eslint-disable-next-line no-restricted-syntax
     lineHeight: getComputedStyle(document.body).lineHeight,
   }));
 

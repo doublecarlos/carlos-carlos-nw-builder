@@ -12,10 +12,13 @@ import {
 } from "./support/nav";
 
 async function expectRowOutline(row: Locator) {
+  // Whether an outline shows is the behavior under test.
+  // eslint-disable-next-line no-restricted-syntax
   await expect(row).not.toHaveCSS("outline-style", "none");
 }
 
 async function expectNoOutline(el: Locator) {
+  // eslint-disable-next-line no-restricted-syntax
   await expect(el).toHaveCSS("outline-style", "none");
 }
 

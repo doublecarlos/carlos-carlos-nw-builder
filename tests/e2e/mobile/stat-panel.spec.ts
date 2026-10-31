@@ -54,6 +54,8 @@ async function expectColumnFits(page: Page) {
       .filter((el) => el.dataset.testid !== "stat-table-scroll")
       .filter((el) => el.offsetParent && el.scrollWidth > el.clientWidth + 1)
       .filter((el) =>
+        // Only boxes that can scroll count; clipped ones don't.
+        // eslint-disable-next-line no-restricted-syntax
         ["auto", "scroll"].includes(getComputedStyle(el).overflowX),
       )
       .map((el) => el.className),
