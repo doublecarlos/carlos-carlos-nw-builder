@@ -1764,14 +1764,26 @@
   {
     "id": "lightning-flash",
     "name": "Lightning Flash",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Stacks",
+        "min": 0,
+        "max": 3,
+        "default": 3
+      }
+    },
     "grants": [
       {
         "when": {
           "toggle": "combat"
         },
         "stats": {
-          "acc_p": 0.108,
-          "strike_p": 0.108
+          "acc_p": 0.036,
+          "strike_p": 0.036
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       }
     ]
@@ -5288,6 +5300,33 @@
             "default": 0.06
           }
         ]
+      }
+    ]
+  },
+  {
+    "id": "spoonful-of-chaos",
+    "name": "Spoonful of Chaos",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Stacks",
+        "min": 0,
+        "max": 3,
+        "default": 3
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "acc_p": 0.036,
+          "ca_p": 0.036
+        },
+        "scale": {
+          "formula": "$stacks"
+        }
       }
     ]
   },
