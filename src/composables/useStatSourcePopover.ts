@@ -1,5 +1,5 @@
 import { ref, computed, type Ref, type ComputedRef } from "vue";
-import { onClickOutside } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
 import { sectionsFor } from "../engine/stat-sources";
 import { NW_SCHEMA } from "../data/data";
 import * as goTo from "../stores/goTo";
@@ -71,9 +71,10 @@ export function useStatSourcePopover(
    * the card itself (`.statcard`) and on other stat info buttons (`.stat-info-btn`),
    * so a click on a different row's trigger reaches `toggleCard` and switches the card
    * over instead of closing it first. */
-  onClickOutside(tooltip, () => closeCard(), {
-    ignore: [".statcard", ".stat-info-btn"],
-    capture: false,
+  useEventListener(window, "click", (event) => {
+    const target = event.target as Element | null;
+    if (!openCard.value || target?.closest(".statcard, .stat-info-btn")) return;
+    closeCard();
   });
 
   return {

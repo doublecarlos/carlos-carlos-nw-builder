@@ -9,7 +9,8 @@
 // overlay (see catalog.ts) and hands you the file contents to paste back.
 import {
   computed,
-  defineAsyncComponent,
+  defineVaporAsyncComponent,
+  type VaporComponent,
   onMounted,
   onUnmounted,
   provide,
@@ -35,10 +36,11 @@ import LayerExportModal from "./game/LayerExportModal.vue";
  *  The template shows a placeholder modal until the chunk arrives, since otherwise the
  *  button appears to do nothing at all. */
 const tooltipImportLoaded = ref(false);
-const TooltipImportModal = defineAsyncComponent(() =>
+const TooltipImportModal = defineVaporAsyncComponent(() =>
   import("./game/TooltipImportModal.vue").then((mod) => {
     tooltipImportLoaded.value = true;
-    return mod;
+    // vue-tsc still types SFCs as VDOM components.
+    return mod as unknown as { default: VaporComponent };
   }),
 );
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";

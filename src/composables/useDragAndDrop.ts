@@ -13,7 +13,7 @@
 // Vitest has no DOM, so only the pure helpers below are unit tested; DOM access is deferred to
 // the pointerdown handler and its listeners. Playwright covers the rest.
 
-import { computed, reactive, type ComponentPublicInstance } from "vue";
+import { computed, getCurrentScope, onScopeDispose, reactive } from "vue";
 
 export interface DragSource {
   /** Distinguishes payload shapes so a drop zone can reject sources it doesn't understand
@@ -457,26 +457,26 @@ export function useDropList(options: {
    *  `index` is that row's own index, not a gap. */
   onDrop: (source: DragSource, index: number, zone: DropZone) => void;
 }) {
-  function registerList(el: Element | ComponentPublicInstance | null) {
-    if (el) {
-      registry.set(options.containerId, {
-        containerId: options.containerId,
-        el: el as HTMLElement,
-        accepts: options.accepts,
-        onDrop: options.onDrop,
-      });
-    } else {
-      registry.delete(options.containerId);
-    }
+  // The list element is found by its `data-drop-list` attribute rather than a `ref`, which a
+  // `v-bind` object cannot carry in Vapor.
+  registry.set(options.containerId, {
+    containerId: options.containerId,
+    get el() {
+      return document.querySelector<HTMLElement>(
+        `[data-drop-list="${CSS.escape(options.containerId)}"]`,
+      )!;
+    },
+    accepts: options.accepts,
+    onDrop: options.onDrop,
+  });
+  if (getCurrentScope()) {
+    onScopeDispose(() => registry.delete(options.containerId));
   }
 
-  /** Bind on the list's root. Sets `data-drop-list` and registers the element so a hit inside
-   *  it resolves back to this list. */
+  /** Bind on the list's root. Sets `data-drop-list` so a hit inside it resolves back to this
+   *  list. */
   function listProps() {
-    return {
-      "data-drop-list": options.containerId,
-      ref: registerList,
-    };
+    return { "data-drop-list": options.containerId };
   }
 
   /** Bind on an element around the list whose empty space should drop into it: above the
