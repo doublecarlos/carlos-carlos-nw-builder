@@ -26,16 +26,16 @@ import {
   openRowMenu,
   renameViaSidebar,
 } from "./support/nav";
-import { TEST_HEAD_ITEM } from "./support/headItems";
+import { TEST_HEAD } from "./support/testHead";
 import { importTestCatalog } from "./support/testCatalog";
 
-const HEAD_ITEM = TEST_HEAD_ITEM.name;
+const HEAD_ITEM = TEST_HEAD.name;
 
 /** Opens Build 1 with the test head item available to pick. The import adds a build of its
  *  own, so this steps back onto Build 1. */
 async function openBuildWithHeadItem(page: Page) {
   await openBuilder(page);
-  await importTestCatalog(page, { items: [TEST_HEAD_ITEM] });
+  await importTestCatalog(page, { items: [TEST_HEAD] });
   await buildRow(page, "Build 1").click();
 }
 

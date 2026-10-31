@@ -11,18 +11,15 @@ import {
 import { layerRow } from "./support/nav";
 import { openSlotsTab } from "./support/layerEditor";
 import { importTestCatalog } from "./support/testCatalog";
-import {
-  TEST_HEAD_BONUS,
-  TEST_HEAD_ITEM_WITH_BONUS,
-} from "./support/headItems";
+import { TEST_HEAD_BONUS, TEST_HEAD_WITH_BONUS } from "./support/testHead";
 
 // Carries its own bonus, active by default.
-const HEAD_ITEM_WITH_BONUS = TEST_HEAD_ITEM_WITH_BONUS.name;
+const HEAD_ITEM_WITH_BONUS = TEST_HEAD_WITH_BONUS.name;
 
 async function openWithHeadItem(page: Page) {
   await openBuilder(page);
   await importTestCatalog(page, {
-    items: [TEST_HEAD_ITEM_WITH_BONUS],
+    items: [TEST_HEAD_WITH_BONUS],
     bonuses: [TEST_HEAD_BONUS],
   });
 }

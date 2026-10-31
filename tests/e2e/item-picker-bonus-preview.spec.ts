@@ -11,21 +11,21 @@ import {
 } from "./support/app";
 import {
   TEST_HEAD_BONUS,
-  TEST_HEAD_ITEM,
-  TEST_HEAD_ITEM_WITH_BONUS,
-} from "./support/headItems";
+  TEST_HEAD,
+  TEST_HEAD_WITH_BONUS,
+} from "./support/testHead";
 import { importTestCatalog } from "./support/testCatalog";
 
 // Carries its own bonus granting Combat Advantage, active the moment it's hypothetically
 // equipped, with nothing else needed.
-const HEAD_ITEM_WITH_BONUS = TEST_HEAD_ITEM_WITH_BONUS.name;
+const HEAD_ITEM_WITH_BONUS = TEST_HEAD_WITH_BONUS.name;
 // Same gear_head list, but carries no `bonuses` at all: the negative control.
-const HEAD_ITEM_WITHOUT_BONUS = TEST_HEAD_ITEM.name;
+const HEAD_ITEM_WITHOUT_BONUS = TEST_HEAD.name;
 
 async function openWithHeadItems(page: Page) {
   await openBuilder(page);
   await importTestCatalog(page, {
-    items: [TEST_HEAD_ITEM_WITH_BONUS, TEST_HEAD_ITEM],
+    items: [TEST_HEAD_WITH_BONUS, TEST_HEAD],
     bonuses: [TEST_HEAD_BONUS],
   });
 }

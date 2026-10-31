@@ -23,7 +23,7 @@ import {
   navName,
 } from "./support/nav";
 import { newInOutline, openSlotsTab } from "./support/layerEditor";
-import { TEST_HEAD_ITEM } from "./support/headItems";
+import { TEST_HEAD } from "./support/testHead";
 import { importTestCatalog } from "./support/testCatalog";
 
 const palette = (page: Page) => page.getByTestId("go-to-palette");
@@ -180,9 +180,9 @@ test.describe("choosing a destination", () => {
     page,
   }) => {
     await openBuilder(page);
-    await importTestCatalog(page, { items: [TEST_HEAD_ITEM] });
+    await importTestCatalog(page, { items: [TEST_HEAD] });
     await buildRow(page, "Build 1").click();
-    await chooseItem(page, "gear.head", TEST_HEAD_ITEM.name);
+    await chooseItem(page, "gear.head", TEST_HEAD.name);
     await page.getByTestId("nav-add-build").click();
     await chooseCombo(page.locator(".compare-select"), "Build 1");
     const onlyChanges = page.getByRole("checkbox", {

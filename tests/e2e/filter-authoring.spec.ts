@@ -3,7 +3,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
-import { TEST_HEAD_ITEM } from "./support/headItems";
+import { TEST_HEAD } from "./support/testHead";
 import { importTestCatalog } from "./support/testCatalog";
 
 /** A category items carry with no declaration of its own in data/filters.json. */
@@ -116,11 +116,11 @@ test("the item form's edit-filter link opens that category", async ({
   page,
 }) => {
   await openBuilder(page);
-  await importTestCatalog(page, { items: [TEST_HEAD_ITEM] });
+  await importTestCatalog(page, { items: [TEST_HEAD] });
   // The layer the import unpacked the test item into.
   await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
 
-  await page.locator(".editor-search").fill(TEST_HEAD_ITEM.name);
+  await page.locator(".editor-search").fill(TEST_HEAD.name);
   await page.locator(".editor-row").first().click();
   await expect(page.getByTestId("item-filter-input")).toHaveValue("gear_head");
 

@@ -11,10 +11,7 @@ import {
   cursorRow,
   hoverForCard,
 } from "./support/app";
-import {
-  TEST_HEAD_BONUS,
-  TEST_HEAD_ITEM_WITH_BONUS,
-} from "./support/headItems";
+import { TEST_HEAD_BONUS, TEST_HEAD_WITH_BONUS } from "./support/testHead";
 import { importTestCatalog } from "./support/testCatalog";
 
 const COLLAR_SLOT = "mounts.sturdyCollar";
@@ -42,7 +39,7 @@ async function openWithScaledItems(page: Page) {
         filter: "sturdy_collar",
         bonuses: ["test-stacking-bonus"],
       },
-      TEST_HEAD_ITEM_WITH_BONUS,
+      TEST_HEAD_WITH_BONUS,
     ],
     bonuses: [
       {
@@ -252,7 +249,7 @@ test("the bonus inspector breaks a scaled bonus down under its own heading", asy
   await openWithScaledItems(page);
   await equipCollar(page);
   await ensureSectionExpanded(page, "gear");
-  await chooseItem(page, "gear.head", TEST_HEAD_ITEM_WITH_BONUS.name);
+  await chooseItem(page, "gear.head", TEST_HEAD_WITH_BONUS.name);
   await setShare(page, "scalers.encounterDamage", 40);
 
   await page.getByRole("button", { name: /^Bonuses/ }).click();
