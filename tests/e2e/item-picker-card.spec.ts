@@ -3,8 +3,6 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import {
   chooseItem,
-  confirmImport,
-  importText,
   openBuilder,
   pickerInput,
   slotRow,
@@ -12,6 +10,7 @@ import {
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { openSlotsTab } from "./support/layerEditor";
+import { importTestCatalog } from "./support/testCatalog";
 
 // Carries its own bonus, active by default (see item-picker-bonus-preview.spec.ts).
 const HEAD_ITEM_WITH_BONUS = "M29 Enchanted Depthweave Cap";
@@ -151,52 +150,45 @@ test("a candidate's step ladder reads the build with the candidate picked", asyn
   await openBuilder(page);
   // The bonus doubles while its own ring is equipped, so a ladder read against the build
   // without the candidate would show half of what picking it gives.
-  await importText(
-    page,
-    JSON.stringify({
-      name: "Self ladder test",
-      choices: { "gear.ring1": "" },
-      catalog: {
-        items: {
-          [RING_ID]: {
-            id: RING_ID,
-            name: NAME,
-            filter: "gear_ring",
-            bonuses: [BONUS_ID],
-          },
-        },
-        bonuses: {
-          [BONUS_ID]: {
-            id: BONUS_ID,
-            name: "Test Self Ladder Bonus",
-            inputs: {
-              stacks: {
-                type: "number",
-                min: 0,
-                max: 2,
-                default: 1,
-                label: "Stacks",
-              },
-            },
-            formulas: {
-              self: { formula: `min(equipped("${RING_ID}"), 1)` },
-            },
-            grants: [
-              {
-                stats: { power: 100 },
-                scale: {
-                  formula: "$stacks * (1 + $self)",
-                  steps: { over: "$stacks", min: 0, max: 2, step: 1 },
-                },
-              },
-            ],
-          },
-        },
-        sectionPresets: {},
+  await importTestCatalog(page, {
+    name: "Self ladder test",
+    choices: { "gear.ring1": "" },
+    items: [
+      {
+        id: RING_ID,
+        name: NAME,
+        filter: "gear_ring",
+        bonuses: [BONUS_ID],
       },
-    }),
-  );
-  await confirmImport(page);
+    ],
+    bonuses: [
+      {
+        id: BONUS_ID,
+        name: "Test Self Ladder Bonus",
+        inputs: {
+          stacks: {
+            type: "number",
+            min: 0,
+            max: 2,
+            default: 1,
+            label: "Stacks",
+          },
+        },
+        formulas: {
+          self: { formula: `min(equipped("${RING_ID}"), 1)` },
+        },
+        grants: [
+          {
+            stats: { power: 100 },
+            scale: {
+              formula: "$stacks * (1 + $self)",
+              steps: { over: "$stacks", min: 0, max: 2, step: 1 },
+            },
+          },
+        ],
+      },
+    ],
+  });
 
   const row = slotRow(page, "gear.ring1");
   await row.scrollIntoViewIfNeeded();
