@@ -6,12 +6,7 @@
 // Preset lookups in that menu are `exact` because each row's "update from current" button
 // carries the preset's own name inside its label -- a substring match hits both.
 import { test, expect, type Page } from "@playwright/test";
-import {
-  openBuilder,
-  chooseCombo,
-  headerRow,
-  ensureSectionExpanded,
-} from "./support/app";
+import { openBuilder, chooseCombo, ensureSectionExpanded } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { openSlotsTab, newInOutline } from "./support/layerEditor";
 
@@ -49,11 +44,9 @@ test("creating a preset in a layer makes it available in the build's Preset menu
   // it sets role the same way a static preset does (section-presets.spec.ts).
   await page.getByRole("button", { name: "Build 1" }).click();
   await ensureSectionExpanded(page, "options");
-  const presetBtn = headerRow(page, "options")
-    .locator("..")
-    .locator(".section-preset-btn");
+  const presetBtn = page.getByTestId("section-actions-options");
   await presetBtn.click();
-  const popover = page.locator(".preset-popover");
+  const popover = page.getByTestId("section-actions-panel");
   await expect(
     popover.getByRole("button", { name: "E2E Preset", exact: true }),
   ).toBeVisible();
@@ -83,11 +76,9 @@ test("deleting a preset removes it from the build's Preset menu, leaving the oth
 
   await page.getByRole("button", { name: "Build 1" }).click();
   await ensureSectionExpanded(page, "options");
-  const presetBtn = headerRow(page, "options")
-    .locator("..")
-    .locator(".section-preset-btn");
+  const presetBtn = page.getByTestId("section-actions-options");
   await presetBtn.click();
-  const popover = page.locator(".preset-popover");
+  const popover = page.getByTestId("section-actions-panel");
   await expect(
     popover.getByRole("button", { name: "Temp Preset", exact: true }),
   ).toBeHidden();

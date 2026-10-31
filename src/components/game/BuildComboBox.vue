@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// The one picker every "choose a build" surface uses -- the quick-compare selector and a
-// section's "copy from" popover today.
+// The picker for choosing a build in a field: the quick-compare selector. A section's "copy
+// from" list (SectionActionsMenu) groups by folder the same way.
 //
 // Build names are only unique within a folder, and these surfaces sit outside the sidebar that
 // draws the grouping, so the list is grouped the same way the sidebar is: one heading per

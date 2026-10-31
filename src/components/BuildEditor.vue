@@ -865,10 +865,9 @@ function onCreatePreset(sectionId: string, sectionLabel: string) {
   selection.selectLayer(layer.id);
 }
 
-/** "Update from current" on one preset in a section's menu: re-snapshots the section into that
- *  preset's identity and writes it back to the layer that defines it (or, for a shipped preset,
- *  an overlay edit over it). PresetMenu confirms before this fires -- see its own comment on
- *  why an overwrite here needs one. */
+/** "Overwrite a preset" in a section's menu: re-snapshots the section into that preset's
+ *  identity and writes it back to the layer that defines it (or, for a shipped preset, an
+ *  overlay edit over it). `layers.updatePreset` posts the undo notice. */
 function onUpdatePreset(preset: SectionPreset) {
   layers.updatePreset(buildEditor.presetUpdatedFromSection(preset));
 }

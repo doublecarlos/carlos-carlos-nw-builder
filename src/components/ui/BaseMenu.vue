@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Shared shell for every click-triggered menu/command popover: BasePopover placement,
 // click-outside, Escape, focus-in on open, focus-restore on close, and roving keyboard focus
-// via useRovingFocus. NavContextMenu, PresetMenu, CheckMenu and SectionCopyMenu are all built on
+// via useRovingFocus. NavContextMenu, SectionActionsMenu and CheckMenu are all built on
 // this. See their own files for what differs between a command list, a checkbox group and a
 // small form.
 //
@@ -32,7 +32,7 @@ const props = withDefaults(
     role?: "menu" | "group";
     /** Arrow/Home/End move focus among items, and opening focuses the panel rather than an item
      *  (see `focusOpen`). Off for a panel whose own control already owns Up/Down, e.g.
-     *  SectionCopyMenu's combobox. Tab and Escape still dismiss either way. */
+     *  a combobox inside the panel. Tab and Escape still dismiss either way. */
     roving?: boolean;
     /** Selector for the items useRovingFocus and focus-on-open target. */
     itemSelector?: string;
@@ -43,9 +43,11 @@ const props = withDefaults(
     /** The panel's own layout (flex direction, gap, padding, sizing). Every caller's content
      *  differs; BaseMenu only owns the shared border/background/shadow chrome. */
     panelClass?: string | string[];
-    /** Off for a panel with its own multi-control tab order (SectionCopyMenu's combobox plus
+    /** Off for a panel with its own multi-control tab order (a combobox plus
      *  Copy button). Tab cycles within the panel instead of closing it, like a modal. */
     dismissOnTab?: boolean;
+    /** `data-testid` for the panel. */
+    panelTestid?: string;
   }>(),
   {
     width: undefined,
@@ -58,6 +60,7 @@ const props = withDefaults(
     ignore: () => [],
     panelClass: undefined,
     dismissOnTab: true,
+    panelTestid: undefined,
   },
 );
 
@@ -84,7 +87,7 @@ const roving = useRovingFocus({
  *  instead, which is enough for Tab, Escape and click-outside; the first ArrowDown/Up lands on
  *  an item (see useRovingFocus's `at === -1`).
  *
- *  Except when `roving` is off: SectionCopyMenu has no arrow key to fall back on to reach its
+ *  Except when `roving` is off: such a panel has no arrow key to fall back on to reach its
  *  single input, so it wants that input focused immediately. */
 function focusOpen() {
   if (props.roving) nextTick(() => panel.value?.focus());
@@ -139,19 +142,19 @@ function onPanelKeydown(event: KeyboardEvent) {
 }
 
 const triggerAttrs = computed(() => ({
-  // "group" is not a valid aria-haspopup value. CheckMenu and SectionCopyMenu, the two
-  // `role="group"` panels, are left without it rather than claiming an invalid one.
+  // "group" is not a valid aria-haspopup value. A `role="group"` panel (CheckMenu, say) is
+  // left without it rather than claiming an invalid one.
   "aria-haspopup": props.role === "menu" ? "menu" : undefined,
   "aria-expanded": isOpen.value,
   onKeydown: onTriggerKeydown,
 }));
 
 // VueUse's onClickOutside reads the click's composedPath instead of walking closest() live.
-// That matters for SectionCopyMenu: choosing a ComboBox option detaches that row from the DOM
-// in the same mousedown (see `choose()` in ComboBox.vue), which a live walk would miss.
+// That matters for a panel that swaps its own content on a click (SectionActionsMenu's second
+// list): the clicked row is detached from the DOM by then, which a live walk would miss.
 onClickOutside(panel, close, { ignore: props.ignore });
 
-// Capture phase, not the panel's own bubble-phase keydown: SectionCopyMenu's combobox has its
+// Capture phase, not the panel's own bubble-phase keydown: a combobox inside a panel has its
 // own Escape handler that calls stopPropagation, which would otherwise swallow Escape before it
 // reaches us. Capture fires top-down, ahead of that, so ours always runs first. Letting the
 // event continue afterward is harmless, since our own close() already moved focus away.
@@ -159,7 +162,13 @@ useEventListener(panel, "keydown", onPanelKeydown, { capture: true });
 // Backstops Escape for the moment between open() and the item actually taking focus.
 useEscapeToClose(close);
 
-defineExpose({ open, close, isOpen });
+defineExpose({
+  open,
+  close,
+  isOpen,
+  /** For a panel that swaps its items while open: puts focus back on the first one. */
+  focusFirst: () => roving.focusFirst(),
+});
 </script>
 
 <template>
@@ -171,6 +180,7 @@ defineExpose({ open, close, isOpen });
       :class="panelClass"
       :role="role"
       :aria-label="label"
+      :data-testid="panelTestid"
     >
       <slot />
     </div>
