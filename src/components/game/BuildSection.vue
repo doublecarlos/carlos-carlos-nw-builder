@@ -12,6 +12,8 @@ import BaseBadge from "../ui/BaseBadge.vue";
 import SectionCopyMenu from "./SectionCopyMenu.vue";
 import PresetMenu from "./PresetMenu.vue";
 import SectionClearButton from "./SectionClearButton.vue";
+import SectionActionsMenu from "./SectionActionsMenu.vue";
+import * as viewport from "../../stores/viewport";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, useTemplateRef } from "vue";
 import type { Slot, SectionPreset, BuildOption } from "../../types";
@@ -109,22 +111,37 @@ const bodyStyle = computed(() => ({
           diffs
         }}</BaseBadge>
       </button>
-      <!-- Always rendered, even with no presets: its "Create new from current" entry is how a
-           section's first preset gets authored. -->
-      <PresetMenu
+      <!-- A phone has room for one labeled menu, not three bare icons. -->
+      <SectionActionsMenu
+        v-if="viewport.isPhone.value"
         :section-id="id"
+        :label="label"
         :presets="presets"
-        @apply="(preset) => $emit('apply-preset', preset)"
-        @create="$emit('create-preset')"
-        @update="(preset) => $emit('update-preset', preset)"
-      />
-      <SectionCopyMenu
-        v-if="otherBuilds.length"
-        :section-id="id"
         :other-builds="otherBuilds"
+        @apply-preset="(preset) => $emit('apply-preset', preset)"
+        @create-preset="$emit('create-preset')"
+        @update-preset="(preset) => $emit('update-preset', preset)"
         @copy="(fromId) => $emit('copy', fromId)"
+        @clear="$emit('clear')"
       />
-      <SectionClearButton :section-id="id" @clear="$emit('clear')" />
+      <template v-else>
+        <!-- Always rendered, even with no presets: its "Create new from current" entry is how
+             a section's first preset gets authored. -->
+        <PresetMenu
+          :section-id="id"
+          :presets="presets"
+          @apply="(preset) => $emit('apply-preset', preset)"
+          @create="$emit('create-preset')"
+          @update="(preset) => $emit('update-preset', preset)"
+        />
+        <SectionCopyMenu
+          v-if="otherBuilds.length"
+          :section-id="id"
+          :other-builds="otherBuilds"
+          @copy="(fromId) => $emit('copy', fromId)"
+        />
+        <SectionClearButton :section-id="id" @clear="$emit('clear')" />
+      </template>
     </div>
 
     <div
