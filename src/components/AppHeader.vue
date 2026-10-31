@@ -51,6 +51,7 @@ import * as shell from "../stores/shell";
 import * as viewport from "../stores/viewport";
 import { preference, cyclePreference } from "../stores/theme";
 import GoToPalette from "./GoToPalette.vue";
+import { APP_NAME } from "../lib/app-info";
 import { isMac } from "../lib/platform";
 import { viewportKind } from "../lib/shell-layout";
 import { headerLayout, type HeaderAction } from "../lib/header-layout";
@@ -201,9 +202,7 @@ async function onImportFile(event: Event) {
         width="32"
         height="32"
       />
-      <span class="min-w-0 flex-1 truncate max-md:sr-only"
-        >Carlos Carlos' NW Builder</span
-      >
+      <span class="min-w-0 flex-1 truncate max-md:sr-only">{{ APP_NAME }}</span>
     </h1>
 
     <BaseButton

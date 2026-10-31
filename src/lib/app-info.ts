@@ -5,6 +5,9 @@ export const APP_VERSION = __APP_VERSION__;
 export const APP_COMMIT = __APP_COMMIT__;
 export const REPO_URL = __APP_REPO_URL__;
 export const ISSUES_URL = __APP_ISSUES_URL__;
+export const HOMEPAGE_URL = __APP_HOMEPAGE_URL__;
+
+export const APP_NAME = "Carlos Carlos' NW Builder";
 
 /** One copy, shown by both the landing screen and the About dialog. */
 export const DISCLAIMER =
