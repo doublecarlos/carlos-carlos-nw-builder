@@ -4,9 +4,9 @@
 // the title (ItemBonuses' collapse chevron), `#after-title` holds the caller's badges and
 // chips, `#extra-actions` its own actions (ItemBonuses' Detach, ItemForm's From screenshot).
 // Revert/Duplicate/Delete are icon buttons right after the title; Save is the one labeled
-// button, on the right. The bar wraps as two whole groups, the title with its actions and
-// the right-hand group, so a narrow form puts Save on its own line rather than splitting it
-// from the checkbox beside it.
+// button, on the right. A wide bar is one row where a long title wraps in place. A narrow
+// one (a container query, since the layer editor's list narrows the form at any width) puts
+// the title and badges on their own row, and the icon actions and right-hand group below.
 // `embedded`: an in-flow row inside another form's card, the same layout, just not sticky.
 // `toggleable`: a click on the bar's inert area (title, badges, chips, spacer) raises
 // `toggle`; its controls never do.
@@ -111,24 +111,35 @@ const actions = computed<ActionSpec[]>(() =>
 <template>
   <FormBar
     :embedded="embedded"
+    class="@container"
     :class="[
       embedded ? 'mb-1' : '-mx-3 mb-3',
       toggleable && 'cursor-pointer select-none',
     ]"
     @click="onBarClick"
   >
-    <span class="flex min-w-0 items-center gap-1.5">
-      <slot name="leading" />
-      <strong class="min-w-0" data-testid="form-bar-title">{{ title }}</strong>
-      <BaseBadge v-if="status !== 'base'" :variant="status">{{
-        status
-      }}</BaseBadge>
-      <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
-      <slot name="after-title" />
+    <!-- Wide: the title and its actions share one shrinking group, so the title wraps
+         instead of the row. Narrow: the group dissolves into the bar's own wrapping row. -->
+    <span class="flex min-w-0 flex-1 items-center gap-1.5 @max-xl:contents">
+      <span
+        class="flex min-w-0 items-center gap-1.5 @max-xl:basis-full"
+        data-testid="form-bar-heading"
+      >
+        <slot name="leading" />
+        <strong class="min-w-0 wrap-anywhere" data-testid="form-bar-title">{{
+          title
+        }}</strong>
+        <BaseBadge v-if="status !== 'base'" :variant="status">{{
+          status
+        }}</BaseBadge>
+        <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
+        <slot name="after-title" />
+      </span>
       <!-- Secondary actions stay snug against the title, as icon buttons. -->
       <span
         v-if="actions.length || $slots['extra-actions']"
-        class="flex items-center gap-1.5 text-[14px]"
+        class="flex shrink-0 items-center gap-1.5 text-[14px]"
+        data-testid="form-bar-actions"
       >
         <IconButton
           v-for="action in actions"
@@ -144,7 +155,7 @@ const actions = computed<ActionSpec[]>(() =>
     </span>
     <span
       v-if="isNew || $slots['before-actions']"
-      class="ml-auto flex items-center gap-1.5"
+      class="ml-auto flex shrink-0 items-center gap-1.5"
     >
       <slot name="before-actions" />
       <!-- Save button only for new entries -->
