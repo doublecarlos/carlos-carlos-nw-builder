@@ -1,7 +1,7 @@
 // End-to-end coverage for the `item_picker_list` slot type: rows are added and removed from
 // the build editor, and a removal closes the gap rather than leaving a hole. `misc.misc` is the
-// shipped list used throughout -- a short one, with a candidate set small enough to assert on.
-import { test, expect } from "@playwright/test";
+// shipped list used throughout, picking from a test item.
+import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
   slotRow,
@@ -10,12 +10,26 @@ import {
   addListRows,
   listAddButton,
 } from "./support/app";
-import { shippedItemName, shippedSlotLabel } from "./support/shippedData";
+import { shippedSlotLabel } from "./support/shippedData";
 import { storedBuilds } from "./support/storage";
+import { importTestCatalog } from "./support/testCatalog";
 
 const LIST = "misc.misc";
 const LABEL = shippedSlotLabel(LIST);
 const row = (index: number) => `${LIST}#${index}`;
+
+const BUILD = "Test misc list";
+const MISC_ITEM = {
+  id: "test-misc-item",
+  name: "Test Misc Item",
+  filter: "misc",
+};
+
+/** A build with the test item among the list's candidates. */
+async function openWithMiscItem(page: Page) {
+  await openBuilder(page);
+  await importTestCatalog(page, { name: BUILD, items: [MISC_ITEM] });
+}
 
 test("a fresh build shows the add button and no rows", async ({ page }) => {
   await openBuilder(page);
@@ -36,10 +50,10 @@ test("adding rows numbers them after the slot's label", async ({ page }) => {
 test("each row picks independently from the list's own candidates", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openWithMiscItem(page);
   await addListRows(page, LIST, 2);
 
-  const first = shippedItemName("vip-hp-bonus-self");
+  const first = MISC_ITEM.name;
   await chooseItem(page, row(1), first);
 
   await expect(pickerInput(slotRow(page, row(1)))).toHaveValue(first);
@@ -47,10 +61,10 @@ test("each row picks independently from the list's own candidates", async ({
 });
 
 test("removing a row closes the gap under it", async ({ page }) => {
-  await openBuilder(page);
+  await openWithMiscItem(page);
   await addListRows(page, LIST, 2);
 
-  const kept = shippedItemName("vip-hp-bonus-self");
+  const kept = MISC_ITEM.name;
   await chooseItem(page, row(2), kept);
 
   await slotRow(page, row(1))
@@ -63,16 +77,16 @@ test("removing a row closes the gap under it", async ({ page }) => {
 });
 
 test("an empty row survives a save and reload", async ({ page }) => {
-  await openBuilder(page);
+  await openWithMiscItem(page);
   await addListRows(page, LIST, 3);
-  await chooseItem(page, row(1), shippedItemName("vip-hp-bonus-self"));
+  await chooseItem(page, row(1), MISC_ITEM.name);
 
   await expect
     .poll(async () => {
-      const [build] = await storedBuilds(page);
+      const build = (await storedBuilds(page)).find((b) => b.name === BUILD);
       return [build?.listRows[LIST], build?.choices[row(1)]];
     })
-    .toEqual([3, "vip-hp-bonus-self"]);
+    .toEqual([3, MISC_ITEM.id]);
   await page.reload();
 
   await expect(slotRow(page, row(3))).toBeVisible();

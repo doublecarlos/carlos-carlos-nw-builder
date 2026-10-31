@@ -3,6 +3,8 @@
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { TEST_HEAD_ITEM } from "./support/headItems";
+import { importTestCatalog } from "./support/testCatalog";
 
 /** A category items carry with no declaration of its own in data/filters.json. */
 const UNDECLARED = "overload";
@@ -114,10 +116,11 @@ test("the item form's edit-filter link opens that category", async ({
   page,
 }) => {
   await openBuilder(page);
-  await addLayer(page);
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await importTestCatalog(page, { items: [TEST_HEAD_ITEM] });
+  // The layer the import unpacked the test item into.
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
 
-  await page.locator(".editor-search").fill("M29 Enchanted Depthweave Cap");
+  await page.locator(".editor-search").fill(TEST_HEAD_ITEM.name);
   await page.locator(".editor-row").first().click();
   await expect(page.getByTestId("item-filter-input")).toHaveValue("gear_head");
 
