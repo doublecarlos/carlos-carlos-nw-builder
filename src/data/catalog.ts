@@ -2252,6 +2252,38 @@ export function validateFilters(
 }
 
 /**
+ * Warns about a scaler whose `applies` names a filter or tag no item carries. A renamed
+ * category would otherwise leave its items silently unscaled.
+ */
+export function validateScalerTargets(
+  slots: Slot[],
+  items: Item[],
+): LintFinding[] {
+  const filters = new Set(items.map((item) => item.filter));
+  const tags = new Set(items.flatMap((item) => item.tags ?? []));
+  const findings: LintFinding[] = [];
+  for (const slot of slots) {
+    if (slot.type !== "build_parameter" || !slot.scaler?.applies) continue;
+    const { filter = [], tags: appliesTags = [] } = slot.scaler.applies;
+    const missing = [
+      ...filter.filter((id) => !filters.has(id)).map((id) => `filter "${id}"`),
+      ...appliesTags
+        .filter((tag) => !tags.has(tag))
+        .map((tag) => `tag "${tag}"`),
+    ];
+    for (const target of missing) {
+      findings.push({
+        level: "warn",
+        kind: "slot",
+        name: slot.id,
+        message: `${slot.id}: scaler applies to ${target}, which no item carries; it scales nothing there`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
  * Warns when the composed layout lacks a slot or section that code depends on:
  * `ENGINE_PARAM_PATHS`, `REQUIRED_SLOT_IDS` and every id `data/game-import.json` names.
  */
@@ -2461,6 +2493,7 @@ export function validate(
     ...validateStableSlots(slots),
     ...validateFilterFields(db.filterFieldsOf(filters)),
     ...validateFilters(filters, items, slots),
+    ...validateScalerTargets(slots, items),
     ...validateRequiredSlots(slots, sections),
   ];
   const report = (

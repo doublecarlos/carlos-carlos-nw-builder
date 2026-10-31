@@ -12,13 +12,13 @@ import {
 } from "./support/nav";
 
 async function expectRowOutline(row: Locator) {
-  await expect(row).toHaveCSS("outline-style", "solid");
-  await expect(row).toHaveCSS("outline-width", "2px");
-  // Fully inside the box: the nav column clips anything drawn past the row edge.
-  await expect(row).toHaveCSS("outline-offset", "-2px");
+  // Whether an outline shows is the behavior under test.
+  // eslint-disable-next-line no-restricted-syntax
+  await expect(row).not.toHaveCSS("outline-style", "none");
 }
 
 async function expectNoOutline(el: Locator) {
+  // eslint-disable-next-line no-restricted-syntax
   await expect(el).toHaveCSS("outline-style", "none");
 }
 

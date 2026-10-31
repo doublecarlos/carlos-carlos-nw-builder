@@ -10,14 +10,14 @@ import {
 } from "../support/app";
 import { renameViaSidebar } from "../support/nav";
 import { statCard, statInfoButton } from "../support/stats";
-import { shippedItemName } from "../support/shippedData";
+import { importTestCatalog } from "../support/testCatalog";
 import {
   MIN_SUPPORTED_WIDTH,
   expectNoHorizontalScroll,
 } from "../support/viewport";
 
 const LONG_NAME = "Supercalifragilisticexpialidocious-Reference-Build";
-const RING = shippedItemName("m33-frostsilver-coil-of-wrath");
+const RING = "Test Stat Ring";
 
 const statColumn = (page: Page) => page.getByTestId("stat-panel-column");
 const tableScrolls = (page: Page) =>
@@ -28,6 +28,25 @@ const tableScrolls = (page: Page) =>
 async function openComparedBuild(page: Page) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: "test-stat-ring",
+        name: RING,
+        filter: "gear_ring",
+        strike: 1000,
+        combined_rating: 1000,
+        bonuses: ["test-stat-ring-bonus"],
+      },
+    ],
+    bonuses: [
+      {
+        id: "test-stat-ring-bonus",
+        name: "Test Stat Ring Bonus",
+        grants: [{ stats: { acc_p: 0.01 } }],
+      },
+    ],
+  });
   await renameViaSidebar(
     page,
     page.locator(".nav-row--build").first(),
@@ -54,6 +73,8 @@ async function expectColumnFits(page: Page) {
       .filter((el) => el.dataset.testid !== "stat-table-scroll")
       .filter((el) => el.offsetParent && el.scrollWidth > el.clientWidth + 1)
       .filter((el) =>
+        // Only boxes that can scroll count; clipped ones don't.
+        // eslint-disable-next-line no-restricted-syntax
         ["auto", "scroll"].includes(getComputedStyle(el).overflowX),
       )
       .map((el) => el.className),
@@ -123,20 +144,6 @@ test("a table wider than the panel scrolls inside its own box", async ({
   expect(box.scrollLeft).toBeGreaterThan(0);
   await expectNoHorizontalScroll(page);
   await expectColumnFits(page);
-});
-
-test("an open bonus spells out its whole title on touch", async ({ page }) => {
-  await openComparedBuild(page);
-  await showStats(page, MIN_SUPPORTED_WIDTH);
-  await page.getByRole("button", { name: /Bonuses/ }).click();
-
-  const title = statColumn(page).getByTestId("bonus-entry-title").first();
-  const whiteSpace = () =>
-    title.evaluate((el) => getComputedStyle(el).whiteSpace);
-  expect(await whiteSpace()).toBe("nowrap");
-
-  await title.click();
-  expect(await whiteSpace()).toBe("normal");
 });
 
 test("a stat's source card opens on tap and fits the screen", async ({

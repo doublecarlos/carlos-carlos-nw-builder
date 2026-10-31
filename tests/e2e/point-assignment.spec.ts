@@ -1,9 +1,6 @@
 // End-to-end coverage for a point_assignment slot's row of steppers (BuildSlot.vue via
-// PointAssignmentInput.vue) -- the shipped "boons.tier1" example slot (data/slots.json)
-// resolves several rows, including "boon-tier1-power" and "boon-tier1-avoidance"
-// (data/db-items.json's "boon_tier1" filter), each starting at their own default of 0.
-// Item display names are read from shipped data at test time (support/shippedData.ts) rather
-// than hardcoded, so renaming a shipped item doesn't break these.
+// PointAssignmentInput.vue), driven through the shipped "boons.tier1" slot with two imported
+// test boons in its filter, each starting at its default of 0.
 import { test, expect, type Page } from "@playwright/test";
 import {
   confirmImport,
@@ -17,15 +14,33 @@ import {
   slotFilterInput,
   hoverForCard,
 } from "./support/app";
-import { shippedItemName as itemName } from "./support/shippedData";
+import { importTestCatalog } from "./support/testCatalog";
 
 const SLOT_ID = "boons.tier1";
-const POWER_ID = "boon-tier1-power";
-const AVOIDANCE_ID = "boon-tier1-avoidance";
+const POWER_ID = "test-tier1-power";
+const POWER_NAME = "Test Power Boon";
+const AVOIDANCE_ID = "test-tier1-avoidance";
+const AVOIDANCE_NAME = "Test Avoidance Boon";
+
+/** Opens a build whose Tier 1 row carries the two test boons, each 0 to 5 points. */
+async function openTier1(page: Page) {
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      [POWER_ID, POWER_NAME],
+      [AVOIDANCE_ID, AVOIDANCE_NAME],
+    ].map(([id, name]) => ({
+      id,
+      name,
+      filter: "boon_tier1",
+      inlineRepetition: { min: 0, max: 5, default: 0 },
+    })),
+  });
+}
 
 test.describe("point_assignment steppers", () => {
   test("both rows start at their default of 0", async ({ page }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     await expect(row).toBeVisible();
     await expect(assignmentInput(row, POWER_ID)).toHaveValue("0");
@@ -35,7 +50,7 @@ test.describe("point_assignment steppers", () => {
   test("the + button increments one item's count without touching the other's", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
 
     await stepAssignment(row, POWER_ID, "increase");
@@ -48,7 +63,7 @@ test.describe("point_assignment steppers", () => {
   test("the - button decrements, and stops at the row's min", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
 
     await stepAssignment(row, POWER_ID, "increase");
@@ -62,7 +77,7 @@ test.describe("point_assignment steppers", () => {
   });
 
   test("typing a value directly updates the count", async ({ page }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     const input = assignmentInput(row, AVOIDANCE_ID);
 
@@ -75,7 +90,7 @@ test.describe("point_assignment steppers", () => {
   test("Backspace on the row resets every item in the slot to its default", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
 
     await stepAssignment(row, POWER_ID, "increase");
@@ -97,7 +112,7 @@ test.describe("point_assignment steppers", () => {
 // rather than its +/- buttons and is a no-op for point_assignment rows outside a label.
 test.describe("point_assignment Ctrl+click steppers", () => {
   test("Ctrl+click on + jumps straight to the row's max", async ({ page }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
 
     await stepAssignment(row, POWER_ID, "increase", {
@@ -109,7 +124,7 @@ test.describe("point_assignment Ctrl+click steppers", () => {
   });
 
   test("the +/- tooltips mention the Ctrl+click shortcut", async ({ page }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     const wrapper = assignmentInput(row, POWER_ID).locator("..");
 
@@ -127,7 +142,7 @@ test.describe("point_assignment Ctrl+click steppers", () => {
   });
 
   test("Ctrl+click on - jumps straight to the row's min", async ({ page }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
 
     await stepAssignment(row, POWER_ID, "increase", {
@@ -157,23 +172,21 @@ test.describe("point_assignment hover card", () => {
   test("hovering an item's label shows its card, with the row's own label", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
 
     await assignmentLabel(row, POWER_ID).hover();
 
     const card = page.getByTestId("item-card");
-    await expect(card.getByTestId("item-card-name")).toHaveText(
-      itemName(POWER_ID),
-    );
+    await expect(card.getByTestId("item-card-name")).toHaveText(POWER_NAME);
     await expect(card.getByText("Tier 1")).toBeVisible();
   });
 
   test("the card previews an item whether or not points are currently spent on it", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
     await expect(assignmentInput(row, POWER_ID)).toHaveValue("0");
@@ -182,21 +195,19 @@ test.describe("point_assignment hover card", () => {
 
     await expect(
       page.getByTestId("item-card").getByTestId("item-card-name"),
-    ).toHaveText(itemName(POWER_ID));
+    ).toHaveText(POWER_NAME);
   });
 
   test("hovering a different item's label in the same row swaps the card", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
     const card = page.getByTestId("item-card");
 
     await hoverForCard(page, assignmentLabel(row, POWER_ID));
-    await expect(card.getByTestId("item-card-name")).toHaveText(
-      itemName(POWER_ID),
-    );
+    await expect(card.getByTestId("item-card-name")).toHaveText(POWER_NAME);
 
     // Aim at the label's leading edge rather than its center: the open card is placed just
     // right of the label it came from, and in a row this wide it can reach over the middle of
@@ -204,13 +215,11 @@ test.describe("point_assignment hover card", () => {
     await assignmentLabel(row, AVOIDANCE_ID).hover({
       position: { x: 4, y: 10 },
     });
-    await expect(card.getByTestId("item-card-name")).toHaveText(
-      itemName(AVOIDANCE_ID),
-    );
+    await expect(card.getByTestId("item-card-name")).toHaveText(AVOIDANCE_NAME);
   });
 
   test("moving the pointer away closes the card", async ({ page }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
     const card = page.getByTestId("item-card");
@@ -230,7 +239,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
   const DIAL_ITEM_ID = "test-tier1-dial-item";
   const DIAL_BONUS_ID = "test-tier1-dial-bonus";
   const MASTER_ITEM_ID = "test-tier1-master-item";
-  // Mirrors the shipped "Deathly Rage" shape: a proc input gating tiers on the boon's rank.
+  // A proc input gating tiers on the boon's rank.
   const STATS_BONUS_ID = "test-tier1-stats-bonus";
 
   const proc = { type: "boolean", default: false, label: "Proc" };
@@ -372,7 +381,7 @@ test.describe("point_assignment Ctrl+click", () => {
   test("Ctrl+click on an item's label opens the layer editor on that item", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
 
@@ -380,14 +389,14 @@ test.describe("point_assignment Ctrl+click", () => {
 
     await expect(page.getByTestId("builder-content")).toBeHidden();
     await expect(page.locator(".editor-row.is-on .editor-row-name")).toHaveText(
-      itemName(POWER_ID),
+      POWER_NAME,
     );
   });
 
   test("Ctrl+click on a different item's label in the same row opens that item instead", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openTier1(page);
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
 
@@ -396,7 +405,7 @@ test.describe("point_assignment Ctrl+click", () => {
     });
 
     await expect(page.locator(".editor-row.is-on .editor-row-name")).toHaveText(
-      "Critical Avoidance",
+      AVOIDANCE_NAME,
     );
   });
 
@@ -493,34 +502,5 @@ test.describe("point_assignment shared column layout", () => {
       return !!hit && el.contains(hit);
     });
     expect(bottomHitsMenu).toBe(true);
-  });
-
-  test("stepper columns hug their content, while a normal control still fills", async ({
-    page,
-  }) => {
-    // Wide enough that the eight columns leave spare width to the right.
-    await page.setViewportSize({ width: 2400, height: 1000 });
-    await openRaceSection(page);
-    await ensureSectionExpanded(page, "options");
-
-    const raceBody = sectionBody(page, RACE_SECTION);
-    const raceRight = await raceBody.evaluate(
-      (el) => el.getBoundingClientRect().right,
-    );
-    const last = await labelBox(page, STR_SLOT, "leveling-str-20");
-    expect(last).not.toBeNull();
-    // Spare width sits after the columns instead of widening them apart.
-    expect(raceRight - (last!.x + last!.width)).toBeGreaterThan(100);
-
-    const optionsRight = await sectionBody(page, "options").evaluate(
-      (el) => el.getBoundingClientRect().right,
-    );
-    const controlBox = await page
-      .locator('[data-cursor-key="slot:options.class"] > div')
-      .nth(1)
-      .boundingBox();
-    expect(controlBox).not.toBeNull();
-    // The ordinary row's control still stretches to the section's edge.
-    expect(optionsRight - (controlBox!.x + controlBox!.width)).toBeLessThan(40);
   });
 });

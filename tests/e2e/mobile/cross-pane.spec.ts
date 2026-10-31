@@ -10,8 +10,9 @@ import {
   slotRow,
 } from "../support/app";
 import { statCard, statInfoButton } from "../support/stats";
+import { importTestCatalog } from "../support/testCatalog";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ITEM = "Test Strike Head";
 const RING_ID = "test-ramp-ring";
 const BONUS_ID = "test-ramp-bonus";
 
@@ -40,6 +41,16 @@ test("a stat source on the stats pane jumps back to its editor row", async ({
   page,
 }) => {
   await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: "test-strike-head",
+        name: HEAD_ITEM,
+        filter: "gear_head",
+        strike: 1000,
+      },
+    ],
+  });
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await scrollEditorToEnd(page);
 

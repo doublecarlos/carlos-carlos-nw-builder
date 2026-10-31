@@ -4,7 +4,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
-  chooseItem,
   confirmImport,
   hoverForCard,
   importText,
@@ -15,13 +14,13 @@ import {
   ensureSectionExpanded,
   cursorKey,
 } from "./support/app";
-import { shippedItemName } from "./support/shippedData";
+import { importTestCatalog } from "./support/testCatalog";
 
-/** A ring whose "(CA)" bonus needs an amethyst enchantment equipped somewhere; enchantment
- *  rows are the only ones that can hold a gem. */
+/** A ring whose bonus needs an amethyst enchantment equipped somewhere; the shipped gems are
+ *  the supply, and enchantment rows are the only ones that can hold one. */
 const RING_SLOT = "gear.ring1";
-const RING = "m33-frostsilver-coil-of-wrath";
-const BONUS_ID = "m33-frostsilver-coil-of-wrath-ca";
+const RING = "test-amethyst-ring";
+const BONUS_ID = "test-amethyst-bonus";
 const NEED_LOCATE = `bonus-need-locate-${BONUS_ID}-0`;
 const GEM_SLOT_KEY = /^slot:enchantments\./;
 const GEM_SLOT_COUNT = 8;
@@ -30,8 +29,65 @@ const GEM_SLOT_COUNT = 8;
  *  reachable for the hover card but not on the build; with a point spent it is carried, and
  *  listed inactive until the proc is switched on. */
 const BOON_SLOT = "boons.tier_master";
-const BOON = "boon-master-death-s-bulwark";
-const BOON_BONUS = "death-s-bulwark-stats";
+const BOON = "test-proc-boon";
+const BOON_NAME = "Test Proc Boon";
+const BOON_BONUS = "test-proc-boon-stats";
+const BOON_BONUS_NAME = "Test Proc Boon Stats";
+
+async function importAmethystRing(page: Page) {
+  await importTestCatalog(page, {
+    choices: { [RING_SLOT]: RING },
+    items: [
+      {
+        id: RING,
+        name: "Test Amethyst Ring",
+        filter: "gear_ring",
+        bonuses: [BONUS_ID],
+      },
+    ],
+    bonuses: [
+      {
+        id: BONUS_ID,
+        name: "Test Amethyst Bonus",
+        grants: [
+          {
+            when: { equipped: { tag: "gem:amethyst" } },
+            stats: { ca_p: 0.03 },
+          },
+        ],
+      },
+    ],
+  });
+}
+
+async function importProcBoon(page: Page) {
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: BOON,
+        name: BOON_NAME,
+        filter: "boon_tier_master",
+        bonuses: [BOON_BONUS],
+        inlineRepetition: { min: 0, max: 3, default: 0 },
+      },
+    ],
+    bonuses: [
+      {
+        id: BOON_BONUS,
+        name: BOON_BONUS_NAME,
+        inputs: {
+          active: { type: "boolean", label: "Proc", default: false },
+        },
+        grants: [
+          {
+            when: { input: { key: "active", is: true } },
+            stats: { defense_p: 0.02 },
+          },
+        ],
+      },
+    ],
+  });
+}
 
 /** A ring whose bonus needs the Wildspace location, an item only the scenario flags list can
  *  hold, so the one slot that could supply it is a row that may not exist yet. */
@@ -83,7 +139,7 @@ async function openBonuses(page: Page) {
 
 async function openBonusesWithRing(page: Page) {
   await openBuilder(page);
-  await chooseItem(page, RING_SLOT, shippedItemName(RING));
+  await importAmethystRing(page);
   await openBonuses(page);
 }
 
@@ -91,6 +147,7 @@ const slotRows = (page: Page) => page.locator('[data-cursor-key^="slot:"]');
 
 test("a bonus nothing on the build carries is not listed", async ({ page }) => {
   await openBuilder(page);
+  await importProcBoon(page);
   await openBonuses(page);
 
   await expect(page.getByTestId(`bonus-entry-${BOON_BONUS}`)).toHaveCount(0);
@@ -100,6 +157,7 @@ test("a boon's proc bonus is listed, inactive, once a point is spent on the boon
   page,
 }) => {
   await openBuilder(page);
+  await importProcBoon(page);
   await ensureSectionExpanded(page, "boons");
   await assignmentInput(slotRow(page, BOON_SLOT), BOON).fill("1");
   await openBonuses(page);
@@ -110,11 +168,11 @@ test("a boon's proc bonus is listed, inactive, once a point is spent on the boon
   await expect(entry).toContainText("Proc on");
   await expect(entry.getByText("1 away")).toBeVisible();
   // Expanded, the boon is what the bonus comes from.
-  await entry.getByRole("button", { name: /Death's Bulwark Stats/ }).click();
+  await entry.getByRole("button", { name: BOON_BONUS_NAME }).click();
   const from = entry.getByTestId("bonus-from");
-  await expect(from).toHaveText(`from ${shippedItemName(BOON)}`);
+  await expect(from).toHaveText(`from ${BOON_NAME}`);
 
-  await from.getByRole("button", { name: shippedItemName(BOON) }).click();
+  await from.getByRole("button", { name: BOON_NAME }).click();
 
   expect(await cursorKey(page)).toBe(`slot:${BOON_SLOT}`);
 });
@@ -154,7 +212,7 @@ test("the hover card's crosshair applies the same filter and dismisses the card"
   page,
 }) => {
   await openBuilder(page);
-  await chooseItem(page, RING_SLOT, shippedItemName(RING));
+  await importAmethystRing(page);
   await hoverForCard(page, slotRow(page, RING_SLOT));
   const card = page.getByTestId("item-card");
   await expect(card).toBeVisible();

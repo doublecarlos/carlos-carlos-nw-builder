@@ -1,7 +1,7 @@
 // End-to-end coverage for ItemPicker.vue's bonus-aware preview: a candidate row
 // shows not just its own stats but the stats a bonus it carries would add, resolved as if it
 // were actually picked -- so the dropdown reflects what the summary panel would show.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   confirmImport,
   importText,
@@ -9,20 +9,32 @@ import {
   pickerInput,
   slotRow,
 } from "./support/app";
+import {
+  TEST_HEAD_BONUS,
+  TEST_HEAD,
+  TEST_HEAD_WITH_BONUS,
+} from "./support/testHead";
+import { importTestCatalog } from "./support/testCatalog";
 
-// Same item slot-list.spec.ts and stat-panel.spec.ts already rely on: unique across the item
-// table, allowed for every class picked by default, and carries its own bonus (gated only on
-// the "combat" toggle, which defaults on) granting Combat Advantage -- so the bonus is active
-// the moment it's hypothetically equipped, with nothing else needed.
-const HEAD_ITEM_WITH_BONUS = "M29 Enchanted Depthweave Cap";
-// Same gear_head list, but carries no `bonuses` at all -- the negative control.
-const HEAD_ITEM_WITHOUT_BONUS = "M32.5 Cindersilk Hood (AP on mobs)";
+// Carries its own bonus granting Combat Advantage, active the moment it's hypothetically
+// equipped, with nothing else needed.
+const HEAD_ITEM_WITH_BONUS = TEST_HEAD_WITH_BONUS.name;
+// Same gear_head list, but carries no `bonuses` at all: the negative control.
+const HEAD_ITEM_WITHOUT_BONUS = TEST_HEAD.name;
+
+async function openWithHeadItems(page: Page) {
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [TEST_HEAD_WITH_BONUS, TEST_HEAD],
+    bonuses: [TEST_HEAD_BONUS],
+  });
+}
 
 test.describe("item picker bonus preview", () => {
   test("a candidate that would activate a bonus shows the stats it would add", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openWithHeadItems(page);
     const row = slotRow(page, "gear.head");
     await pickerInput(row).click();
 
@@ -77,7 +89,7 @@ test.describe("item picker bonus preview", () => {
   test("a candidate with no bonuses at all shows no bonus preview line", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openWithHeadItems(page);
     const row = slotRow(page, "gear.head");
     await pickerInput(row).click();
 
@@ -85,6 +97,8 @@ test.describe("item picker bonus preview", () => {
       .getByTestId("picker-menu")
       .getByTestId("picker-option")
       .filter({ hasText: HEAD_ITEM_WITHOUT_BONUS });
+    // The candidate itself has to be there, or the missing line proves nothing.
+    await expect(option).toHaveCount(1);
     await expect(option.getByTestId("picker-option-bonus-preview")).toHaveCount(
       0,
     );
@@ -93,7 +107,7 @@ test.describe("item picker bonus preview", () => {
   test("picking the previewed item makes the same bonus active in the real summary", async ({
     page,
   }) => {
-    await openBuilder(page);
+    await openWithHeadItems(page);
     const row = slotRow(page, "gear.head");
 
     await pickerInput(row).click();

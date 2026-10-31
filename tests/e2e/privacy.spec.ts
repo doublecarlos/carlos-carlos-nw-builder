@@ -1,15 +1,6 @@
-// The privacy notice is a file in public/, not a route, so the only thing worth checking in a
-// browser is that it is actually served and readable without the bundle.
+// The privacy notice is a file in public/, not a route. Its content type is checked in
+// static-files.spec.ts; here it has to work without the bundle and keep the app honest.
 import { test, expect } from "@playwright/test";
-
-test("privacy.html is served as a standalone page", async ({ page }) => {
-  const response = await page.goto("/privacy.html");
-
-  expect(response?.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "Privacy" })).toBeVisible();
-  await expect(page.locator("body")).toContainText("IndexedDB");
-  await expect(page.locator("body")).toContainText("No cookies");
-});
 
 test("privacy.html leads back to the builder", async ({ page }) => {
   await page.goto("/privacy.html");

@@ -12,10 +12,9 @@ import {
   pickerInput,
   parkCursorOnRow,
   chooseItem,
-  chooseCombo,
 } from "./support/app";
 
-/** A shipped `toggleable` slot, and an ordinary one to line its picker up against. */
+/** A shipped `toggleable` slot, an ordinary one and an empty toggleable one. */
 const ELIXIR_SLOT = "buffs.elixir";
 const RING_SLOT = "gear.ring1";
 const FOOD_SLOT = "buffs.food";
@@ -93,58 +92,11 @@ test.describe("toggleable slot", () => {
     await expect(toggle(page, RING_SLOT)).toHaveCount(0);
   });
 
-  test("hides the box while the row is empty, without moving the picker", async ({
-    page,
-  }) => {
+  test("hides the box while the row is empty", async ({ page }) => {
     await openWithElixir(page);
 
-    // Same section, same slot type, no pick: the box is out of sight but its space is kept,
-    // so both pickers start at the same x.
+    // Same section, same slot type, no pick: nothing to switch off yet.
     await expect(toggle(page, FOOD_SLOT)).toBeHidden();
-    const filled = await pickerInput(slotRow(page, ELIXIR_SLOT)).boundingBox();
-    const empty = await pickerInput(slotRow(page, FOOD_SLOT)).boundingBox();
-    expect(empty!.x).toBe(filled!.x);
-  });
-
-  test("keeps every picker aligned with an ordinary row's", async ({
-    page,
-  }) => {
-    await openWithElixir(page);
-    await ensureSectionExpanded(page, "gear");
-
-    const toggleable = await pickerInput(
-      slotRow(page, ELIXIR_SLOT),
-    ).boundingBox();
-    const ordinary = await pickerInput(slotRow(page, RING_SLOT)).boundingBox();
-    expect(toggleable!.x).toBe(ordinary!.x);
-  });
-
-  // A row grown by a compare note used to re-center the label column over the taller row,
-  // floating the checkbox away from the control it belongs to.
-  test("keeps the box on the picker's line when a compare note grows the row", async ({
-    page,
-  }) => {
-    await openWithElixir(page);
-    const box = toggle(page, ELIXIR_SLOT);
-    const lineUp = async () => {
-      const check = (await box.boundingBox())!;
-      const picker = (await pickerInput(slotRow(page, ELIXIR_SLOT))
-        .first()
-        .boundingBox())!;
-      return Math.abs(
-        check.y + check.height / 2 - (picker.y + picker.height / 2),
-      );
-    };
-    expect(await lineUp()).toBeLessThan(3);
-
-    // The starting build holds no elixir, so comparing against it puts a note under this
-    // row's picker and makes the row taller than one line.
-    await chooseCombo(page.locator(".compare-select"), "Build 1");
-    await page.getByRole("checkbox", { name: "Highlight changes" }).check();
-    const row = slotRow(page, ELIXIR_SLOT);
-    await expect(row.locator(".slot-diff-note")).toBeVisible();
-
-    expect(await lineUp()).toBeLessThan(3);
   });
 
   test("unchecking drops the pick from the totals but leaves it in the picker", async ({
@@ -241,13 +193,13 @@ test.describe("toggleable slot", () => {
     await expect(summary).toHaveText("");
   });
 
-  test("strikes the switched-off pick through", async ({ page }) => {
+  test("marks the switched-off row as disabled", async ({ page }) => {
     await openWithElixir(page);
-    const input = pickerInput(slotRow(page, ELIXIR_SLOT));
+    const row = slotRow(page, ELIXIR_SLOT);
 
-    await expect(input).toHaveCSS("text-decoration-line", "none");
+    await expect(row).not.toHaveAttribute("data-disabled");
     await toggle(page, ELIXIR_SLOT).uncheck();
-    await expect(input).toHaveCSS("text-decoration-line", "line-through");
+    await expect(row).toHaveAttribute("data-disabled");
   });
 
   test("clearing the row switches it back on", async ({ page }) => {

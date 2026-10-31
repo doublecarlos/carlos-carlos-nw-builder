@@ -14,10 +14,13 @@ import {
   pickerInput,
   slotRow,
 } from "./support/app";
-import { shippedItemName } from "./support/shippedData";
 
-/** A shipped `scenario_flag` candidate, by id -- its display name is data, not a fixture. */
-const BOSS = shippedItemName("enemy-type-boss");
+/** A plain candidate every fixture carries, with no repetition config of its own. */
+const PLAIN_ID = "test-plain-enemy";
+const PLAIN = "Test Plain Enemy";
+const plain = {
+  [PLAIN_ID]: { id: PLAIN_ID, name: PLAIN, filter: "scenario_flag" },
+};
 
 const SLOT_ID = "options.testPicker";
 
@@ -37,7 +40,7 @@ async function importOverlay(
       JSON.stringify({
         name: "Item picker slot fields",
         catalog: {
-          items,
+          items: { ...plain, ...items },
           slots: {
             [SLOT_ID]: {
               id: SLOT_ID,
@@ -80,13 +83,13 @@ test.describe("quick", () => {
     const input = pickerInput(picker);
 
     await input.click();
-    await input.fill(BOSS);
+    await input.fill(PLAIN);
     await picker
       .getByTestId("picker-menu")
-      .getByText(BOSS, { exact: true })
+      .getByText(PLAIN, { exact: true })
       .click();
 
-    await expect(input).toHaveValue(BOSS);
+    await expect(input).toHaveValue(PLAIN);
   });
 
   test("a non-quick item_picker keeps its section row", async ({ page }) => {
@@ -111,7 +114,7 @@ test.describe("disallowEmpty", () => {
   test("a disallowEmpty slot does not", async ({ page }) => {
     await openBuilder(page);
     await importOverlay(page, {
-      default: "enemy-type-boss",
+      default: PLAIN_ID,
       disallowEmpty: true,
     });
 
@@ -120,7 +123,7 @@ test.describe("disallowEmpty", () => {
     await pickerInput(row).click();
     // The candidates are still all there -- only the "no value" row is gone.
     await expect(
-      row.getByTestId("picker-menu").getByText(BOSS, { exact: true }),
+      row.getByTestId("picker-menu").getByText(PLAIN, { exact: true }),
     ).toBeVisible();
     await expect(row.getByText("- empty -", { exact: true })).toHaveCount(0);
   });
@@ -144,7 +147,7 @@ test.describe("inline repetition", () => {
   test("a pick with no config has no stepper", async ({ page }) => {
     await openBuilder(page);
     await importOverlay(page, {}, repeater);
-    await chooseItem(page, SLOT_ID, BOSS);
+    await chooseItem(page, SLOT_ID, PLAIN);
 
     await expect(
       slotRow(page, SLOT_ID).getByTestId(/^repetition-input-/),
@@ -179,7 +182,7 @@ test.describe("inline repetition", () => {
     await input.blur();
     await expect(input).toHaveValue("3");
 
-    await chooseItem(page, SLOT_ID, BOSS);
+    await chooseItem(page, SLOT_ID, PLAIN);
     await expect(row.getByTestId(/^repetition-input-/)).toHaveCount(0);
   });
 });

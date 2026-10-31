@@ -609,14 +609,14 @@ test("a derived bonus compares against a build deriving a different one", async 
   // Build 2's bonus row is empty too and derives nothing, having no mount. Comparing stored
   // values alone would call the two rows identical.
   const row = slotRow(page, "insignia.bonus1");
-  await expect(row).toHaveClass(/is-diff/);
+  await expect(row).toHaveAttribute("data-diff");
   await expect(row.locator(".slot-diff-note")).toContainText(
     "Accursed Resolve",
   );
 
   // Deriving the same bonus on both sides is the same build, stored value or not.
   await fillGroupOne(page);
-  await expect(row).not.toHaveClass(/is-diff/);
+  await expect(row).not.toHaveAttribute("data-diff");
 });
 
 // --- the reference as a place you can link to, collapse, and search from either end ---------
@@ -729,8 +729,10 @@ test("a row carries its own combination beside its name", async ({ page }) => {
   await expect(mountRow).toContainText("universal");
 
   // Nothing pops up on hover any more.
+  await page.clock.install();
   await mountRow.getByText(MOUNT, { exact: true }).hover();
-  await page.waitForTimeout(600);
+  // Past any tooltip's opening delay.
+  await page.clock.fastForward(1000);
   await expect(page.getByTestId("tooltip")).toHaveCount(0);
 });
 

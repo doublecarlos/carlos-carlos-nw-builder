@@ -1,12 +1,9 @@
 // The app shell below the desktop breakpoint: the nav as an overlay drawer, the phone's
 // Editor | Stats switch, the tablet's fixed stats column, and desktop rail widths surviving a
-// trip through the narrow layouts.
+// trip through the narrow layouts. Fit at phone widths is checked in layout-sweep.spec.ts.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder } from "../support/app";
-import {
-  MIN_SUPPORTED_WIDTH,
-  expectNoHorizontalScroll,
-} from "../support/viewport";
+import { expectNoHorizontalScroll } from "../support/viewport";
 
 const hamburger = (page: Page) => page.getByTestId("header-nav-toggle");
 const drawer = (page: Page) => page.getByTestId("nav-drawer");
@@ -113,37 +110,6 @@ test("the phone switches between the editor and the stats pane", async ({
   await expect(statColumn(page)).toBeHidden();
 });
 
-/** Opens the drawer, then the stats pane, checking neither pushes the page sideways. */
-async function expectShellFits(page: Page) {
-  await hamburger(page).click();
-  await expectNoHorizontalScroll(page);
-  await page.keyboard.press("Escape");
-
-  await page.getByTestId("pane-stats").click();
-  await expect(statColumn(page)).toContainText("Ratings");
-  await expectNoHorizontalScroll(page);
-}
-
-test("the builder does not scroll sideways at the device width", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  await expect(page.getByTestId("pane-switch")).toBeVisible();
-  await expectNoHorizontalScroll(page);
-  await expectShellFits(page);
-});
-
-test("the editor, drawer and stats pane fit the narrowest supported width", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: MIN_SUPPORTED_WIDTH, height: 740 });
-  await openBuilder(page);
-  await expect(page.getByTestId("pane-switch")).toBeVisible();
-  await expect(editorColumn(page)).toBeVisible();
-  await expectNoHorizontalScroll(page);
-  await expectShellFits(page);
-});
-
 test("a tablet keeps the stats beside the editor at a fixed width", async ({
   page,
 }) => {
@@ -154,7 +120,15 @@ test("a tablet keeps the stats beside the editor at a fixed width", async ({
   await expect(page.getByTestId("rail-gutter-details")).toHaveCount(0);
   await expect(editorColumn(page)).toBeVisible();
   await expect(statColumn(page)).toContainText("Ratings");
-  expect((await statColumn(page).boundingBox())!.width).toBe(360);
+  // Beside the editor, and fixed: a wider tablet gives the room to the editor.
+  const editorBox = (await editorColumn(page).boundingBox())!;
+  const statsBox = (await statColumn(page).boundingBox())!;
+  expect(statsBox.x).toBeGreaterThanOrEqual(editorBox.x + editorBox.width - 1);
+  await page.setViewportSize({ width: 1000, height: 1000 });
+  await expect
+    .poll(async () => (await editorColumn(page).boundingBox())!.width)
+    .toBeGreaterThan(editorBox.width);
+  expect((await statColumn(page).boundingBox())!.width).toBe(statsBox.width);
 
   await hamburger(page).click();
   await expect(page.getByTestId("library")).toBeVisible();

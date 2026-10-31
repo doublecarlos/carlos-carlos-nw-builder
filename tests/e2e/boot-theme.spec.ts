@@ -25,6 +25,7 @@ async function bootWith(
   const boot = page.getByTestId("boot-screen");
   await expect(boot).toBeVisible();
   const background = await boot.evaluate(
+    // eslint-disable-next-line no-restricted-syntax
     (el) => getComputedStyle(el).backgroundColor,
   );
   const dark = await page
@@ -64,7 +65,7 @@ test("the system preference still decides when nothing is stored", async ({
 
 test("the two themes actually paint differently", async ({ browser }) => {
   // Compared rather than pinned to a literal: which colors they are is
-  // tests/unit/seo-metadata.spec.ts's business, against src/base.css.
+  // tests/unit/static-files.spec.ts's business, against src/base.css.
   const light = await bootWith(browser, "light", "light");
   const dark = await bootWith(browser, "dark", "light");
 

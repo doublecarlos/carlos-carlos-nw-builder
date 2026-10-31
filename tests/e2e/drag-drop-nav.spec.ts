@@ -11,8 +11,10 @@ import {
   addLayer,
   moveUp,
   dropIndicators,
+  navName,
 } from "./support/nav";
 import { beginDrag, dragOnto, dropAt, requireBox } from "./support/dragDrop";
+import { storedBuildOrder } from "./support/storage";
 
 test("dragging a build row onto another reorders the build list", async ({
   page,
@@ -38,8 +40,9 @@ test("build drag order survives a reload", async ({ page }) => {
   await dragOnto(buildRow(page, "Build 1"), buildRow(page, "Build 2"));
   await expect(page.locator(".nav-row--build").nth(0)).toContainText("Build 2");
 
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(() => storedBuildOrder(page))
+    .toEqual(["Build 2", "Build 1"]);
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
 
@@ -205,7 +208,10 @@ test("a plain click on a build row still selects it, and so does a small wiggle"
   await addBuild(page);
 
   await buildRow(page, "Build 1").click();
-  await expect(buildRow(page, "Build 1")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 1"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 
   // A couple of px of jitter stays under useDragHandle's move threshold, so this is a click.
   const box = await requireBox(buildRow(page, "Build 2"));
@@ -216,7 +222,10 @@ test("a plain click on a build row still selects it, and so does a small wiggle"
   await page.mouse.move(x + 2, y, { steps: 1 });
   await page.mouse.up();
 
-  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 });
 
 test("dragging autoscrolls the builds list when held near its bottom edge", async ({

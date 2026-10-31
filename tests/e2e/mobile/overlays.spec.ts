@@ -2,21 +2,15 @@
 // swipe on a row scrolls, a tap never pops a tooltip, and keyboard hints stay out of sight.
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { chooseItem, ensureSectionExpanded, openBuilder } from "../support/app";
-import { addBuild, addLayer, buildRow, layerRow } from "../support/nav";
+import { addBuild, buildRow, openDrawer, openNewLayer } from "../support/nav";
+import { TEST_HEAD, importTestHead } from "../support/testHead";
 import { center, touchDrag } from "../support/touch";
 import {
   MIN_SUPPORTED_WIDTH,
   expectNoHorizontalScroll,
 } from "../support/viewport";
 
-const hamburger = (page: Page) => page.getByTestId("header-nav-toggle");
-const drawer = (page: Page) => page.getByTestId("nav-drawer");
 const buildRows = (page: Page) => page.locator(".nav-row--build");
-
-async function openDrawer(page: Page) {
-  if (!(await drawer(page).isVisible())) await hamburger(page).click();
-  await expect(drawer(page)).toBeVisible();
-}
 
 /** Adds builds until there are `count`; each one selected closes the drawer behind it. */
 async function seedBuilds(page: Page, count: number) {
@@ -28,7 +22,8 @@ async function seedBuilds(page: Page, count: number) {
   await expect(buildRows(page)).toHaveCount(count);
 }
 
-/** Asserts the dialog inside `modal` covers the viewport exactly and nothing scrolls sideways. */
+/** Asserts the dialog inside `modal` covers the viewport exactly. Its fit is checked in
+ *  layout-sweep.spec.ts. */
 async function expectFillsViewport(page: Page, modal: Locator) {
   const panel = modal.getByRole("dialog");
   const box = (await panel.boundingBox())!;
@@ -37,12 +32,6 @@ async function expectFillsViewport(page: Page, modal: Locator) {
   expect(box.y).toBe(0);
   expect(box.width).toBe(width);
   expect(box.height).toBe(height);
-  const { scrollWidth, clientWidth } = await panel.evaluate((el) => ({
-    scrollWidth: el.scrollWidth,
-    clientWidth: el.clientWidth,
-  }));
-  expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
-  await expectNoHorizontalScroll(page);
 }
 
 test.describe("modals at the narrowest width", () => {
@@ -64,11 +53,7 @@ test.describe("modals at the narrowest width", () => {
   test("the layer export and tooltip import fill the screen", async ({
     page,
   }) => {
-    await openBuilder(page);
-    await openDrawer(page);
-    await addLayer(page);
-    await openDrawer(page);
-    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await openNewLayer(page);
 
     await page.getByTestId("layer-actions").tap();
     await page.getByTestId("layer-actions-export").tap();
@@ -138,6 +123,7 @@ test("a swipe on a row's body scrolls the list instead of dragging", async ({
   const scrollTop = () =>
     page.getByTestId("nav-builds-list").evaluate((list) => {
       let el: HTMLElement | null = list as HTMLElement;
+      // eslint-disable-next-line no-restricted-syntax
       while (el && getComputedStyle(el).overflowY !== "auto")
         el = el.parentElement;
       return el?.scrollTop ?? 0;
@@ -172,7 +158,8 @@ test("a tap on a button with a tooltip shows no tooltip", async ({ page }) => {
 
 test("focus handed back after a tap shows no tooltip", async ({ page }) => {
   await openBuilder(page);
-  await chooseItem(page, "gear.head", "M29 Enchanted Depthweave Cap");
+  await importTestHead(page);
+  await chooseItem(page, "gear.head", TEST_HEAD.name);
   const info = page.getByTestId("slot-info:gear.head");
   await info.tap();
   const sheet = page.getByTestId("item-card-sheet");

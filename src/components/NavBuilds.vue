@@ -278,7 +278,7 @@ function folderHandleProps(id: string, index: number) {
               :key="child.build.id"
               :name="child.build.name"
               kind="build"
-              class="nav-row--nested"
+              data-nested
               :icon="FileSliders"
               :active="selectedId === child.build.id"
               :renaming="renamingId === child.build.id"

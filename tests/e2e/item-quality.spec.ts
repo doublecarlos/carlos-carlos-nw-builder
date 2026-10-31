@@ -1,6 +1,6 @@
 // End-to-end coverage for item qualities: the picker and hover card tint a quality item's name,
 // and the item form saves a chosen quality.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   chooseCombo,
   chooseItem,
@@ -12,14 +12,40 @@ import {
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { statCard, statCardClose, statInfoButton } from "./support/stats";
+import { importTestCatalog } from "./support/testCatalog";
 
 const SLOT = "enchantments.offense1";
-const CELESTIAL = "Celestial Garnet";
+const CELESTIAL = "Test Celestial Enchantment";
+const MYTHIC_HEAD = "Test Mythic Head";
+const CATALOG_NAME = "Test qualities";
+
+/** Imports one celestial enchantment and one mythic head with a stat to trace. */
+async function importQualityItems(page: Page) {
+  await importTestCatalog(page, {
+    name: CATALOG_NAME,
+    items: [
+      {
+        id: "test-celestial-enchantment",
+        name: CELESTIAL,
+        filter: "enchantment_offense",
+        quality: "celestial",
+      },
+      {
+        id: "test-mythic-head",
+        name: MYTHIC_HEAD,
+        filter: "gear_head",
+        quality: "mythic",
+        strike: 1000,
+      },
+    ],
+  });
+}
 
 test("a quality item is tinted in the menu, the closed picker and the card", async ({
   page,
 }) => {
   await openBuilder(page);
+  await importQualityItems(page);
   const row = slotRow(page, SLOT);
   const input = pickerInput(row);
 
@@ -61,12 +87,11 @@ test("the item form saves a quality", async ({ page }) => {
   ).toHaveValue("Mythic");
 });
 
-const MYTHIC_HEAD = "M29 Enchanted Depthweave Cap";
-
 test("a stat source line is tinted by its item, and card stats are not", async ({
   page,
 }) => {
   await openBuilder(page);
+  await importQualityItems(page);
   await chooseItem(page, "gear.head", MYTHIC_HEAD);
 
   await statInfoButton(page, "strike").click();
@@ -83,21 +108,24 @@ test("a stat source line is tinted by its item, and card stats are not", async (
   const card = page.getByTestId("item-card");
   const name = await card
     .getByTestId("item-card-name")
+    // eslint-disable-next-line no-restricted-syntax
     .evaluate((el) => getComputedStyle(el).color);
   const label = await card
     .getByTestId("stat-row")
     .first()
     .locator("span")
     .first()
+    // eslint-disable-next-line no-restricted-syntax
     .evaluate((el) => getComputedStyle(el).color);
   expect(label).not.toBe(name);
 });
 
 test("a compare note tints the other build's item", async ({ page }) => {
   await openBuilder(page);
+  await importQualityItems(page);
   await chooseItem(page, "gear.head", MYTHIC_HEAD);
   await page.getByTestId("nav-add-build").click();
-  await chooseCombo(page.locator(".compare-select"), "Build 1");
+  await chooseCombo(page.locator(".compare-select"), CATALOG_NAME);
   await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
   await expect(
@@ -107,8 +135,10 @@ test("a compare note tints the other build's item", async ({ page }) => {
 
 test("the layer editor's item list tints item names", async ({ page }) => {
   await openBuilder(page);
-  await addLayer(page);
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await importQualityItems(page);
+  await layerRow(page, `${CATALOG_NAME} (imported)`)
+    .locator(".nav-name")
+    .click();
   await page.locator(".editor-search").fill(MYTHIC_HEAD);
   await expect(
     page

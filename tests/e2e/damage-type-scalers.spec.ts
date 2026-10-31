@@ -8,14 +8,80 @@ import {
   ensureSectionExpanded,
   slotRow,
   chooseItem,
-  chooseClass,
   cursorRow,
   hoverForCard,
 } from "./support/app";
+import { TEST_HEAD_BONUS, TEST_HEAD_WITH_BONUS } from "./support/testHead";
+import { importTestCatalog } from "./support/testCatalog";
 
-/** Shipped with one grant, 5% outgoing damage (mult) scaled by the encounter share, and
- *  nothing else that touches that stat, so the panel's row reads straight off the share. */
-const COLLAR = "Sturdy Crescent Collar";
+const COLLAR_SLOT = "mounts.sturdyCollar";
+const COLLAR = "Test Scaled Collar";
+const COLLAR_BONUS = "test-scaled-bonus";
+const STACKING_COLLAR = "Test Stacking Collar";
+
+/** Scaled grants on items for the collar slot. The scaled collar has one grant, 5% outgoing
+ *  damage (mult) scaled by the encounter share, and nothing else in the build touches that
+ *  stat, so the panel's row reads straight off the share. The stacking collar adds a base and
+ *  a per-stack grant, both scaled by the same share. */
+async function openWithScaledItems(page: Page) {
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: "test-scaled-collar",
+        name: COLLAR,
+        filter: "sturdy_collar",
+        bonuses: [COLLAR_BONUS],
+      },
+      {
+        id: "test-stacking-collar",
+        name: STACKING_COLLAR,
+        filter: "sturdy_collar",
+        bonuses: ["test-stacking-bonus"],
+      },
+      TEST_HEAD_WITH_BONUS,
+    ],
+    bonuses: [
+      {
+        id: COLLAR_BONUS,
+        name: "Test Scaled Bonus",
+        grants: [
+          {
+            stats: { outgoing_damage_mult: 0.05 },
+            scale: { formula: 'scaler("scalers.encounterDamage")' },
+          },
+        ],
+      },
+      {
+        id: "test-stacking-bonus",
+        name: "Test Stacking Bonus",
+        inputs: {
+          stacks: {
+            type: "number",
+            label: "Stacks",
+            min: 0,
+            max: 5,
+            default: 5,
+          },
+        },
+        grants: [
+          {
+            stats: { outgoing_damage: 0.2 },
+            scale: { formula: 'scaler("scalers.encounterDamage")' },
+          },
+          {
+            stats: { outgoing_damage: 0.02 },
+            scale: {
+              formula: '$stacks * scaler("scalers.encounterDamage")',
+              steps: { over: "$stacks", min: 1, max: 5, step: 1 },
+            },
+          },
+        ],
+      },
+      TEST_HEAD_BONUS,
+    ],
+  });
+}
 
 const SHARES = [
   ["scalers.encounterDamage", "Encounter damage"],
@@ -39,10 +105,10 @@ async function setShare(page: Page, slotId: string, percent: number) {
   await input.blur();
 }
 
-async function equipCollar(page: Page) {
+async function equipCollar(page: Page, name = COLLAR) {
   await ensureSectionExpanded(page, "scalers");
   await ensureSectionExpanded(page, "mounts");
-  await chooseItem(page, "mounts.sturdyCollar", COLLAR);
+  await chooseItem(page, COLLAR_SLOT, name);
 }
 
 test("the three share controls render in the scalers section, starting at 0", async ({
@@ -60,7 +126,7 @@ test("the three share controls render in the scalers section, starting at 0", as
 test("setting the encounter share moves a stat the collar's grant feeds", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openWithScaledItems(page);
   await equipCollar(page);
 
   // At the default share of 0 the collar's damage grant contributes nothing.
@@ -78,10 +144,10 @@ test("setting the encounter share moves a stat the collar's grant feeds", async 
 test("the hover card explains a scaled grant at 0 and once the share is set", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openWithScaledItems(page);
   await equipCollar(page);
 
-  const label = slotRow(page, "mounts.sturdyCollar").locator(".slot-label");
+  const label = slotRow(page, COLLAR_SLOT).locator(".slot-label");
   const card = page.locator(".itemcard");
 
   await hoverForCard(page, label);
@@ -107,10 +173,10 @@ test("the hover card explains a scaled grant at 0 and once the share is set", as
 test("the scaler's name in a note links to its parameter row", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openWithScaledItems(page);
   await equipCollar(page);
 
-  const label = slotRow(page, "mounts.sturdyCollar").locator(".slot-label");
+  const label = slotRow(page, COLLAR_SLOT).locator(".slot-label");
   const card = page.locator(".itemcard");
   await hoverForCard(page, label);
   await expect(card).toBeVisible();
@@ -129,12 +195,12 @@ test("the scaler's name in a note links to its parameter row", async ({
 test("the inspector explains the collar's scale and links the scaler to its row", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openWithScaledItems(page);
   await equipCollar(page);
   await setShare(page, "scalers.encounterDamage", 40);
   await page.getByRole("button", { name: /Bonuses/ }).click();
 
-  const entry = page.getByTestId("bonus-entry-sturdy-crescent-collar");
+  const entry = page.getByTestId(`bonus-entry-${COLLAR_BONUS}`);
   await entry.getByRole("button").first().click();
   const line = entry.getByTestId("bonus-formula-line");
   await expect(line).toContainText("Scale (Encounter damage):");
@@ -152,16 +218,11 @@ test("the inspector explains the collar's scale and links the scaler to its row"
 test("a scaled bonus shows its base at the share and a step ladder per stack", async ({
   page,
 }) => {
-  await openBuilder(page);
-  await ensureSectionExpanded(page, "options");
-  await chooseClass(page, "warlock");
-  await chooseItem(page, "options.paragon", "Hellbringer");
-  await ensureSectionExpanded(page, "classStuff");
-  await chooseItem(page, "classStuff.feat3", "Risky Investment");
-  await ensureSectionExpanded(page, "scalers");
+  await openWithScaledItems(page);
+  await equipCollar(page, STACKING_COLLAR);
   await setShare(page, "scalers.encounterDamage", 40);
 
-  const label = slotRow(page, "classStuff.feat3").locator(".slot-label");
+  const label = slotRow(page, COLLAR_SLOT).locator(".slot-label");
   const card = page.locator(".itemcard");
   await hoverForCard(page, label);
   await expect(card).toBeVisible();
@@ -174,29 +235,28 @@ test("a scaled bonus shows its base at the share and a step ladder per stack", a
   );
   // 2% per stack, laddered from 1 to 5 stacks, each rung at the share.
   const ladder = perStack.getByTestId("item-card-ladder");
-  await expect(ladder).toContainText("Soul Investiture 1:");
+  await expect(ladder).toContainText("Stacks 1:");
   await expect(ladder).toContainText("+0.80%");
-  await expect(ladder).toContainText("Soul Investiture 5:");
+  await expect(ladder).toContainText("Stacks 5:");
   await expect(ladder).toContainText("+4.00%");
-  // Soul Investiture ships at its full five stacks, so the panel carries 8% and 4%, plus
-  // Hellbringer's 15% from 30 Soul Sparks.
-  await expect(statValue(page, "outgoing_damage")).toHaveText("27.00%");
+  // Stacks default to the full five, so the panel carries 8% and 4%.
+  await expect(statValue(page, "outgoing_damage")).toHaveText("12.00%");
 });
 
 test("the bonus inspector breaks a scaled bonus down under its own heading", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openWithScaledItems(page);
   await equipCollar(page);
   await ensureSectionExpanded(page, "gear");
-  await chooseItem(page, "gear.head", "M29 Enchanted Depthweave Cap");
+  await chooseItem(page, "gear.head", TEST_HEAD_WITH_BONUS.name);
   await setShare(page, "scalers.encounterDamage", 40);
 
   await page.getByRole("button", { name: /^Bonuses/ }).click();
   const sidebar = page.getByTestId("details-sidebar");
 
   // The collar's grant is scaled: the summed payload gets the real value and share under it.
-  const collar = sidebar.getByTestId("bonus-entry-sturdy-crescent-collar");
+  const collar = sidebar.getByTestId(`bonus-entry-${COLLAR_BONUS}`);
   await collar.locator("button.group").click();
   await expect(collar).toContainText("Detailed scaling:");
   const scaled = collar.getByTestId("bonus-grant-scale");
@@ -209,9 +269,7 @@ test("the bonus inspector breaks a scaled bonus down under its own heading", asy
   );
 
   // The cap's grant is not, so the breakdown and its heading stay away.
-  const cap = sidebar.getByTestId(
-    "bonus-entry-m29-enchanted-depthweave-cap-ca",
-  );
+  const cap = sidebar.getByTestId(`bonus-entry-${TEST_HEAD_BONUS.id}`);
   await cap.locator("button.group").click();
   await expect(cap.getByTestId("bonus-stat-row")).toHaveCount(1);
   await expect(cap).not.toContainText("Detailed scaling:");

@@ -75,6 +75,7 @@ test.describe("sticky section headers", () => {
     // the content instead -- otherwise rows would show above the header, unclipped.
     const scrollerPadTop = await page
       .getByTestId("editor-column")
+      // eslint-disable-next-line no-restricted-syntax
       .evaluate((el) => getComputedStyle(el).paddingTop);
     expect(scrollerPadTop).toBe("0px");
   });

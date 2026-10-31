@@ -1348,6 +1348,7 @@ watch(
               :no-border="noBorderIds.has(slotDef.id)"
               :nest="nestById.get(slotDef.id)"
               :class="contextIds.has(slotDef.id) && 'opacity-60'"
+              :data-filter-context="contextIds.has(slotDef.id) || undefined"
               :on-arrow="moveCursor"
               :item="rowDataFor(slotDef.id).item"
               :items="rowDataFor(slotDef.id).items"

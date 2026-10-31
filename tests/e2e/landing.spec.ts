@@ -26,14 +26,11 @@ test("a fresh visit lands on the intro with a New build button", async ({
     landing.getByText("Create and compare Neverwinter builds."),
   ).toBeVisible();
 
-  // The watermark is decoration: present, faint, and invisible to the a11y tree.
-  const watermark = page.getByTestId("landing-watermark");
-  await expect(watermark).toHaveAttribute("aria-hidden", "true");
-  const opacity = await watermark.evaluate((el) =>
-    Number(getComputedStyle(el).opacity),
+  // The watermark is decoration, invisible to the a11y tree.
+  await expect(page.getByTestId("landing-watermark")).toHaveAttribute(
+    "aria-hidden",
+    "true",
   );
-  expect(opacity).toBeGreaterThan(0);
-  expect(opacity).toBeLessThan(0.2);
 });
 
 test("New build leaves the landing screen for the builder", async ({

@@ -237,7 +237,7 @@ function create(filter: string) {
               <span class="min-w-0 truncate text-muted">{{ row.meta }}</span>
               <BaseButton
                 v-if="tab === 'bonus' && group !== null"
-                class="ml-auto"
+                class="ml-auto flex-none"
                 data-testid="stable-apply"
                 :title="`Set Mount ${group} to ${row.name}`"
                 @click="apply(row.item)"

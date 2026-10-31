@@ -1,19 +1,32 @@
 // End-to-end coverage for `optionsFrom`: a list parameter authored with it derives its
 // options from the item catalog, so extending the option set is an item edit rather than a
-// slot edit. Driven through the `paragon` tag, whose option set is read from the shipped
-// catalog so adding a paragon item doesn't outdate this spec.
+// slot edit. Driven through a test tag carried by a few imported test items.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, slotRow, pickerInput } from "./support/app";
-import { addLayer, layerRow } from "./support/nav";
+import { layerRow } from "./support/nav";
 import { openSlotsTab, newInOutline } from "./support/layerEditor";
-import { shippedItemNamesByTag } from "./support/shippedData";
+import { importTestCatalog } from "./support/testCatalog";
 
-const PARAGONS = shippedItemNamesByTag("paragon");
+const TAG = "test-paragon";
+const CATALOG_NAME = "Test paragons";
+// Listed in name order, which is the order the derived options follow.
+const PARAGONS = ["Test Paragon A", "Test Paragon B", "Test Paragon C"];
 
-/** Creates a layer, selects it, and opens the Slots tab. */
+/** Imports the tagged items, then opens their layer's Slots tab. */
 async function openParametersTab(page: Page) {
-  await addLayer(page);
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await importTestCatalog(page, {
+    name: CATALOG_NAME,
+    // Imported out of name order, so the derived order is the app's own.
+    items: [...PARAGONS].reverse().map((name) => ({
+      id: name.toLowerCase().replaceAll(" ", "-"),
+      name,
+      filter: "test_paragon",
+      tags: [TAG],
+    })),
+  });
+  await layerRow(page, `${CATALOG_NAME} (imported)`)
+    .locator(".nav-name")
+    .click();
   await openSlotsTab(page);
 }
 
@@ -23,7 +36,7 @@ async function chooseIn(page: Page, testId: string, label: string) {
   await combo.getByText(label, { exact: true }).click();
 }
 
-/** Authors a `list` param deriving its options from the `paragon` tag. */
+/** Authors a `list` param deriving its options from `TAG`. */
 async function createDerivedParam(page: Page, { allowEmpty = false } = {}) {
   await newInOutline(page, "new-slot");
   await page.getByTestId("slot-label-input").fill("Preferred paragon");
@@ -31,7 +44,7 @@ async function createDerivedParam(page: Page, { allowEmpty = false } = {}) {
   await chooseIn(page, "slot-type-input", "list");
   await chooseIn(page, "slot-section-input", "Options");
   await chooseIn(page, "slot-options-source-input", "items with tags");
-  await page.getByTestId("slot-options-tags-input").fill("paragon");
+  await page.getByTestId("slot-options-tags-input").fill(TAG);
   if (allowEmpty) await page.getByTestId("slot-allow-empty-input").click();
   await page.getByTestId("save-slot").click();
 }
@@ -49,12 +62,12 @@ test("the form previews how many items the selector matches", async ({
   await chooseIn(page, "slot-options-source-input", "items with tags");
 
   // A typo'd tag would otherwise look exactly like a tag with no items yet.
-  await page.getByTestId("slot-options-tags-input").fill("paragonn");
+  await page.getByTestId("slot-options-tags-input").fill(`${TAG}n`);
   await expect(page.getByTestId("slot-derived-preview")).toContainText(
     "no items match",
   );
 
-  await page.getByTestId("slot-options-tags-input").fill("paragon");
+  await page.getByTestId("slot-options-tags-input").fill(TAG);
   await expect(page.getByTestId("slot-derived-preview")).toContainText(
     `${PARAGONS.length} option(s)`,
   );
@@ -87,8 +100,8 @@ test("a derived parameter offers one option per matching item, in name order", a
 
   // Picking a derived option stores it and equips the item behind it -- a derived option's
   // linkedItem *is* the item it came from, so it can't dangle the way a hand-written one can.
-  await row.getByText("Minstrel", { exact: true }).click();
-  await expect(pickerInput(row)).toHaveValue("Minstrel");
+  await row.getByText(PARAGONS[1], { exact: true }).click();
+  await expect(pickerInput(row)).toHaveValue(PARAGONS[1]);
 });
 
 test("the empty row appears only when the parameter asks for it", async ({

@@ -16,8 +16,12 @@ import {
   slotFilterClearButton,
 } from "./support/app";
 import { expectTopmost } from "./support/occlusion";
+import { importTestCatalog } from "./support/testCatalog";
 
 const DYNAMIC_RING_SLOT = "gear.ring1";
+// "Glimmer" is the word no slot or section label carries.
+const ARMS_ITEM = "Test Glimmer Armguards";
+const FOOD_ITEM = "Test Filter Food";
 
 /** Imports a build holding one catalog ring, made of `fields`, in `DYNAMIC_RING_SLOT`. */
 async function importRing(page: Page, fields: Record<string, unknown>) {
@@ -44,6 +48,34 @@ async function importRing(page: Page, fields: Record<string, unknown>) {
   await confirmImport(page);
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 }
+
+/** Arms granting Power and Accuracy directly, and food granting Power only through its active
+ *  bonus. Nothing equipped. */
+const importFilterItems = (page: Page) =>
+  importTestCatalog(page, {
+    items: [
+      {
+        id: "test-filter-arms",
+        name: ARMS_ITEM,
+        filter: "gear_arms",
+        power: 100,
+        acc: 100,
+      },
+      {
+        id: "test-filter-food",
+        name: FOOD_ITEM,
+        filter: "consumable_food",
+        bonuses: ["test-filter-food-power"],
+      },
+    ],
+    bonuses: [
+      {
+        id: "test-filter-food-power",
+        name: "Test Filter Food Power",
+        grants: [{ stats: { power: 100 } }],
+      },
+    ],
+  });
 
 /** A ring whose only stat is Accuracy the player types in. */
 const importDynamicRing = (page: Page) =>
@@ -104,17 +136,19 @@ test.describe("slot filter: text", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+    await importFilterItems(page);
+    await chooseItem(page, "gear.arms", ARMS_ITEM);
 
-    await slotFilterInput(page).fill("Runefrost");
+    await slotFilterInput(page).fill("Glimmer");
     await expect(slotRow(page, "gear.arms")).toBeVisible();
     await expect(slotRow(page, "gear.head")).toBeHidden();
   });
 
   test("an empty slot never matches an item name query", async ({ page }) => {
     await openBuilder(page);
+    await importFilterItems(page);
 
-    await slotFilterInput(page).fill("Runefrost");
+    await slotFilterInput(page).fill("Glimmer");
     await expect(slotRow(page, "gear.arms")).toBeHidden();
   });
 
@@ -122,9 +156,10 @@ test.describe("slot filter: text", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+    await importFilterItems(page);
+    await chooseItem(page, "gear.arms", ARMS_ITEM);
 
-    // The armguards grant Accuracy directly -- its abbreviation shows in the stat summary
+    // The armguards grant Accuracy directly. Its abbreviation shows in the stat summary
     // rendered next to the picker, and nothing else on the page's slot/section labels does.
     await slotFilterInput(page).fill("Acc ");
     await expect(slotRow(page, "gear.arms")).toBeVisible();
@@ -162,11 +197,12 @@ test.describe("slot filter: text", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+    await importFilterItems(page);
+    await chooseItem(page, "gear.arms", ARMS_ITEM);
 
-    // "Arms" matches the slot label, "Runefrost" matches the equipped item's name -- neither
-    // word alone is enough to prove the AND-across-words behavior, only both together.
-    await slotFilterInput(page).fill("Arms Runefrost");
+    // "Arms" matches the slot label, "Glimmer" matches the equipped item's name. Neither word
+    // alone is enough to prove the AND-across-words behavior, only both together.
+    await slotFilterInput(page).fill("Arms Glimmer");
     await expect(slotRow(page, "gear.arms")).toBeVisible();
     await expect(slotRow(page, "gear.head")).toBeHidden();
 
@@ -182,9 +218,9 @@ test.describe("slot filter: stat", () => {
     page,
   }) => {
     await openBuilder(page);
-    // "M33 Runefrost Swift Armguards" is selectable in gear.arms and grants power directly,
-    // but nothing is actually equipped there -- the filter is about what a slot's current
-    // choice is granting, not what it could grant.
+    await importFilterItems(page);
+    // ARMS_ITEM is selectable in gear.arms and grants power directly, but nothing is equipped
+    // there. The filter is about what a slot's current choice grants, not what it could.
     await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "gear.arms")).toBeHidden();
   });
@@ -193,7 +229,8 @@ test.describe("slot filter: stat", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+    await importFilterItems(page);
+    await chooseItem(page, "gear.arms", ARMS_ITEM);
 
     await chooseCombo(slotFilterStatCombo(page), "Power");
 
@@ -204,7 +241,8 @@ test.describe("slot filter: stat", () => {
 
   test("text and stat filters combine", async ({ page }) => {
     await openBuilder(page);
-    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+    await importFilterItems(page);
+    await chooseItem(page, "gear.arms", ARMS_ITEM);
 
     await slotFilterInput(page).fill("Arms");
     await chooseCombo(slotFilterStatCombo(page), "Power");
@@ -220,14 +258,14 @@ test.describe("slot filter: stat", () => {
     page,
   }) => {
     await openBuilder(page);
-    // "Prime Rib (Power)" carries no `power` stat of its own -- it grants +4000 Power through
-    // an active bonus (gated only on the "Consumables" toggle, checked by default) once
-    // equipped, so the Food slot only matches the Power filter after it's chosen.
+    await importFilterItems(page);
+    // FOOD_ITEM carries no `power` stat of its own. It grants Power through an active bonus
+    // once equipped, so the Food slot only matches the Power filter after it's chosen.
     await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "buffs.food")).toBeHidden();
 
     await slotFilterClearButton(page).click();
-    await chooseItem(page, "buffs.food", "Prime Rib");
+    await chooseItem(page, "buffs.food", FOOD_ITEM);
 
     await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "buffs.food")).toBeVisible();

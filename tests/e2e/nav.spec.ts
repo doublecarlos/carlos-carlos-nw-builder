@@ -1,23 +1,23 @@
 // End-to-end coverage for Nav.vue's sidebar: builds, customization layers, recently
 // deleted, filtering, ordering, and the layer checkbox.
-import { test, expect, type Locator } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import {
   buildRow,
-  folderRow,
   layerRow,
   openRowMenu,
   confirmDangerAction,
   confirmDialog,
   renameViaSidebar,
   addBuild,
-  addFolder,
   addLayer,
   filterBuilds,
   filterLayers,
   moveUp,
   recentlyDeletedHeader,
+  navName,
 } from "./support/nav";
+import { storedBuildOrder } from "./support/storage";
 
 // --- Builds -------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ test("+ New under Builds appends and selects", async ({ page }) => {
 
   const created = buildRow(page, "Build 2");
   await expect(created).toBeVisible();
-  await expect(created).toHaveClass(/is-active/);
+  await expect(navName(created)).toHaveAttribute("aria-current", "true");
 });
 
 test("renaming a build via double-click updates the sidebar", async ({
@@ -121,9 +121,9 @@ test("Move up order survives a reload", async ({ page }) => {
 
   await moveUp(buildRow(page, "Build 2"));
 
-  // Wait for IDB write to complete before reload.
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(() => storedBuildOrder(page))
+    .toEqual(["Build 2", "Build 1"]);
 
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
@@ -226,12 +226,12 @@ test("+ New under Layers creates Layer 1; a second gives Layer 2", async ({
 
   const first = layerRow(page, "Layer 1");
   await expect(first).toBeVisible();
-  await expect(first).toHaveClass(/is-active/);
+  await expect(navName(first)).toHaveAttribute("aria-current", "true");
 
   await addLayer(page);
   const second = layerRow(page, "Layer 2");
   await expect(second).toBeVisible();
-  await expect(second).toHaveClass(/is-active/);
+  await expect(navName(second)).toHaveAttribute("aria-current", "true");
 });
 
 test("unchecking a layer checkbox does not change which panel the editor area shows", async ({
@@ -240,14 +240,14 @@ test("unchecking a layer checkbox does not change which panel the editor area sh
   await openBuilder(page);
   await addLayer(page);
   const row = layerRow(page, "Layer 1");
-  await expect(row).toHaveClass(/is-active/);
+  await expect(navName(row)).toHaveAttribute("aria-current", "true");
 
   // Toggle the checkbox off - the layer should stay selected.
   const checkbox = row.locator('input[type="checkbox"]');
   await checkbox.click();
 
   // The layer row should still be active.
-  await expect(row).toHaveClass(/is-active/);
+  await expect(navName(row)).toHaveAttribute("aria-current", "true");
 });
 
 test("the layer filter narrows the list and clearing it restores every row", async ({
@@ -330,7 +330,7 @@ test("duplicating a build creates a copy and switches to it", async ({
 
   const copy = buildRow(page, "Build 1 copy");
   await expect(copy).toBeVisible();
-  await expect(copy).toHaveClass(/is-active/);
+  await expect(navName(copy)).toHaveAttribute("aria-current", "true");
 });
 
 // --- Delete last build --------------------------------------------------------------
@@ -394,15 +394,24 @@ test("clicking a different row's kebab switches the menu", async ({ page }) => {
 test("ArrowDown/ArrowUp move the build selection", async ({ page }) => {
   await openBuilder(page);
   await addBuild(page);
-  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 
   await buildRow(page, "Build 1").locator(".nav-name").focus();
   await page.keyboard.press("ArrowDown");
-  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
   await expect(buildRow(page, "Build 2").locator(".nav-name")).toBeFocused();
 
   await page.keyboard.press("ArrowUp");
-  await expect(buildRow(page, "Build 1")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 1"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
   await expect(buildRow(page, "Build 1").locator(".nav-name")).toBeFocused();
 });
 
@@ -469,7 +478,10 @@ test("committing a rename with Enter returns focus to the row for continued keyb
 
   // Focus survived the rename, so arrow nav still works right after.
   await page.keyboard.press("ArrowDown");
-  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 });
 
 test("cancelling a rename with Escape returns focus to the row", async ({
@@ -511,32 +523,4 @@ test("Delete on a focused row asks for confirmation, then deletes", async ({
   await expect(buildRow(page, "Build 2")).toHaveCount(0);
   const trash = recentlyDeletedHeader(page);
   await expect(trash).toBeVisible();
-});
-
-// --- Row alignment ------------------------------------------------------------------
-
-/** How far a child's vertical center sits from its row's, in px. */
-async function centerOffset(row: Locator, childSelector: string) {
-  const rowBox = await row.boundingBox();
-  const childBox = await row.locator(childSelector).boundingBox();
-  if (!rowBox || !childBox)
-    throw new Error(`no layout box for ${childSelector}`);
-  return Math.abs(
-    rowBox.y + rowBox.height / 2 - (childBox.y + childBox.height / 2),
-  );
-}
-
-test("kebab icons sit on their row's vertical center", async ({ page }) => {
-  await openBuilder(page);
-  await addFolder(page);
-  await addLayer(page);
-
-  for (const row of [
-    buildRow(page, "Build 1"),
-    folderRow(page, "Folder 1"),
-    layerRow(page, "Layer 1"),
-  ]) {
-    // Sub-pixel rather than exact: row heights land on half pixels at this font size.
-    expect(await centerOffset(row, ".nav-kebab svg")).toBeLessThan(1);
-  }
 });

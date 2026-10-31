@@ -3,18 +3,26 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import {
   chooseItem,
-  confirmImport,
-  importText,
   openBuilder,
   pickerInput,
   slotRow,
   togglePickerOption,
 } from "./support/app";
-import { addLayer, layerRow } from "./support/nav";
+import { layerRow } from "./support/nav";
 import { openSlotsTab } from "./support/layerEditor";
+import { importTestCatalog } from "./support/testCatalog";
+import { TEST_HEAD_BONUS, TEST_HEAD_WITH_BONUS } from "./support/testHead";
 
-// Carries its own bonus, active by default (see item-picker-bonus-preview.spec.ts).
-const HEAD_ITEM_WITH_BONUS = "M29 Enchanted Depthweave Cap";
+// Carries its own bonus, active by default.
+const HEAD_ITEM_WITH_BONUS = TEST_HEAD_WITH_BONUS.name;
+
+async function openWithHeadItem(page: Page) {
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [TEST_HEAD_WITH_BONUS],
+    bonuses: [TEST_HEAD_BONUS],
+  });
+}
 
 const card = (scope: Locator) =>
   scope.getByTestId("picker-aside").getByTestId("item-card");
@@ -26,7 +34,7 @@ const option = (scope: Locator, name: string) =>
     .filter({ hasText: name });
 
 async function openHeadPicker(page: Page) {
-  await openBuilder(page);
+  await openWithHeadItem(page);
   const row = slotRow(page, "gear.head");
   await pickerInput(row).click();
   return row;
@@ -86,7 +94,7 @@ test("pressing on the card keeps the picker open, Escape closes both", async ({
 });
 
 test("the lens option turns the card off", async ({ page }) => {
-  await openBuilder(page);
+  await openWithHeadItem(page);
   await togglePickerOption(page, "showCard");
   const row = slotRow(page, "gear.head");
   await pickerInput(row).click();
@@ -107,7 +115,7 @@ test("the class picker shows a card too", async ({ page }) => {
 });
 
 test("opening the picker highlights the equipped item", async ({ page }) => {
-  await openBuilder(page);
+  await openWithHeadItem(page);
   await chooseItem(page, "gear.head", HEAD_ITEM_WITH_BONUS);
   const row = slotRow(page, "gear.head");
   await pickerInput(row).click();
@@ -126,9 +134,9 @@ test("opening the picker highlights the equipped item", async ({ page }) => {
 test("a picker with no build to resolve against shows the card without bonuses", async ({
   page,
 }) => {
-  await openBuilder(page);
-  await addLayer(page);
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await openWithHeadItem(page);
+  // The layer the import unpacked the test item into.
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
   await openSlotsTab(page);
   await page.locator(".editor-search").fill("Head");
   await page.locator(".editor-row", { hasText: "Head" }).first().click();
@@ -151,52 +159,45 @@ test("a candidate's step ladder reads the build with the candidate picked", asyn
   await openBuilder(page);
   // The bonus doubles while its own ring is equipped, so a ladder read against the build
   // without the candidate would show half of what picking it gives.
-  await importText(
-    page,
-    JSON.stringify({
-      name: "Self ladder test",
-      choices: { "gear.ring1": "" },
-      catalog: {
-        items: {
-          [RING_ID]: {
-            id: RING_ID,
-            name: NAME,
-            filter: "gear_ring",
-            bonuses: [BONUS_ID],
-          },
-        },
-        bonuses: {
-          [BONUS_ID]: {
-            id: BONUS_ID,
-            name: "Test Self Ladder Bonus",
-            inputs: {
-              stacks: {
-                type: "number",
-                min: 0,
-                max: 2,
-                default: 1,
-                label: "Stacks",
-              },
-            },
-            formulas: {
-              self: { formula: `min(equipped("${RING_ID}"), 1)` },
-            },
-            grants: [
-              {
-                stats: { power: 100 },
-                scale: {
-                  formula: "$stacks * (1 + $self)",
-                  steps: { over: "$stacks", min: 0, max: 2, step: 1 },
-                },
-              },
-            ],
-          },
-        },
-        sectionPresets: {},
+  await importTestCatalog(page, {
+    name: "Self ladder test",
+    choices: { "gear.ring1": "" },
+    items: [
+      {
+        id: RING_ID,
+        name: NAME,
+        filter: "gear_ring",
+        bonuses: [BONUS_ID],
       },
-    }),
-  );
-  await confirmImport(page);
+    ],
+    bonuses: [
+      {
+        id: BONUS_ID,
+        name: "Test Self Ladder Bonus",
+        inputs: {
+          stacks: {
+            type: "number",
+            min: 0,
+            max: 2,
+            default: 1,
+            label: "Stacks",
+          },
+        },
+        formulas: {
+          self: { formula: `min(equipped("${RING_ID}"), 1)` },
+        },
+        grants: [
+          {
+            stats: { power: 100 },
+            scale: {
+              formula: "$stacks * (1 + $self)",
+              steps: { over: "$stacks", min: 0, max: 2, step: 1 },
+            },
+          },
+        ],
+      },
+    ],
+  });
 
   const row = slotRow(page, "gear.ring1");
   await row.scrollIntoViewIfNeeded();

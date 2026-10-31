@@ -1,16 +1,13 @@
 // Condition trees on a phone: each condition is one line of summary text, tapping it opens that
 // condition alone in a bottom sheet with its fields stacked, and groups are slim labeled blocks
-// so three levels still fit. Driven through two hosts: a bonus grant's "Active when" and a
+// so three levels still fit (checked in layout-sweep.spec.ts). Driven through two hosts: a bonus grant's "Active when" and a
 // slot's "Available when".
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { openBuilder, pickerScreen } from "../support/app";
-import { addLayer, confirmDialog, layerRow } from "../support/nav";
+import { pickerScreen } from "../support/app";
+import { confirmDialog, openNewLayer } from "../support/nav";
 import { center, touchDrag } from "../support/touch";
 import { requireBox } from "../support/dragDrop";
-import {
-  MIN_SUPPORTED_WIDTH,
-  expectNoHorizontalScroll,
-} from "../support/viewport";
+import { MIN_SUPPORTED_WIDTH } from "../support/viewport";
 
 const form = (page: Page) => page.getByTestId("layer-form-pane");
 const editor = (page: Page) => page.getByTestId("condition-editor");
@@ -18,21 +15,9 @@ const summaries = (scope: Locator) =>
   scope.getByTestId("condition-summary-text");
 const done = (page: Page) => page.getByTestId("condition-editor-done");
 
-async function openLayer(page: Page) {
-  await openBuilder(page);
-  const drawer = page.getByTestId("nav-drawer");
-  if (!(await drawer.isVisible()))
-    await page.getByTestId("header-nav-toggle").click();
-  await addLayer(page);
-  if (!(await drawer.isVisible()))
-    await page.getByTestId("header-nav-toggle").click();
-  await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await expect(page.getByTestId("layer-entries-column")).toBeVisible();
-}
-
 /** A new bonus with one grant; returns that grant's condition tree. */
 async function openBonusConditions(page: Page): Promise<Locator> {
-  await openLayer(page);
+  await openNewLayer(page);
   await page.getByTestId("tab-bonuses").tap();
   await page.getByTestId("new-bonus").tap();
   await page.getByLabel("Add grant").tap();
@@ -41,7 +26,7 @@ async function openBonusConditions(page: Page): Promise<Locator> {
 
 /** The shipped Arms slot, its "Available when" seeded from `when` through the JSON field. */
 async function openSlotConditions(page: Page, when: object): Promise<Locator> {
-  await openLayer(page);
+  await openNewLayer(page);
   await page.getByTestId("tab-slots").tap();
   await page.locator(".editor-search").fill("Arms");
   await page.locator(".editor-row", { hasText: "Arms" }).first().tap();
@@ -60,16 +45,6 @@ async function addFrom(foot: Locator, what: "leaf" | "all" | "any" | "not") {
 /** The trailing "+" of the outermost list, which follows every nested one in DOM order. */
 const rootFoot = (scope: Locator) =>
   scope.getByTestId("condition-empty-drop").last();
-
-/** Nothing scrolls sideways, on the page or inside the form. */
-async function expectFits(page: Page) {
-  await expectNoHorizontalScroll(page);
-  const { scrollWidth, clientWidth } = await form(page).evaluate((el) => ({
-    scrollWidth: el.scrollWidth,
-    clientWidth: el.clientWidth,
-  }));
-  expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
-}
 
 for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
   test.describe(`at ${width}px`, () => {
@@ -92,17 +67,13 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       ]);
       // The inline controls are gone on a phone.
       await expect(tree.getByTestId("picker-input")).toHaveCount(0);
-      await expectFits(page);
 
       await tree.getByTestId("condition-summary").nth(2).tap();
       await expect(editor(page)).toBeVisible();
-      const sheet = await requireBox(editor(page).getByTestId("sheet-panel"));
-      expect(sheet.width).toBeCloseTo(width, 0);
-      // Stacked full-width: the type picker spans the sheet's padded body.
+      await expect(editor(page).getByTestId("sheet-panel")).toBeInViewport({
+        ratio: 1,
+      });
       const fields = editor(page).getByTestId("condition-editor-fields");
-      const type = await requireBox(fields.getByTestId("picker-input").first());
-      const body = await requireBox(fields);
-      expect(type.width).toBeGreaterThan(body.width - 40);
       await expect(fields.getByTestId("picker-input").first()).toHaveValue(
         "enemies",
       );
@@ -128,36 +99,6 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       await expect(line).toHaveAttribute("data-incomplete", "");
       await expect(line).toContainText("toggle");
       await expect(line).toContainText("incomplete");
-      await expectFits(page);
-    });
-
-    test("three levels of groups fit with no sideways scroll", async ({
-      page,
-    }) => {
-      const tree = await openSlotConditions(page, {
-        any: [
-          { all: [{ not: { class: "wizard" } }, { toggle: "combat" }] },
-          { enemies: { atLeast: 1 } },
-        ],
-      });
-      await expect(tree.getByTestId("condition-op-label")).toHaveText([
-        "any of",
-        "all of",
-        "not",
-      ]);
-      await expect(summaries(tree)).toHaveText([
-        "Class: wizard",
-        "combat enabled",
-        "enemies ≥ 1",
-      ]);
-      await expectFits(page);
-
-      // The deepest line still has room to read.
-      const deepest = await requireBox(
-        tree.getByTestId("condition-summary").first(),
-      );
-      expect(deepest.x + deepest.width).toBeLessThanOrEqual(width);
-      expect(deepest.width).toBeGreaterThan(width * 0.55);
     });
   });
 }
@@ -263,7 +204,6 @@ test.describe("at the narrowest width", () => {
       .first()
       .tap();
     await expect(branches).toHaveCount(4);
-    await expectFits(page);
   });
 
   test("a condition reorders by dragging its grip with a finger", async ({

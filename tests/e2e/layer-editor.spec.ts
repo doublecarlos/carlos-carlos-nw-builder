@@ -4,9 +4,13 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { openBuilder, chooseItem, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { shippedItemName } from "./support/shippedData";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
-const ARMS_ITEM = "M31 Bindings of the Death Pact";
+// Shipped items on purpose: these tests edit a base catalog entry inside a fresh layer, and an
+// imported test catalog would itself be a layer, shifting the "Layer N" names and the
+// "no layers yet" Ctrl+click path.
+const HEAD_ITEM = shippedItemName("m29-enchanted-depthweave-cap-ca");
+const ARMS_ITEM = shippedItemName("m31-bindings-of-the-death-pact-damage");
 
 test.describe("selecting a layer replaces the build editor", () => {
   test("selecting a layer hides the build name input and shows the layer editor", async ({
@@ -303,6 +307,7 @@ test.describe("bonus grant conditions", () => {
     // the condition is momentarily incomplete -- the debounced auto-save must not fire
     // with a half-drawn tree (it would silently drop the when and the source round-trip
     // would wipe the row from the form).
+    await page.clock.install();
     await typePicker.click();
     await page.getByText("class", { exact: true }).click();
     await expect(typePicker).toHaveValue("class");
@@ -310,7 +315,7 @@ test.describe("bonus grant conditions", () => {
     // Wait past the 700ms debounce: the row must still be there and nothing must have
     // been persisted (no "edited" status badge on the bonus row -- the "unsaved" badge
     // for the dirty form is expected).
-    await page.waitForTimeout(1500);
+    await page.clock.fastForward(1000);
     await expect(typePicker).toHaveValue("class");
     await expect(values).toBeVisible();
     await expect(values.getByTestId("token-chip")).toHaveCount(0);
@@ -366,8 +371,9 @@ test.describe("bonus stat payload editing", () => {
 
     // Fill the new row, then wait past the 700ms auto-save debounce: the row must
     // survive the round-trip and the bonus must be marked edited.
+    await page.clock.install();
     await pickStat(page.locator(".stat-row").last());
-    await page.waitForTimeout(1500);
+    await page.clock.fastForward(1000);
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
     await expect(
       bonusRow.getByTestId("badge").filter({ hasText: "edited" }),
@@ -385,8 +391,9 @@ test.describe("bonus stat payload editing", () => {
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
 
     // Fill the new row and let it auto-save: it must survive the round-trip.
+    await page.clock.install();
     await pickStat(page.locator(".stat-row").last());
-    await page.waitForTimeout(1500);
+    await page.clock.fastForward(1000);
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
     await expect(
       bonusRow.getByTestId("badge").filter({ hasText: "edited" }),
@@ -406,9 +413,10 @@ test.describe("bonus stat payload editing", () => {
       await page.getByRole("button", { name: "Add stat" }).first().click();
     }
     await expect(rows).toHaveCount(rowsBefore + 3);
+    await page.clock.install();
     await pickStat(rows.nth(rowsBefore));
 
-    await page.waitForTimeout(1500);
+    await page.clock.fastForward(1000);
     await expect(rows).toHaveCount(rowsBefore + 3);
     await expect(
       bonusRow.getByTestId("badge").filter({ hasText: "edited" }),
@@ -556,10 +564,11 @@ test.describe("pending live edits", () => {
 
     const nameInput = await openHeadItem(page);
     const first = `${HEAD_ITEM} (first)`;
+    await page.clock.install();
     await nameInput.fill(first);
     // Let the first edit commit and leave the history's merge window.
     await expect(page.getByTestId("editor-undo")).toBeEnabled();
-    await page.waitForTimeout(1000);
+    await page.clock.fastForward(1000);
 
     await nameInput.fill(`${HEAD_ITEM} (second)`);
     // The button runs the same item undo as Ctrl+Z, without the browser's own undo of the

@@ -20,8 +20,11 @@ import {
   layerRow,
   openRowMenu,
   renameViaSidebar,
+  navName,
 } from "./support/nav";
 import { newInOutline, openSlotsTab } from "./support/layerEditor";
+import { TEST_HEAD } from "./support/testHead";
+import { importTestCatalog } from "./support/testCatalog";
 
 const palette = (page: Page) => page.getByTestId("go-to-palette");
 const input = (page: Page) => page.getByTestId("go-to-input");
@@ -177,7 +180,9 @@ test.describe("choosing a destination", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseItem(page, "gear.head", "M29 Enchanted Depthweave Cap");
+    await importTestCatalog(page, { items: [TEST_HEAD] });
+    await buildRow(page, "Build 1").click();
+    await chooseItem(page, "gear.head", TEST_HEAD.name);
     await page.getByTestId("nav-add-build").click();
     await chooseCombo(page.locator(".compare-select"), "Build 1");
     const onlyChanges = page.getByRole("checkbox", {
@@ -285,12 +290,18 @@ test.describe("choosing a destination", () => {
   test("a build switches to it", async ({ page }) => {
     await openBuilder(page);
     await addBuild(page);
-    await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+    await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
 
     await openPalette(page, "Build 1");
     await page.keyboard.press("Enter");
 
-    await expect(buildRow(page, "Build 1")).toHaveClass(/is-active/);
+    await expect(navName(buildRow(page, "Build 1"))).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
     await expect(palette(page)).toBeHidden();
   });
 

@@ -2,6 +2,7 @@
 // "copy from another build" popover (SectionCopyMenu.vue) -- both need a second build in the
 // picture, which slot-list.spec.ts deliberately stays away from.
 import { test, expect, type Page } from "@playwright/test";
+import type { Item } from "../../src/types";
 import {
   openBuilder,
   chooseItem,
@@ -25,13 +26,23 @@ import {
   openRowMenu,
   renameViaSidebar,
 } from "./support/nav";
+import { TEST_HEAD } from "./support/testHead";
+import { importTestCatalog } from "./support/testCatalog";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ITEM = TEST_HEAD.name;
+
+/** Opens Build 1 with the test head item available to pick. The import adds a build of its
+ *  own, so this steps back onto Build 1. */
+async function openBuildWithHeadItem(page: Page) {
+  await openBuilder(page);
+  await importTestCatalog(page, { items: [TEST_HEAD] });
+  await buildRow(page, "Build 1").click();
+}
 
 test("highlighting a diff and applying it copies the compare build's choice", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openBuildWithHeadItem(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
   await page.getByTestId("nav-add-build").click();
@@ -39,18 +50,18 @@ test("highlighting a diff and applying it copies the compare build's choice", as
   await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
   const row = slotRow(page, "gear.head");
-  await expect(row).toHaveClass(/is-diff/);
+  await expect(row).toHaveAttribute("data-diff");
   await expect(row.locator(".slot-diff-note")).toContainText(HEAD_ITEM);
 
   await row.getByRole("button", { name: "apply" }).click();
   await expect(pickerInput(row)).toHaveValue(HEAD_ITEM);
-  await expect(row).not.toHaveClass(/is-diff/);
+  await expect(row).not.toHaveAttribute("data-diff");
 });
 
 test("only showing changes is reported in the filter bar and cleared with the filters", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openBuildWithHeadItem(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
   await page.getByTestId("nav-add-build").click();
@@ -77,7 +88,7 @@ test("only showing changes is reported in the filter bar and cleared with the fi
 test("only showing changes opens a collapsed section holding one, like any filter", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openBuildWithHeadItem(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
   await page.getByTestId("nav-add-build").click();
@@ -99,7 +110,7 @@ test("only showing changes opens a collapsed section holding one, like any filte
 test("copying a section from another build fills its slots", async ({
   page,
 }) => {
-  await openBuilder(page);
+  await openBuildWithHeadItem(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
   await page.getByTestId("nav-add-build").click();
@@ -142,7 +153,7 @@ test.describe("build_parameter compare diff apply", () => {
     );
 
     const row = slotRow(page, "options.role");
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
 
     // The diff note should show build 1's value and have an apply button
     await expect(row.locator(".slot-diff-note")).toContainText("Tank");
@@ -170,7 +181,7 @@ test.describe("build_parameter compare diff apply", () => {
     await parkCursorOnRow(page, "options.role");
 
     const row = slotRow(page, "options.role");
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
     await expect(row.getByRole("button", { name: "apply" })).toBeVisible();
 
     // Click apply
@@ -178,7 +189,7 @@ test.describe("build_parameter compare diff apply", () => {
 
     // Should now match the compare build's value
     await expect(row.getByTestId("picker-input")).toHaveValue("Tank");
-    await expect(row).not.toHaveClass(/is-diff/);
+    await expect(row).not.toHaveAttribute("data-diff");
   });
 });
 
@@ -205,14 +216,26 @@ test("a percent build_parameter's diff note shows the compare value in percent u
 
 test.describe("point_assignment compare diff apply", () => {
   const SLOT_ID = "boons.tier1";
-  const POWER_ID = "boon-tier1-power";
+  const BOON: Item = {
+    id: "test-tier1-boon",
+    name: "Test Boon",
+    filter: "boon_tier1",
+    inlineRepetition: { min: 0, max: 5, default: 0 },
+  };
+  const BOON_ID = BOON.id;
+
+  /** Build 1 with a point spent on the test boon. */
+  async function spendBoonPoint(page: Page) {
+    await openBuilder(page);
+    await importTestCatalog(page, { items: [BOON] });
+    await buildRow(page, "Build 1").click();
+    await stepAssignment(slotRow(page, SLOT_ID), BOON_ID, "increase");
+  }
 
   test("a changed point_assignment row shows a diff note with an apply button", async ({
     page,
   }) => {
-    // Build 1: spend a point on power
-    await openBuilder(page);
-    await stepAssignment(slotRow(page, SLOT_ID), POWER_ID, "increase");
+    await spendBoonPoint(page);
 
     // Build 2: default (0 points), compared against build 1
     await page.getByTestId("nav-add-build").click();
@@ -220,17 +243,15 @@ test.describe("point_assignment compare diff apply", () => {
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
     const row = slotRow(page, SLOT_ID);
-    await expect(row).toHaveClass(/is-diff/);
-    await expect(row.locator(".slot-diff-note")).toContainText("Power 1");
+    await expect(row).toHaveAttribute("data-diff");
+    await expect(row.locator(".slot-diff-note")).toContainText("Test Boon 1");
     await expect(row.getByRole("button", { name: "apply" })).toBeVisible();
   });
 
   test("applying from compare copies every row's count from the compare build", async ({
     page,
   }) => {
-    // Build 1: spend a point on power
-    await openBuilder(page);
-    await stepAssignment(slotRow(page, SLOT_ID), POWER_ID, "increase");
+    await spendBoonPoint(page);
 
     // Build 2: default (0 points), compared against build 1
     await page.getByTestId("nav-add-build").click();
@@ -238,11 +259,11 @@ test.describe("point_assignment compare diff apply", () => {
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
     const row = slotRow(page, SLOT_ID);
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
     await row.getByRole("button", { name: "apply" }).click();
 
-    await expect(assignmentInput(row, POWER_ID)).toHaveValue("1");
-    await expect(row).not.toHaveClass(/is-diff/);
+    await expect(assignmentInput(row, BOON_ID)).toHaveValue("1");
+    await expect(row).not.toHaveAttribute("data-diff");
   });
 });
 
@@ -323,7 +344,7 @@ test.describe("folder names in the build pickers", () => {
     await expect(combo.getByTestId("picker-group")).toHaveText("Alts");
   });
 
-  test("a name too long for the field widens the dropdown, into the panel", async ({
+  test("a name too long for the field keeps the dropdown inside the panel", async ({
     page,
   }) => {
     await buildInAFolder(page);
@@ -336,14 +357,10 @@ test.describe("folder names in the build pickers", () => {
     const combo = page.locator(".compare-select");
     await pickerInput(combo).click();
 
-    // The compare picker's field is a narrow stat-panel table cell, so the menu takes its
-    // own width rather than truncating every name to the cell.
-    const inputBox = await pickerInput(combo).boundingBox();
+    // The field is a narrow stat-panel table cell and the panel's scroller clips
+    // horizontally, so the menu grows rightward into the panel: growing leftward would put
+    // the rows' text outside the clip.
     const menuBox = await combo.getByTestId("picker-menu").boundingBox();
-    expect(menuBox!.width).toBeGreaterThan(inputBox!.width);
-
-    // The stat panel is a rail whose scroller clips horizontally, so the menu has to grow
-    // rightward into it: growing leftward would put the rows' text outside the clip.
     const panelBox = await page.getByTestId("stat-panel-column").boundingBox();
     expect(menuBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
     expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(
@@ -419,13 +436,13 @@ test.describe("a bonus's dynamic stat in compare", () => {
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
     const row = slotRow(page, RING_SLOT);
-    await expect(row).toHaveClass(/is-diff/);
+    await expect(row).toHaveAttribute("data-diff");
     await expect(row.locator(".slot-diff-note")).toContainText(
       "Typed defense: Defense 120",
     );
 
     await row.getByRole("button", { name: "apply" }).click();
     await expect(row.getByTestId("slot-dynamic:defense")).toHaveValue("120");
-    await expect(row).not.toHaveClass(/is-diff/);
+    await expect(row).not.toHaveAttribute("data-diff");
   });
 });

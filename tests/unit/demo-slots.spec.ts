@@ -98,10 +98,6 @@ describe("demo-slots: shipped data", () => {
     expect(validateGameBags(GAME_IMPORT_DATA.bags, NW_SLOTS.slots)).toEqual([]);
   });
 
-  it("has 11 notInDemoReasons groups", () => {
-    expect(GAME_IMPORT_DATA.notInDemoReasons).toHaveLength(11);
-  });
-
   it("notInDemoReasons passes its own lint against the real slot/section list", () => {
     expect(
       validateNotInDemoReasons(

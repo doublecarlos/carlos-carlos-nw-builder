@@ -9,11 +9,14 @@ import {
   undoButton,
   redoButton,
 } from "./support/app";
+import { TEST_HEAD } from "./support/testHead";
+import { importTestCatalog } from "./support/testCatalog";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ITEM = TEST_HEAD.name;
 
 test("Undo/redo walk the history back and forth", async ({ page }) => {
   await openBuilder(page);
+  await importTestCatalog(page, { items: [TEST_HEAD] });
   await expect(undoButton(page)).toBeDisabled();
 
   await chooseItem(page, "gear.head", HEAD_ITEM);

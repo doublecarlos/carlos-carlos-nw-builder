@@ -1,6 +1,7 @@
 // Shared helpers for Nav.vue's sidebar -- build/layer rows, menu helpers, filter, and
 // recently deleted.
 import { expect, type Locator, type Page } from "@playwright/test";
+import { openBuilder } from "./app";
 
 export function buildRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--build").filter({ hasText: name });
@@ -10,10 +11,15 @@ export function folderRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--folder").filter({ hasText: name });
 }
 
-/** The build row itself. Nested rows carry `nav-row--nested` alongside `nav-row--build`,
- *  which is what tests assert on to tell a foldered build from a top-level one. */
+/** The build row itself. Rows inside a folder carry `data-nested`, which tells a foldered
+ *  build from a top-level one. */
 export function buildRowNesting(page: Page, name: string): Locator {
   return buildRow(page, name);
+}
+
+/** A row's name button, which carries `aria-current` while the row is the selected one. */
+export function navName(row: Locator): Locator {
+  return row.locator(".nav-name");
 }
 
 export function layerRow(page: Page, name: string): Locator {
@@ -132,4 +138,24 @@ export async function restoreTrash(page: Page) {
     .getByRole("button", { name: "Restore" })
     .first()
     .click();
+}
+
+/** Opens the nav drawer below the desktop breakpoint, unless it is already open. */
+export async function openDrawer(page: Page) {
+  const drawer = page.getByTestId("nav-drawer");
+  if (!(await drawer.isVisible()))
+    await page.getByTestId("header-nav-toggle").click();
+  await expect(drawer).toBeVisible();
+}
+
+/** From a fresh app below the desktop breakpoint: adds a layer through the drawer and opens
+ *  its editor on the entry list. */
+export async function openNewLayer(page: Page) {
+  await openBuilder(page);
+  await openDrawer(page);
+  await addLayer(page);
+  // Adding a layer may close the drawer behind it.
+  await openDrawer(page);
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await expect(page.getByTestId("layer-entries-column")).toBeVisible();
 }

@@ -12,8 +12,10 @@ import {
   filterBuilds,
   openRowMenu,
   renameViaSidebar,
+  navName,
 } from "./support/nav";
 import { beginDrag, dragOnto, dropAt, requireBox } from "./support/dragDrop";
+import { storedMeta } from "./support/storage";
 
 /** Drags a build row onto a folder header's middle band, which is "put it in this folder". */
 async function dropIntoFolder(
@@ -44,17 +46,20 @@ test("dragging a build onto a folder puts it inside, and it survives a reload", 
   // The folder row reports how many builds it holds.
   await expect(folderRow(page, "Alts")).toContainText("1");
   // Build 2 stays at the top level, so the folder's own build is the indented one.
-  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
-  await expect(buildRowNesting(page, "Build 2")).not.toHaveClass(
-    /nav-row--nested/,
+  await expect(buildRowNesting(page, "Build 1")).toHaveAttribute("data-nested");
+  await expect(buildRowNesting(page, "Build 2")).not.toHaveAttribute(
+    "data-nested",
   );
 
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(async () =>
+      (await storedMeta(page))?.folders.map((f) => f.builds.length),
+    )
+    .toEqual([1]);
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
 
-  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveAttribute("data-nested");
 });
 
 test("collapsing a folder hides its builds and the state survives a reload", async ({
@@ -69,8 +74,9 @@ test("collapsing a folder hides its builds and the state survives a reload", asy
   await expect(buildRow(page, "Build 2")).toHaveCount(0);
   await expect(buildRow(page, "Build 1")).toBeVisible();
 
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
-  await page.waitForTimeout(500);
+  await expect
+    .poll(async () => (await storedMeta(page))?.folders.map((f) => f.collapsed))
+    .toEqual([true]);
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
 
@@ -110,12 +116,18 @@ test("arrowing past a folder activates the build on the far side", async ({
   await page.keyboard.press("ArrowDown");
   await expect(folderRow(page, "B").locator(".nav-name")).toBeFocused();
   await page.keyboard.press("ArrowDown");
-  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 2"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 
   // And back up, where the same folder sits between the two builds.
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("ArrowUp");
-  await expect(buildRow(page, "Build 1")).toHaveClass(/is-active/);
+  await expect(navName(buildRow(page, "Build 1"))).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 });
 
 test("a folder can be renamed from the sidebar", async ({ page }) => {
@@ -136,12 +148,12 @@ test("the build menu moves a build into a folder and back out", async ({
 
   let menu = await openRowMenu(buildRow(page, "Build 1"));
   await menu.getByRole("button", { name: "Move to “Alts”" }).click();
-  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveAttribute("data-nested");
 
   menu = await openRowMenu(buildRow(page, "Build 1"));
   await menu.getByRole("button", { name: "Move to top level" }).click();
-  await expect(buildRowNesting(page, "Build 1")).not.toHaveClass(
-    /nav-row--nested/,
+  await expect(buildRowNesting(page, "Build 1")).not.toHaveAttribute(
+    "data-nested",
   );
 });
 
@@ -153,13 +165,13 @@ test("dragging a build out of a folder returns it to the top level", async ({
   await addFolder(page);
   await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
   await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Alts"));
-  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveAttribute("data-nested");
 
   // Build 2 is a top-level row, so landing after it means leaving the folder.
   await dragOnto(buildRow(page, "Build 1"), buildRow(page, "Build 2"));
 
-  await expect(buildRowNesting(page, "Build 1")).not.toHaveClass(
-    /nav-row--nested/,
+  await expect(buildRowNesting(page, "Build 1")).not.toHaveAttribute(
+    "data-nested",
   );
   await expect(folderRow(page, "Alts")).toContainText("0");
 });
@@ -211,8 +223,8 @@ test("deleting a folder keeps its builds, at the top level", async ({
 
   await expect(folderRow(page, "Folder 1")).toHaveCount(0);
   await expect(buildRow(page, "Build 2")).toBeVisible();
-  await expect(buildRowNesting(page, "Build 2")).not.toHaveClass(
-    /nav-row--nested/,
+  await expect(buildRowNesting(page, "Build 2")).not.toHaveAttribute(
+    "data-nested",
   );
 });
 
@@ -277,7 +289,7 @@ test("a build drags out of a folder that is the last row in the list, dropped be
   await openBuilder(page);
   await addFolder(page);
   await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Folder 1"));
-  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveAttribute("data-nested");
 
   // The folder is the only top-level row, its contents below it. A point at the root list's
   // indent below the folder's children resolves against the root list: "after the folder".
@@ -287,8 +299,8 @@ test("a build drags out of a folder that is the last row in the list, dropped be
   await beginDrag(buildRow(page, "Build 1"));
   await dropAt(page, rootBox.x + 8, folderListBox.y + folderListBox.height + 4);
 
-  await expect(buildRowNesting(page, "Build 1")).not.toHaveClass(
-    /nav-row--nested/,
+  await expect(buildRowNesting(page, "Build 1")).not.toHaveAttribute(
+    "data-nested",
   );
   await expect(folderRow(page, "Folder 1")).toContainText("0");
 });
@@ -314,7 +326,7 @@ test("a build stays in its folder when dropped below its last row but still at t
     folderListBox.y + folderListBox.height - 2,
   );
 
-  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveAttribute("data-nested");
   await expect(folderRow(page, "Folder 1")).toContainText("2");
   const rows = page.locator(".nav-row--build");
   await expect(rows.nth(0)).toContainText("Build 2");
