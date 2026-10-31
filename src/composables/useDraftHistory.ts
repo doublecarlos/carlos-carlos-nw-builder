@@ -9,7 +9,7 @@ import {
   ref,
   computed,
   watch,
-  onUnmounted,
+  onBeforeUnmount,
   type Ref,
   type ComputedRef,
 } from "vue";
@@ -168,7 +168,8 @@ export function useDraftHistory<T>({
 
   watch(isNew, registerFormUndo, { immediate: true });
 
-  onUnmounted(() => {
+  // Before unmount, while the component can still emit to its parent.
+  onBeforeUnmount(() => {
     window.clearTimeout(snapshotTimer);
     flushEmit();
     unregisterPendingEdit();
