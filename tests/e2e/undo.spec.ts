@@ -45,9 +45,9 @@ test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await expect(redo).toBeEnabled();
 });
 
-// FIXME: redo shortcut silently swallowed when focus lands on the slot picker input after
-// an undo.
-test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
+// The picker text is typed, so it sits on the browser's own undo stack. The shortcut must not
+// also run that native undo, which would refocus the picker and swallow the redo.
+test("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
   await openBuilder(page);
   await importTestHead(page);
   const undo = undoButton(page);
@@ -66,7 +66,7 @@ test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
   await expect(redo).toBeDisabled();
 });
 
-test.fixme("Ctrl+Y redoes after undo", async ({ page }) => {
+test("Ctrl+Y redoes after undo", async ({ page }) => {
   await openBuilder(page);
   await importTestHead(page);
   const undo = undoButton(page);

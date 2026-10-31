@@ -325,7 +325,7 @@ export function updatePreset(preset: SectionPreset): Layer {
     catalog.upsert(layer.overlay, "sectionPresets", preset.id, preset),
   );
   showUndoNotice(`Updated “${name}” in “${layer.name}”`, () =>
-    undoOverlayFor(layer.id),
+    undoFor(layer.id),
   );
   return layer;
 }
@@ -340,34 +340,34 @@ export function isDownloaded(id: string): boolean {
 export function revertToDownloaded(id: string) {
   const layer = _layers.value.get(id);
   if (!layer?.downloaded?.snapshot) return;
-  history.snapshot("layer", id, "revert", "Revert to downloaded", layer);
+  history.snapshot("layer", id, "revert", "Revert to downloaded", layer, true);
   const restored = storage.revertToDownloaded(layer) as Layer;
   _layers.value.set(id, restored);
   markDirty(id);
   showUndoNotice(`Reverted “${layer.name}” to the last downloaded copy`, () =>
-    undoLayerFor(id),
+    undoFor(id),
   );
 }
 
-/** Undo a whole-layer snapshot (revert). Overlay snapshots share this stack and need
- *  `undoOverlayFor` instead, so each caller undoes with the shape it recorded. */
-export function undoLayerFor(id: string) {
+/** One undo or redo step on a layer's own stack. A revert records the whole layer and every
+ *  other edit only the overlay, so each step restores in the shape its entry recorded. */
+function stepFor(id: string, direction: "undo" | "redo") {
   const layer = _layers.value.get(id);
   if (!layer) return;
-  const json = history.undo("layer", id, layer);
-  if (json != null) {
+  const whole = history.peek("layer", id, direction)?.whole === true;
+  const step = direction === "undo" ? history.undo : history.redo;
+  const json = step("layer", id, whole ? layer : layer.overlay);
+  if (json == null) return;
+  if (whole) {
     _layers.value.set(id, storage.normalizeLayer(JSON.parse(json)));
     markDirty(id);
+  } else {
+    restoreOverlay(id, json);
   }
 }
 
-/** Undo an overlay snapshot (a catalog edit, a preset update) on one layer's own stack. */
-export function undoOverlayFor(id: string) {
-  const layer = _layers.value.get(id);
-  if (!layer) return;
-  const json = history.undo("layer", id, layer.overlay);
-  if (json != null) restoreOverlay(id, json);
-}
+export const undoFor = (id: string) => stepFor(id, "undo");
+export const redoFor = (id: string) => stepFor(id, "redo");
 
 export function downloadLayer(id: string) {
   const layer = _layers.value.get(id);

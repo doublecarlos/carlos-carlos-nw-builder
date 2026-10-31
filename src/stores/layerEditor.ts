@@ -19,14 +19,10 @@ function activeLayer() {
 
 export function undo() {
   const layer = activeLayer();
-  if (!layer) return;
-  const json = history.undo("layer", layer.id, layer.overlay);
-  if (json != null) layers.restoreOverlay(layer.id, json);
+  if (layer) layers.undoFor(layer.id);
 }
 
 export function redo() {
   const layer = activeLayer();
-  if (!layer) return;
-  const json = history.redo("layer", layer.id, layer.overlay);
-  if (json != null) layers.restoreOverlay(layer.id, json);
+  if (layer) layers.redoFor(layer.id);
 }
