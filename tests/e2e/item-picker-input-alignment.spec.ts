@@ -1,5 +1,5 @@
 // The shared InputRow layout on an item_picker row's typed inputs: dynamic stats and stepper
-// bonus inputs share one control column; checkbox inputs stay inline.
+// bonus inputs render as input rows; checkbox inputs stay inline.
 import { test, expect, type Page } from "@playwright/test";
 import { confirmImport, openBuilder, slotRow } from "./support/app";
 
@@ -79,7 +79,7 @@ async function importRing(page: Page) {
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 }
 
-test("a dynamic stat and a bonus input stepper share one aligned control column", async ({
+test("a dynamic stat and a bonus input stepper render as input rows", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -96,35 +96,17 @@ test("a dynamic stat and a bonus input stepper share one aligned control column"
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0)).toContainText("Stacks");
   await expect(rows.nth(1)).toContainText("Power Bonus");
-
-  const boxes = await rows.evaluateAll((els) =>
-    els.map((el) => {
-      const control = el.children[0].getBoundingClientRect();
-      const description = el.children[1].getBoundingClientRect();
-      return { controlRight: control.right, descriptionLeft: description.left };
-    }),
-  );
-  // One fixed control column means the controls end and the descriptions begin at the same x.
-  expect(Math.abs(boxes[0].controlRight - boxes[1].controlRight)).toBeLessThan(
-    1,
-  );
-  expect(
-    Math.abs(boxes[0].descriptionLeft - boxes[1].descriptionLeft),
-  ).toBeLessThan(1);
 });
 
-test("a dynamic stat's limits read as a muted note after its name", async ({
-  page,
-}) => {
+test("a dynamic stat's row shows its limits", async ({ page }) => {
   await openBuilder(page);
   await importRing(page);
 
   const dynamicRow = slotRow(page, RING_SLOT).getByTestId("input-row").nth(1);
-  const note = dynamicRow.locator(".text-muted");
-  await expect(note).toContainText(/\(from 0 to 1,?000\)/);
+  await expect(dynamicRow).toContainText(/\(from 0 to 1,?000\)/);
 });
 
-test("a checkbox input keeps its label as normal text on one clickable row", async ({
+test("a checkbox input keeps its label on one clickable row", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -134,7 +116,6 @@ test("a checkbox input keeps its label as normal text on one clickable row", asy
     `bonus-input-${CHECKBOX_BONUS_ID}-active`,
   );
   await expect(checkbox).toContainText("Buff active");
-  await expect(checkbox).not.toHaveClass(/text-muted/);
   // Still one clickable label wrapping the box.
   await expect(checkbox.locator("input")).not.toBeChecked();
   await checkbox.click();

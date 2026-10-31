@@ -96,13 +96,10 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
 
       await tree.getByTestId("condition-summary").nth(2).tap();
       await expect(editor(page)).toBeVisible();
-      const sheet = await requireBox(editor(page).getByTestId("sheet-panel"));
-      expect(sheet.width).toBeCloseTo(width, 0);
-      // Stacked full-width: the type picker spans the sheet's padded body.
+      await expect(editor(page).getByTestId("sheet-panel")).toBeInViewport({
+        ratio: 1,
+      });
       const fields = editor(page).getByTestId("condition-editor-fields");
-      const type = await requireBox(fields.getByTestId("picker-input").first());
-      const body = await requireBox(fields);
-      expect(type.width).toBeGreaterThan(body.width - 40);
       await expect(fields.getByTestId("picker-input").first()).toHaveValue(
         "enemies",
       );

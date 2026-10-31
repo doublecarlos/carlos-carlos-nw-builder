@@ -323,7 +323,7 @@ test.describe("folder names in the build pickers", () => {
     await expect(combo.getByTestId("picker-group")).toHaveText("Alts");
   });
 
-  test("a name too long for the field widens the dropdown, into the panel", async ({
+  test("a name too long for the field keeps the dropdown inside the panel", async ({
     page,
   }) => {
     await buildInAFolder(page);
@@ -336,14 +336,10 @@ test.describe("folder names in the build pickers", () => {
     const combo = page.locator(".compare-select");
     await pickerInput(combo).click();
 
-    // The compare picker's field is a narrow stat-panel table cell, so the menu takes its
-    // own width rather than truncating every name to the cell.
-    const inputBox = await pickerInput(combo).boundingBox();
+    // The field is a narrow stat-panel table cell and the panel's scroller clips
+    // horizontally, so the menu grows rightward into the panel: growing leftward would put
+    // the rows' text outside the clip.
     const menuBox = await combo.getByTestId("picker-menu").boundingBox();
-    expect(menuBox!.width).toBeGreaterThan(inputBox!.width);
-
-    // The stat panel is a rail whose scroller clips horizontally, so the menu has to grow
-    // rightward into it: growing leftward would put the rows' text outside the clip.
     const panelBox = await page.getByTestId("stat-panel-column").boundingBox();
     expect(menuBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
     expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(

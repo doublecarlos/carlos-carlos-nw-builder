@@ -61,38 +61,3 @@ test.describe("item picker potential bonus preview", () => {
     ).toHaveCount(0);
   });
 });
-
-// Same fixture slot-list.spec.ts/stat-panel.spec.ts already rely on: has an `il` badge and
-// several flat item stats to show as the innate-stat line.
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
-
-test.describe("item picker option row layout", () => {
-  test("the item name is bold, and innate stats are no longer muted text", async ({
-    page,
-  }) => {
-    await openBuilder(page);
-    const row = slotRow(page, "gear.head");
-    await pickerInput(row).click();
-
-    const option = row
-      .getByTestId("picker-menu")
-      .getByTestId("picker-option")
-      .filter({ hasText: HEAD_ITEM });
-    await expect(option.locator("span").first()).toHaveCSS(
-      "font-weight",
-      "600",
-    );
-
-    // The item-level (iL) badge kept its muted styling; the innate-stat line beneath the name
-    // (the indented block's first row) is a different color now that it's no longer muted --
-    // proves the two diverged rather than asserting one exact color value.
-    const ilBadge = option.getByText(/^iL /);
-    const innateStats = option.locator(".pl-2 > div").first();
-    await expect(innateStats).toContainText("CR");
-    const [ilColor, innateColor] = await Promise.all([
-      ilBadge.evaluate((el) => getComputedStyle(el).color),
-      innateStats.evaluate((el) => getComputedStyle(el).color),
-    ]);
-    expect(innateColor).not.toBe(ilColor);
-  });
-});

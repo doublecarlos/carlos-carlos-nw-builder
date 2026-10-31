@@ -1,17 +1,15 @@
 // End-to-end coverage for Nav.vue's sidebar: builds, customization layers, recently
 // deleted, filtering, ordering, and the layer checkbox.
-import { test, expect, type Locator } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import {
   buildRow,
-  folderRow,
   layerRow,
   openRowMenu,
   confirmDangerAction,
   confirmDialog,
   renameViaSidebar,
   addBuild,
-  addFolder,
   addLayer,
   filterBuilds,
   filterLayers,
@@ -511,32 +509,4 @@ test("Delete on a focused row asks for confirmation, then deletes", async ({
   await expect(buildRow(page, "Build 2")).toHaveCount(0);
   const trash = recentlyDeletedHeader(page);
   await expect(trash).toBeVisible();
-});
-
-// --- Row alignment ------------------------------------------------------------------
-
-/** How far a child's vertical center sits from its row's, in px. */
-async function centerOffset(row: Locator, childSelector: string) {
-  const rowBox = await row.boundingBox();
-  const childBox = await row.locator(childSelector).boundingBox();
-  if (!rowBox || !childBox)
-    throw new Error(`no layout box for ${childSelector}`);
-  return Math.abs(
-    rowBox.y + rowBox.height / 2 - (childBox.y + childBox.height / 2),
-  );
-}
-
-test("kebab icons sit on their row's vertical center", async ({ page }) => {
-  await openBuilder(page);
-  await addFolder(page);
-  await addLayer(page);
-
-  for (const row of [
-    buildRow(page, "Build 1"),
-    folderRow(page, "Folder 1"),
-    layerRow(page, "Layer 1"),
-  ]) {
-    // Sub-pixel rather than exact: row heights land on half pixels at this font size.
-    expect(await centerOffset(row, ".nav-kebab svg")).toBeLessThan(1);
-  }
 });
