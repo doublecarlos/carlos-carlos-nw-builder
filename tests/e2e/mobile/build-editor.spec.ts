@@ -116,9 +116,10 @@ test("tapping a row does not open the hover card", async ({ page }) => {
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await page.getByTestId("app-header").click({ position: { x: 4, y: 4 } });
 
+  await page.clock.install();
   // A tap fires the row's `mouseenter` before its click, which is what would arm the card.
   await slotRow(page, "gear.head").locator(".slot-label").hover();
   // Past the hover card's opening delay.
-  await page.waitForTimeout(500);
+  await page.clock.fastForward(1000);
   await expect(page.getByTestId("item-card")).toHaveCount(0);
 });

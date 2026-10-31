@@ -104,13 +104,15 @@ test("pre-added empty stat rows on a saved item survive filling one of them", as
   }
   await expect(rows).toHaveCount(5);
 
+  // Fake timers from here, so the auto-save debounce can be stepped past.
+  await page.clock.install();
   const picker = rows.first().getByTestId("picker-input");
   await picker.click();
   await picker.fill("Power");
   await rows.first().getByText("Power", { exact: true }).click();
 
   // Past the 700ms auto-save debounce.
-  await page.waitForTimeout(1500);
+  await page.clock.fastForward(1000);
   await expect(rows).toHaveCount(5);
   await expect(picker).toHaveValue("Power");
   await expect(rows.nth(1).getByTestId("picker-input")).toHaveValue("");

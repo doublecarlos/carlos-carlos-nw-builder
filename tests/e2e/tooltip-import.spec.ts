@@ -190,6 +190,8 @@ test.describe("applying tooltip values to the item being edited", () => {
     await page.getByRole("button", { name: "Save item" }).click();
 
     await openImportWithText(page);
+    // Fake timers from here, so the auto-save debounce can be stepped past.
+    await page.clock.install();
     await page.getByTestId("tooltip-import-apply-stat-power").click();
 
     // The row swaps its button for a tick, so a long list shows what has already gone across.
@@ -213,7 +215,7 @@ test.describe("applying tooltip values to the item being edited", () => {
 
     // An applied value is an ordinary live edit, so it reaches the layer through the same
     // auto-save the form's own inputs use: wait past the debounce, leave, and come back.
-    await page.waitForTimeout(1500);
+    await page.clock.fastForward(1000);
     await page.getByTestId("new-item").click();
     await page.locator(".editor-search").fill("ZZZ Apply Target");
     await page
