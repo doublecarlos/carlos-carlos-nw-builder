@@ -18,7 +18,6 @@
 // stay owned by BuildEditor.vue and arrive as props/emits.
 import ItemPickerRow from "./ItemPickerRow.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
-import { DESKTOP_ITEM_INFO } from "../../lib/experiments";
 import NestGuide from "./NestGuide.vue";
 import BuildParameterRow from "./BuildParameterRow.vue";
 import PointAssignmentRow from "./PointAssignmentRow.vue";
@@ -183,9 +182,7 @@ function onToggle(event: Event) {
     );
 }
 /** A touch screen gets no hover card, so a row holding an item offers it from a button. */
-const showInfo = computed(
-  () => (coarsePointer.value || DESKTOP_ITEM_INFO) && !!props.item,
-);
+const showInfo = computed(() => coarsePointer.value && !!props.item);
 
 const controlId = computed(() => `slot-${props.slotDef.id}`);
 const labelId = computed(() => `slot-${props.slotDef.id}-label`);
