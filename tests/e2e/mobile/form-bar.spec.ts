@@ -74,14 +74,14 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
     }
     await expectNoHorizontalScroll(page);
 
-    // The menu names each action, and holds the checkbox the row has no room for.
+    // The menu names each action, and holds the checkbox the row has no room for. Screenshot
+    // import is left off: game screenshots live on the computer the game runs on.
     await page.getByTestId("form-bar-menu").tap();
     const menu = page.getByRole("group", { name: "item actions" });
     await expect(menu.getByRole("button", { name: "Duplicate" })).toBeVisible();
-    await expect(
-      menu.getByRole("button", { name: "From screenshot" }),
-    ).toBeVisible();
     await expect(menu.getByTestId("show-all-fields")).toBeVisible();
+    await expect(menu.getByTestId("tooltip-import-toggle")).toHaveCount(0);
+    await expect(page.getByTestId("ocr-hint")).toHaveCount(0);
   });
 }
 

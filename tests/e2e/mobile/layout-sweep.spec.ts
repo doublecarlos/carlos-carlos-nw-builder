@@ -14,7 +14,7 @@ import {
   wrappedButtons,
 } from "../support/formWrap";
 import { importTestCatalog } from "../support/testCatalog";
-import { formBarControl, showAllFields } from "../support/layerEditor";
+import { showAllFields } from "../support/layerEditor";
 
 const HEAD_ITEM = "Test Head With A Long Enough Name To Wrap";
 
@@ -176,7 +176,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       expect(await offenders(pane), "slot outline").toEqual([]);
     });
 
-    test("item form with stats, and its tooltip import", async ({ page }) => {
+    test("item form with stats", async ({ page }) => {
       await openNewLayer(page);
       await page.getByTestId("new-item").tap();
       await showAllFields(page);
@@ -193,12 +193,6 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
           .tap();
       await form(page).getByTestId("add-inline-repetition").tap();
       expect(await offenders(form(page)), "item").toEqual([]);
-
-      await formBarControl(page, "tooltip-import-toggle");
-      expect(
-        await offenders(page.getByTestId("tooltip-import")),
-        "tooltip import",
-      ).toEqual([]);
     });
 
     test("bonus grant payloads", async ({ page }) => {

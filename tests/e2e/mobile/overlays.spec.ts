@@ -9,7 +9,6 @@ import {
   MIN_SUPPORTED_WIDTH,
   expectNoHorizontalScroll,
 } from "../support/viewport";
-import { formBarControl } from "../support/layerEditor";
 
 const buildRows = (page: Page) => page.locator(".nav-row--build");
 
@@ -51,9 +50,7 @@ test.describe("modals at the narrowest width", () => {
     await expectFillsViewport(page, modal);
   });
 
-  test("the layer export and tooltip import fill the screen", async ({
-    page,
-  }) => {
+  test("the layer export fills the screen", async ({ page }) => {
     await openNewLayer(page);
 
     await page.getByTestId("layer-actions").tap();
@@ -63,12 +60,6 @@ test.describe("modals at the narrowest width", () => {
     await expectFillsViewport(page, exportModal);
     await exportModal.getByTestId("modal-close").click();
     await expect(exportModal).toHaveCount(0);
-
-    await page.getByTestId("new-item").tap();
-    await formBarControl(page, "tooltip-import-toggle");
-    const importModal = page.getByTestId("tooltip-import");
-    await expect(importModal).toBeVisible();
-    await expectFillsViewport(page, importModal);
   });
 
   test("a confirmation stays a card inside the screen, without the Shift hint", async ({

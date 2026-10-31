@@ -24,6 +24,7 @@ import OcrTextField from "../ui/OcrTextField.vue";
 import { gameIdFrom } from "../../lib/ocr-paste";
 import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA } from "../../data/data";
+import * as viewport from "../../stores/viewport";
 import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
 import type { EntryStatus } from "../../data/catalog";
@@ -102,15 +103,21 @@ const emit = defineEmits<{
   "tooltip-import": [];
 }>();
 
-const barActions: FormBarAction[] = [
-  {
-    key: "tooltip-import",
-    title: "From screenshot",
-    icon: ScanText,
-    testid: "tooltip-import-toggle",
-    run: () => emit("tooltip-import"),
-  },
-];
+/** Screenshot import is left off on a phone: game screenshots live on the computer the game
+ *  runs on, and reading one is heavy work for a phone. */
+const barActions = computed<FormBarAction[]>(() =>
+  viewport.isPhone.value
+    ? []
+    : [
+        {
+          key: "tooltip-import",
+          title: "From screenshot",
+          icon: ScanText,
+          testid: "tooltip-import-toggle",
+          run: () => emit("tooltip-import"),
+        },
+      ],
+);
 
 // --- Common ---------------------------------------------------------------------------
 
@@ -610,7 +617,11 @@ function showsGroup(group: FieldGroup): boolean {
       <FormField label="Internal game IDs" class="min-w-80 flex-1">
         <TokenInput
           v-model="draft.gameIds"
-          placeholder="Add an ID, or paste a screenshot..."
+          :placeholder="
+            viewport.isPhone.value
+              ? 'Add an ID...'
+              : 'Add an ID, or paste a screenshot...'
+          "
           :from-image="gameIdFrom"
           data-testid="item-gameids-input"
         />
