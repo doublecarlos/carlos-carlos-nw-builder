@@ -116,7 +116,9 @@ function close() {
   pos.value = null;
 }
 
-defineExpose({ place, close });
+// `el` is the teleported panel, for callers that need the real element (the component's own
+// root is the Teleport's placeholder).
+defineExpose({ place, close, el });
 </script>
 
 <template>

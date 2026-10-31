@@ -232,6 +232,14 @@ test.describe("stat source popover", () => {
     await expect(statCard(page)).toBeHidden();
   });
 
+  test("clicking inside the card keeps it open", async ({ page }) => {
+    // Outside-click detection must treat the card's own panel as inside.
+    await openBuilder(page);
+    await statInfoButton(page, "power").click();
+    await statCard(page).locator('[data-testid="stat-card-title"]').click();
+    await expect(statCard(page)).toBeVisible();
+  });
+
   test("scrolling with the pointer over the card does not scroll the sidebar underneath it", async ({
     page,
   }) => {
