@@ -1,12 +1,13 @@
 // End-to-end coverage for the item card's one-line condition text: it has to explain a
-// compound condition, not just name the operator. Mystic Aura (Group) is gated on
-// `party AND NOT equipped(mystic-aura-self)`.
+// compound condition, not just name the operator. The test group aura is gated on
+// `party AND NOT equipped(test-self-aura)`.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, slotRow, chooseItem, addListRows } from "./support/app";
-import { shippedItemName } from "./support/shippedData";
+import { importTestCatalog } from "./support/testCatalog";
 
 /** The item the `not` gate excludes, read the way the label shows it: by name. */
-const SELF_AURA = shippedItemName("mystic-aura-self");
+const SELF_AURA = "Test Self Aura";
+const GROUP_AURA = "Test Group Aura";
 
 const GROUP_SLOT = "group.group#1";
 const MOUNT_SLOT = "mounts.mountEquip";
@@ -16,14 +17,36 @@ const MOUNT_SLOT = "mounts.mountEquip";
  *  exactly what equipping the self aura makes it. */
 async function openBlockedGroupAuraCard(page: Page) {
   await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      { id: "test-self-aura", name: SELF_AURA, filter: "mount_equip" },
+      {
+        id: "test-group-aura",
+        name: GROUP_AURA,
+        filter: "group_buff",
+        bonuses: ["test-group-aura"],
+      },
+    ],
+    bonuses: [
+      {
+        id: "test-group-aura",
+        name: GROUP_AURA,
+        grants: [
+          {
+            when: {
+              toggle: "party",
+              not: { equipped: { item: "test-self-aura" } },
+            },
+            stats: { power: 100 },
+          },
+        ],
+      },
+    ],
+  });
   // Group is an item_picker_list: a fresh build has no rows until one is added.
   await addListRows(page, "group.group");
-  await chooseItem(
-    page,
-    GROUP_SLOT,
-    shippedItemName("mystic-aura-group-celestial"),
-  );
-  await chooseItem(page, MOUNT_SLOT, shippedItemName("mystic-aura-self"));
+  await chooseItem(page, GROUP_SLOT, GROUP_AURA);
+  await chooseItem(page, MOUNT_SLOT, SELF_AURA);
   // Scroll the row into place before hovering: the hover card closes on any scroll, so a
   // hover that has to scroll the row into view first would cancel itself.
   await slotRow(page, GROUP_SLOT).scrollIntoViewIfNeeded();

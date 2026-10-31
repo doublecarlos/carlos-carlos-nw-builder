@@ -4,8 +4,10 @@
 import { test, expect } from "@playwright/test";
 import { openBuilder, expandAllSections } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { TEST_HEAD_ITEM } from "./support/headItems";
+import { importTestCatalog } from "./support/testCatalog";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ITEM = TEST_HEAD_ITEM.name;
 
 /** Clicks the first build row in the library, switching back from the layer editor. */
 async function switchToBuild(page: import("@playwright/test").Page) {
@@ -41,8 +43,9 @@ test("layer editor keeps its search query and selected item after switching to t
   page,
 }) => {
   await openBuilder(page);
-  await addLayer(page);
-  const layer = layerRow(page, "Layer 1");
+  await importTestCatalog(page, { items: [TEST_HEAD_ITEM] });
+  // The layer the import unpacked the test item into.
+  const layer = layerRow(page, "Test catalog (imported)");
   await layer.locator(".nav-name").click();
 
   const searchBox = page.locator(".editor-search");

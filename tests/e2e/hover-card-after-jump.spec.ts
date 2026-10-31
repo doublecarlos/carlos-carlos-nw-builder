@@ -1,10 +1,12 @@
 // A jump scrolls rows under a still pointer. The row that lands under it gets no hover card
 // until the pointer moves; then the card opens for it without a fresh `mouseenter`.
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
+import { JUMP_SCROLL_MS } from "../../src/lib/animate-scroll";
 import { openBuilder, slotRow, cursorRow, chooseItem } from "./support/app";
-import { shippedItemName, shippedSlotLabel } from "./support/shippedData";
+import { shippedSlotLabel } from "./support/shippedData";
+import { importTestCatalog } from "./support/testCatalog";
 
-const PANTS_ITEM = shippedItemName("m31-bloodwoven-sigils-ca");
+const PANTS_ITEM = "Test Pants";
 
 /** The shared hover card, teleported to `<body>` by BasePopover. */
 function card(page: Page) {
@@ -25,17 +27,21 @@ async function jumpToSlot(page: Page, slotId: string) {
   );
 }
 
-/** The row's box once the jump scroll has come to rest. */
+/** The row's box once the jump scroll has come to rest: two samples further apart than the
+ *  jump animation lasts, so one taken before it starts can't pass for rest. */
 async function settledBox(page: Page, slotId: string) {
   const row = slotRow(page, slotId);
-  let last = await row.boundingBox();
+  let last: Awaited<ReturnType<Locator["boundingBox"]>> | undefined;
   await expect
-    .poll(async () => {
-      const next = await row.boundingBox();
-      const settled = next?.y === last?.y;
-      last = next;
-      return settled;
-    })
+    .poll(
+      async () => {
+        const next = await row.boundingBox();
+        const settled = last !== undefined && next?.y === last?.y;
+        last = next;
+        return settled;
+      },
+      { intervals: [JUMP_SCROLL_MS + 100] },
+    )
     .toBe(true);
   if (!last) throw new Error(`slot row "${slotId}" has no layout box`);
   return last;
@@ -46,6 +52,9 @@ test("a row scrolled under a still pointer opens no card until the pointer moves
 }) => {
   await page.clock.install();
   await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [{ id: "test-pants", name: PANTS_ITEM, filter: "gear_pants" }],
+  });
   await chooseItem(page, "gear.pants", PANTS_ITEM);
 
   // Slot jumps park their row at the same spot under the section's sticky header. Put the

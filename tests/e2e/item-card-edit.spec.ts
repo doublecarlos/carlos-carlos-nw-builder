@@ -11,8 +11,11 @@ import {
 } from "./support/app";
 import { shippedItemName } from "./support/shippedData";
 import { addLayer, layerRow, renameViaSidebar } from "./support/nav";
+import { importTestCatalog } from "./support/testCatalog";
 
 const SLOT_ID = "gear.head";
+// A shipped item, which no layer holds yet: the edit button's target is a layer to put an
+// override of it in.
 const HEAD_ITEM = shippedItemName("m29-enchanted-depthweave-cap-ca");
 
 /** The shared hover card, teleported to `<body>` by BasePopover. */
@@ -76,13 +79,37 @@ test("the edit button names the layer the edit would land in", async ({
 
 // A two-piece set: shirt and pants share one bonus, credited to the shirt as the first
 // source, so the pants card points back at it.
-const SHIRT_ITEM = shippedItemName("m31-bloodwoven-signs-damage");
-const PANTS_ITEM = shippedItemName("m31-bloodwoven-sigils-ca");
+const SHIRT_ITEM = "Test Set Shirt";
+const PANTS_ITEM = "Test Set Pants";
+const SET_BONUS = "test-set-bonus";
 
 test("the card's link to a shared bonus's first source parks the cursor on that row", async ({
   page,
 }) => {
   await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: "test-set-shirt",
+        name: SHIRT_ITEM,
+        filter: "gear_shirt",
+        bonuses: [SET_BONUS],
+      },
+      {
+        id: "test-set-pants",
+        name: PANTS_ITEM,
+        filter: "gear_pants",
+        bonuses: [SET_BONUS],
+      },
+    ],
+    bonuses: [
+      {
+        id: SET_BONUS,
+        name: "Test Set Bonus",
+        grants: [{ stats: { power: 100 } }],
+      },
+    ],
+  });
   await chooseItem(page, "gear.shirt", SHIRT_ITEM);
   await chooseItem(page, "gear.pants", PANTS_ITEM);
   await hoverForCard(page, slotRow(page, "gear.pants"));

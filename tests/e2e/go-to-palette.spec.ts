@@ -23,6 +23,8 @@ import {
   navName,
 } from "./support/nav";
 import { newInOutline, openSlotsTab } from "./support/layerEditor";
+import { TEST_HEAD_ITEM } from "./support/headItems";
+import { importTestCatalog } from "./support/testCatalog";
 
 const palette = (page: Page) => page.getByTestId("go-to-palette");
 const input = (page: Page) => page.getByTestId("go-to-input");
@@ -178,7 +180,9 @@ test.describe("choosing a destination", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseItem(page, "gear.head", "M29 Enchanted Depthweave Cap");
+    await importTestCatalog(page, { items: [TEST_HEAD_ITEM] });
+    await buildRow(page, "Build 1").click();
+    await chooseItem(page, "gear.head", TEST_HEAD_ITEM.name);
     await page.getByTestId("nav-add-build").click();
     await chooseCombo(page.locator(".compare-select"), "Build 1");
     const onlyChanges = page.getByRole("checkbox", {
