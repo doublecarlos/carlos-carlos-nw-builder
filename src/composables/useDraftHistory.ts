@@ -9,7 +9,7 @@ import {
   ref,
   computed,
   watch,
-  onUnmounted,
+  onBeforeUnmount,
   type Ref,
   type ComputedRef,
 } from "vue";
@@ -168,7 +168,8 @@ export function useDraftHistory<T>({
 
   watch(isNew, registerFormUndo, { immediate: true });
 
-  onUnmounted(() => {
+  // Before unmount: Vapor drops an `emit` once the instance is marked unmounted.
+  onBeforeUnmount(() => {
     window.clearTimeout(snapshotTimer);
     flushEmit();
     unregisterPendingEdit();
