@@ -4,7 +4,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
-  chooseItem,
   navRedoButton,
   navUndoButton,
   parkCursorOnRow,
@@ -21,10 +20,26 @@ import {
   navName,
 } from "./support/nav";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
-
 function activeScope(page: Page) {
   return page.locator("[data-undo-scope-active]");
+}
+
+/**
+ * Picks the head row's first candidate and returns its name. Chosen by keyboard alone: text
+ * typed into the picker lands on the browser's own undo stack, which Ctrl+Z replays from
+ * anywhere in the document and would clear the field for reasons of its own.
+ */
+async function pickFirstHead(page: Page): Promise<string> {
+  await parkCursorOnRow(page, "gear.head");
+  await page.keyboard.press("Enter");
+  await expect(
+    slotRow(page, "gear.head").getByTestId("picker-menu"),
+  ).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  const head = pickerInput(slotRow(page, "gear.head"));
+  await expect(head).not.toHaveValue("");
+  return head.inputValue();
 }
 
 /** Creates "Build 2" and deletes it again, leaving one nav step to undo. */
@@ -70,8 +85,7 @@ test("Ctrl+Z in the editor reverts the slot and keeps the build selected", async
     "true",
   );
 
-  await chooseItem(page, "gear.head", HEAD_ITEM);
-  await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(HEAD_ITEM);
+  await pickFirstHead(page);
   // Parks focus on the row itself: inside the editor, and not a text field that would keep
   // the shortcut for the browser's own undo.
   await parkCursorOnRow(page, "gear.head");
@@ -91,19 +105,8 @@ test("Ctrl+Z in the editor reverts the slot and keeps the build selected", async
 
 test("Ctrl+Z in the nav ignores item history", async ({ page }) => {
   await openBuilder(page);
-  // Chosen by keyboard alone: text typed into the picker lands on the browser's own undo
-  // stack, which Ctrl+Z replays from anywhere in the document and would clear the field for
-  // reasons of its own.
-  await parkCursorOnRow(page, "gear.head");
-  await page.keyboard.press("Enter");
-  await expect(
-    slotRow(page, "gear.head").getByTestId("picker-menu"),
-  ).toBeVisible();
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
+  const chosen = await pickFirstHead(page);
   const head = pickerInput(slotRow(page, "gear.head"));
-  await expect(head).not.toHaveValue("");
-  const chosen = await head.inputValue();
   await expect(undoButton(page)).toBeEnabled();
 
   await focusNavRow(page, "Build 1");
@@ -122,7 +125,7 @@ test("the editor pair acts on the item stack with focus in the nav", async ({
   page,
 }) => {
   await openBuilder(page);
-  await chooseItem(page, "gear.head", HEAD_ITEM);
+  const chosen = await pickFirstHead(page);
   await focusNavRow(page, "Build 1");
 
   await undoButton(page).click();
@@ -130,7 +133,7 @@ test("the editor pair acts on the item stack with focus in the nav", async ({
   await expect(redoButton(page)).toBeEnabled();
 
   await redoButton(page).click();
-  await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(HEAD_ITEM);
+  await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(chosen);
 });
 
 test("the nav pair acts on the list stack with focus in the editor", async ({
@@ -158,7 +161,7 @@ test("the nav pair acts on the list stack with focus in the editor", async ({
 test("the pairs name the step they would take back", async ({ page }) => {
   await openBuilder(page);
   await addBuild(page);
-  await chooseItem(page, "gear.head", HEAD_ITEM);
+  const chosen = await pickFirstHead(page);
 
   await navUndoButton(page).hover();
   await expect(page.getByTestId("tooltip")).toHaveText(
@@ -168,6 +171,6 @@ test("the pairs name the step they would take back", async ({ page }) => {
 
   await undoButton(page).hover();
   await expect(page.getByTestId("tooltip")).toHaveText(
-    `Undo: Head → ${HEAD_ITEM} (Ctrl+Z)`,
+    `Undo: Head → ${chosen} (Ctrl+Z)`,
   );
 });

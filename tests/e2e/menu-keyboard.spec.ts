@@ -11,14 +11,16 @@ import {
   openBuilder,
   headerRow,
   ensureSectionExpanded,
-  chooseItem,
   chooseCombo,
   slotRow,
   pickerInput,
 } from "./support/app";
 import { buildRow, addBuild, addLayer } from "./support/nav";
+import { importTestCatalog } from "./support/testCatalog";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ID = "test-copy-head";
+const HEAD_ITEM = "Test Copy Head";
+const SOURCE_BUILD = "Test copy source";
 
 test.describe("NavContextMenu (build kebab)", () => {
   test("Enter on a Tab-focused kebab opens the menu, and ArrowDown focuses the first item", async ({
@@ -193,7 +195,11 @@ test("Copy from menu: Tab reaches the Copy button, and Enter confirms the copy",
   page,
 }) => {
   await openBuilder(page);
-  await chooseItem(page, "gear.head", HEAD_ITEM);
+  await importTestCatalog(page, {
+    name: SOURCE_BUILD,
+    items: [{ id: HEAD_ID, name: HEAD_ITEM, filter: "gear_head" }],
+    choices: { "gear.head": HEAD_ID },
+  });
 
   await addBuild(page);
   await ensureSectionExpanded(page, "gear");
@@ -203,7 +209,7 @@ test("Copy from menu: Tab reaches the Copy button, and Enter confirms the copy",
   await trigger.click();
 
   const popover = page.locator(".copy-popover");
-  await chooseCombo(popover.locator(".copy-popover-select"), "Build 1");
+  await chooseCombo(popover.locator(".copy-popover-select"), SOURCE_BUILD);
 
   // Tab moves to the Copy button here instead of closing the menu, per SectionCopyMenu's
   // `dismiss-on-tab="false"`.

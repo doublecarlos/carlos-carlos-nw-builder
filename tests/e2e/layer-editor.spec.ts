@@ -4,9 +4,13 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { openBuilder, chooseItem, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { shippedItemName } from "./support/shippedData";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
-const ARMS_ITEM = "M31 Bindings of the Death Pact";
+// Shipped items on purpose: these tests edit a base catalog entry inside a fresh layer, and an
+// imported test catalog would itself be a layer, shifting the "Layer N" names and the
+// "no layers yet" Ctrl+click path.
+const HEAD_ITEM = shippedItemName("m29-enchanted-depthweave-cap-ca");
+const ARMS_ITEM = shippedItemName("m31-bindings-of-the-death-pact-damage");
 
 test.describe("selecting a layer replaces the build editor", () => {
   test("selecting a layer hides the build name input and shows the layer editor", async ({
