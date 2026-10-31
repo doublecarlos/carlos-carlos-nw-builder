@@ -4,6 +4,7 @@ import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import { ExternalLink } from "@lucide/vue";
 import {
   APP_COMMIT,
+  APP_NAME,
   APP_VERSION,
   DISCLAIMER,
   ISSUES_URL,
@@ -23,7 +24,7 @@ defineEmits<{ close: [] }>();
   >
     <div class="flex flex-col gap-4 overflow-y-auto p-4">
       <div class="flex flex-col gap-1">
-        <p class="text-lg font-semibold">Carlos Carlos' NW Builder</p>
+        <p class="text-lg font-semibold">{{ APP_NAME }}</p>
         <p data-testid="about-version">
           Version {{ APP_VERSION }} (build {{ APP_COMMIT }})
         </p>

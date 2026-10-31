@@ -8,6 +8,7 @@ import { execFileSync } from "node:child_process";
 
 const pkg = createRequire(import.meta.url)("./package.json") as {
   version: string;
+  homepage: string;
   repository: { url: string };
   bugs: { url: string };
 };
@@ -38,4 +39,5 @@ export const APP_DEFINES = {
   __APP_COMMIT__: JSON.stringify(buildCommit()),
   __APP_REPO_URL__: JSON.stringify(browsableRepoUrl),
   __APP_ISSUES_URL__: JSON.stringify(pkg.bugs.url),
+  __APP_HOMEPAGE_URL__: JSON.stringify(pkg.homepage),
 };

@@ -13,7 +13,7 @@ import { NW_SLOTS, NW_CATALOG_VERSION } from "../data/data";
 import * as catalog from "../data/catalog";
 import { fromData as baseDb, itemPublishing } from "../data/db";
 import * as idb from "./idb";
-import { APP_COMMIT } from "../lib/app-info";
+import { APP_COMMIT, APP_NAME, HOMEPAGE_URL } from "../lib/app-info";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { storedListRows } from "../lib/item-picker-list";
@@ -57,12 +57,16 @@ const UI_KEY = "nw:ui";
 // behavior only starts biting the next time `SCHEMA_VERSION` actually moves -- which is the
 // point: this doesn't retroactively invalidate anything, it just makes the *next* breaking
 // change honest instead of silent.
+//
+// `source` comes first and names the app with its link, so someone who finds an exported
+// file knows where to open it, or what to search for if the link is gone.
 
 export const SCHEMA_VERSION = 1;
 
 export type EnvelopeKind = "build" | "overlay" | "layer" | "bundle";
 
 export interface Envelope<T> {
+  source?: { name: string; url: string };
   v: number;
   kind: EnvelopeKind;
   catalog: number;
@@ -74,6 +78,7 @@ export interface Envelope<T> {
 
 function wrap<T>(kind: EnvelopeKind, data: T): Envelope<T> {
   return {
+    source: { name: APP_NAME, url: HOMEPAGE_URL },
     v: SCHEMA_VERSION,
     kind,
     catalog: NW_CATALOG_VERSION,

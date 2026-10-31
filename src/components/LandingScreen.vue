@@ -6,7 +6,7 @@
 import { useTemplateRef } from "vue";
 import { Gamepad2, Plus, Upload } from "@lucide/vue";
 import * as builds from "../stores/builds";
-import { DISCLAIMER } from "../lib/app-info";
+import { APP_NAME, DISCLAIMER } from "../lib/app-info";
 import { importFileText } from "../stores/importFile";
 // Only asks for the wizard: it is mounted once, in AppHeader, for every entry point.
 import { openWizard as openGameImport } from "../stores/gameImport";
@@ -49,7 +49,7 @@ async function onImportFile(event: Event) {
     <div class="relative flex max-w-xl flex-col items-center gap-6 text-center">
       <div class="flex flex-col gap-3">
         <h2 class="text-3xl font-semibold tracking-wide">
-          Carlos Carlos' NW Builder
+          {{ APP_NAME }}
         </h2>
         <p class="text-lg text-text">Create and compare Neverwinter builds.</p>
         <p class="text-text">
