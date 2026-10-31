@@ -4,6 +4,7 @@
 // anchor, hover/diff highlighting, the errors list) stays in BuildSlot.vue since it's identical
 // across every slot type.
 import { computed, useTemplateRef } from "vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import ItemPicker from "./ItemPicker.vue";
 import BuildInputControl from "./BuildInputControl.vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
@@ -227,13 +228,15 @@ const stableGroup = computed(() => {
         ><Replace
       /></IconButton>
     </span>
-    <span
-      v-if="preferredPick"
-      class="shrink-0 text-accent"
-      data-testid="slot-preferred"
-      title="Preferred"
-      >{{ PREFERRED_MARK }}</span
-    >
+    <BaseTooltip v-if="preferredPick" text="Preferred" tappable>
+      <span
+        class="shrink-0 text-accent"
+        tabindex="0"
+        aria-label="Preferred"
+        data-testid="slot-preferred"
+        >{{ PREFERRED_MARK }}</span
+      >
+    </BaseTooltip>
     <!-- A phone gives the row's width to the picker instead. -->
     <span
       v-if="!isPhone"

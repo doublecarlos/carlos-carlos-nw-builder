@@ -139,7 +139,7 @@ watch([open, trigger], ([isOpen, el]) => {
         :id="tooltipId"
         role="tooltip"
         data-testid="tooltip"
-        class="rounded-md border border-line bg-surface px-2 py-1 text-sm text-text shadow-lg"
+        class="whitespace-pre-line rounded-md border border-line bg-surface px-2 py-1 text-sm text-text shadow-lg"
       >
         {{ text }}
       </div>

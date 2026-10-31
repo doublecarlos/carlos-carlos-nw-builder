@@ -7,6 +7,7 @@
 //
 // Tab and filter live in the store so the URL can mirror them; collapse state stays local.
 import { computed, ref, watch } from "vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import BaseModal from "../ui/BaseModal.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import IconButton from "../ui/IconButton.vue";
@@ -227,11 +228,16 @@ function create(filter: string) {
             >
               <span class="shrink-0"
                 ><span>{{ row.name }}</span
-                ><span
+                ><BaseTooltip
                   v-if="row.preferred"
-                  class="ml-1 whitespace-nowrap text-accent"
-                  :title="preferredTitle(row.preferred)"
-                  >{{ PREFERRED_MARK.repeat(row.preferred) }}</span
+                  :text="preferredTitle(row.preferred)"
+                  tappable
+                  ><span
+                    class="ml-1 whitespace-nowrap text-accent"
+                    tabindex="0"
+                    :aria-label="preferredTitle(row.preferred)"
+                    >{{ PREFERRED_MARK.repeat(row.preferred) }}</span
+                  ></BaseTooltip
                 ></span
               >
               <span class="min-w-0 truncate text-muted">{{ row.meta }}</span>

@@ -29,6 +29,7 @@ import HistoryButtons from "./ui/HistoryButtons.vue";
 import IconButton from "./ui/IconButton.vue";
 import QuickOptions from "./game/QuickOptions.vue";
 import QuickOptionsBand from "./game/QuickOptionsBand.vue";
+import BaseTooltip from "./ui/BaseTooltip.vue";
 import EditorActionsMenu from "./game/EditorActionsMenu.vue";
 import BaseSheet from "./ui/BaseSheet.vue";
 import {
@@ -1191,33 +1192,50 @@ watch(
           variant="warn"
           class="inline-flex items-center gap-2"
           data-testid="retired-items"
-          :title="retiredTitle"
         >
-          {{ buildEditor.retired.value.length }} retired item{{
-            buildEditor.retired.value.length === 1 ? "" : "s"
-          }}
-          <button
+          <!-- The list of what is retired lives only in the tooltip, so a tap shows it too. -->
+          <BaseTooltip :text="retiredTitle" tappable>
+            <span tabindex="0" data-testid="retired-items-count"
+              >{{ buildEditor.retired.value.length }} retired item{{
+                buildEditor.retired.value.length === 1 ? "" : "s"
+              }}</span
+            >
+          </BaseTooltip>
+          <!-- Touch has no hover to explain an icon, so these name themselves there. -->
+          <BaseTooltip
             v-if="!slotFilter.retired.value"
-            type="button"
-            class="flex cursor-pointer"
-            title="Show only the slots holding them"
-            aria-label="Show only the slots holding retired items"
-            data-testid="retired-items-show"
-            @click="slotFilter.retired.value = true"
+            text="Show only the slots holding them"
           >
-            <Crosshair class="h-3.5 w-3.5" />
-          </button>
-          <button
+            <button
+              type="button"
+              class="flex cursor-pointer items-center gap-1"
+              aria-label="Show only the slots holding retired items"
+              data-testid="retired-items-show"
+              @click="slotFilter.retired.value = true"
+            >
+              <Crosshair class="h-3.5 w-3.5" /><span
+                class="hidden pointer-coarse:inline"
+                >Show</span
+              >
+            </button>
+          </BaseTooltip>
+          <BaseTooltip
             v-if="retiredReplaceable"
-            type="button"
-            class="flex cursor-pointer"
-            title="Replace every retired item that has a replacement"
-            aria-label="Replace every retired item that has a replacement"
-            data-testid="retired-items-apply"
-            @click="buildEditor.applyRetiredItems()"
+            text="Replace every retired item that has a replacement"
           >
-            <Replace class="h-3.5 w-3.5" />
-          </button>
+            <button
+              type="button"
+              class="flex cursor-pointer items-center gap-1"
+              aria-label="Replace every retired item that has a replacement"
+              data-testid="retired-items-apply"
+              @click="buildEditor.applyRetiredItems()"
+            >
+              <Replace class="h-3.5 w-3.5" /><span
+                class="hidden pointer-coarse:inline"
+                >Replace all</span
+              >
+            </button>
+          </BaseTooltip>
         </BaseBadge>
         <!-- Filters set from elsewhere (the Bonuses tab, the hover card, the compare menu,
              the retired notice) have no control here, so each says it is on and how to drop
