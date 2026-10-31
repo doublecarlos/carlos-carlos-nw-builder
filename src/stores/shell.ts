@@ -23,3 +23,6 @@ export function openNavDrawer() {
 export function closeNavDrawer() {
   navDrawerOpen.value = false;
 }
+
+/** Whether the phone stats pane's quick options band shows its controls or one summary line. */
+export const quickBandOpen = ref(false);

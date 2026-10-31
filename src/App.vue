@@ -12,6 +12,7 @@ import AppHeader from "./components/AppHeader.vue";
 import LandingScreen from "./components/LandingScreen.vue";
 import BuildEditor from "./components/BuildEditor.vue";
 import BuildDetails from "./components/BuildDetails.vue";
+import QuickOptionsBand from "./components/game/QuickOptionsBand.vue";
 import LayerEditor from "./components/LayerEditor.vue";
 import ConfirmDialog from "./components/ConfirmDialog.vue";
 import * as router from "./lib/router";
@@ -307,12 +308,18 @@ syncRoute({ push: false });
                 label="stats"
                 :collapsed="detailsCollapsed"
               />
-              <div
-                v-if="!statsCollapsed"
-                class="min-w-0 flex-1 overflow-y-auto"
-              >
-                <BuildDetails v-if="resolved.ok" :build="activeBuild" />
-                <div v-else class="p-6 text-muted">No build selected</div>
+              <!-- The phone's quick options band sits above the scroller rather than sticking
+                   inside it, clear of the stat cards' own sticky headers. -->
+              <div v-if="!statsCollapsed" class="flex min-w-0 flex-1 flex-col">
+                <QuickOptionsBand
+                  v-if="layout.stats === 'pane'"
+                  class="flex-none"
+                  :build="activeBuild"
+                />
+                <div class="min-h-0 flex-1 overflow-y-auto">
+                  <BuildDetails v-if="resolved.ok" :build="activeBuild" />
+                  <div v-else class="p-6 text-muted">No build selected</div>
+                </div>
               </div>
             </div>
           </template>
