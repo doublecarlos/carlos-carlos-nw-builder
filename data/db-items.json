@@ -7064,155 +7064,113 @@
     "defense_p": 0.02,
     "inc_healing_p": 0.02,
     "out_healing_p": 0.02,
-    "hit_points_p": 0.02
+    "hit_points_p": 0.02,
+    "tags": [
+      "race",
+      "race-ability:2-cha",
+      "race-ability:2-con",
+      "race-ability:2-dex",
+      "race-ability:2-int",
+      "race-ability:2-str",
+      "race-ability:2-wis",
+      "race-ability:two-picks"
+    ]
   },
   {
     "id": "race-attributes-2-cha",
     "name": "+2 CHA",
     "filter": "race_attributes",
     "cha": 2,
-    "tags": [
-      "race-ability-score",
-      "race-ability-score:aasimar",
-      "race-ability-score:sun-elf",
-      "race-ability-score:moon-elf",
-      "race-ability-score:halfling",
-      "race-ability-score:half-elf",
-      "race-ability-score:drow",
-      "race-ability-score:menzoberranzan-renegade",
-      "race-ability-score:dragonborn",
-      "race-ability-score:metallic-ancestry-dragonborn"
-    ],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-2-cha", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-2-con",
     "name": "+2 CON",
     "filter": "race_attributes",
     "con": 2,
-    "tags": [
-      "race-ability-score",
-      "race-ability-score:aasimar",
-      "race-ability-score:half-orc",
-      "race-ability-score:halfling",
-      "race-ability-score:tiefling",
-      "race-ability-score:dragonborn",
-      "race-ability-score:metallic-ancestry-dragonborn"
-    ],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-2-con", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-2-dex",
     "name": "+2 DEX",
     "filter": "race_attributes",
     "dex": 2,
-    "tags": [
-      "race-ability-score",
-      "race-ability-score:aasimar",
-      "race-ability-score:sun-elf",
-      "race-ability-score:moon-elf",
-      "race-ability-score:dragonborn",
-      "race-ability-score:metallic-ancestry-dragonborn"
-    ],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-2-dex", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-2-int",
     "name": "+2 INT",
     "filter": "race_attributes",
     "int": 2,
-    "tags": [
-      "race-ability-score",
-      "race-ability-score:aasimar",
-      "race-ability-score:gith",
-      "race-ability-score:wood-elf",
-      "race-ability-score:tiefling",
-      "race-ability-score:dragonborn",
-      "race-ability-score:metallic-ancestry-dragonborn"
-    ],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-2-int", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-2-str",
     "name": "+2 STR",
     "filter": "race_attributes",
     "str": 2,
-    "tags": [
-      "race-ability-score",
-      "race-ability-score:aasimar",
-      "race-ability-score:gith",
-      "race-ability-score:half-orc",
-      "race-ability-score:dwarf",
-      "race-ability-score:dragonborn",
-      "race-ability-score:metallic-ancestry-dragonborn"
-    ],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-2-str", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-2-wis",
     "name": "+2 WIS",
     "filter": "race_attributes",
     "wis": 2,
-    "tags": [
-      "race-ability-score",
-      "race-ability-score:aasimar",
-      "race-ability-score:wood-elf",
-      "race-ability-score:drow",
-      "race-ability-score:menzoberranzan-renegade",
-      "race-ability-score:dragonborn",
-      "race-ability-score:metallic-ancestry-dragonborn",
-      "race-ability-score:dwarf",
-      "race-ability-score:half-elf"
-    ],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-2-wis", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-3-cha",
     "name": "+3 CHA",
     "filter": "race_attributes",
     "cha": 3,
-    "tags": ["race-ability-score", "race-ability-score:human"],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-3", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-3-con",
     "name": "+3 CON",
     "filter": "race_attributes",
     "con": 3,
-    "tags": ["race-ability-score", "race-ability-score:human"],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-3", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-3-dex",
     "name": "+3 DEX",
     "filter": "race_attributes",
     "dex": 3,
-    "tags": ["race-ability-score", "race-ability-score:human"],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-3", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-3-int",
     "name": "+3 INT",
     "filter": "race_attributes",
     "int": 3,
-    "tags": ["race-ability-score", "race-ability-score:human"],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-3", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-3-str",
     "name": "+3 STR",
     "filter": "race_attributes",
     "str": 3,
-    "tags": ["race-ability-score", "race-ability-score:human"],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-3", "race-ability-score-count"]
   },
   {
     "id": "race-attributes-3-wis",
     "name": "+3 WIS",
     "filter": "race_attributes",
     "wis": 3,
-    "tags": ["race-ability-score", "race-ability-score:human"],
-    "bonuses": ["race-ability-score-warning"]
+    "tags": ["race-ability-score"],
+    "bonuses": ["race-ability-score-3", "race-ability-score-count"]
   },
   {
     "id": "race-dragonborn",
@@ -7220,21 +7178,33 @@
     "filter": "race",
     "power_p": 0.03,
     "strike_p": 0.03,
-    "inc_healing_p": 0.05
+    "inc_healing_p": 0.05,
+    "tags": [
+      "race",
+      "race-ability:2-cha",
+      "race-ability:2-con",
+      "race-ability:2-dex",
+      "race-ability:2-int",
+      "race-ability:2-str",
+      "race-ability:2-wis",
+      "race-ability:two-picks"
+    ]
   },
   {
     "id": "race-drow",
     "name": "Drow",
     "filter": "race",
     "dex": 2,
-    "deflect_sev_p": 0.05
+    "deflect_sev_p": 0.05,
+    "tags": ["race", "race-ability:2-cha", "race-ability:2-wis"]
   },
   {
     "id": "race-dwarf",
     "name": "Dwarf",
     "filter": "race",
     "con": 2,
-    "defense_p": 0.05
+    "defense_p": 0.05,
+    "tags": ["race", "race-ability:2-str", "race-ability:2-wis"]
   },
   {
     "id": "race-gith",
@@ -7242,7 +7212,8 @@
     "filter": "race",
     "dex": 2,
     "ca_p": 0.05,
-    "stamina_regen": 0.05
+    "stamina_regen": 0.05,
+    "tags": ["race", "race-ability:2-int", "race-ability:2-str"]
   },
   {
     "id": "race-half-elf",
@@ -7252,6 +7223,7 @@
     "sev_p": 0.03,
     "deflect_p": 0.03,
     "gold": 0.03,
+    "tags": ["race", "race-ability:2-cha", "race-ability:2-wis"],
     "bonuses": ["dilettante"]
   },
   {
@@ -7259,7 +7231,8 @@
     "name": "Half Orc",
     "filter": "race",
     "dex": 2,
-    "sev_p": 0.05
+    "sev_p": 0.05,
+    "tags": ["race", "race-ability:2-con", "race-ability:2-str"]
   },
   {
     "id": "race-halfling",
@@ -7267,7 +7240,8 @@
     "filter": "race",
     "dex": 2,
     "deflect_p": 0.05,
-    "control_resist_p": 0.25
+    "control_resist_p": 0.25,
+    "tags": ["race", "race-ability:2-cha", "race-ability:2-con"]
   },
   {
     "id": "race-human",
@@ -7285,14 +7259,16 @@
     "deflect_sev_p": 0.01,
     "forte_p": 0.01,
     "inc_healing_p": 0.01,
-    "out_healing_p": 0.01
+    "out_healing_p": 0.01,
+    "tags": ["race", "race-ability:3"]
   },
   {
     "id": "race-menzoberranzan-renegade",
     "name": "Menzoberranzan Renegade",
     "filter": "race",
     "dex": 2,
-    "deflect_sev_p": 0.05
+    "deflect_sev_p": 0.05,
+    "tags": ["race", "race-ability:2-cha", "race-ability:2-wis"]
   },
   {
     "id": "race-metallic-ancestry-dragonborn",
@@ -7301,7 +7277,17 @@
     "power_p": 0.03,
     "strike_p": 0.03,
     "inc_healing_p": 0.03,
-    "hit_points_p": 0.03
+    "hit_points_p": 0.03,
+    "tags": [
+      "race",
+      "race-ability:2-cha",
+      "race-ability:2-con",
+      "race-ability:2-dex",
+      "race-ability:2-int",
+      "race-ability:2-str",
+      "race-ability:2-wis",
+      "race-ability:two-picks"
+    ]
   },
   {
     "id": "race-moon-elf",
@@ -7310,7 +7296,8 @@
     "int": 2,
     "control_resist_p": 0.25,
     "ap_gain": 0.03,
-    "stamina_regen": 0.03
+    "stamina_regen": 0.03,
+    "tags": ["race", "race-ability:2-cha", "race-ability:2-dex"]
   },
   {
     "id": "race-sun-elf",
@@ -7318,13 +7305,15 @@
     "filter": "race",
     "int": 2,
     "control_resist_p": 0.25,
-    "ap_gain": 0.05
+    "ap_gain": 0.05,
+    "tags": ["race", "race-ability:2-cha", "race-ability:2-dex"]
   },
   {
     "id": "race-tiefling",
     "name": "Tiefling",
     "filter": "race",
     "cha": 2,
+    "tags": ["race", "race-ability:2-con", "race-ability:2-int"],
     "bonuses": ["bloodhunt"]
   },
   {
@@ -7332,7 +7321,8 @@
     "name": "Wood Elf",
     "filter": "race",
     "dex": 2,
-    "strike_p": 0.05
+    "strike_p": 0.05,
+    "tags": ["race", "race-ability:2-int", "race-ability:2-wis"]
   },
   {
     "id": "rage-of-flames",
