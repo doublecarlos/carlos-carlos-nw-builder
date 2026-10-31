@@ -10,7 +10,7 @@ import {
   nextTick,
   onBeforeUnmount,
 } from "vue";
-import { useActiveElement } from "@vueuse/core";
+import { onClickOutside, onKeyStroke, useActiveElement } from "@vueuse/core";
 import ItemCard from "./game/ItemCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BuildSection from "./game/BuildSection.vue";
@@ -75,6 +75,7 @@ import * as layerEditorUi from "../stores/layerEditorUi";
 import * as goTo from "../stores/goTo";
 import * as details from "../stores/details";
 import { isMac } from "../lib/platform";
+import { DESKTOP_ITEM_INFO } from "../lib/experiments";
 import { animateScrollTop, type CancelScroll } from "../lib/animate-scroll";
 import type {
   Build,
@@ -386,10 +387,41 @@ const cardDynamicValues = computed(() => {
   return dynamicValuesFor(slotId, item);
 });
 
+/** With a fine pointer the info button pins the card beside the row instead of opening a
+ *  sheet (`DESKTOP_ITEM_INFO`). Pressing it again unpins. */
+const pinCard = computed(
+  () => DESKTOP_ITEM_INFO && !viewport.coarsePointer.value,
+);
+const pinnedPopover =
+  useTemplateRef<InstanceType<typeof BasePopover>>("pinnedPopover");
+const pinnedCard = useTemplateRef<HTMLElement>("pinnedCard");
+
 function openItemSheet(slotId: string) {
   closeCard();
+  if (pinCard.value && sheetTarget.value?.slotId === slotId) {
+    sheetTarget.value = null;
+    return;
+  }
   sheetTarget.value = { slotId };
+  if (!pinCard.value) return;
+  void nextTick(() => {
+    const button = buildScrollEl.value?.querySelector(
+      `[data-testid="slot-info:${CSS.escape(slotId)}"]`,
+    );
+    if (button) pinnedPopover.value?.place(button.getBoundingClientRect());
+  });
 }
+
+onClickOutside(
+  pinnedCard,
+  () => {
+    if (pinCard.value) sheetTarget.value = null;
+  },
+  { ignore: ['[data-testid^="slot-info:"]'] },
+);
+onKeyStroke("Escape", () => {
+  if (pinCard.value && sheetTarget.value) sheetTarget.value = null;
+});
 
 /** Dismisses whichever card is showing. */
 function closeCards() {
@@ -1029,6 +1061,8 @@ watch(buildScrollEl, async (el) => {
 
 function onBuildScroll(event: Event) {
   editorScroll.buildScrollTop.value = (event.target as HTMLElement).scrollTop;
+  // A pinned card stays where it was placed, so it would drift off its row.
+  if (pinCard.value) sheetTarget.value = null;
 }
 
 // --- "go to" jumps -----------------------------------------------------------------------
@@ -1438,9 +1472,27 @@ watch(
           />
         </BasePopover>
 
+        <!-- The same card pinned beside its row by the info button, with a fine pointer. -->
+        <BasePopover ref="pinnedPopover" :width="320">
+          <div
+            v-if="pinCard && sheetTarget && cardProps"
+            ref="pinnedCard"
+            data-testid="item-card-pinned"
+          >
+            <ItemCard
+              v-bind="cardProps"
+              @edit="onCardEdit"
+              @go-to-slot="onCardGoToSlot"
+              @locate="onCardLocate"
+              @inspect="onCardInspect"
+              @open-stable="openStableFromCard"
+            />
+          </div>
+        </BasePopover>
+
         <!-- The same card for a touch screen, opened from a row's info button. -->
         <BaseSheet
-          v-if="sheetTarget && cardProps"
+          v-if="!pinCard && sheetTarget && cardProps"
           side="bottom"
           title="Item details"
           data-testid="item-card-sheet"
