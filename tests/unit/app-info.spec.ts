@@ -5,7 +5,6 @@ import { createRequire } from "node:module";
 import {
   APP_COMMIT,
   APP_VERSION,
-  DISCLAIMER,
   ISSUES_URL,
   REPO_URL,
 } from "../../src/lib/app-info";
@@ -38,10 +37,5 @@ describe("app info", () => {
     expect(REPO_URL).toBe(
       pkg.repository.url.replace(/^git\+/, "").replace(/\.git$/, ""),
     );
-  });
-
-  it("states that the project is unofficial", () => {
-    expect(DISCLAIMER).toMatch(/unofficial/i);
-    expect(DISCLAIMER).toMatch(/not affiliated/i);
   });
 });

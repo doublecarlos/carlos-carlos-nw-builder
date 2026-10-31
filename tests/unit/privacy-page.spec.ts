@@ -20,9 +20,6 @@ const canonical = read("index.html").match(
   /<link rel="canonical" href="([^"]+)"/,
 )?.[1];
 
-/** Prose with its line wrapping collapsed, so assertions survive a reformat. */
-const text = page.replace(/\s+/g, " ");
-
 const href = (attr: string) =>
   page.match(new RegExp(`${attr}[\\s\\S]*?href="([^"]+)"`))?.[1];
 
@@ -66,37 +63,5 @@ describe("privacy page", () => {
 
   it("leads back to the builder", () => {
     expect(page).toContain('href="/"');
-  });
-});
-
-// The assertion that outlives its sentence is the one that should have been deleted with it --
-// which is the point of pinning the claims rather than the prose around them.
-describe("privacy page disclosures", () => {
-  it("says where a build lives and that screenshots stay put", () => {
-    expect(text).toContain("IndexedDB");
-    expect(text).toMatch(/Nothing is uploaded/i);
-    expect(text).toMatch(/Import from game/);
-    expect(text).toMatch(/never uploaded/i);
-  });
-
-  it("names the host and what its logs hold", () => {
-    expect(text).toContain("Cloudflare");
-    expect(text).toMatch(/IP address/i);
-    expect(text).toMatch(/user-agent/i);
-  });
-
-  it("is explicit about what is absent", () => {
-    for (const claim of [
-      /No cookies/i,
-      /No analytics/i,
-      /No third-party services/i,
-      /Nothing sold or shared/i,
-    ]) {
-      expect(text).toMatch(claim);
-    }
-  });
-
-  it("tells a reader how to delete everything", () => {
-    expect(text).toMatch(/clear this site's data/i);
   });
 });

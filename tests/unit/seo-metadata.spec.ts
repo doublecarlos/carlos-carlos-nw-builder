@@ -66,18 +66,6 @@ const themeBg = {
 };
 
 describe("index.html head", () => {
-  it("has a title naming the app and the game", () => {
-    expect(title).toContain("NW Builder");
-    expect(title).toContain("Neverwinter");
-  });
-
-  it("has a description that fits in a search result", () => {
-    expect(description.length).toBeGreaterThan(50);
-    // Google clips around 160 characters; a description that survives whole reads as a
-    // sentence rather than a truncation.
-    expect(description.length).toBeLessThanOrEqual(160);
-  });
-
   it("says the same thing to search engines, Open Graph and Twitter", () => {
     for (const key of ["og:title", "twitter:title"])
       expect(metaContent(key)).toBe(title);

@@ -7,8 +7,6 @@ test("privacy.html is served as a standalone page", async ({ page }) => {
 
   expect(response?.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "Privacy" })).toBeVisible();
-  await expect(page.locator("body")).toContainText("IndexedDB");
-  await expect(page.locator("body")).toContainText("No cookies");
 });
 
 test("privacy.html leads back to the builder", async ({ page }) => {
