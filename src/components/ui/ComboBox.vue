@@ -34,6 +34,11 @@ export interface ComboBoxExposed {
 // box in the row becomes a read-only trigger, and typing happens in a search field at the top
 // of that screen, focused only once tapped. Choosing, Escape, the close button or the phone's
 // Back hands focus back to the row.
+//
+// Given `#detail`, each row on the phone screen gets an info button opening that option's
+// details in a bottom sheet over the list, with a Choose button: the phone's stand-in for a
+// caller's `#aside`, which only shows beside the floating menu. Back and Escape close the
+// sheet back to the list.
 import {
   ref,
   shallowRef,
@@ -54,6 +59,10 @@ import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 import ComboBoxScreen from "./ComboBoxScreen.vue";
+import BaseButton from "./BaseButton.vue";
+import BaseSheet from "./BaseSheet.vue";
+import IconButton from "./IconButton.vue";
+import { Info } from "@lucide/vue";
 
 const props = withDefaults(
   defineProps<{
@@ -92,6 +101,8 @@ const props = withDefaults(
     phoneScreen?: boolean;
     /** That screen's heading and accessible name. */
     screenLabel?: string;
+    /** Heading of the phone screen's `#detail` sheet. */
+    detailTitle?: string;
   }>(),
   {
     placeholder: "-",
@@ -107,6 +118,7 @@ const props = withDefaults(
     tone: undefined,
     phoneScreen: false,
     screenLabel: "Choose",
+    detailTitle: "Details",
   },
 );
 
@@ -119,6 +131,8 @@ defineSlots<{
   "no-match"?(): unknown;
   more?(props: { count: number }): unknown;
   aside?(): unknown;
+  /** One option's details on the phone screen, opened from its row's info button. */
+  detail?(props: { option: T }): unknown;
   /** Header actions on the phone screen. `close` closes it, handing focus back to the row, and
    *  resolves once the history marker Back would have popped is gone. */
   actions?(props: { close: () => Promise<void> }): unknown;
@@ -345,6 +359,18 @@ function onBlur() {
 function close() {
   open.value = false;
   query.value = "";
+  detailOption.value = null;
+}
+
+/** The option whose details the phone screen shows instead of the list, if any. */
+const detailOption = shallowRef<T | null>(null);
+
+function openDetail(option: T) {
+  detailOption.value = option;
+}
+
+function closeDetail() {
+  detailOption.value = null;
 }
 
 /** Closes the phone screen and hands focus back to the row it opened from: the row's cursor
@@ -627,17 +653,30 @@ for (const target of keyTargets) {
           @click="onRowClick(row)"
           @mousemove="onRowPointer($event, index)"
         >
-          <slot
-            v-if="$slots.option"
-            name="option"
-            :option="row.option"
-            :highlighted="highlight === index"
-          />
-          <div v-else class="flex items-baseline gap-1.5">
-            <span
-              class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
-              >{{ row.option.label }}</span
-            >
+          <div class="flex items-center gap-1">
+            <div class="min-w-0 flex-1">
+              <slot
+                v-if="$slots.option"
+                name="option"
+                :option="row.option"
+                :highlighted="highlight === index"
+              />
+              <div v-else class="flex items-baseline gap-1.5">
+                <span
+                  class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+                  >{{ row.option.label }}</span
+                >
+              </div>
+            </div>
+            <IconButton
+              v-if="screen && $slots.detail"
+              class="shrink-0"
+              :title="`About ${row.option.label}`"
+              data-testid="picker-option-info"
+              @mousedown.stop
+              @click.stop="openDetail(row.option)"
+              ><Info
+            /></IconButton>
           </div>
         </ComboBoxMenuRow>
       </template>
@@ -653,5 +692,27 @@ for (const target of keyTargets) {
         ><slot name="aside"
       /></template>
     </component>
+
+    <BaseSheet
+      v-if="screen && open && detailOption"
+      side="bottom"
+      above-modal
+      :title="detailTitle"
+      data-testid="picker-detail"
+      @close="closeDetail"
+    >
+      <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
+        <slot name="detail" :option="detailOption" />
+      </div>
+      <div class="flex-none border-t border-line p-2">
+        <BaseButton
+          variant="primary"
+          class="w-full justify-center"
+          data-testid="picker-detail-choose"
+          @click="choose(detailOption)"
+          >Choose</BaseButton
+        >
+      </div>
+    </BaseSheet>
   </div>
 </template>

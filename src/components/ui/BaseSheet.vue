@@ -36,6 +36,8 @@ const props = withDefaults(
     /** Whether the browser's Back closes it on a touch layout. Off for a caller whose open
      *  state already has its own history entry. */
     backCloses?: boolean;
+    /** Stacks over a modal surface, for a sheet opened from inside one (ComboBoxScreen). */
+    aboveModal?: boolean;
   }>(),
   {
     side: "left",
@@ -43,6 +45,7 @@ const props = withDefaults(
     label: undefined,
     panelClass: undefined,
     backCloses: true,
+    aboveModal: false,
   },
 );
 
@@ -117,7 +120,8 @@ onBeforeUnmount(() => {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-drawer bg-scrim"
+      class="fixed inset-0 bg-scrim"
+      :class="aboveModal ? 'z-popover' : 'z-drawer'"
       v-bind="$attrs"
       @click.self="emit('close')"
     >

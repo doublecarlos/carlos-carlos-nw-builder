@@ -4,7 +4,8 @@
 // stat preview (plus, given `bonusPreview`, the bonus stats picking it would add now, and
 // the ones it's a step toward but hasn't unlocked yet) through ComboBox's `#option` slot --
 // or, with `hidePreview`, nothing but the name. The highlighted candidate's full ItemCard sits
-// beside the open menu (ComboBox's `#aside` slot), except on a phone.
+// beside the open menu (ComboBox's `#aside` slot). A phone has no room beside the list, so
+// each row's info button opens the same card in its place (`#detail`).
 //
 // A native <datalist> was considered and rejected: it cannot show item level and a stat
 // preview per row, and its keyboard behavior is not controllable. This is ~120 lines instead.
@@ -340,9 +341,12 @@ const cardItem = computed(() => {
 
 /** Reads the candidate's resolve from `candidateStats`. Without one (no build, or a resolve
  *  that threw) the card shows the item's own lines and no bonuses. */
-const card = computed(() => {
-  const item = cardItem.value;
-  if (!item) return null;
+const card = computed(() => (cardItem.value ? cardFor(cardItem.value) : null));
+
+/** A candidate by its option's id, for the card a phone's picker screen opens. */
+const itemFor = (id: string) => props.items.find((item) => item.id === id);
+
+function cardFor(item: Item) {
   const preview = candidateStats.value?.get(item.id) ?? null;
   return {
     item,
@@ -352,7 +356,7 @@ const card = computed(() => {
     db: previewInputs.value?.db ?? props.db,
     scalers: itemScalers(item),
   };
-});
+}
 
 defineExpose({
   /** Focus the underlying input -- same open/clear behavior as a direct click (ComboBox's
@@ -383,6 +387,7 @@ defineExpose({
     :max-rows="maxRows"
     :phone-screen="phoneScreen"
     :screen-label="label"
+    detail-title="Item details"
     :menu-class="previewsHidden ? 'w-(--anchor-width)' : 'w-[min(32rem,90vw)]'"
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
@@ -402,6 +407,14 @@ defineExpose({
         :context="card.context"
         :db="card.db"
         :scalers="card.scalers"
+      />
+    </template>
+    <template v-if="phoneScreen" #detail="{ option }">
+      <ItemCard
+        v-if="itemFor(option.value)"
+        readonly
+        data-testid="picker-detail-card"
+        v-bind="cardFor(itemFor(option.value)!)"
       />
     </template>
     <template #option="{ option }">

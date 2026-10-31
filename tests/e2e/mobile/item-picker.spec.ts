@@ -248,3 +248,45 @@ test("a tablet keeps the floating menu and the item card", async ({ page }) => {
     row.getByTestId("picker-aside").getByTestId("item-card"),
   ).toBeVisible();
 });
+
+// A phone has no room for the card beside the list, so each candidate's info button opens it
+// in a sheet over the list, the way a filled slot's info button does: a look before choosing,
+// as hovering gives a desktop.
+test("a candidate's info button shows its card in a sheet, then Back or Choose", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await importTestHead(page);
+  await openPicker(page, "gear.head");
+  await search(page).fill(HEAD_ITEM);
+  const row = pickerScreen(page)
+    .getByTestId("picker-option")
+    .filter({ hasText: HEAD_ITEM });
+  const sheet = page.getByTestId("picker-detail");
+
+  // Looking does not choose, and the phone's Back closes the sheet, not the picker.
+  await row.getByTestId("picker-option-info").click();
+  await expect(sheet.getByTestId("picker-detail-card")).toContainText(
+    HEAD_ITEM,
+  );
+  await page.goBack();
+  await expect(sheet).toHaveCount(0);
+  await expect(row).toBeVisible();
+  await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue("");
+
+  // Escape closes it the same way.
+  await row.getByTestId("picker-option-info").click();
+  await expect(sheet).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expect(row).toBeVisible();
+
+  await row.getByTestId("picker-option-info").click();
+  await page.getByTestId("picker-detail-choose").click();
+  await expect(sheet).toHaveCount(0);
+  await expect(pickerScreen(page)).toHaveCount(0);
+  await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(HEAD_ITEM);
+  // Choosing leaves no history marker behind: Back now stays in the build.
+  await page.goBack();
+  await expect(page.getByTestId("editor-pane")).toBeVisible();
+});
