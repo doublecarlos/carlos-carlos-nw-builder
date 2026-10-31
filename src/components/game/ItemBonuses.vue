@@ -32,9 +32,8 @@ import type { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
   dragSource,
-  useDragHandle,
+  useDragHandles,
   useDropList,
-  type DragSource,
 } from "../../composables/useDragAndDrop";
 import ListAddRow from "../ui/ListAddRow.vue";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
@@ -215,7 +214,6 @@ const instanceId = `item-bonuses:${Math.random().toString(36).slice(2)}`;
 const bonusesContainerId = `bonuses:${instanceId}`;
 
 const bonusesDropList = useDropList({
-  containerId: bonusesContainerId,
   accepts: (source) =>
     source.kind === "item-bonus" && source.containerId === bonusesContainerId,
   onDrop: (source, index) =>
@@ -227,13 +225,14 @@ function attachedIndex(slot: Slot): number | null {
   return slot.id ? props.attachedBonusIds.indexOf(slot.id) : null;
 }
 
+const dragHandle = useDragHandles();
 function bonusDragHandleProps(index: number) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "item-bonus",
     containerId: bonusesContainerId,
     key: props.attachedBonusIds[index] ?? String(index),
     index,
-  }));
+  });
 }
 
 /** Drop-row props only for attached slots; a pending slot is not a drop target. */

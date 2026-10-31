@@ -4,11 +4,12 @@
 // swallow.
 import type { Locator, Page } from "@playwright/test";
 
-/** A locator's bounding box, or an error if it isn't rendered. Scrolls into view first, since
- *  `boundingBox()` does not, unlike Playwright's actions. Without that, a row inside a nested
- *  scroll container could yield off-screen coordinates. */
+/** A locator's bounding box, or an error if it isn't rendered. Scrolls it to the middle of its
+ *  scroll containers first, since `boundingBox()` does not scroll. Centered rather than just in
+ *  view: a point near a container's edge sits in the drag's autoscroll zone, and a slow frame
+ *  would scroll the target away before the drop. */
 export async function requireBox(target: Locator) {
-  await target.scrollIntoViewIfNeeded();
+  await target.evaluate((el) => el.scrollIntoView({ block: "center" }));
   const box = await target.boundingBox();
   if (!box) throw new Error("Element is not visible");
   return box;
@@ -44,7 +45,7 @@ async function point(target: Locator, edge: DragEdge) {
 }
 
 /** Starts a drag from `handle`, the element carrying the pointerdown binding. Presses its
- *  center, then moves past useDragHandle's move threshold to start the drag. */
+ *  center, then moves past the drag handle's move threshold to start the drag. */
 export async function beginDrag(handle: Locator): Promise<DragSession> {
   const page = handle.page();
   const box = await requireBox(handle);
@@ -53,7 +54,7 @@ export async function beginDrag(handle: Locator): Promise<DragSession> {
 
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  // Past useDragHandle's 4px move threshold, so this arms a real drag.
+  // Past the drag handle's 4px move threshold, so this arms a real drag.
   await page.mouse.move(startX, startY + 8, { steps: 2 });
 
   return {

@@ -11,7 +11,7 @@
 import BaseBadge from "../ui/BaseBadge.vue";
 import SectionActionsMenu from "./SectionActionsMenu.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
-import { computed, useTemplateRef } from "vue";
+import { computed, ref, useTemplateRef, watch } from "vue";
 import type { Slot, SectionPreset, BuildOption } from "../../types";
 
 const props = defineProps<{
@@ -54,6 +54,16 @@ const button = useTemplateRef("button");
 useCursorRowKeys(button, {
   onArrow: (dir, bySection) => props.onArrow(dir, bySection),
 });
+
+/** The body mounts on the first expand and then stays, so later toggles only flip visibility
+ *  instead of rebuilding every row. */
+const bodyMounted = ref(props.expanded);
+watch(
+  () => props.expanded,
+  (open) => {
+    if (open) bodyMounted.value = true;
+  },
+);
 
 /** True for a section holding point_assignment steppers, whose columns may overflow the body. */
 const hasAssignments = computed(() => props.assignmentColumns > 0);
@@ -121,7 +131,8 @@ const bodyStyle = computed(() => ({
     </div>
 
     <div
-      v-if="expanded"
+      v-if="bodyMounted"
+      v-show="expanded"
       class="bg-surface pb-2 pt-1 grid gap-x-2.5 grid-cols-(--section-columns) max-md:grid-cols-[minmax(0,1fr)]"
       :class="hasAssignments && 'md:overflow-x-auto'"
       :style="bodyStyle"

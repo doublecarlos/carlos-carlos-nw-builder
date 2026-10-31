@@ -709,9 +709,8 @@ function stablePlaceholder(slotId: string): string | undefined {
 }
 
 /** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
- *  (`slotCandidateList` and `statSummary` aren't cheap). Scoped to *expanded* sections only,
- *  matching BuildSection.vue's own `v-if="expanded"`, so a collapsed section's rows stay
- *  uncomputed. */
+ *  (`slotCandidateList` and `statSummary` aren't cheap). Covers collapsed sections too: their
+ *  bodies stay mounted once expanded (BuildSection.vue), so hidden rows stay current. */
 interface SlotRowData {
   item: Item | null;
   items: Item[];
@@ -743,7 +742,6 @@ const rowDataBySlot = computed(() => {
   // row.
   const candidateContext = slotCandidateContext(db.value, build.value);
   for (const section of sections.value) {
-    if (!sectionExpanded(section.id)) continue;
     for (const slotDef of section.slots) {
       if (
         slotDef.type === "separator" ||
@@ -943,8 +941,8 @@ function statSummary(slotId: string) {
 /**
  * Arrow-key row navigation. There is no virtual cursor -- real focus IS the cursor, so
  * "move" means focusing the next/previous row's focus target: a header's own button, or a
- * slot row's invisible cursor anchor (BuildSlot.vue). Collapsed and only-diff sections
- * simply don't render their rows, so DOM order equals what's visible.
+ * slot row's invisible cursor anchor (BuildSlot.vue). Rows of a collapsed section stay
+ * mounted but hidden, so `cursorRows` skips anything not visible.
  *
  * Held with the platform modifier, the same arrows step a whole section per press instead.
  */
@@ -968,11 +966,18 @@ function focusRow(row: Element, preventScroll = false) {
   suppressUntilPointerMoves();
 }
 
+/** Cursor rows under `scope`, minus those inside a collapsed (hidden) section body. */
+function cursorRows(scope: ParentNode | null | undefined) {
+  return Array.from(scope?.querySelectorAll("[data-cursor-key]") ?? []).filter(
+    (row) => row.checkVisibility(),
+  );
+}
+
 function moveCursorByRow(dir: 1 | -1) {
-  const rows = root.value?.querySelectorAll("[data-cursor-key]");
-  if (!rows?.length) return;
+  const rows = cursorRows(root.value);
+  if (!rows.length) return;
   const current = activeElement.value?.closest("[data-cursor-key]");
-  const idx = current ? Array.from(rows).indexOf(current) : -1;
+  const idx = current ? rows.indexOf(current) : -1;
   focusRow(rows[Math.min(Math.max(idx + dir, 0), rows.length - 1)]);
 }
 
@@ -996,7 +1001,7 @@ function moveCursorBySection(dir: 1 | -1) {
   const target =
     sectionEls[Math.min(Math.max(idx + dir, 0), sectionEls.length - 1)];
   // A section's own cursor rows in order: its header first, then whatever slots it renders.
-  const rows = target.querySelectorAll("[data-cursor-key]");
+  const rows = cursorRows(target);
   const row = rows[1] ?? rows[0];
   if (row) focusRow(row);
 }

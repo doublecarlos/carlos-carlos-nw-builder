@@ -1,5 +1,5 @@
 // End-to-end coverage for dragging to reorder grants. Tiers/variants use the
-// exact same useDropList/useDragHandle wiring as grants (see BonusRows.vue), so grant
+// exact same useDropList/useDragHandles wiring as grants (see BonusRows.vue), so grant
 // reordering alone is representative coverage for that shared code path; this spec doesn't
 // duplicate it three times over.
 import { test, expect } from "@playwright/test";

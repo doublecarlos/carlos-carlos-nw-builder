@@ -1,4 +1,4 @@
-// Only the pure resolution helpers are covered here. useDragHandle/useDropList's pointer and
+// Only the pure resolution helpers are covered here. useDragHandles/useDropList's pointer and
 // registry machinery needs a real DOM, which Vitest's `environment: "node"` lacks, so
 // Playwright covers it.
 import { describe, it, expect } from "vitest";
@@ -8,6 +8,7 @@ import {
   autoscrollDelta,
   reorderIndex,
   armsDrag,
+  useDragHandles,
 } from "../../../src/composables/useDragAndDrop";
 
 function row(top: number, bottom: number, into = false) {
@@ -136,5 +137,21 @@ describe("armsDrag", () => {
     expect(armsDrag("pen", false)).toBe(false);
     expect(armsDrag("touch", true)).toBe(true);
     expect(armsDrag("pen", true)).toBe(true);
+  });
+});
+
+describe("useDragHandles", () => {
+  const source = { kind: "build", containerId: "list", key: "a", index: 0 };
+
+  it("hands a row the same handle while its source is unchanged", () => {
+    // A new handle object per render would re-render every row of a long list.
+    const dragHandle = useDragHandles();
+    expect(dragHandle({ ...source })).toBe(dragHandle({ ...source }));
+  });
+
+  it("hands a moved row a new handle", () => {
+    // The cached handle carries its source, so a stale one would drag from the old index.
+    const dragHandle = useDragHandles();
+    expect(dragHandle({ ...source, index: 1 })).not.toBe(dragHandle(source));
   });
 });

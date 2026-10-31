@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Small grip affordance for a draggable row. `v-bind`s the caller's drag-handle props (from
-// `useDragHandle`) straight through. Bound with none, it is the touch grip inside a row that
+// `useDragHandles`) straight through. Bound with none, it is the touch grip inside a row that
 // carries the props itself (NavRow): `data-drag-handle` is where a finger may start a drag.
 //
 // `touch-none` keeps the browser from claiming a press here for scrolling, and the context

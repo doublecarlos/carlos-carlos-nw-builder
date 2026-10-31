@@ -58,10 +58,10 @@ import type { BonusOption } from "../../types";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
   dragSource,
-  useDragHandle,
+  useDragHandles,
   useDropList,
-  type DragSource,
 } from "../../composables/useDragAndDrop";
+import { useKeyedCache } from "../../composables/useKeyedCache";
 
 const emit = defineEmits<{ error: [message: string] }>();
 
@@ -209,18 +209,18 @@ const instanceId = `bonus-rows:${Math.random().toString(36).slice(2)}`;
 const grantsContainerId = `grants:${instanceId}`;
 
 const grantsDropList = useDropList({
-  containerId: grantsContainerId,
   accepts: (source) =>
     source.kind === "grant" && source.containerId === grantsContainerId,
   onDrop: (source, index) => props.store.moveGrantTo(source.index, index),
 });
+const dragHandle = useDragHandles();
 function grantDragHandleProps(index: number) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "grant",
     containerId: grantsContainerId,
     key: props.store.grants[index]?.uid ?? String(index),
     index,
-  }));
+  });
 }
 
 // One `useDropList` per grant, cached by uid (NavBuilds.vue's `folderDrop` is the same idea).
@@ -230,64 +230,50 @@ function grantIndexByUid(grantUid: string): number {
   return props.store.grants.findIndex((g) => g.uid === grantUid);
 }
 
-const tierDropLists = new Map<string, ReturnType<typeof useDropList>>();
-function tierDropList(grantUid: string) {
-  let list = tierDropLists.get(grantUid);
-  if (!list) {
-    const containerId = `tiers:${grantUid}`;
-    list = useDropList({
-      containerId,
-      accepts: (source) =>
-        source.kind === "tier" && source.containerId === containerId,
-      onDrop: (source, index) => {
-        const gIndex = grantIndexByUid(grantUid);
-        if (gIndex === -1) return;
-        gs(gIndex).moveTierTo(source.index, index);
-      },
-    });
-    tierDropLists.set(grantUid, list);
-  }
-  return list;
-}
+const tierDropList = useKeyedCache((grantUid: string) => {
+  const containerId = `tiers:${grantUid}`;
+  return useDropList({
+    accepts: (source) =>
+      source.kind === "tier" && source.containerId === containerId,
+    onDrop: (source, index) => {
+      const gIndex = grantIndexByUid(grantUid);
+      if (gIndex === -1) return;
+      gs(gIndex).moveTierTo(source.index, index);
+    },
+  });
+});
 function tierDragHandleProps(grantUid: string, index: number) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "tier",
     containerId: `tiers:${grantUid}`,
     key: String(index),
     index,
-  }));
+  });
 }
 
-const variantDropLists = new Map<string, ReturnType<typeof useDropList>>();
-function variantDropList(grantUid: string) {
-  let list = variantDropLists.get(grantUid);
-  if (!list) {
-    const containerId = `variants:${grantUid}`;
-    list = useDropList({
-      containerId,
-      accepts: (source) =>
-        source.kind === "variant" && source.containerId === containerId,
-      onDrop: (source, index) => {
-        const gIndex = grantIndexByUid(grantUid);
-        if (gIndex === -1) return;
-        gs(gIndex).moveVariantTo(source.index, index);
-      },
-    });
-    variantDropLists.set(grantUid, list);
-  }
-  return list;
-}
+const variantDropList = useKeyedCache((grantUid: string) => {
+  const containerId = `variants:${grantUid}`;
+  return useDropList({
+    accepts: (source) =>
+      source.kind === "variant" && source.containerId === containerId,
+    onDrop: (source, index) => {
+      const gIndex = grantIndexByUid(grantUid);
+      if (gIndex === -1) return;
+      gs(gIndex).moveVariantTo(source.index, index);
+    },
+  });
+});
 function variantDragHandleProps(
   grantUid: string,
   variantUid: string,
   index: number,
 ) {
-  return useDragHandle((): DragSource => ({
+  return dragHandle({
     kind: "variant",
     containerId: `variants:${grantUid}`,
     key: variantUid,
     index,
-  }));
+  });
 }
 
 // --- drag-and-drop: condition trees, including cross-grant/cross-variant/cross-bonus -------

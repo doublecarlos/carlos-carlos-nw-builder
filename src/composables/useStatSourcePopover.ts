@@ -67,14 +67,17 @@ export function useStatSourcePopover(
     );
   }
 
-  /** Closes the popover on any click outside it -- `onClickOutside` ignores clicks on
-   * the card itself (`.statcard`) and on other stat info buttons (`.stat-info-btn`),
-   * so a click on a different row's trigger reaches `toggleCard` and switches the card
-   * over instead of closing it first. */
-  onClickOutside(tooltip, () => closeCard(), {
-    ignore: [".statcard", ".stat-info-btn"],
-    capture: false,
-  });
+  /** Closes the popover on any click outside its panel element. Clicks on stat info
+   *  buttons (`.stat-info-btn`) are ignored, so a click on a different row's trigger
+   *  reaches `toggleCard` and switches the card over instead of closing it first. */
+  onClickOutside(
+    () => tooltip.value?.el,
+    () => closeCard(),
+    {
+      ignore: [".stat-info-btn"],
+      capture: false,
+    },
+  );
 
   return {
     root,

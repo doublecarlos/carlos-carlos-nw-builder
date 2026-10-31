@@ -215,6 +215,27 @@ test.describe("section collapse/expand", () => {
     await expect(slotRow(page, "options.class")).toBeVisible();
   });
 
+  test("a collapsed section shows current data when expanded again", async ({
+    page,
+  }) => {
+    // Collapsed bodies stay mounted, so their rows must keep following the build: changes
+    // made while hidden (undo, a build switch) have to show on the next expand.
+    await openBuilder(page);
+    await importTestHead(page);
+    await chooseItem(page, "gear.head", HEAD_ITEM);
+
+    await headerRow(page, "gear").click();
+    await undoButton(page).click();
+    await headerRow(page, "gear").click();
+    await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue("");
+
+    await chooseItem(page, "gear.head", HEAD_ITEM);
+    await headerRow(page, "gear").click();
+    await page.getByTestId("nav-add-build").click();
+    await headerRow(page, "gear").click();
+    await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue("");
+  });
+
   test('"expand all" / "collapse all" are disabled when they have nothing to do', async ({
     page,
   }) => {
