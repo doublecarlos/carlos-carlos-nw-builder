@@ -1,8 +1,22 @@
+<script lang="ts">
+import type { Component } from "vue";
+/** One secondary action, drawn as an icon button with its title as the tooltip, or as a
+ *  labeled entry in the compact bar's menu. */
+export interface FormBarAction {
+  key: string;
+  title: string;
+  icon: Component;
+  testid?: string;
+  run: (event: MouseEvent) => void;
+}
+</script>
+
 <script setup lang="ts">
 // Shared header bar for the editor forms (Item/Bonus/Preset/Slot): title, status badges, the
 // Save/Revert/Duplicate/Delete actions and the form-level error line. `#leading` sits before
 // the title (ItemBonuses' collapse chevron), `#after-title` holds the caller's badges and
-// chips, `#extra-actions` its own actions (ItemBonuses' Detach, ItemForm's From screenshot).
+// chips, `#extra-actions` its own controls (ItemBonuses' Detach), `extraActions` its own
+// actions as entries (ItemForm's From screenshot).
 // Revert/Duplicate/Delete are icon buttons right after the title; Save is the one labeled
 // button, on the right. A wide bar is one row where a long title wraps in place. A narrow
 // one (a container query, since the layer editor's list narrows the form at any width) puts
@@ -10,14 +24,28 @@
 // `embedded`: an in-flow row inside another form's card, the same layout, just not sticky.
 // `toggleable`: a click on the bar's inert area (title, badges, chips, spacer) raises
 // `toggle`; its controls never do.
-import { computed, type Component } from "vue";
-import { Copy, Save, Trash, Undo2 } from "@lucide/vue";
+//
+// Under a `FORM_BAR_CONTEXT` (the phone layer editor) a top-level bar is one compact row: Back,
+// the title, Save for a new entry, and a menu holding the actions with their labels, the
+// host's own actions and `#before-actions`. Host actions such as undo leave the menu open.
+import { computed, inject, ref } from "vue";
+import {
+  ChevronLeft,
+  Copy,
+  EllipsisVertical,
+  Save,
+  Trash,
+  Undo2,
+} from "@lucide/vue";
 import BaseBadge from "./BaseBadge.vue";
 import BaseButton from "./BaseButton.vue";
+import BaseMenu from "./BaseMenu.vue";
+import BaseMenuItem from "./BaseMenuItem.vue";
 import FormBar from "./FormBar.vue";
 import IconButton from "./IconButton.vue";
 import type { EntryStatus } from "../../data/catalog";
 import { clickedControl } from "../../lib/control-click";
+import { FORM_BAR_CONTEXT } from "../../lib/form-bar-context";
 
 const props = withDefaults(
   defineProps<{
@@ -40,6 +68,8 @@ const props = withDefaults(
     duplicateTestid?: string;
     deleteTestid?: string;
     errorTestid?: string;
+    /** The caller's own actions, after the built-in ones. */
+    extraActions?: FormBarAction[];
   }>(),
   {
     status: "base",
@@ -52,8 +82,18 @@ const props = withDefaults(
     duplicateTestid: undefined,
     deleteTestid: undefined,
     errorTestid: undefined,
+    extraActions: () => [],
   },
 );
+
+const context = inject(FORM_BAR_CONTEXT, ref(null));
+const compact = computed(() => !props.embedded && context.value !== null);
+const menu = ref<InstanceType<typeof BaseMenu> | null>(null);
+
+function runFromMenu(action: FormBarAction, event: MouseEvent) {
+  menu.value?.close();
+  action.run(event);
+}
 
 const emit = defineEmits<{
   save: [];
@@ -68,17 +108,12 @@ function onBarClick(event: MouseEvent) {
   if (props.toggleable && !clickedControl(event)) emit("toggle");
 }
 
-/** One secondary action, drawn as an icon button with its title as the tooltip. */
-interface ActionSpec {
-  key: string;
-  title: string;
-  icon: Component;
-  show: boolean;
-  testid: string | undefined;
-  run: (event: MouseEvent) => void;
-}
+const actions = computed<FormBarAction[]>(() => [
+  ...builtInActions.value,
+  ...props.extraActions,
+]);
 
-const actions = computed<ActionSpec[]>(() =>
+const builtInActions = computed<FormBarAction[]>(() =>
   [
     {
       key: "revert",
@@ -104,12 +139,96 @@ const actions = computed<ActionSpec[]>(() =>
       testid: props.deleteTestid,
       run: (event: MouseEvent) => emit("delete", event),
     },
-  ].filter((action) => action.show),
+  ]
+    .filter((action) => action.show)
+    .map(({ show: _show, ...action }) => action),
 );
 </script>
 
 <template>
   <FormBar
+    v-if="compact"
+    class="-mx-3 mb-3 flex-nowrap!"
+    data-testid="form-bar-compact"
+  >
+    <IconButton
+      title="Back to list"
+      data-testid="layer-form-back"
+      @click="context?.back()"
+      ><ChevronLeft
+    /></IconButton>
+    <span
+      class="flex min-w-0 flex-1 items-center gap-1.5"
+      data-testid="form-bar-heading"
+    >
+      <strong class="min-w-0 wrap-anywhere" data-testid="form-bar-title">{{
+        title
+      }}</strong>
+      <BaseBadge v-if="status !== 'base'" :variant="status">{{
+        status
+      }}</BaseBadge>
+      <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
+      <slot name="after-title" />
+    </span>
+    <BaseButton
+      v-if="isNew"
+      variant="primary"
+      class="flex-none"
+      :disabled="!dirty"
+      :data-testid="saveTestid"
+      @click="$emit('save')"
+      ><Save />Save {{ noun }}</BaseButton
+    >
+    <BaseMenu
+      v-if="
+        actions.length || context?.actions.length || $slots['before-actions']
+      "
+      ref="menu"
+      fit-content
+      role="group"
+      :label="`${noun} actions`"
+      panel-class="flex min-w-56 max-w-[calc(100vw-1rem)] flex-col p-1"
+      item-selector="button[tabindex='-1']:not(:disabled), input[type='checkbox']"
+      :ignore="['[data-testid=form-bar-menu]']"
+    >
+      <template #trigger="{ toggle, attrs }">
+        <IconButton
+          :title="`${noun} actions`"
+          class="flex-none"
+          data-testid="form-bar-menu"
+          v-bind="attrs"
+          @click="toggle"
+          ><EllipsisVertical
+        /></IconButton>
+      </template>
+      <BaseMenuItem
+        v-for="action in actions"
+        :key="action.key"
+        :icon="action.icon"
+        :data-testid="action.testid"
+        @click="runFromMenu(action, $event)"
+        >{{ action.title }}</BaseMenuItem
+      >
+      <template v-if="context?.actions.length">
+        <div v-if="actions.length" class="my-1 h-px bg-line" />
+        <BaseMenuItem
+          v-for="action in context.actions"
+          :key="action.key"
+          :icon="action.icon"
+          :disabled="action.disabled"
+          :data-testid="`form-bar-${action.key}`"
+          @click="action.run()"
+          >{{ action.label }}</BaseMenuItem
+        >
+      </template>
+      <template v-if="$slots['before-actions']">
+        <div v-if="actions.length" class="my-1 h-px bg-line" />
+        <div class="px-2 py-1.5"><slot name="before-actions" /></div>
+      </template>
+    </BaseMenu>
+  </FormBar>
+  <FormBar
+    v-else
     :embedded="embedded"
     class="@container"
     :class="[

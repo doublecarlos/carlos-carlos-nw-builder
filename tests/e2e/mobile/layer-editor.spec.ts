@@ -13,6 +13,7 @@ import {
   MIN_SUPPORTED_WIDTH,
   expectNoHorizontalScroll,
 } from "../support/viewport";
+import { showAllFields } from "../support/layerEditor";
 
 const list = (page: Page) => page.getByTestId("layer-entries-column");
 const form = (page: Page) => page.getByTestId("layer-form-pane");
@@ -99,7 +100,8 @@ test("the list's route names no entry, so a reload lands on the list", async ({
   await expectFormView(page);
   await expect(page.getByTestId("form-bar-title").first()).toHaveText(name);
 
-  // A tab switch lands on a list too, with no entry in the route.
+  // The tabs live on the list: Back, then a tab switch, leaves no entry in the route.
+  await back(page).tap();
   await page.getByTestId("tab-bonuses").tap();
   await expectListView(page);
   await page.reload();
@@ -130,7 +132,10 @@ test("a new entry opens its blank form", async ({ page }) => {
     "New item",
   );
 
-  // Switching tabs from a form lands on that tab's list.
+  // The form has the pane to itself: the tabs and layer header wait on the list.
+  await expect(page.getByTestId("tab-bonuses")).toHaveCount(0);
+  await expect(page.getByTestId("layer-enabled")).toHaveCount(0);
+  await back(page).tap();
   await page.getByTestId("tab-bonuses").tap();
   await expectListView(page);
   await page.getByTestId("new-bonus").tap();
@@ -190,19 +195,20 @@ test("the toolbar's actions sit in an overflow menu", async ({ page }) => {
   await expect(page.getByTestId("layer-export")).toBeVisible();
   await page.getByTestId("layer-export").getByTestId("modal-close").tap();
 
-  // An edit makes undo and discard available from the same menu.
+  // With the layer header out of the way on an open form, the form's own menu holds undo.
   await rows(page).first().tap();
   await page.getByTestId("item-max-copies").fill("7");
+  const formMenu = page.getByTestId("form-bar-menu");
   await expect
     .poll(async () => {
-      await trigger.tap();
-      const enabled = await page.getByTestId("layer-actions-undo").isEnabled();
+      await formMenu.tap();
+      const enabled = await page.getByTestId("form-bar-undo").isEnabled();
       await page.keyboard.press("Escape");
       return enabled;
     })
     .toBe(true);
-  await trigger.tap();
-  await page.getByTestId("layer-actions-undo").tap();
+  await formMenu.tap();
+  await page.getByTestId("form-bar-undo").tap();
   await expect(page.getByTestId("item-max-copies")).not.toHaveValue("7");
 });
 
@@ -217,7 +223,7 @@ test("a tablet keeps the stacked layout without sideways scroll", async ({
   await expectFits(page);
 
   await rows(page).first().click();
-  await page.getByTestId("show-all-fields").click();
+  await showAllFields(page);
   await expectFits(page);
   await page.getByTestId("tab-slots").click();
   await page.locator('[data-outline-key^="slot:"]').first().click();

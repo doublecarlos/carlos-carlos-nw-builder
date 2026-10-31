@@ -9,6 +9,7 @@ import {
   MIN_SUPPORTED_WIDTH,
   expectNoHorizontalScroll,
 } from "../support/viewport";
+import { formBarControl } from "../support/layerEditor";
 
 const buildRows = (page: Page) => page.locator(".nav-row--build");
 
@@ -64,7 +65,7 @@ test.describe("modals at the narrowest width", () => {
     await expect(exportModal).toHaveCount(0);
 
     await page.getByTestId("new-item").tap();
-    await page.getByTestId("tooltip-import-toggle").tap();
+    await formBarControl(page, "tooltip-import-toggle");
     const importModal = page.getByTestId("tooltip-import");
     await expect(importModal).toBeVisible();
     await expectFillsViewport(page, importModal);

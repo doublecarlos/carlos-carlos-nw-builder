@@ -15,7 +15,7 @@ import IconButton from "../ui/IconButton.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import { Plus, ScanText, Trash } from "@lucide/vue";
 import BaseInput from "../ui/BaseInput.vue";
-import DraftFormBar from "../ui/DraftFormBar.vue";
+import DraftFormBar, { type FormBarAction } from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import BaseLink from "../ui/BaseLink.vue";
@@ -101,6 +101,16 @@ const emit = defineEmits<{
   "open-filter": [filter: string];
   "tooltip-import": [];
 }>();
+
+const barActions: FormBarAction[] = [
+  {
+    key: "tooltip-import",
+    title: "From screenshot",
+    icon: ScanText,
+    testid: "tooltip-import-toggle",
+    run: () => emit("tooltip-import"),
+  },
+];
 
 // --- Common ---------------------------------------------------------------------------
 
@@ -506,6 +516,7 @@ function showsGroup(group: FieldGroup): boolean {
       can-duplicate
       :error="error"
       duplicate-testid="duplicate-item"
+      :extra-actions="barActions"
       @save="save"
       @revert="$emit('revert')"
       @duplicate="$emit('duplicate')"
@@ -519,15 +530,6 @@ function showsGroup(group: FieldGroup): boolean {
         >
           Show all fields
         </BaseCheckbox>
-      </template>
-      <template #extra-actions>
-        <IconButton
-          class="text-[16px]"
-          title="From screenshot"
-          data-testid="tooltip-import-toggle"
-          @click="$emit('tooltip-import')"
-          ><ScanText
-        /></IconButton>
       </template>
     </DraftFormBar>
 
