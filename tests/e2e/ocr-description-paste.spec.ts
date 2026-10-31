@@ -132,6 +132,39 @@ test.describe("reading a description off a screenshot", () => {
     await expect(field).toHaveValue(/Omen of Doom/i, { timeout: 120_000 });
     await expect(field).not.toHaveValue(/\n/);
   });
+
+  // A whole tooltip yields only the id from its "Def:" line, not the rest of the reading.
+  test("the game IDs field takes the id off a screenshot", async ({ page }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByTestId("new-item").click();
+
+    const ids = page.getByTestId("item-gameids-input");
+    await pasteImage(ids.locator("input"), TOOLTIP);
+    const chip = ids.getByTestId("token-chip");
+    await expect(chip).toHaveCount(1, { timeout: 120_000 });
+    await expect(chip).toHaveAttribute("data-value", /^[\w-]+$/);
+  });
+
+  // A failed reading on the IDs field dismisses on typing, as in the description fields.
+  test("the game IDs field's failure message goes on typing", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByTestId("new-item").click();
+
+    const input = page.getByTestId("item-gameids-input").locator("input");
+    const message = page.getByTestId("ocr-field-error");
+    await input.click();
+    await pasteBlankImage(input);
+    await expect(message).toBeVisible({ timeout: 120_000 });
+
+    await input.fill("x");
+    await expect(message).toBeHidden({ timeout: 2000 });
+  });
 });
 
 test("a text paste is left to the browser", async ({ page }) => {

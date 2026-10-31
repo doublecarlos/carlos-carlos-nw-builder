@@ -52,6 +52,7 @@ ordinary one.
 | NumberStepper                             | A number field between -/+ buttons stepping by `step`; Ctrl/Cmd+click jumps to a bound                                  |
 | NumberOrPercentInput                      | A number field, or a PercentInput when `percent` is set                                                                 |
 | OcrHint                                   | Marks a field that reads pasted screenshots                                                                             |
+| OcrStatus                                 | The busy and failure overlays under a field that reads pasted screenshots                                               |
 | OcrTextField                              | A description field that also OCRs a pasted screenshot into it                                                          |
 | PaletteInput                              | GoToPalette's own combobox-trigger search field                                                                         |
 | PanelHead                                 | A panel's own internal section heading (not BasePanel's header slot)                                                    |
@@ -62,7 +63,7 @@ ordinary one.
 | SegmentedControl                          | "Pick exactly one of a few options"; stacks its options when one row does not fit                                       |
 | TabButton / TabStrip                      | A row of tabs, each drawn as its own button rather than joined to the panel below                                       |
 | ThemeToggle                               | System -> Light -> Dark cycle button                                                                                    |
-| TokenInput                                | Token/chip input with autocomplete and optional free text                                                               |
+| TokenInput                                | Token/chip input with autocomplete and optional free text; `fromImage` reads a pasted screenshot into a token           |
 
 `BaseInput`/`BaseTextarea` do not fit a genuinely novel control - `OcrTextField` and
 `PercentInput` are the standing proof that a specialised input is still legitimate. The rule

@@ -21,6 +21,7 @@ import FormGrid from "../ui/FormGrid.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import IdField from "../ui/IdField.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
+import { gameIdFrom } from "../../lib/ocr-paste";
 import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA } from "../../data/data";
 import { findParamSlot } from "../../lib/build-path";
@@ -607,7 +608,8 @@ function showsGroup(group: FieldGroup): boolean {
       <FormField label="Internal game IDs" class="min-w-80 flex-1">
         <TokenInput
           v-model="draft.gameIds"
-          placeholder="Add an ID..."
+          placeholder="Add an ID, or paste a screenshot..."
+          :from-image="gameIdFrom"
           data-testid="item-gameids-input"
         />
       </FormField>
