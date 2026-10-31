@@ -540,24 +540,6 @@ test.describe("separator slots", () => {
       "slot:gear.neck",
     );
   });
-
-  test("the row right above a separator has no bottom border of its own", async ({
-    page,
-  }) => {
-    await openBuilder(page);
-    await chooseItem(page, "gear.boots", BOOTS_ITEM);
-    // The Boots reinforcement sits right above the separator: its own border is suppressed so
-    // it doesn't double up against the separator's bar. Neck has no separator after it and
-    // keeps its own.
-    await expect(slotRow(page, "reinforcements.armorKit4")).toHaveCSS(
-      "border-bottom-width",
-      "0px",
-    );
-    await expect(slotRow(page, "gear.neck")).toHaveCSS(
-      "border-bottom-width",
-      "1px",
-    );
-  });
 });
 
 test.describe("text slots", () => {

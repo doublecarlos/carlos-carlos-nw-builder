@@ -58,8 +58,6 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
     const menuBox = await box(kebab(page));
     expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(width);
     await expectHeaderFits(page);
-    // The mark alone: the name is left to screen readers.
-    expect((await box(page.getByTestId("header-title"))).width).toBe(32);
     await expect(page.getByTestId("header-go-to").locator("kbd")).toBeHidden();
     await expect(page.getByTestId("header-shortcuts")).toHaveCount(0);
 

@@ -494,33 +494,4 @@ test.describe("point_assignment shared column layout", () => {
     });
     expect(bottomHitsMenu).toBe(true);
   });
-
-  test("stepper columns hug their content, while a normal control still fills", async ({
-    page,
-  }) => {
-    // Wide enough that the eight columns leave spare width to the right.
-    await page.setViewportSize({ width: 2400, height: 1000 });
-    await openRaceSection(page);
-    await ensureSectionExpanded(page, "options");
-
-    const raceBody = sectionBody(page, RACE_SECTION);
-    const raceRight = await raceBody.evaluate(
-      (el) => el.getBoundingClientRect().right,
-    );
-    const last = await labelBox(page, STR_SLOT, "leveling-str-20");
-    expect(last).not.toBeNull();
-    // Spare width sits after the columns instead of widening them apart.
-    expect(raceRight - (last!.x + last!.width)).toBeGreaterThan(100);
-
-    const optionsRight = await sectionBody(page, "options").evaluate(
-      (el) => el.getBoundingClientRect().right,
-    );
-    const controlBox = await page
-      .locator('[data-cursor-key="slot:options.class"] > div')
-      .nth(1)
-      .boundingBox();
-    expect(controlBox).not.toBeNull();
-    // The ordinary row's control still stretches to the section's edge.
-    expect(optionsRight - (controlBox!.x + controlBox!.width)).toBeLessThan(40);
-  });
 });

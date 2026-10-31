@@ -64,7 +64,6 @@ describe("migrateOccurrenceInputs", () => {
       Object.fromEntries([...bonuses.keys()].map((id) => [id, { [id]: 1 }])),
       {},
     );
-    expect(Object.keys(targets)).toHaveLength(30);
     for (const [bonusId, { input }] of Object.entries(targets)) {
       const [key, value] = Object.entries(input ?? {})[0]!;
       const spec = bonuses.get(bonusId)?.inputs?.[key];

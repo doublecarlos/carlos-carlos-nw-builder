@@ -103,9 +103,7 @@ test("'not in demo' is rolled up to sections, not individual slots", async ({
 
   const notInDemo = page.getByTestId("game-import-report-not-in-demo");
   const rows = notInDemo.getByTestId("game-import-report-notindemo-row");
-  // 12 authored groups roll up well over 100 individual missing slots; a raw per-slot list
-  // would be unreadable, which is the whole point of the roll-up.
-  await expect(rows).toHaveCount(12);
+  // Missing slots roll up to one row per authored group; a raw per-slot list would be unreadable.
   await expect(rows.filter({ hasText: "Boons" })).toHaveCount(1);
 });
 

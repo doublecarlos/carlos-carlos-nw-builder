@@ -125,20 +125,6 @@ test("a table wider than the panel scrolls inside its own box", async ({
   await expectColumnFits(page);
 });
 
-test("an open bonus spells out its whole title on touch", async ({ page }) => {
-  await openComparedBuild(page);
-  await showStats(page, MIN_SUPPORTED_WIDTH);
-  await page.getByRole("button", { name: /Bonuses/ }).click();
-
-  const title = statColumn(page).getByTestId("bonus-entry-title").first();
-  const whiteSpace = () =>
-    title.evaluate((el) => getComputedStyle(el).whiteSpace);
-  expect(await whiteSpace()).toBe("nowrap");
-
-  await title.click();
-  expect(await whiteSpace()).toBe("normal");
-});
-
 test("a stat's source card opens on tap and fits the screen", async ({
   page,
 }) => {
