@@ -28,6 +28,7 @@ import CheckMenu from "./ui/CheckMenu.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
 import IconButton from "./ui/IconButton.vue";
 import QuickOptions from "./game/QuickOptions.vue";
+import QuickOptionsBand from "./game/QuickOptionsBand.vue";
 import EditorActionsMenu from "./game/EditorActionsMenu.vue";
 import BaseSheet from "./ui/BaseSheet.vue";
 import {
@@ -1302,9 +1303,9 @@ watch(
       data-testid="editor-column"
       @scroll="onBuildScroll"
     >
-      <QuickOptions
+      <QuickOptionsBand
         v-if="viewport.isPhone.value"
-        class="mx-3.5 mt-3.5"
+        class="mx-3.5 mt-3.5 w-[calc(100%-1.75rem)] rounded-md border border-line"
         :build="build"
       />
       <!-- The list's padding lives here rather than on the scroll container: a scroll

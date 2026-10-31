@@ -317,7 +317,7 @@ syncRoute({ push: false });
               <div v-if="!statsCollapsed" class="flex min-w-0 flex-1 flex-col">
                 <QuickOptionsBand
                   v-if="layout.stats === 'pane'"
-                  class="flex-none"
+                  class="w-full flex-none border-b border-line"
                   :build="activeBuild"
                 />
                 <div class="min-h-0 flex-1 overflow-y-auto">

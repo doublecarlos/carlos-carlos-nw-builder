@@ -1,8 +1,10 @@
 <script setup lang="ts">
-// The quick options above a phone's stats pane, so a toggle can be flipped while watching
-// the numbers. Collapsed by default to one summary line, keeping the pane for the stats.
-import { computed } from "vue";
-import { ChevronDown, ChevronRight } from "@lucide/vue";
+// The quick options on a phone, as one summary line that opens the controls in a bottom
+// sheet. The line never grows, so neither pane gives up room for it, and on the Stats pane the
+// numbers above the sheet follow each change.
+import { computed, ref } from "vue";
+import { SlidersHorizontal } from "@lucide/vue";
+import BaseSheet from "../ui/BaseSheet.vue";
 import QuickOptions from "./QuickOptions.vue";
 import { getPath } from "../../lib/build-path";
 import { slotShown } from "../../lib/slot-availability";
@@ -13,10 +15,14 @@ import {
   type QuickValue,
 } from "../../lib/quick-summary";
 import * as engine from "../../stores/resolved";
-import * as shell from "../../stores/shell";
 import type { Build } from "../../types";
 
+// Attrs land on the summary line, not the teleported sheet.
+defineOptions({ inheritAttrs: false });
+
 const props = defineProps<{ build: Build }>();
+
+const open = ref(false);
 
 function valueOf(slot: QuickSlot): QuickValue {
   if (slot.type === "item_picker") {
@@ -44,31 +50,31 @@ const summary = computed(() =>
 </script>
 
 <template>
-  <div
-    class="border-b border-line bg-surface px-2.5 py-1.5"
-    data-testid="quick-band"
+  <button
+    type="button"
+    class="flex items-center gap-1.5 bg-surface px-2.5 py-1.5 text-left"
+    aria-haspopup="dialog"
+    data-testid="quick-band-toggle"
+    v-bind="$attrs"
+    @click="open = true"
   >
-    <button
-      type="button"
-      class="flex w-full items-center gap-1.5 text-left"
-      :aria-expanded="shell.quickBandOpen.value"
-      data-testid="quick-band-toggle"
-      @click="shell.quickBandOpen.value = !shell.quickBandOpen.value"
+    <SlidersHorizontal class="size-4 shrink-0 text-muted" />
+    <span class="shrink-0 font-semibold">Quick options</span>
+    <span
+      class="min-w-0 truncate text-muted"
+      data-testid="quick-band-summary"
+      >{{ summary }}</span
     >
-      <ChevronDown v-if="shell.quickBandOpen.value" class="shrink-0" />
-      <ChevronRight v-else class="shrink-0" />
-      <span class="shrink-0 font-semibold">Quick options</span>
-      <span
-        v-if="!shell.quickBandOpen.value"
-        class="min-w-0 truncate text-muted"
-        data-testid="quick-band-summary"
-        >{{ summary }}</span
-      >
-    </button>
-    <QuickOptions
-      v-if="shell.quickBandOpen.value"
-      class="mt-1.5"
-      :build="build"
-    />
-  </div>
+  </button>
+  <BaseSheet
+    v-if="open"
+    side="bottom"
+    title="Quick options"
+    data-testid="quick-sheet"
+    @close="open = false"
+  >
+    <div class="min-h-0 overflow-y-auto p-3">
+      <QuickOptions :build="build" />
+    </div>
+  </BaseSheet>
 </template>

@@ -67,6 +67,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       page,
     }) => {
       await openBuilder(page);
+      await page.getByTestId("quick-band-toggle").first().click();
       const param = page.getByTestId("quick-param-options.duration");
       const label = param.getByText("Duration (s)");
       const field = param.getByRole("spinbutton");
