@@ -3,6 +3,7 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { chooseItem, ensureSectionExpanded, openBuilder } from "../support/app";
 import { addBuild, buildRow, openDrawer, openNewLayer } from "../support/nav";
+import { TEST_HEAD, importTestHead } from "../support/testHead";
 import { center, touchDrag } from "../support/touch";
 import {
   MIN_SUPPORTED_WIDTH,
@@ -157,7 +158,8 @@ test("a tap on a button with a tooltip shows no tooltip", async ({ page }) => {
 
 test("focus handed back after a tap shows no tooltip", async ({ page }) => {
   await openBuilder(page);
-  await chooseItem(page, "gear.head", "M29 Enchanted Depthweave Cap");
+  await importTestHead(page);
+  await chooseItem(page, "gear.head", TEST_HEAD.name);
   const info = page.getByTestId("slot-info:gear.head");
   await info.tap();
   const sheet = page.getByTestId("item-card-sheet");

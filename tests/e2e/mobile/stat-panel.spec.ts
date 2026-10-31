@@ -10,14 +10,14 @@ import {
 } from "../support/app";
 import { renameViaSidebar } from "../support/nav";
 import { statCard, statInfoButton } from "../support/stats";
-import { shippedItemName } from "../support/shippedData";
+import { importTestCatalog } from "../support/testCatalog";
 import {
   MIN_SUPPORTED_WIDTH,
   expectNoHorizontalScroll,
 } from "../support/viewport";
 
 const LONG_NAME = "Supercalifragilisticexpialidocious-Reference-Build";
-const RING = shippedItemName("m33-frostsilver-coil-of-wrath");
+const RING = "Test Stat Ring";
 
 const statColumn = (page: Page) => page.getByTestId("stat-panel-column");
 const tableScrolls = (page: Page) =>
@@ -28,6 +28,25 @@ const tableScrolls = (page: Page) =>
 async function openComparedBuild(page: Page) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: "test-stat-ring",
+        name: RING,
+        filter: "gear_ring",
+        strike: 1000,
+        combined_rating: 1000,
+        bonuses: ["test-stat-ring-bonus"],
+      },
+    ],
+    bonuses: [
+      {
+        id: "test-stat-ring-bonus",
+        name: "Test Stat Ring Bonus",
+        grants: [{ stats: { acc_p: 0.01 } }],
+      },
+    ],
+  });
   await renameViaSidebar(
     page,
     page.locator(".nav-row--build").first(),

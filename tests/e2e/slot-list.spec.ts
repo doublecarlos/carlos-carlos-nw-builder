@@ -2,6 +2,7 @@
 // section header controls, and the passive keyboard cursor. Quick-compare, unsaved/revert and
 // copy-section are covered separately; this file sticks to the base single-build experience.
 import { test, expect, type Page } from "@playwright/test";
+import type { Item } from "../../src/types";
 import {
   parkCursorOnRow,
   openBuilder,
@@ -14,17 +15,21 @@ import {
   chooseItem,
   undoButton,
 } from "./support/app";
+import { TEST_HEAD, importTestHead } from "./support/testHead";
 
-// Unique across the whole item table (grep-checked) and allowed for the default "warlock"
-// class, so it always shows up in the Head slot's own filtered picker list.
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
-const BOOTS_ITEM = "M31 Greaves of the Crimson March";
+const HEAD_ITEM = TEST_HEAD.name;
+const BOOTS: Item = {
+  id: "test-boots",
+  name: "Test Boots",
+  filter: "gear_boots",
+};
 
 test.describe("choosing and clearing an item", () => {
   test("choosing an item fills the slot and updates the section's filled count", async ({
     page,
   }) => {
     await openBuilder(page);
+    await importTestHead(page);
     const header = headerRow(page, "gear");
     const [filledBefore, total] = (
       await header.locator(".section-count").innerText()
@@ -46,6 +51,7 @@ test.describe("choosing and clearing an item", () => {
     page,
   }) => {
     await openBuilder(page);
+    await importTestHead(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
     const row = slotRow(page, "gear.head");
 
@@ -61,8 +67,9 @@ test.describe("choosing and clearing an item", () => {
     // Reopening highlights whatever is already selected and scrolls it into view. That scroll
     // has to stay inside the menu: moving the document instead pulls the input out from under
     // the pointer mid-click, which left the picker unopenable for any selection far enough down
-    // its list -- HEAD_ITEM is the lowest item level in this slot, so it sits at the bottom.
+    // its list. HEAD_ITEM has no item level, so it sits at the bottom.
     await openBuilder(page);
+    await importTestHead(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
     const row = slotRow(page, "gear.head");
 
@@ -77,6 +84,7 @@ test.describe("choosing and clearing an item", () => {
     page,
   }) => {
     await openBuilder(page);
+    await importTestHead(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
     const row = slotRow(page, "gear.head");
 
@@ -98,6 +106,7 @@ test.describe("row click behavior", () => {
     page,
   }) => {
     await openBuilder(page);
+    await importTestHead(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
     const row = slotRow(page, "gear.head");
 
@@ -527,7 +536,8 @@ test.describe("separator slots", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseItem(page, "gear.boots", BOOTS_ITEM);
+    await importTestHead(page, [BOOTS]);
+    await chooseItem(page, "gear.boots", BOOTS.name);
     await parkCursorOnRow(page, "reinforcements.armorKit4");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",

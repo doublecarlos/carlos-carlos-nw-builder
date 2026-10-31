@@ -3,8 +3,9 @@
 // phone widths is checked in layout-sweep.spec.ts.
 import { test, expect, type Page } from "@playwright/test";
 import { chooseItem, openBuilder, pickerInput, slotRow } from "../support/app";
+import { TEST_HEAD, importTestHead } from "../support/testHead";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ITEM = TEST_HEAD.name;
 
 const actionsMenu = (page: Page) => page.getByTestId("editor-actions");
 const action = (page: Page, key: string) =>
@@ -23,6 +24,7 @@ test("the toolbar's actions sit in an overflow menu", async ({ page }) => {
   await openBuilder(page);
   await expect(page.getByTestId("editor-expand-all")).toHaveCount(0);
   await expect(page.getByTestId("picker-options")).toHaveCount(0);
+  await importTestHead(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
   const headInput = pickerInput(slotRow(page, "gear.head"));
   await expect(headInput).toHaveValue(HEAD_ITEM);
@@ -58,6 +60,7 @@ test("a row's info button opens its item card in a sheet", async ({ page }) => {
   await openBuilder(page);
   const row = slotRow(page, "gear.head");
   await expect(page.getByTestId("slot-info:gear.head")).toHaveCount(0);
+  await importTestHead(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
   await page.getByTestId("slot-info:gear.head").click();
@@ -76,6 +79,7 @@ test("a row's info button opens its item card in a sheet", async ({ page }) => {
 
 test("tapping a row does not open the hover card", async ({ page }) => {
   await openBuilder(page);
+  await importTestHead(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await page.getByTestId("app-header").click({ position: { x: 4, y: 4 } });
 

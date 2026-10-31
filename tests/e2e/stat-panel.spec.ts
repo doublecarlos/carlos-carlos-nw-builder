@@ -1,6 +1,6 @@
 // End-to-end coverage for StatPanel.vue's stat source popover (StatPanelSourceCard.vue): which
 // items/bonuses/pipeline stages fed a given stat's number, one stat at a time.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, chooseItem, cursorRow, slotRow } from "./support/app";
 import {
   statInfoButton,
@@ -8,13 +8,44 @@ import {
   statCardClose,
   statCardSourceGroups,
 } from "./support/stats";
+import { importTestCatalog } from "./support/testCatalog";
 
-// Same item slot-list.spec.ts already relies on: unique across the item table and class-
-// restricted to warlock, so equipping it also exercises the allowed-class error path. It
-// grants `strike`/`forte`/`combined_rating` directly (an item-stat trio, not by a bonus)
-// and carries an active bonus of its own granting Combat Advantage -- useful precisely
-// because its Rating/Percentage sources come from two different mechanisms.
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+// Grants `strike` and `combined_rating` directly and carries an active bonus granting Combat
+// Advantage, so its Rating and Percentage sources come from two different mechanisms. Class-
+// restricted, so equipping it with no class chosen is a problem.
+const HEAD_ITEM = "Test Stat Head";
+const HEAD_BONUS = "Test Stat Head Bonus";
+const GUARD_ENCHANT = "Test Guard Enchant";
+
+/** Imports the head and guard enchant this file equips. */
+async function importStatItems(page: Page) {
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: "test-stat-head",
+        name: HEAD_ITEM,
+        filter: "gear_head",
+        allowedClass: ["warlock"],
+        strike: 1000,
+        combined_rating: 1000,
+        bonuses: ["test-stat-head-bonus"],
+      },
+      {
+        id: "test-guard-enchant",
+        name: GUARD_ENCHANT,
+        filter: "combat_enchant_defense",
+        hit_points_mult: 0.1,
+      },
+    ],
+    bonuses: [
+      {
+        id: "test-stat-head-bonus",
+        name: HEAD_BONUS,
+        grants: [{ stats: { ca_p: 0.1 } }],
+      },
+    ],
+  });
+}
 
 test.describe("stat source popover", () => {
   test('clicking a rating stat\'s button opens its card, led by an empty Rating section and a Percentage section led by "Rating contribution"', async ({
@@ -47,6 +78,7 @@ test.describe("stat source popover", () => {
     page,
   }) => {
     await openBuilder(page);
+    await importStatItems(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
 
     // The item's own `strike` stat plus the flat `combined_rating` every item/bonus feeds --
@@ -78,23 +110,25 @@ test.describe("stat source popover", () => {
     page,
   }) => {
     await openBuilder(page);
+    await importStatItems(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
 
-    // HEAD_ITEM's own active bonus grants Combat Advantage -- the item itself carries no `ca`
-    // or `ca_p` stat, so this line can only have come from the bonus, not the item's own stats.
+    // HEAD_ITEM carries no `ca` or `ca_p` stat of its own, so this line can only come from
+    // its bonus.
     // Combined rating (every rating stat's own line) fills the Rating section, so the bonus's
     // contribution lands in the Percentage one.
     await statInfoButton(page, "ca").click();
     const percentRows = statCardSourceGroups(page)
       .nth(1)
       .locator('[data-testid="stat-card-row"]');
-    await expect(percentRows.filter({ hasText: HEAD_ITEM })).toHaveCount(1);
+    await expect(percentRows.filter({ hasText: HEAD_BONUS })).toHaveCount(1);
   });
 
   test("an unpaired stat gets a single, title-less section", async ({
     page,
   }) => {
     await openBuilder(page);
+    await importStatItems(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
 
     // Combined Rating has no percentage counterpart of its own -- it's the thing that feeds
@@ -114,18 +148,15 @@ test.describe("stat source popover", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseItem(
-      page,
-      "enchantments.combatDefense",
-      "Celestial Rime Temper",
-    );
+    await importStatItems(page);
+    await chooseItem(page, "enchantments.combatDefense", GUARD_ENCHANT);
 
     await statInfoButton(page, "hit_points_mult").click();
     const card = statCard(page);
     await expect(
       card
         .locator('[data-testid="stat-card-row"]')
-        .filter({ hasText: "Celestial Rime Temper" }),
+        .filter({ hasText: GUARD_ENCHANT }),
     ).toHaveCount(1);
     await expect(card.getByTestId("stat-card-multiplicative")).toBeVisible();
   });
@@ -134,6 +165,7 @@ test.describe("stat source popover", () => {
     page,
   }) => {
     await openBuilder(page);
+    await importStatItems(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
     // From the far end of the list, so landing in view takes a real scroll.
     await page
@@ -218,6 +250,7 @@ test.describe("stat source popover", () => {
 test.describe("problem list", () => {
   test("a problem's label jumps to the slot it is about", async ({ page }) => {
     await openBuilder(page);
+    await importStatItems(page);
     // Class-restricted with no class chosen, so equipping it is itself the problem.
     await chooseItem(page, "gear.head", HEAD_ITEM);
     const link = page.getByTestId("stat-panel-error-link");

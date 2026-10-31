@@ -10,7 +10,7 @@ import {
   confirmDialog,
   openRowMenu,
 } from "../support/nav";
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+import { TEST_HEAD, importTestHead } from "../support/testHead";
 
 const hamburger = (page: Page) => page.getByTestId("header-nav-toggle");
 const drawer = (page: Page) => page.getByTestId("nav-drawer");
@@ -101,8 +101,10 @@ test("a dialog opened from the drawer closes before the drawer", async ({
 });
 
 test("Back closes the item card sheet", async ({ page }) => {
+  await openBuilder(page);
+  await importTestHead(page);
   const { first, second } = await twoBuilds(page);
-  await chooseItem(page, "gear.head", HEAD_ITEM);
+  await chooseItem(page, "gear.head", TEST_HEAD.name);
   const sheet = page.getByTestId("item-card-sheet");
 
   await page.getByTestId("slot-info:gear.head").click();

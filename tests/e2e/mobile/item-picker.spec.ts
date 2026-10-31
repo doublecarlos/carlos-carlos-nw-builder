@@ -11,8 +11,9 @@ import {
   slotFilterStatCombo,
   slotRow,
 } from "../support/app";
+import { TEST_HEAD, importTestHead } from "../support/testHead";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const HEAD_ITEM = TEST_HEAD.name;
 
 const search = (page: Page) => pickerScreen(page).getByTestId("picker-search");
 const rowAnchor = (page: Page, slotId: string) =>
@@ -54,6 +55,7 @@ test("the list scrolls before the search field is touched, and a tap focuses it"
   page,
 }) => {
   await openBuilder(page);
+  await importTestHead(page);
   await openPicker(page, "gear.head");
   const list = pickerScreen(page).getByTestId("picker-menu");
 
@@ -67,7 +69,7 @@ test("the list scrolls before the search field is touched, and a tap focuses it"
 
   await search(page).click();
   await expect(search(page)).toBeFocused();
-  await search(page).fill("depthweave");
+  await search(page).fill("test head");
   await expect(
     pickerScreen(page).getByText(HEAD_ITEM, { exact: true }),
   ).toBeVisible();
@@ -119,6 +121,7 @@ test("Back closes the picker where the editor was, without leaving the build", a
 
 test("closing the picker leaves no history entry behind", async ({ page }) => {
   await openBuilder(page);
+  await importTestHead(page);
   const url = page.url();
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await openPicker(page, "gear.head");
@@ -165,6 +168,7 @@ test("choosing an item fills the slot, closes the screen and returns to the row"
   page,
 }) => {
   await openBuilder(page);
+  await importTestHead(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
   await expect(pickerScreen(page)).toHaveCount(0);
@@ -182,7 +186,7 @@ test("the close button and Escape both close the screen back onto the row", asyn
   await expect(rowAnchor(page, "gear.head")).toBeFocused();
 
   await openPicker(page, "gear.head");
-  await search(page).fill("depthweave");
+  await search(page).fill("test head");
   await search(page).press("Escape");
   await expect(pickerScreen(page)).toHaveCount(0);
   await expect(rowAnchor(page, "gear.head")).toBeFocused();
@@ -194,6 +198,7 @@ test("a row leaves out its stat summary, giving the picker the room", async ({
   page,
 }) => {
   await openBuilder(page);
+  await importTestHead(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
   const row = slotRow(page, "gear.head");
   await expect(row.getByTestId("slot-stat-summary")).toHaveCount(0);
