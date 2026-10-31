@@ -12,6 +12,7 @@ import {
   defineAsyncComponent,
   onMounted,
   onUnmounted,
+  provide,
   reactive,
   ref,
   watch,
@@ -46,17 +47,18 @@ import LayerSlotOutline from "./game/LayerSlotOutline.vue";
 import LayerActionsMenu from "./game/LayerActionsMenu.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
 import IconButton from "./ui/IconButton.vue";
-import BaseButton from "./ui/BaseButton.vue";
 import RailGutter from "./ui/RailGutter.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import TabStrip from "./ui/TabStrip.vue";
+import { FORM_BAR_CONTEXT } from "../lib/form-bar-context";
 import TabButton from "./ui/TabButton.vue";
 import {
-  ChevronLeft,
   Download,
+  Redo2,
   RotateCcw,
   TriangleAlert,
+  Undo2,
   Upload,
 } from "@lucide/vue";
 import * as catalog from "../data/catalog";
@@ -148,6 +150,37 @@ const layout = computed(() =>
   layerEditorLayout(
     viewportKind(viewport.isDesktop.value, viewport.isPhone.value),
     view.value,
+  ),
+);
+
+/** A phone's open form has the pane to itself: the layer header, tabs and banners belong to
+ *  the list, and the form's own bar carries Back. */
+const formOnly = computed(() => layout.value.form && layout.value.back);
+
+provide(
+  FORM_BAR_CONTEXT,
+  computed(() =>
+    formOnly.value
+      ? {
+          back: () => void backToList(),
+          actions: [
+            {
+              key: "undo",
+              label: "Undo",
+              icon: Undo2,
+              disabled: !canUndo.value,
+              run: () => undo(),
+            },
+            {
+              key: "redo",
+              label: "Redo",
+              icon: Redo2,
+              disabled: !canRedo.value,
+              run: () => redo(),
+            },
+          ],
+        }
+      : null,
   ),
 );
 
@@ -1438,11 +1471,15 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="flex min-h-0 min-w-0 flex-1 flex-col p-3"
+    class="flex min-h-0 min-w-0 flex-1 flex-col"
+    :class="formOnly ? 'p-1.5' : 'p-3'"
     data-undo-scope="editor"
   >
     <!-- Layer header strip -->
-    <div class="mb-2 flex flex-none flow-wrap items-center gap-1.5">
+    <div
+      v-if="!formOnly"
+      class="mb-2 flex flex-none flow-wrap items-center gap-1.5"
+    >
       <!-- With the actions in a menu, this row keeps the menu at its end and the tabs wrap
            below it. -->
       <div
@@ -1555,7 +1592,7 @@ onUnmounted(() => {
 
     <!-- Disabled layer banner -->
     <div
-      v-if="!props.layer.enabled"
+      v-if="!props.layer.enabled && !formOnly"
       class="mb-2 rounded-md border border-warn/40 bg-warn/10 px-3 py-1.5 text-warn"
     >
       This layer is disabled; its changes are not currently applied to the
@@ -1563,7 +1600,7 @@ onUnmounted(() => {
     </div>
 
     <p
-      v-if="tabIsAdvanced"
+      v-if="tabIsAdvanced && !formOnly"
       class="mb-2 flex items-center gap-1.5 text-warn"
       data-testid="advanced-tab-warning"
     >
@@ -1596,7 +1633,7 @@ onUnmounted(() => {
     </BaseModal>
 
     <LayerValidationDrawer
-      v-if="findings.length"
+      v-if="findings.length && !formOnly"
       :findings="findings"
       @select="selectFinding"
     />
@@ -1658,15 +1695,6 @@ onUnmounted(() => {
         />
       </div>
 
-      <!-- Outside the form's scroller, so it stays in reach however far down the form is. -->
-      <BaseButton
-        v-if="layout.form && layout.back"
-        variant="ghost"
-        class="-mb-2 flex-none self-start"
-        data-testid="layer-form-back"
-        @click="backToList"
-        ><ChevronLeft />Back to list</BaseButton
-      >
       <div
         v-if="layout.form"
         class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface px-3 pb-3"

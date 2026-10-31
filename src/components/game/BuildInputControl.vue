@@ -19,10 +19,20 @@ function set(value: number | boolean | null) {
   buildEditor.setInput(props.input.address, value, props.input.spec.label);
 }
 
-/** An emptied field clears the value back to its default. */
+/** A typed number applies as it is typed. An emptied field writes nothing yet, since the
+ *  default would refill it mid-edit; it clears back to the default once the field is left. */
 function onField(raw: string | number | null) {
+  if (typeof raw === "number" && Number.isFinite(raw)) set(raw);
+}
+
+function onFieldBlur(event: FocusEvent) {
+  if ((event.target as HTMLInputElement).value.trim() === "") set(null);
+}
+
+/** PercentInput holds its own text while focused, so an emptied one can clear at once. */
+function onPercent(raw: string | number | null) {
   if (raw === "" || raw === null) set(null);
-  else if (typeof raw === "number" && Number.isFinite(raw)) set(raw);
+  else onField(raw);
 }
 
 function rangeNote() {
@@ -63,7 +73,7 @@ function rangeNote() {
       class="w-full"
       :model-value="input.value"
       :data-testid="input.testid"
-      @update:model-value="onField"
+      @update:model-value="onPercent"
     />
     <BaseInput
       v-else
@@ -75,6 +85,7 @@ function rangeNote() {
       :model-value="input.value"
       :data-testid="input.testid"
       @update:model-value="onField"
+      @blur="onFieldBlur"
     />
     <template #description>{{ input.spec.label }}</template>
     <template v-if="input.spec.presets?.length" #presets>

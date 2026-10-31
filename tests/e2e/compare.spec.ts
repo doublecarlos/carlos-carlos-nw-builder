@@ -17,6 +17,7 @@ import {
   parkCursorOnRow,
   importText,
   confirmImport,
+  openSectionActions,
 } from "./support/app";
 import {
   addBuild,
@@ -114,14 +115,12 @@ test("copying a section from another build fills its slots", async ({
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
   await page.getByTestId("nav-add-build").click();
-  const gearHeader = headerRow(page, "gear");
-  const copyBtn = gearHeader.locator("..").locator(".section-copy-btn");
-  await copyBtn.click();
-
-  const popover = page.locator(".copy-popover");
-  await expect(popover).toBeVisible();
-  await chooseCombo(popover.locator(".copy-popover-select"), "Build 1");
-  await popover.getByRole("button", { name: "Copy" }).click();
+  await openSectionActions(page, "gear");
+  await page.getByTestId("section-actions-copy").click();
+  await page
+    .getByTestId("section-actions-panel")
+    .getByRole("button", { name: "Build 1", exact: true })
+    .click();
 
   await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(HEAD_ITEM);
 });
@@ -368,18 +367,18 @@ test.describe("folder names in the build pickers", () => {
     );
   });
 
-  test("the section copy popover groups by folder too", async ({ page }) => {
+  test("the section copy list groups by folder too", async ({ page }) => {
     await buildInAFolder(page);
-    const gearHeader = headerRow(page, "gear");
-    await gearHeader.locator("..").locator(".section-copy-btn").click();
+    await openSectionActions(page, "gear");
+    await page.getByTestId("section-actions-copy").click();
 
-    const combo = page.locator(".copy-popover").locator(".copy-popover-select");
-    await pickerInput(combo).click();
-
-    await expect(combo.getByTestId("picker-group")).toHaveText("Alts");
+    const panel = page.getByTestId("section-actions-panel");
+    await expect(panel.getByTestId("section-actions-folder")).toHaveText(
+      "Alts",
+    );
     await expect(
-      combo.getByTestId("picker-option").filter({ hasText: "Build 1" }),
-    ).toHaveText("Build 1");
+      panel.getByRole("button", { name: "Build 1", exact: true }),
+    ).toBeVisible();
   });
 });
 

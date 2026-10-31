@@ -2,6 +2,7 @@
 // One thing the file offers: a tick, and - when its id is already in use here - the choice
 // between keeping both and replacing what is here.
 import type { Resolution } from "../lib/import-plan";
+import BaseTooltip from "./ui/BaseTooltip.vue";
 
 defineProps<{
   name: string;
@@ -35,16 +36,19 @@ const OPTIONS = [
       class="flex flex-none items-center gap-2"
       :class="!selected && 'opacity-40'"
     >
-      <span
-        class="text-xs text-muted"
-        :title="
-          conflictName === name
-            ? undefined
-            : `Already here as “${conflictName}”.`
+      <BaseTooltip
+        :text="
+          conflictName === name ? '' : `Already here as “${conflictName}”.`
         "
-        data-testid="import-conflict"
-        >already here</span
+        tappable
       >
+        <span
+          class="text-xs text-muted"
+          :tabindex="conflictName === name ? undefined : 0"
+          data-testid="import-conflict"
+          >already here</span
+        >
+      </BaseTooltip>
       <span class="flex overflow-hidden rounded border border-line">
         <button
           v-for="option in OPTIONS"

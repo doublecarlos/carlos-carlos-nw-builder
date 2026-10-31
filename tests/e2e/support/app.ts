@@ -285,3 +285,8 @@ export async function togglePickerOption(page: Page, key: string) {
   await page.keyboard.press("Escape");
   await expect(page.getByTestId(`picker-options:${key}`)).toBeHidden();
 }
+
+/** Opens a section header's actions menu (presets, copy from a build, reset). */
+export async function openSectionActions(page: Page, sectionId: string) {
+  await page.getByTestId(`section-actions-${sectionId}`).click();
+}

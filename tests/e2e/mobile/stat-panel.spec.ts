@@ -1,5 +1,5 @@
-// The stat panel on a phone's stats pane and in the tablet's fixed stats column: compared stats,
-// the bonuses tab and the source card all fit, and a table too wide for the panel scrolls
+// The stat panel on a phone's stats pane, in the tablet's fixed stats column and in the desktop
+// rail: compared stats, the bonuses tab and the source card all fit, and a table too wide for the panel scrolls
 // inside its own box instead of the page or the panel.
 import { test, expect, type Page } from "@playwright/test";
 import {
@@ -59,7 +59,7 @@ async function openComparedBuild(page: Page) {
   await page.getByRole("checkbox", { name: "Compare stats" }).check();
 }
 
-/** Shows the stats pane at `width`: the phone's switch, or the tablet's side column. */
+/** Shows the stats pane at `width`: the phone's switch, or the side column above it. */
 async function showStats(page: Page, width: number) {
   await page.setViewportSize({ width, height: 800 });
   if (width < 768) await page.getByTestId("pane-stats").click();
@@ -82,7 +82,7 @@ async function expectColumnFits(page: Page) {
   expect(overflowing).toEqual([]);
 }
 
-for (const width of [MIN_SUPPORTED_WIDTH, 412, 900]) {
+for (const width of [MIN_SUPPORTED_WIDTH, 412, 900, 1440]) {
   test(`compared stats and bonuses fit at ${width}px`, async ({ page }) => {
     await openComparedBuild(page);
     await showStats(page, width);

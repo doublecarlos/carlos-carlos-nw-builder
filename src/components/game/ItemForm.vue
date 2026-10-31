@@ -15,7 +15,7 @@ import IconButton from "../ui/IconButton.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import { Plus, ScanText, Trash } from "@lucide/vue";
 import BaseInput from "../ui/BaseInput.vue";
-import DraftFormBar from "../ui/DraftFormBar.vue";
+import DraftFormBar, { type FormBarAction } from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import BaseLink from "../ui/BaseLink.vue";
@@ -24,6 +24,7 @@ import OcrTextField from "../ui/OcrTextField.vue";
 import { gameIdFrom } from "../../lib/ocr-paste";
 import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA } from "../../data/data";
+import * as viewport from "../../stores/viewport";
 import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
 import type { EntryStatus } from "../../data/catalog";
@@ -101,6 +102,22 @@ const emit = defineEmits<{
   "open-filter": [filter: string];
   "tooltip-import": [];
 }>();
+
+/** Screenshot import is left off on a phone: game screenshots live on the computer the game
+ *  runs on, and reading one is heavy work for a phone. */
+const barActions = computed<FormBarAction[]>(() =>
+  viewport.isPhone.value
+    ? []
+    : [
+        {
+          key: "tooltip-import",
+          title: "From screenshot",
+          icon: ScanText,
+          testid: "tooltip-import-toggle",
+          run: () => emit("tooltip-import"),
+        },
+      ],
+);
 
 // --- Common ---------------------------------------------------------------------------
 
@@ -506,6 +523,7 @@ function showsGroup(group: FieldGroup): boolean {
       can-duplicate
       :error="error"
       duplicate-testid="duplicate-item"
+      :extra-actions="barActions"
       @save="save"
       @revert="$emit('revert')"
       @duplicate="$emit('duplicate')"
@@ -519,15 +537,6 @@ function showsGroup(group: FieldGroup): boolean {
         >
           Show all fields
         </BaseCheckbox>
-      </template>
-      <template #extra-actions>
-        <IconButton
-          class="text-[16px]"
-          title="From screenshot"
-          data-testid="tooltip-import-toggle"
-          @click="$emit('tooltip-import')"
-          ><ScanText
-        /></IconButton>
       </template>
     </DraftFormBar>
 
@@ -608,7 +617,11 @@ function showsGroup(group: FieldGroup): boolean {
       <FormField label="Internal game IDs" class="min-w-80 flex-1">
         <TokenInput
           v-model="draft.gameIds"
-          placeholder="Add an ID, or paste a screenshot..."
+          :placeholder="
+            viewport.isPhone.value
+              ? 'Add an ID...'
+              : 'Add an ID, or paste a screenshot...'
+          "
           :from-image="gameIdFrom"
           data-testid="item-gameids-input"
         />

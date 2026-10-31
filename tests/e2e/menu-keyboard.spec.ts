@@ -9,9 +9,7 @@
 import { test, expect } from "@playwright/test";
 import {
   openBuilder,
-  headerRow,
   ensureSectionExpanded,
-  chooseCombo,
   slotRow,
   pickerInput,
 } from "./support/app";
@@ -156,12 +154,10 @@ test("Presets menu: ArrowDown focuses the first row, Escape returns focus to the
 }) => {
   await openBuilder(page);
   await ensureSectionExpanded(page, "options");
-  const trigger = headerRow(page, "options")
-    .locator("..")
-    .locator(".section-preset-btn");
+  const trigger = page.getByTestId("section-actions-options");
   await trigger.click();
 
-  const popover = page.locator(".preset-popover");
+  const popover = page.getByTestId("section-actions-panel");
   await expect(popover).toBeVisible();
   await page.keyboard.press("ArrowDown");
   await expect(popover.getByRole("button").first()).toBeFocused();
@@ -171,27 +167,7 @@ test("Presets menu: ArrowDown focuses the first row, Escape returns focus to the
   await expect(trigger).toBeFocused();
 });
 
-test("Copy from menu opens with the combobox focused, and Escape returns focus to the button", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  await addBuild(page);
-  await ensureSectionExpanded(page, "gear");
-  const trigger = headerRow(page, "gear")
-    .locator("..")
-    .locator(".section-copy-btn");
-  await trigger.click();
-
-  const popover = page.locator(".copy-popover");
-  await expect(popover).toBeVisible();
-  await expect(popover.getByTestId("picker-input")).toBeFocused();
-
-  await page.keyboard.press("Escape");
-  await expect(popover).toBeHidden();
-  await expect(trigger).toBeFocused();
-});
-
-test("Copy from menu: Tab reaches the Copy button, and Enter confirms the copy", async ({
+test("Section menu: a second list keeps the keyboard, and Enter copies from the chosen build", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -203,20 +179,24 @@ test("Copy from menu: Tab reaches the Copy button, and Enter confirms the copy",
 
   await addBuild(page);
   await ensureSectionExpanded(page, "gear");
-  const trigger = headerRow(page, "gear")
-    .locator("..")
-    .locator(".section-copy-btn");
+  const trigger = page.getByTestId("section-actions-gear");
   await trigger.click();
+  const panel = page.getByTestId("section-actions-panel");
 
-  const popover = page.locator(".copy-popover");
-  await chooseCombo(popover.locator(".copy-popover-select"), SOURCE_BUILD);
-
-  // Tab moves to the Copy button here instead of closing the menu, per SectionCopyMenu's
-  // `dismiss-on-tab="false"`.
-  await page.keyboard.press("Tab");
-  await expect(popover.getByRole("button", { name: "Copy" })).toBeFocused();
+  // The entry that opened the build list is gone, so focus lands on the new list's first entry.
+  await panel.getByTestId("section-actions-copy").focus();
+  await page.keyboard.press("Enter");
+  await expect(panel.getByTestId("section-actions-back")).toBeFocused();
+  // Arrows step through the builds as in any menu.
+  const source = panel.getByRole("button", { name: SOURCE_BUILD, exact: true });
+  await expect
+    .poll(async () => {
+      await page.keyboard.press("ArrowDown");
+      return source.evaluate((el) => el === document.activeElement);
+    })
+    .toBe(true);
   await page.keyboard.press("Enter");
 
-  await expect(popover).toBeHidden();
+  await expect(panel).toBeHidden();
   await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(HEAD_ITEM);
 });

@@ -154,15 +154,30 @@ function setBonusInput(
   };
 }
 
-/** An emptied number field leaves the input out of the preset. */
+/** A typed number applies as it is typed. An emptied field writes nothing yet, since the
+ *  default would refill it mid-edit; once left empty, the input drops out of the preset. */
 function onBonusInputField(
   bonusId: string,
   name: string,
   raw: string | number | null,
 ) {
-  if (raw === "" || raw === null) setBonusInput(bonusId, name, null);
-  else if (typeof raw === "number" && Number.isFinite(raw))
+  if (typeof raw === "number" && Number.isFinite(raw))
     setBonusInput(bonusId, name, raw);
+}
+
+function onBonusInputBlur(bonusId: string, name: string, event: FocusEvent) {
+  if ((event.target as HTMLInputElement).value.trim() === "")
+    setBonusInput(bonusId, name, null);
+}
+
+/** PercentInput holds its own text while focused, so an emptied one can clear at once. */
+function onBonusInputPercent(
+  bonusId: string,
+  name: string,
+  raw: string | number | null,
+) {
+  if (raw === "" || raw === null) setBonusInput(bonusId, name, null);
+  else onBonusInputField(bonusId, name, raw);
 }
 
 function setBonusStat(
@@ -554,7 +569,7 @@ const SLOT_ROW =
                 Number(bonusInput(group.bonusId, input.name, input.def))
               "
               @update:model-value="
-                onBonusInputField(group.bonusId, input.name, $event)
+                onBonusInputPercent(group.bonusId, input.name, $event)
               "
             />
             <BaseInput
@@ -571,6 +586,7 @@ const SLOT_ROW =
               @update:model-value="
                 onBonusInputField(group.bonusId, input.name, $event)
               "
+              @blur="onBonusInputBlur(group.bonusId, input.name, $event)"
             />
           </FormField>
         </FormGrid>

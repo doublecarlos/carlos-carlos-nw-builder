@@ -15,3 +15,17 @@ export async function newInOutline(
   await page.getByTestId("new-slot-entry").click();
   await page.getByTestId(what).click();
 }
+
+/** Clicks a control from the open form's bar, through the bar's menu where a phone keeps it. */
+export async function formBarControl(page: Page, testid: string) {
+  const menu = page.getByTestId("form-bar-menu");
+  if (await menu.isVisible()) await menu.click();
+  await page.getByTestId(testid).click();
+}
+
+/** Ticks the item form's "Show all fields", then closes the bar's menu if it was in one. */
+export async function showAllFields(page: Page) {
+  await formBarControl(page, "show-all-fields");
+  if (await page.getByTestId("form-bar-menu").isVisible())
+    await page.keyboard.press("Escape");
+}

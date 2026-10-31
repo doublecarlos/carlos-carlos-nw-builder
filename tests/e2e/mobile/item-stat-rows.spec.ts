@@ -5,6 +5,7 @@ import { test, expect, type Locator, type Page } from "@playwright/test";
 import { pickerScreen } from "../support/app";
 import { confirmDialog, openNewLayer } from "../support/nav";
 import { MIN_SUPPORTED_WIDTH } from "../support/viewport";
+import { showAllFields } from "../support/layerEditor";
 
 const form = (page: Page) => page.getByTestId("layer-form-pane");
 /** Filled rows only: the empty state reuses the row class for its lone Add. */
@@ -16,7 +17,7 @@ const dynamicRows = (page: Page) =>
 async function openNewItem(page: Page) {
   await openNewLayer(page);
   await page.getByTestId("new-item").tap();
-  await page.getByTestId("show-all-fields").tap();
+  await showAllFields(page);
 }
 
 async function box(target: Locator) {

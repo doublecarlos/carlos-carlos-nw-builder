@@ -23,24 +23,18 @@ import * as compare from "../../stores/compare";
 import * as buildEditor from "../../stores/buildEditor";
 import * as engine from "../../stores/resolved";
 import type { PreviewInputs } from "../../lib/candidate-preview";
+import { isQuick, type QuickSlot } from "../../lib/quick-summary";
 import type {
   Build,
   BuildParameterSlot,
   Item,
   ItemPickerSlot,
-  Slot,
 } from "../../types";
 
 const props = defineProps<{ build: Build }>();
 const build = computed(() => props.build);
 const compareBuild = compare.compareBuild;
 const highlightDiff = () => build.value.compare.highlight;
-
-type QuickSlot = BuildParameterSlot | ItemPickerSlot;
-
-const isQuick = (slot: Slot): slot is QuickSlot =>
-  (slot.type === "build_parameter" || slot.type === "item_picker") &&
-  !!slot.quick;
 
 /** Off the composed catalog, not the shipped file: a layer can add, edit or remove a
  * `quick` slot, and this strip has to show what the build editor is actually resolving. */

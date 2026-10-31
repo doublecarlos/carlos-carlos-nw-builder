@@ -14,6 +14,7 @@ import {
   wrappedButtons,
 } from "../support/formWrap";
 import { importTestCatalog } from "../support/testCatalog";
+import { showAllFields } from "../support/layerEditor";
 
 const HEAD_ITEM = "Test Head With A Long Enough Name To Wrap";
 
@@ -164,9 +165,10 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       await page.getByTestId("new-bonus").tap();
       await page.getByTestId("bonus-name-input").fill("ZZZ Phone Bonus");
       await page.getByRole("button", { name: "Save bonus" }).tap();
+      // The validation list belongs to the list view, with the layer header.
+      await page.getByTestId("layer-form-back").tap();
       await expect(page.getByTestId("validation-drawer")).toBeVisible();
       expect(await offenders(page.locator("body")), "validation").toEqual([]);
-      await page.getByTestId("layer-form-back").tap();
       expect(await offenders(pane), "bonus list").toEqual([]);
 
       await page.getByTestId("tab-slots").tap();
@@ -174,10 +176,10 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       expect(await offenders(pane), "slot outline").toEqual([]);
     });
 
-    test("item form with stats, and its tooltip import", async ({ page }) => {
+    test("item form with stats", async ({ page }) => {
       await openNewLayer(page);
       await page.getByTestId("new-item").tap();
-      await page.getByTestId("show-all-fields").tap();
+      await showAllFields(page);
       for (const add of [
         "Add stat",
         "Add dynamic stat",
@@ -191,12 +193,6 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
           .tap();
       await form(page).getByTestId("add-inline-repetition").tap();
       expect(await offenders(form(page)), "item").toEqual([]);
-
-      await page.getByTestId("tooltip-import-toggle").tap();
-      expect(
-        await offenders(page.getByTestId("tooltip-import")),
-        "tooltip import",
-      ).toEqual([]);
     });
 
     test("bonus grant payloads", async ({ page }) => {

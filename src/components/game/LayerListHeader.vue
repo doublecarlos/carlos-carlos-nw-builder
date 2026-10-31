@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // The search, status filter and create strip above the layer editor's left pane, shared by
 // the flat entry list and the Slots tab's outline. The `create` slot holds each one's button.
-import BaseButton from "../ui/BaseButton.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
+import IconButton from "../ui/IconButton.vue";
 import { FilterX } from "@lucide/vue";
 
 defineProps<{
@@ -21,30 +21,32 @@ function clearFilters() {
 </script>
 
 <template>
-  <div>
-    <div class="flex items-center gap-1 p-2">
+  <!-- Two rows: search with the one-click reset beside it, then the status filter with the
+       create button, so the list starts high even in a narrow rail or on a phone. -->
+  <div class="flex flex-col gap-1.5 border-b border-line p-2">
+    <div class="flex items-center gap-1">
       <BaseInput
         v-model="query"
         type="search"
         class="editor-search w-full min-w-0"
         :placeholder="searchPlaceholder"
       />
+      <IconButton
+        class="flex-none"
+        title="Clear filters"
+        :disabled="!(query || statusFilter !== 'all')"
+        data-testid="layer-list-clear-filters"
+        @click="clearFilters"
+        ><FilterX
+      /></IconButton>
     </div>
-    <div class="flex flex-none gap-1.5 px-2">
+    <div class="flex items-center gap-1.5">
       <ComboBox
-        class="w-full"
+        class="min-w-0 flex-1"
         :model-value="statusFilter"
         :options="statusFilterOptions"
         @update:model-value="(v) => (statusFilter = v)"
       />
-    </div>
-    <div class="flex flex-none gap-1.5 border-b border-line px-2 py-2">
-      <BaseButton
-        :disabled="!(query || statusFilter !== 'all')"
-        class="flex-1 text-center justify-center"
-        @click="clearFilters"
-        ><FilterX />clear filters</BaseButton
-      >
       <slot name="create" />
     </div>
   </div>

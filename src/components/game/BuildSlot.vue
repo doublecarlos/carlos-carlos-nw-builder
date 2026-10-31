@@ -17,6 +17,7 @@
 // Purely presentational for anything that needs cross-row coordination (hover card) -- those
 // stay owned by BuildEditor.vue and arrive as props/emits.
 import ItemPickerRow from "./ItemPickerRow.vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import NestGuide from "./NestGuide.vue";
 import BuildParameterRow from "./BuildParameterRow.vue";
 import PointAssignmentRow from "./PointAssignmentRow.vue";
@@ -246,17 +247,20 @@ useCursorRowKeys(anchor, {
       >
 
       <!-- Its own accessible name: the row label beside it belongs to the picker. -->
-      <input
+      <BaseTooltip
         v-if="toggleableSlot"
-        type="checkbox"
-        class="shrink-0 cursor-pointer"
-        :class="!hasChoice && 'invisible'"
-        :checked="!disabled"
-        :aria-label="`Count ${labelOverride || slotDef.label} in this build`"
-        :title="`Count ${labelOverride || slotDef.label} in this build`"
-        :data-testid="'slot-toggle:' + slotDef.id"
-        @change="onToggle"
-      />
+        :text="`Count ${labelOverride || slotDef.label} in this build`"
+      >
+        <input
+          type="checkbox"
+          class="shrink-0 cursor-pointer"
+          :class="!hasChoice && 'invisible'"
+          :checked="!disabled"
+          :aria-label="`Count ${labelOverride || slotDef.label} in this build`"
+          :data-testid="'slot-toggle:' + slotDef.id"
+          @change="onToggle"
+        />
+      </BaseTooltip>
       <IconButton
         v-if="showInfo"
         class="shrink-0"

@@ -334,7 +334,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         >
           <template #trigger="{ toggle, attrs }">
             <BaseButton
-              class="new-slot-entry flex-1 text-center justify-center"
+              class="new-slot-entry flex-none justify-center"
               variant="primary"
               data-testid="new-slot-entry"
               v-bind="attrs"

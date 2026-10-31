@@ -10,7 +10,7 @@ export function useRovingFocus(options: {
   /** Selector for the focusable items inside `container`. */
   itemSelector: string;
   /** Arrow/Home/End move focus among items. Off for a panel whose own control already owns
-   *  Up/Down, e.g. SectionCopyMenu's combobox. Tab and Escape still dismiss either way. */
+   *  Up/Down, e.g. a combobox inside the panel. Tab and Escape still dismiss either way. */
   roving?: boolean;
   /** Called on Tab, Escape, or when focus should leave the container. */
   onDismiss: () => void;

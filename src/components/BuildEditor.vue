@@ -28,6 +28,8 @@ import CheckMenu from "./ui/CheckMenu.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
 import IconButton from "./ui/IconButton.vue";
 import QuickOptions from "./game/QuickOptions.vue";
+import QuickOptionsBand from "./game/QuickOptionsBand.vue";
+import BaseTooltip from "./ui/BaseTooltip.vue";
 import EditorActionsMenu from "./game/EditorActionsMenu.vue";
 import BaseSheet from "./ui/BaseSheet.vue";
 import {
@@ -780,11 +782,46 @@ function rowDataFor(slotId: string): SlotRowData {
 }
 
 function toggle(sectionId: string) {
+  if (expanded[sectionId] && !anyFilterActive.value) {
+    keepCollapsedInPlace(sectionEl(sectionId));
+  }
   expanded[sectionId] = !expanded[sectionId];
 }
 
 function setAll(open: boolean) {
+  if (!open && !anyFilterActive.value) keepCollapsedInPlace(stuckSectionEl());
   for (const section of db.value.sections) expanded[section.id] = open;
+}
+
+/** The section whose header is currently stuck at the top of the editor, if any. */
+function stuckSectionEl() {
+  const container = buildScrollEl.value;
+  if (!container) return null;
+  const top = container.getBoundingClientRect().top + container.clientTop;
+  for (const el of container.querySelectorAll<HTMLElement>(
+    "[data-section-id]",
+  )) {
+    const rect = el.getBoundingClientRect();
+    if (rect.top < top && rect.bottom > top) return el;
+  }
+  return null;
+}
+
+/** Collapsing a section whose header is stuck removes rows above the viewport, and the same
+ *  scrollTop would then land midway into a later section. Once collapsed, the section's top
+ *  is put back at the editor's top so the next section follows right below it. */
+function keepCollapsedInPlace(el: HTMLElement | null | undefined) {
+  const container = buildScrollEl.value;
+  if (!el || !container) return;
+  const offsetFromTop = () =>
+    el.getBoundingClientRect().top -
+    container.getBoundingClientRect().top -
+    container.clientTop;
+  if (offsetFromTop() >= 0) return;
+  cancelJumpScroll();
+  void nextTick(() => {
+    container.scrollTop += offsetFromTop();
+  });
 }
 
 /** What a brand-new item would need to become a candidate for this row: its `filter`, or its
@@ -829,10 +866,9 @@ function onCreatePreset(sectionId: string, sectionLabel: string) {
   selection.selectLayer(layer.id);
 }
 
-/** "Update from current" on one preset in a section's menu: re-snapshots the section into that
- *  preset's identity and writes it back to the layer that defines it (or, for a shipped preset,
- *  an overlay edit over it). PresetMenu confirms before this fires -- see its own comment on
- *  why an overwrite here needs one. */
+/** "Overwrite a preset" in a section's menu: re-snapshots the section into that preset's
+ *  identity and writes it back to the layer that defines it (or, for a shipped preset, an
+ *  overlay edit over it). `layers.updatePreset` posts the undo notice. */
 function onUpdatePreset(preset: SectionPreset) {
   layers.updatePreset(buildEditor.presetUpdatedFromSection(preset));
 }
@@ -1156,33 +1192,50 @@ watch(
           variant="warn"
           class="inline-flex items-center gap-2"
           data-testid="retired-items"
-          :title="retiredTitle"
         >
-          {{ buildEditor.retired.value.length }} retired item{{
-            buildEditor.retired.value.length === 1 ? "" : "s"
-          }}
-          <button
+          <!-- The list of what is retired lives only in the tooltip, so a tap shows it too. -->
+          <BaseTooltip :text="retiredTitle" tappable>
+            <span tabindex="0" data-testid="retired-items-count"
+              >{{ buildEditor.retired.value.length }} retired item{{
+                buildEditor.retired.value.length === 1 ? "" : "s"
+              }}</span
+            >
+          </BaseTooltip>
+          <!-- Touch has no hover to explain an icon, so these name themselves there. -->
+          <BaseTooltip
             v-if="!slotFilter.retired.value"
-            type="button"
-            class="flex cursor-pointer"
-            title="Show only the slots holding them"
-            aria-label="Show only the slots holding retired items"
-            data-testid="retired-items-show"
-            @click="slotFilter.retired.value = true"
+            text="Show only the slots holding them"
           >
-            <Crosshair class="h-3.5 w-3.5" />
-          </button>
-          <button
+            <button
+              type="button"
+              class="flex cursor-pointer items-center gap-1"
+              aria-label="Show only the slots holding retired items"
+              data-testid="retired-items-show"
+              @click="slotFilter.retired.value = true"
+            >
+              <Crosshair class="h-3.5 w-3.5" /><span
+                class="hidden pointer-coarse:inline"
+                >Show</span
+              >
+            </button>
+          </BaseTooltip>
+          <BaseTooltip
             v-if="retiredReplaceable"
-            type="button"
-            class="flex cursor-pointer"
-            title="Replace every retired item that has a replacement"
-            aria-label="Replace every retired item that has a replacement"
-            data-testid="retired-items-apply"
-            @click="buildEditor.applyRetiredItems()"
+            text="Replace every retired item that has a replacement"
           >
-            <Replace class="h-3.5 w-3.5" />
-          </button>
+            <button
+              type="button"
+              class="flex cursor-pointer items-center gap-1"
+              aria-label="Replace every retired item that has a replacement"
+              data-testid="retired-items-apply"
+              @click="buildEditor.applyRetiredItems()"
+            >
+              <Replace class="h-3.5 w-3.5" /><span
+                class="hidden pointer-coarse:inline"
+                >Replace all</span
+              >
+            </button>
+          </BaseTooltip>
         </BaseBadge>
         <!-- Filters set from elsewhere (the Bonuses tab, the hover card, the compare menu,
              the retired notice) have no control here, so each says it is on and how to drop
@@ -1267,9 +1320,9 @@ watch(
       data-testid="editor-column"
       @scroll="onBuildScroll"
     >
-      <QuickOptions
+      <QuickOptionsBand
         v-if="viewport.isPhone.value"
-        class="mx-3.5 mt-3.5"
+        class="mx-3.5 mt-3.5 w-[calc(100%-1.75rem)] rounded-md border border-line"
         :build="build"
       />
       <!-- The list's padding lives here rather than on the scroll container: a scroll

@@ -132,7 +132,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
     >
       <template #create>
         <BaseButton
-          class="flex-1 text-center justify-center"
+          class="flex-none justify-center"
           variant="primary"
           :data-testid="chrome.createTestId"
           @click="emit('create')"

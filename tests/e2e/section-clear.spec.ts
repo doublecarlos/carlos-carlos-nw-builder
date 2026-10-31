@@ -1,22 +1,21 @@
-// End-to-end coverage for a section header's "clear section" control
-// (SectionClearButton.vue), which resets every slot in the section and offers an undo notice
-// rather than asking first.
+// End-to-end coverage for a section's "Reset to defaults" (SectionActionsMenu.vue), which
+// resets every slot in the section and offers an undo notice rather than asking first.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
-  headerRow,
   ensureSectionExpanded,
   slotRow,
   pickerInput,
   chooseClass,
   className,
   undoButton,
+  openSectionActions,
 } from "./support/app";
 
-function clearButton(page: Page, sectionId: string) {
-  return headerRow(page, sectionId)
-    .locator("..")
-    .getByRole("button", { name: "Clear", exact: true });
+/** Opens the section's actions menu and returns its reset entry. */
+async function clearButton(page: Page, sectionId: string) {
+  await openSectionActions(page, sectionId);
+  return page.getByTestId(`clear-section-${sectionId}`);
 }
 
 test("clearing a section acts at once and offers an undo notice", async ({
@@ -29,7 +28,7 @@ test("clearing a section acts at once and offers an undo notice", async ({
     className("wizard"),
   );
 
-  await clearButton(page, "options").click();
+  await (await clearButton(page, "options")).click();
   // Empty, not "- none -": class is an item_picker, and a cleared picker shows
   // nothing rather than a named empty option.
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
@@ -48,7 +47,7 @@ test("clearing a section is a single undo step", async ({ page }) => {
   await ensureSectionExpanded(page, "options");
   await chooseClass(page, "wizard");
 
-  await clearButton(page, "options").click();
+  await (await clearButton(page, "options")).click();
   // Empty, not "- none -": class is an item_picker, and a cleared picker shows
   // nothing rather than a named empty option.
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");

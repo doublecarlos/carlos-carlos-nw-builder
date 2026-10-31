@@ -5,7 +5,7 @@ import {
   openBuilder,
   chooseCombo,
   chooseItem,
-  headerRow,
+  openSectionActions,
   pickerInput,
   slotRow,
 } from "./support/app";
@@ -187,10 +187,8 @@ test("an item picker's default seeds a new build and comes back on clear", async
   // Clearing the section resets to that same default rather than to nothing.
   await chooseItem(page, "options.spare-ring", OTHER_RING);
   await expect(pickerInput(row)).toHaveValue(OTHER_RING);
-  await headerRow(page, "options")
-    .locator("..")
-    .getByRole("button", { name: "Clear", exact: true })
-    .click();
+  await openSectionActions(page, "options");
+  await page.getByTestId("clear-section-options").click();
   await expect(pickerInput(row)).toHaveValue(RING);
 });
 

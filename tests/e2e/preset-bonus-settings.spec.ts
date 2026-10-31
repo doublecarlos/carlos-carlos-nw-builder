@@ -5,7 +5,6 @@ import { test, expect } from "@playwright/test";
 import {
   confirmImport,
   ensureSectionExpanded,
-  headerRow,
   importText,
   openBuilder,
   slotRow,
@@ -65,9 +64,7 @@ test("a preset snapshots, edits and applies a carried bonus's setting", async ({
   await confirmImport(page);
 
   await ensureSectionExpanded(page, "gear");
-  const presetMenu = headerRow(page, "gear")
-    .locator("..")
-    .locator(".section-preset-btn");
+  const presetMenu = page.getByTestId("section-actions-gear");
   await presetMenu.click();
   await page.getByTestId("preset-create-from-current").click();
 
@@ -88,7 +85,7 @@ test("a preset snapshots, edits and applies a carried bonus's setting", async ({
 
   await presetMenu.click();
   await page
-    .locator(".preset-popover")
+    .getByTestId("section-actions-panel")
     .getByRole("button", { name: "Bonus snapshot", exact: true })
     .click();
   await expect(input).toHaveValue("150");
@@ -102,9 +99,7 @@ test("a preset snapshots, edits and applies a carried bonus's input", async ({
   await confirmImport(page);
 
   await ensureSectionExpanded(page, "gear");
-  const presetMenu = headerRow(page, "gear")
-    .locator("..")
-    .locator(".section-preset-btn");
+  const presetMenu = page.getByTestId("section-actions-gear");
   await presetMenu.click();
   await page.getByTestId("preset-create-from-current").click();
 
@@ -127,7 +122,7 @@ test("a preset snapshots, edits and applies a carried bonus's input", async ({
 
   await presetMenu.click();
   await page
-    .locator(".preset-popover")
+    .getByTestId("section-actions-panel")
     .getByRole("button", { name: "Input snapshot", exact: true })
     .click();
   await expect(stepper).toHaveValue("4");
