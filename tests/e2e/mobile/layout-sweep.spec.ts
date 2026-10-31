@@ -284,9 +284,6 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
     });
 
     test("stable browser bonuses", async ({ page }) => {
-      // Known bug: each row's "Use mount" button shrinks and wraps its label. Drop this once
-      // that button keeps its width.
-      test.fail();
       await openStableBrowser(page);
       await page.getByTestId("stable-tab-bonus").click();
       expect(
