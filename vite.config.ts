@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 import { DEV_PORT } from "./ports.ts";
 import { APP_DEFINES } from "./build-info.ts";
 import { writebackPlugin } from "./scripts/writeback.ts";
+import { iconPlugin } from "./scripts/icons.ts";
 
 const require_ = createRequire(import.meta.url);
 
@@ -70,7 +71,13 @@ const tesseractAssets = (): Plugin => {
 };
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss(), tesseractAssets(), writebackPlugin()],
+  plugins: [
+    iconPlugin(),
+    vue({ features: { vapor: true } }),
+    tailwindcss(),
+    tesseractAssets(),
+    writebackPlugin(),
+  ],
   define: APP_DEFINES,
   server: {
     port: DEV_PORT,

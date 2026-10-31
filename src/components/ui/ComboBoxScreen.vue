@@ -9,7 +9,7 @@
 // focus, and the keyboard, only once tapped.
 import { useTemplateRef, computed } from "vue";
 import { useScrollLock } from "@vueuse/core";
-import { ArrowLeft } from "@lucide/vue";
+import ArrowLeft from "virtual:icon/arrow-left.vue";
 import { trapTab } from "../../lib/focus-trap";
 import { useVisualViewport } from "../../composables/useVisualViewport";
 import ComboBoxMenu from "./ComboBoxMenu.vue";

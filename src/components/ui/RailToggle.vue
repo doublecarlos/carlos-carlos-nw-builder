@@ -5,7 +5,8 @@
 // hide something is where they look to get it back -- rather than appearing in one place when
 // open and somewhere else when closed.
 import { computed } from "vue";
-import { ChevronLeft, ChevronRight } from "@lucide/vue";
+import ChevronLeft from "virtual:icon/chevron-left.vue";
+import ChevronRight from "virtual:icon/chevron-right.vue";
 import BaseTooltip from "./BaseTooltip.vue";
 
 // `inheritAttrs: false` with an explicit `v-bind="$attrs"`: this component's root is a

@@ -2,7 +2,7 @@
 // Renders whatever `stores/confirm` has pending. App.vue mounts exactly one.
 // The go-ahead button takes focus on open so Delete then Enter completes a keyboard delete.
 import { nextTick, ref, useTemplateRef, watch } from "vue";
-import { TriangleAlert } from "@lucide/vue";
+import TriangleAlert from "virtual:icon/triangle-alert.vue";
 import BaseModal from "./ui/BaseModal.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";

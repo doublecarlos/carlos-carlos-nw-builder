@@ -4,7 +4,7 @@
 import BaseInput from "../ui/BaseInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
-import { FilterX } from "@lucide/vue";
+import FilterX from "virtual:icon/funnel-x.vue";
 
 defineProps<{
   searchPlaceholder: string;

@@ -8,16 +8,14 @@
 // preset lands on that layer's undo stack instead (see `layers.updatePreset`), which posts an
 // undo notice.
 import { computed, nextTick, ref, useTemplateRef } from "vue";
-import {
-  ArrowLeft,
-  Copy,
-  EllipsisVertical,
-  Folder,
-  LayoutTemplate,
-  Plus,
-  RotateCcw,
-  Save,
-} from "@lucide/vue";
+import ArrowLeft from "virtual:icon/arrow-left.vue";
+import Copy from "virtual:icon/copy.vue";
+import EllipsisVertical from "virtual:icon/ellipsis-vertical.vue";
+import Folder from "virtual:icon/folder.vue";
+import LayoutTemplate from "virtual:icon/layout-template.vue";
+import Plus from "virtual:icon/plus.vue";
+import RotateCcw from "virtual:icon/rotate-ccw.vue";
+import Save from "virtual:icon/save.vue";
 import BaseMenu from "../ui/BaseMenu.vue";
 import BaseMenuItem from "../ui/BaseMenuItem.vue";
 import IconButton from "../ui/IconButton.vue";

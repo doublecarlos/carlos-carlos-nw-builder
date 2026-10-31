@@ -4,7 +4,8 @@
 // the accessible name stays a plain "Undo" / "Redo", so a query by name finds the same button
 // whatever sits on top of the stack.
 import { computed } from "vue";
-import { Redo2, Undo2 } from "@lucide/vue";
+import Redo2 from "virtual:icon/redo-2.vue";
+import Undo2 from "virtual:icon/undo-2.vue";
 import IconButton from "./IconButton.vue";
 import { coarsePointer } from "../../stores/viewport";
 

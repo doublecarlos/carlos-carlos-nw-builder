@@ -9,7 +9,8 @@
 // and its controls line up with the next row's. From `md` up the wrappers are `display:
 // contents`, leaving the caller's own `rowClass` layout untouched.
 import IconButton from "./IconButton.vue";
-import { Plus, Trash } from "@lucide/vue";
+import Plus from "virtual:icon/plus.vue";
+import Trash from "virtual:icon/trash.vue";
 
 defineProps<{
   rows: T[];

@@ -8,7 +8,7 @@
 // the two builds agree, so the panel only grows where there is something to see.
 import IconButton from "../ui/IconButton.vue";
 import CompareLine from "../ui/CompareLine.vue";
-import { CircleAlert } from "@lucide/vue";
+import CircleAlert from "virtual:icon/circle-alert.vue";
 
 defineProps<{
   rows: {

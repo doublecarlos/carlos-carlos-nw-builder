@@ -4,3 +4,9 @@ declare const __APP_COMMIT__: string;
 declare const __APP_REPO_URL__: string;
 declare const __APP_ISSUES_URL__: string;
 declare const __APP_HOMEPAGE_URL__: string;
+
+declare module "virtual:icon/*.vue" {
+  import type { Component } from "vue";
+  const icon: Component;
+  export default icon;
+}

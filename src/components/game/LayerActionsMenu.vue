@@ -5,14 +5,12 @@
 // History steps leave the menu open, so several undos take one visit. The others close it:
 // each opens a window or a file picker of its own.
 import { computed, useTemplateRef, type Component } from "vue";
-import {
-  Download,
-  EllipsisVertical,
-  Redo2,
-  RotateCcw,
-  Undo2,
-  Upload,
-} from "@lucide/vue";
+import Download from "virtual:icon/download.vue";
+import EllipsisVertical from "virtual:icon/ellipsis-vertical.vue";
+import Redo2 from "virtual:icon/redo-2.vue";
+import RotateCcw from "virtual:icon/rotate-ccw.vue";
+import Undo2 from "virtual:icon/undo-2.vue";
+import Upload from "virtual:icon/upload.vue";
 import BaseMenu from "../ui/BaseMenu.vue";
 import BaseMenuItem from "../ui/BaseMenuItem.vue";
 import IconButton from "../ui/IconButton.vue";

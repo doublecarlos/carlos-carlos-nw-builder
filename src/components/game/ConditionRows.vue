@@ -19,16 +19,14 @@ import BaseButton from "../ui/BaseButton.vue";
 import BaseMenu from "../ui/BaseMenu.vue";
 import BaseMenuItem from "../ui/BaseMenuItem.vue";
 import ConditionLeafFields from "./ConditionLeafFields.vue";
-import {
-  Ampersand,
-  ChevronRight,
-  CircleAlert,
-  CirclePlus,
-  Copy,
-  Plus,
-  Split,
-  Trash,
-} from "@lucide/vue";
+import Ampersand from "virtual:icon/ampersand.vue";
+import ChevronRight from "virtual:icon/chevron-right.vue";
+import CircleAlert from "virtual:icon/circle-alert.vue";
+import CirclePlus from "virtual:icon/circle-plus.vue";
+import Copy from "virtual:icon/copy.vue";
+import Plus from "virtual:icon/plus.vue";
+import Split from "virtual:icon/split.vue";
+import Trash from "virtual:icon/trash.vue";
 import {
   LEAF_TYPES,
   MAX_DEPTH,

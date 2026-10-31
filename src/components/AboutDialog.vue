@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BaseModal from "./ui/BaseModal.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
-import { ExternalLink } from "@lucide/vue";
+import ExternalLink from "virtual:icon/external-link.vue";
 import {
   APP_COMMIT,
   APP_NAME,

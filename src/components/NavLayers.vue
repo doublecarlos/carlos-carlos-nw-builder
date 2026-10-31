@@ -5,7 +5,7 @@ import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseInput from "./ui/BaseInput.vue";
-import { Plus } from "@lucide/vue";
+import Plus from "virtual:icon/plus.vue";
 
 import NavRow from "./NavRow.vue";
 import DropIndicator from "./ui/DropIndicator.vue";

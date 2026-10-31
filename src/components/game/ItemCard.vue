@@ -41,7 +41,11 @@ import type {
   ResolvedScaler,
   SupplyNeed,
 } from "../../types";
-import { Crosshair, Sigma, SquarePen, Table, TriangleAlert } from "@lucide/vue";
+import Crosshair from "virtual:icon/crosshair.vue";
+import Sigma from "virtual:icon/sigma.vue";
+import SquarePen from "virtual:icon/square-pen.vue";
+import Table from "virtual:icon/table.vue";
+import TriangleAlert from "virtual:icon/triangle-alert.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";

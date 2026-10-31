@@ -4,16 +4,14 @@
 // NavBuilds / NavLayers / NavTrash.
 import { nextTick, ref, useTemplateRef, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
-import {
-  Copy,
-  Download,
-  FolderInput,
-  FolderOutput,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Trash,
-} from "@lucide/vue";
+import Copy from "virtual:icon/copy.vue";
+import Download from "virtual:icon/download.vue";
+import FolderInput from "virtual:icon/folder-input.vue";
+import FolderOutput from "virtual:icon/folder-output.vue";
+import Pencil from "virtual:icon/pencil.vue";
+import Plus from "virtual:icon/plus.vue";
+import RotateCcw from "virtual:icon/rotate-ccw.vue";
+import Trash from "virtual:icon/trash.vue";
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
 import NavTrash from "./NavTrash.vue";

@@ -2,7 +2,7 @@
 // A text filter with a clear button anchored inside the field, shown once there's something to
 // clear. A wrapper around BaseInput rather than a variant of it: the clear affordance is layout
 // (a positioned button taking the field's right padding), not a look BaseInput should carry.
-import { X } from "@lucide/vue";
+import X from "virtual:icon/x.vue";
 import BaseInput from "./BaseInput.vue";
 import IconButton from "./IconButton.vue";
 

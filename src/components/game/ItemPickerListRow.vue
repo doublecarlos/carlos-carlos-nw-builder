@@ -2,7 +2,7 @@
 // The "add another row" row of an `item_picker_list` slot, rendered after the rows themselves.
 // A cursor row like any other -- anchor, arrow keys, Enter to add -- so the keyboard reaches
 // the button without a Tab stop of its own.
-import { Plus } from "@lucide/vue";
+import Plus from "virtual:icon/plus.vue";
 import { useTemplateRef } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";

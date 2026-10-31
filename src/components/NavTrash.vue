@@ -2,12 +2,10 @@
 // Recently-deleted section inside the left sidebar. Pure presentation.
 import NavContextMenu from "./NavContextMenu.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
-import {
-  ChevronDown,
-  ChevronRight,
-  EllipsisVertical,
-  RotateCcw,
-} from "@lucide/vue";
+import ChevronDown from "virtual:icon/chevron-down.vue";
+import ChevronRight from "virtual:icon/chevron-right.vue";
+import EllipsisVertical from "virtual:icon/ellipsis-vertical.vue";
+import RotateCcw from "virtual:icon/rotate-ccw.vue";
 import type { Component } from "vue";
 import type { TrashEntry } from "../types";
 

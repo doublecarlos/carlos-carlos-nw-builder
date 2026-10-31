@@ -11,7 +11,7 @@ import BuildComboBox from "./game/BuildComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseLink from "./ui/BaseLink.vue";
 import IconButton from "./ui/IconButton.vue";
-import { CircleAlert } from "@lucide/vue";
+import CircleAlert from "virtual:icon/circle-alert.vue";
 import StatPanelSourceCard from "./game/StatPanelSourceCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BasePanel from "./ui/BasePanel.vue";

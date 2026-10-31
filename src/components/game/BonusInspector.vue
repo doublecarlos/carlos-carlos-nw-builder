@@ -27,7 +27,7 @@ import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
 import IconButton from "../ui/IconButton.vue";
 import StatRows from "./StatRows.vue";
-import { Crosshair } from "@lucide/vue";
+import Crosshair from "virtual:icon/crosshair.vue";
 import type {
   BonusSource,
   EvaluatedBonus,

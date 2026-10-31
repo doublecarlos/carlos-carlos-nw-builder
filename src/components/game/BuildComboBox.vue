@@ -14,7 +14,7 @@
 // horizontally, and a menu anchored to grow leftward has its text -- which sits at its left
 // edge -- cut off by the rail rather than merely narrowed.
 import { computed } from "vue";
-import { Folder } from "@lucide/vue";
+import Folder from "virtual:icon/folder.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import type { BuildOption } from "../../types";
 

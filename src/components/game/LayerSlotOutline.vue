@@ -8,13 +8,11 @@
 // show on the selected row only, to keep the narrow rail readable.
 import { computed, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
-import {
-  ArrowDown,
-  ArrowUp,
-  CirclePlus,
-  RotateCcw,
-  SquarePlus,
-} from "@lucide/vue";
+import ArrowDown from "virtual:icon/arrow-down.vue";
+import ArrowUp from "virtual:icon/arrow-up.vue";
+import CirclePlus from "virtual:icon/circle-plus.vue";
+import RotateCcw from "virtual:icon/rotate-ccw.vue";
+import SquarePlus from "virtual:icon/square-plus.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseMenu from "../ui/BaseMenu.vue";

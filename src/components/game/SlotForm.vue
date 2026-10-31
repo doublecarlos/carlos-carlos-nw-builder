@@ -5,7 +5,9 @@
 // `TYPE_FIELDS[draft.type]` decides which blocks render. `type` is only editable on a new draft,
 // since build data stored under a saved slot depends on its type.
 import { computed } from "vue";
-import { FileJson, Plus, Trash } from "@lucide/vue";
+import FileJson from "virtual:icon/file-braces.vue";
+import Plus from "virtual:icon/plus.vue";
+import Trash from "virtual:icon/trash.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import ConditionRows from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";

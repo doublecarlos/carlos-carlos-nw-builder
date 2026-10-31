@@ -12,7 +12,11 @@ import BaseInput from "./ui/BaseInput.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
 import NavRow from "./NavRow.vue";
 import DropIndicator from "./ui/DropIndicator.vue";
-import { FileSliders, Folder, FolderPlus, FolderOpen, Plus } from "@lucide/vue";
+import FileSliders from "virtual:icon/file-sliders.vue";
+import Folder from "virtual:icon/folder.vue";
+import FolderPlus from "virtual:icon/folder-plus.vue";
+import FolderOpen from "virtual:icon/folder-open.vue";
+import Plus from "virtual:icon/plus.vue";
 
 import { matchesQuery } from "../lib/text-filter";
 import * as navHistory from "../stores/navHistory";

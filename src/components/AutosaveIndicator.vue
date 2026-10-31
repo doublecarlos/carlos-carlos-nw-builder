@@ -2,7 +2,8 @@
 // Reads `storageFailed`, not just the happy path: the toast announcing a failed write clears
 // itself after a few seconds, and this line is what is left saying so afterwards.
 import { computed } from "vue";
-import { HardDrive, TriangleAlert } from "@lucide/vue";
+import HardDrive from "virtual:icon/hard-drive.vue";
+import TriangleAlert from "virtual:icon/triangle-alert.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import { storageFailed } from "../stores/notice";
 

@@ -20,18 +20,16 @@ import ImportPicker from "./ImportPicker.vue";
 import ShortcutHelp from "./ShortcutHelp.vue";
 import StableBrowser from "./game/StableBrowser.vue";
 import NavContextMenu from "./NavContextMenu.vue";
-import {
-  Download,
-  EllipsisVertical,
-  Gamepad2,
-  Info,
-  Keyboard,
-  Menu,
-  Search,
-  Table,
-  Upload,
-  Wrench,
-} from "@lucide/vue";
+import Download from "virtual:icon/download.vue";
+import EllipsisVertical from "virtual:icon/ellipsis-vertical.vue";
+import Gamepad2 from "virtual:icon/gamepad-2.vue";
+import Info from "virtual:icon/info.vue";
+import Keyboard from "virtual:icon/keyboard.vue";
+import Menu from "virtual:icon/menu.vue";
+import Search from "virtual:icon/search.vue";
+import Table from "virtual:icon/table.vue";
+import Upload from "virtual:icon/upload.vue";
+import Wrench from "virtual:icon/wrench.vue";
 import { importFileText, pending as pendingImport } from "../stores/importFile";
 import { notice, noticeAction, showNotice } from "../stores/notice";
 import {

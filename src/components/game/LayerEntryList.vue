@@ -5,7 +5,8 @@
 // Owns the keyboard cursor; the parent owns what "select" does (routing, section state).
 import { computed } from "vue";
 import { onKeyStroke } from "@vueuse/core";
-import { CirclePlus, RotateCcw } from "@lucide/vue";
+import CirclePlus from "virtual:icon/circle-plus.vue";
+import RotateCcw from "virtual:icon/rotate-ccw.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";

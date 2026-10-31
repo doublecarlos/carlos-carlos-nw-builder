@@ -1,9 +1,10 @@
 import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 import { APP_DEFINES } from "./build-info.ts";
+import { iconPlugin } from "./scripts/icons.ts";
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [iconPlugin(), vue({ features: { vapor: true } })],
   define: APP_DEFINES,
   test: {
     environment: "node",

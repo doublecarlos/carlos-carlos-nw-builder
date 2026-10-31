@@ -2,7 +2,7 @@
 // Progress and failure of a screenshot paste, out of flow over whatever follows the field. A
 // control that grows a line while it works moves everything below it, and these work mid-edit.
 // Sits inside a `relative` wrapper around the field.
-import { LoaderCircle } from "@lucide/vue";
+import LoaderCircle from "virtual:icon/loader-circle.vue";
 
 defineProps<{ busy: boolean; error: string }>();
 </script>

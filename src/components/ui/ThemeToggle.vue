@@ -1,5 +1,7 @@
 <script lang="ts">
-import { Monitor, Moon, Sun } from "@lucide/vue";
+import Monitor from "virtual:icon/monitor.vue";
+import Moon from "virtual:icon/moon.vue";
+import Sun from "virtual:icon/sun.vue";
 
 /** How each preference is named and drawn, shared with AppHeader's overflow menu entry. */
 export const THEME_LABELS = {

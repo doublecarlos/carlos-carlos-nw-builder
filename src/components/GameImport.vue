@@ -3,7 +3,8 @@
 // pick which loadouts to import, and commit them as new builds. Three back-navigable steps;
 // almost all state lives in stores/gameImport.ts so this stays a thin renderer of it.
 import { computed, ref, useTemplateRef } from "vue";
-import { Copy, Upload } from "@lucide/vue";
+import Copy from "virtual:icon/copy.vue";
+import Upload from "virtual:icon/upload.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseInput from "./ui/BaseInput.vue";

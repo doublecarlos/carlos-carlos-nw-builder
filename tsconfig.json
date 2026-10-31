@@ -16,6 +16,7 @@
     "useDefineForClassFields": true,
     "types": ["vite/client", "node"]
   },
+  "vueCompilerOptions": { "vapor": true },
   "include": [
     "src/**/*",
     "tests/**/*.ts",

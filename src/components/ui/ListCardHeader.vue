@@ -11,15 +11,13 @@
 // `expanded` makes the card foldable: the chevron is the accessible toggle and a click on the
 // row's inert area toggles too.
 import { computed } from "vue";
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronRight,
-  CirclePlus,
-  Copy,
-  Trash,
-} from "@lucide/vue";
+import ArrowDown from "virtual:icon/arrow-down.vue";
+import ArrowUp from "virtual:icon/arrow-up.vue";
+import ChevronDown from "virtual:icon/chevron-down.vue";
+import ChevronRight from "virtual:icon/chevron-right.vue";
+import CirclePlus from "virtual:icon/circle-plus.vue";
+import Copy from "virtual:icon/copy.vue";
+import Trash from "virtual:icon/trash.vue";
 import DragHandle from "./DragHandle.vue";
 import IconButton from "./IconButton.vue";
 import type { DragHandleProps } from "../../composables/useDragAndDrop";

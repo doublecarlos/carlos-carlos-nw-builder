@@ -32,14 +32,12 @@ import QuickOptionsBand from "./game/QuickOptionsBand.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import EditorActionsMenu from "./game/EditorActionsMenu.vue";
 import BaseSheet from "./ui/BaseSheet.vue";
-import {
-  ChevronsDownUp,
-  ChevronsUpDown,
-  Crosshair,
-  Replace,
-  SlidersHorizontal,
-  FilterX,
-} from "@lucide/vue";
+import ChevronsDownUp from "virtual:icon/chevrons-down-up.vue";
+import ChevronsUpDown from "virtual:icon/chevrons-up-down.vue";
+import Crosshair from "virtual:icon/crosshair.vue";
+import Replace from "virtual:icon/replace.vue";
+import SlidersHorizontal from "virtual:icon/sliders-horizontal.vue";
+import FilterX from "virtual:icon/funnel-x.vue";
 import { slotCandidateContext, slotCandidateList } from "../data/db";
 import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";

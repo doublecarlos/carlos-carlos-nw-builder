@@ -3,7 +3,7 @@
 // picker) as the default slot, and the list's empty note while it has nothing. It sits after
 // the list because that is where a new entry lands. Used by an item's bonuses, a bonus's
 // grants, and a grant's tiers and variants.
-import { Plus } from "@lucide/vue";
+import Plus from "virtual:icon/plus.vue";
 import IconButton from "./IconButton.vue";
 
 withDefaults(

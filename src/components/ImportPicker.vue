@@ -3,7 +3,8 @@
 // Opens ready to take everything, with the Import button focused: Enter is the whole happy
 // path, however much is in the file.
 import { computed, onMounted, reactive, useTemplateRef } from "vue";
-import { Check, Folder } from "@lucide/vue";
+import Check from "virtual:icon/check.vue";
+import Folder from "virtual:icon/folder.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseModal from "./ui/BaseModal.vue";
 import ImportPickerRow from "./ImportPickerRow.vue";

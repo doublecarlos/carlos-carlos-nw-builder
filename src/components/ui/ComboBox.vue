@@ -62,7 +62,7 @@ import ComboBoxScreen from "./ComboBoxScreen.vue";
 import BaseButton from "./BaseButton.vue";
 import BaseSheet from "./BaseSheet.vue";
 import IconButton from "./IconButton.vue";
-import { Info } from "@lucide/vue";
+import Info from "virtual:icon/info.vue";
 
 const props = withDefaults(
   defineProps<{

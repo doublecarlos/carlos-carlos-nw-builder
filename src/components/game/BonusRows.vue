@@ -24,13 +24,11 @@ import {
   stepsProblem,
   stepsRangeWarning,
 } from "../../engine/formula";
-import {
-  ChevronsDownUp,
-  ChevronsUpDown,
-  FileJson,
-  Plus,
-  Trash,
-} from "@lucide/vue";
+import ChevronsDownUp from "virtual:icon/chevrons-down-up.vue";
+import ChevronsUpDown from "virtual:icon/chevrons-up-down.vue";
+import FileJson from "virtual:icon/file-braces.vue";
+import Plus from "virtual:icon/plus.vue";
+import Trash from "virtual:icon/trash.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";

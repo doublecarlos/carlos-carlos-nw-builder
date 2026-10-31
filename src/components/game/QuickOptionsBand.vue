@@ -3,7 +3,7 @@
 // sheet. The line never grows, so neither pane gives up room for it, and on the Stats pane the
 // numbers above the sheet follow each change.
 import { computed, ref } from "vue";
-import { SlidersHorizontal } from "@lucide/vue";
+import SlidersHorizontal from "virtual:icon/sliders-horizontal.vue";
 import BaseSheet from "../ui/BaseSheet.vue";
 import QuickOptions from "./QuickOptions.vue";
 import { getPath } from "../../lib/build-path";

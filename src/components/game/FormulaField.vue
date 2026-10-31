@@ -6,7 +6,7 @@
 // The vocabulary, the checks and the preview come from the bonus form's formula context
 // (useFormulaContext.ts). Outside one, only the text itself is checked.
 import { computed, ref, useTemplateRef } from "vue";
-import { Sigma } from "@lucide/vue";
+import Sigma from "virtual:icon/sigma.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import FormulaInput, { type FormulaInputIssue } from "../ui/FormulaInput.vue";

@@ -5,13 +5,11 @@
 // History steps leave the menu open, so several undos take one visit. Expanding or collapsing
 // closes it: the list under it has just changed.
 import { computed, useTemplateRef, type Component } from "vue";
-import {
-  ChevronsDownUp,
-  ChevronsUpDown,
-  EllipsisVertical,
-  Redo2,
-  Undo2,
-} from "@lucide/vue";
+import ChevronsDownUp from "virtual:icon/chevrons-down-up.vue";
+import ChevronsUpDown from "virtual:icon/chevrons-up-down.vue";
+import EllipsisVertical from "virtual:icon/ellipsis-vertical.vue";
+import Redo2 from "virtual:icon/redo-2.vue";
+import Undo2 from "virtual:icon/undo-2.vue";
 import BaseMenu from "../ui/BaseMenu.vue";
 import BaseMenuItem from "../ui/BaseMenuItem.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";

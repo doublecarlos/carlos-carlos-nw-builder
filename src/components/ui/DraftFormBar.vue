@@ -29,14 +29,12 @@ export interface FormBarAction {
 // the title, Save for a new entry, and a menu holding the actions with their labels, the
 // host's own actions and `#before-actions`. Host actions such as undo leave the menu open.
 import { computed, inject, ref } from "vue";
-import {
-  ChevronLeft,
-  Copy,
-  EllipsisVertical,
-  Save,
-  Trash,
-  Undo2,
-} from "@lucide/vue";
+import ChevronLeft from "virtual:icon/chevron-left.vue";
+import Copy from "virtual:icon/copy.vue";
+import EllipsisVertical from "virtual:icon/ellipsis-vertical.vue";
+import Save from "virtual:icon/save.vue";
+import Trash from "virtual:icon/trash.vue";
+import Undo2 from "virtual:icon/undo-2.vue";
 import BaseBadge from "./BaseBadge.vue";
 import BaseButton from "./BaseButton.vue";
 import BaseMenu from "./BaseMenu.vue";

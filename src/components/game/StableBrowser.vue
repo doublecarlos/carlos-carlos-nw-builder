@@ -15,13 +15,11 @@ import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
 import ClearableInput from "../ui/ClearableInput.vue";
 import DescriptionText from "../ui/DescriptionText.vue";
-import {
-  ChevronDown,
-  ChevronRight,
-  ChevronsDownUp,
-  ChevronsUpDown,
-  Plus,
-} from "@lucide/vue";
+import ChevronDown from "virtual:icon/chevron-down.vue";
+import ChevronRight from "virtual:icon/chevron-right.vue";
+import ChevronsDownUp from "virtual:icon/chevrons-down-up.vue";
+import ChevronsUpDown from "virtual:icon/chevrons-up-down.vue";
+import Plus from "virtual:icon/plus.vue";
 import { STABLE_ROLE_FILTER } from "../../data/catalog";
 import { PREFERRED_MARK, readGroup } from "../../engine/insignia";
 import { stableCards, type StableCard } from "../../lib/stable-rows";

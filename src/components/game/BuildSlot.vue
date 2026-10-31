@@ -26,7 +26,7 @@ import { isFormControl } from "../../composables/focus";
 import { isDisabled } from "../../lib/slot-toggle";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, useTemplateRef } from "vue";
-import { Info } from "@lucide/vue";
+import Info from "virtual:icon/info.vue";
 import IconButton from "../ui/IconButton.vue";
 import { coarsePointer } from "../../stores/viewport";
 import type {

@@ -4,7 +4,9 @@
 // Says what the app is for and offers the three ways in -- start fresh, import a file, or
 // read a build back out of the game.
 import { useTemplateRef } from "vue";
-import { Gamepad2, Plus, Upload } from "@lucide/vue";
+import Gamepad2 from "virtual:icon/gamepad-2.vue";
+import Plus from "virtual:icon/plus.vue";
+import Upload from "virtual:icon/upload.vue";
 import * as builds from "../stores/builds";
 import { APP_NAME, DISCLAIMER } from "../lib/app-info";
 import { importFileText } from "../stores/importFile";

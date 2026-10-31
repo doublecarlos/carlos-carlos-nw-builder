@@ -13,15 +13,13 @@ import { ref, computed, provide } from "vue";
 import BonusForm from "./BonusForm.vue";
 import BonusComboBox from "./BonusComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronRight,
-  ChevronsDownUp,
-  ChevronsUpDown,
-  Unlink,
-} from "@lucide/vue";
+import ArrowDown from "virtual:icon/arrow-down.vue";
+import ArrowUp from "virtual:icon/arrow-up.vue";
+import ChevronDown from "virtual:icon/chevron-down.vue";
+import ChevronRight from "virtual:icon/chevron-right.vue";
+import ChevronsDownUp from "virtual:icon/chevrons-down-up.vue";
+import ChevronsUpDown from "virtual:icon/chevrons-up-down.vue";
+import Unlink from "virtual:icon/unlink.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import FormSection from "../ui/FormSection.vue";
 import DragHandle from "../ui/DragHandle.vue";

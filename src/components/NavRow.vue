@@ -10,7 +10,7 @@
 import { computed, useTemplateRef, watch, type Component } from "vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseInput from "./ui/BaseInput.vue";
-import { EllipsisVertical } from "@lucide/vue";
+import EllipsisVertical from "virtual:icon/ellipsis-vertical.vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import DragHandle from "./ui/DragHandle.vue";
 import { coarsePointer } from "../stores/viewport";

@@ -53,14 +53,12 @@ import BaseBadge from "./ui/BaseBadge.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import { FORM_BAR_CONTEXT } from "../lib/form-bar-context";
 import TabButton from "./ui/TabButton.vue";
-import {
-  Download,
-  Redo2,
-  RotateCcw,
-  TriangleAlert,
-  Undo2,
-  Upload,
-} from "@lucide/vue";
+import Download from "virtual:icon/download.vue";
+import Redo2 from "virtual:icon/redo-2.vue";
+import RotateCcw from "virtual:icon/rotate-ccw.vue";
+import TriangleAlert from "virtual:icon/triangle-alert.vue";
+import Undo2 from "virtual:icon/undo-2.vue";
+import Upload from "virtual:icon/upload.vue";
 import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 import * as router from "../lib/router";

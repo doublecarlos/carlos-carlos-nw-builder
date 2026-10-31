@@ -7,7 +7,9 @@
 // Modal rather than in-flow: you come here to take a file somewhere and then leave, so
 // nothing behind it matters meanwhile, and the tabs want the room.
 import { computed, ref, watch, watchEffect } from "vue";
-import { Copy, Download, Save } from "@lucide/vue";
+import Copy from "virtual:icon/copy.vue";
+import Download from "virtual:icon/download.vue";
+import Save from "virtual:icon/save.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseModal from "../ui/BaseModal.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";

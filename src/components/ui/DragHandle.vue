@@ -5,7 +5,7 @@
 //
 // `touch-none` keeps the browser from claiming a press here for scrolling, and the context
 // menu is suppressed so a long press on Android does not pop one mid-drag.
-import { GripVertical } from "@lucide/vue";
+import GripVertical from "virtual:icon/grip-vertical.vue";
 import BaseTooltip from "./BaseTooltip.vue";
 
 defineOptions({ inheritAttrs: false });

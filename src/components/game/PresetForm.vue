@@ -12,7 +12,8 @@
 // slotDef + v-model contract. That reuse is what keeps this form from needing any new
 // per-paramType/per-slot-type value editing code.
 import { computed } from "vue";
-import { Plus, Trash } from "@lucide/vue";
+import Plus from "virtual:icon/plus.vue";
+import Trash from "virtual:icon/trash.vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import ItemPicker from "./ItemPicker.vue";
 import PointAssignmentInput from "./PointAssignmentInput.vue";

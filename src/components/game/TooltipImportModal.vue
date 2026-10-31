@@ -18,7 +18,10 @@
 // screenshot land wherever the cursor happens to be when the window opens.
 import { computed, ref } from "vue";
 import { useEventListener } from "@vueuse/core";
-import { ArrowRightToLine, Check, CirclePlus, LoaderCircle } from "@lucide/vue";
+import ArrowRightToLine from "virtual:icon/arrow-right-to-line.vue";
+import Check from "virtual:icon/check.vue";
+import CirclePlus from "virtual:icon/circle-plus.vue";
+import LoaderCircle from "virtual:icon/loader-circle.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseModal from "../ui/BaseModal.vue";
 import BaseTextarea from "../ui/BaseTextarea.vue";

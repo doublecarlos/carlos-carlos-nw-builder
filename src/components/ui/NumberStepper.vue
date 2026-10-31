@@ -6,7 +6,8 @@
 // it silently rewritten. Only the buttons clamp. Attributes (`data-testid`, `id`) land on the
 // input itself, the way they would on a native one.
 import { computed } from "vue";
-import { Minus, Plus } from "@lucide/vue";
+import Minus from "virtual:icon/minus.vue";
+import Plus from "virtual:icon/plus.vue";
 import BaseInput from "./BaseInput.vue";
 import IconButton from "./IconButton.vue";
 import { isMac } from "../../lib/platform";
