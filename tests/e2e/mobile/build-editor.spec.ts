@@ -41,7 +41,10 @@ test("the toolbar's actions sit in an overflow menu", async ({ page }) => {
   // Collapsing closes it: the list under it has changed.
   await action(page, "collapse-all").click();
   await expect(action(page, "collapse-all")).toBeHidden();
-  await expect(page.getByTestId("section-body")).toHaveCount(0);
+  // Bodies stay mounted but hidden once collapsed.
+  await expect(
+    page.getByTestId("section-body").filter({ visible: true }),
+  ).toHaveCount(0);
 
   await actionsMenu(page).click();
   await expect(action(page, "collapse-all")).toBeDisabled();
