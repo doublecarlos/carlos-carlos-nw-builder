@@ -4632,7 +4632,7 @@
     "forte": 2149.875,
     "inc_healing": 3685.5,
     "combined_rating": 4095,
-    "gameIds": ["Body_M31_Heavyall_Sss-tier"],
+    "gameIds": ["Body_M31_Heavyall_Sss-tier", "Body_M31_Heavyall_Sss-tier_Acc"],
     "bonuses": ["m31-ruthless-might-ascendant"]
   },
   {
@@ -4644,7 +4644,7 @@
     "strike": 4504.5,
     "forte": 2764.125,
     "combined_rating": 4095,
-    "gameIds": ["Head_M31_Heavydps_S-tier"],
+    "gameIds": ["Head_M31_Heavydps_S-tier", "Head_M31_Heavydps_S-tier_Acc"],
     "bonuses": ["m31-enduring-avantage-ascendant"]
   },
   {
@@ -4656,7 +4656,7 @@
     "acc": 3992.625,
     "severity": 3685.5,
     "combined_rating": 4095,
-    "gameIds": ["Arms_M31_Heavydps_S-tier"],
+    "gameIds": ["Arms_M31_Heavydps_S-tier", "Arms_M31_Heavydps_S-tier_Acc"],
     "bonuses": ["m31-enveloped-rage-ascendant"]
   },
   {
@@ -4668,7 +4668,7 @@
     "ca": 2457,
     "severity": 4504.5,
     "combined_rating": 4095,
-    "gameIds": ["Feet_M31_Heavyall_Sss-tier"],
+    "gameIds": ["Feet_M31_Heavyall_Sss-tier", "Feet_M31_Heavyall_Sss-tier_Acc"],
     "bonuses": ["m31-bloodletting-ascendant"]
   },
   {
@@ -4773,7 +4773,7 @@
     "severity": 4505,
     "out_healing": 2457,
     "combined_rating": 4095,
-    "gameIds": ["Head_M31_Heavyheal_S-tier"],
+    "gameIds": ["Head_M31_Heavyheal_S-tier", "Head_M31_Heavyheal_S-tier_Acc"],
     "bonuses": ["m31-ruthless-resources-ascendant"]
   },
   {
@@ -5417,7 +5417,7 @@
     "strike": 4860,
     "forte": 3645,
     "combined_rating": 4860,
-    "gameIds": ["Arms_M33_Mediumdps_A-tier"],
+    "gameIds": ["Arms_M33_Mediumdps_A-tier", "Arms_M33_Mediumdps_A-tier_Boe"],
     "allowedClass": ["cleric", "bard", "rogue", "ranger"]
   },
   {
@@ -5429,7 +5429,7 @@
     "power": 2835,
     "forte": 3645,
     "combined_rating": 4860,
-    "gameIds": ["Head_M33_Mediumdps_A-tier"],
+    "gameIds": ["Head_M33_Mediumdps_A-tier", "Head_M33_Mediumdps_A-tier_Boe"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-strategist-s-advantage"]
   },
@@ -5442,7 +5442,7 @@
     "strike": 4860,
     "forte": 3645,
     "combined_rating": 4860,
-    "gameIds": ["Body_M33_Mediumdps_A-tier"],
+    "gameIds": ["Body_M33_Mediumdps_A-tier", "Body_M33_Mediumdps_A-tier_Boe"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-ruthless-advantage-legendary"]
   },
@@ -5455,7 +5455,7 @@
     "power": 2835,
     "acc": 5265,
     "combined_rating": 4860,
-    "gameIds": ["Arms_M33_Lightdps_A-tier"],
+    "gameIds": ["Arms_M33_Lightdps_A-tier", "Arms_M33_Lightdps_A-tier_Boe"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-runefrost-swift-armguards"]
   },
@@ -5543,7 +5543,7 @@
     "strike": 5130,
     "forte": 3848,
     "combined_rating": 5130,
-    "gameIds": ["Head_M33_Lightdps_S-tier_Boe"],
+    "gameIds": ["Head_M33_Lightdps_S-tier", "Head_M33_Lightdps_S-tier_Boe"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-critical-breaker"]
   },
@@ -5556,7 +5556,7 @@
     "ca": 3420,
     "severity": 5130,
     "combined_rating": 5130,
-    "gameIds": ["Body_M33_Lightdps_S-tier"],
+    "gameIds": ["Body_M33_Lightdps_S-tier", "Body_M33_Lightdps_S-tier_Boe"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-tactical-daily-greater"]
   },
@@ -5570,7 +5570,7 @@
     "power": 2992,
     "severity": 5130,
     "combined_rating": 5130,
-    "gameIds": ["Arms_M33_Heavyheal_S-tier"],
+    "gameIds": ["Arms_M33_Heavyheal_S-tier", "Arms_M33_Heavyheal_S-tier_Boe"],
     "shortDescription": "Max Divinity +20%",
     "allowedClass": ["cleric", "paladin"]
   },
@@ -5583,7 +5583,7 @@
     "ca": 3420,
     "severity": 5130,
     "combined_rating": 5130,
-    "gameIds": ["Feet_M33_Mediumdps_S-tier"],
+    "gameIds": ["Feet_M33_Mediumdps_S-tier", "Feet_M33_Mediumdps_S-tier_Boe"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-critical-breaker"]
   },
@@ -5643,7 +5643,7 @@
     "ca": 3420,
     "severity": 5130,
     "combined_rating": 5130,
-    "gameIds": ["Arms_M33_Mediumdps_S-tier"],
+    "gameIds": ["Arms_M33_Mediumdps_S-tier", "Arms_M33_Mediumdps_S-tier_Boe"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-relentless-reserves"]
   },
@@ -5656,7 +5656,7 @@
     "strike": 5130,
     "forte": 3848,
     "combined_rating": 5130,
-    "gameIds": ["Arms_M33_Lightdps_S-tier"],
+    "gameIds": ["Arms_M33_Lightdps_S-tier", "Arms_M33_Lightdps_S-tier_Boe"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-eagle-s-mastery-lesser"]
   },
@@ -5670,7 +5670,7 @@
     "ca": 2736,
     "forte": 2308,
     "combined_rating": 5130,
-    "gameIds": ["Feet_M33_Lightdps_S-tier"],
+    "gameIds": ["Feet_M33_Lightdps_S-tier", "Feet_M33_Lightdps_S-tier_Boe"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-tactical-reserves"]
   },
@@ -7847,7 +7847,8 @@
     "gameIds": [
       "Enchantment_Strongholds_Slayer_Giant_T2",
       "Enchantment_Strongholds_Slayer_Demon_T2",
-      "Enchantment_Overload_Slayer_Demon_T2"
+      "Enchantment_Overload_Slayer_Demon_T2",
+      "Enchantment_Strongholds_Slayer_Troll_T2"
     ],
     "longDescription": "If using multiple Slayer overloads, type the total overall damage on the first.",
     "bonuses": ["slayer-overload"]
