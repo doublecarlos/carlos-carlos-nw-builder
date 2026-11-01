@@ -68,10 +68,8 @@ const healingRows: [string, string][] = [
   ["Crit", "crit"],
   ["No crit", "noCrit"],
 ];
-const ehpRows: [string, string][] = [
-  ["Average", "average"],
-  ["Crit / no deflect", "critNoDeflect"],
-];
+// The enemy's crit against the player's deflect: the same four cases as damage.
+const ehpRows = damageRows;
 
 // One of `derived`'s three sub-tables (baseDamage/effectiveMagPhys live at the top level
 // instead, hence `extra` rather than folding them into `rows`).
@@ -544,6 +542,7 @@ const {
       <ComboBox
         v-model="summaryCalcKey"
         class="w-full"
+        data-testid="summary-calc"
         :options="summaryOptions"
       />
 
@@ -554,6 +553,7 @@ const {
             <td
               class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums w-40"
               :class="summaryRowCls"
+              data-testid="summary-value"
             >
               {{ int(summaryValue) }}
             </td>
@@ -751,16 +751,25 @@ const {
     <StatPanelPairsTable :rows="enemyRows" :compare-label="compareName" />
 
     <PanelHead>Damage</PanelHead>
-    <StatPanelPairsTable :rows="damageTableRows" :compare-label="compareName" />
+    <StatPanelPairsTable
+      :rows="damageTableRows"
+      :compare-label="compareName"
+      data-stat-table="damage"
+    />
 
     <PanelHead>Healing</PanelHead>
     <StatPanelPairsTable
       :rows="healingTableRows"
       :compare-label="compareName"
+      data-stat-table="healing"
     />
 
     <PanelHead>Effective hit points</PanelHead>
-    <StatPanelPairsTable :rows="ehpTableRows" :compare-label="compareName" />
+    <StatPanelPairsTable
+      :rows="ehpTableRows"
+      :compare-label="compareName"
+      data-stat-table="ehp"
+    />
 
     <BasePopover ref="tooltip" :width="320">
       <StatPanelSourceCard
