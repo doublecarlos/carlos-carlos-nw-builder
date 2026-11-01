@@ -1323,6 +1323,9 @@ export interface HealingOutputs {
 export interface EhpOutputs {
   average: number;
   critNoDeflect: number;
+  critDeflect: number;
+  noCritNoDeflect: number;
+  noCritDeflect: number;
   [key: string]: number;
 }
 

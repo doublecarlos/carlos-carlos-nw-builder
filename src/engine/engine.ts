@@ -447,6 +447,9 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     ehp: {
       average: ehp(capped.enemy_strike, capped.deflect_p),
       critNoDeflect: ehp(1, 0),
+      critDeflect: ehp(1, 1),
+      noCritNoDeflect: ehp(0, 0),
+      noCritDeflect: ehp(0, 1),
     },
   };
 }
