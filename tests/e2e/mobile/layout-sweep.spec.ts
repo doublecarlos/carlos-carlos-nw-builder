@@ -205,6 +205,17 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
       await page.getByLabel("Add grant").tap();
       const payload = form(page).getByTestId("grant-payload");
       expect(await offenders(form(page)), "bonus").toEqual([]);
+      // Too wide for one row, the payload switch shares rows between options rather than
+      // stacking one per line.
+      const tops = await payload
+        .getByTestId("segmented-group")
+        .getByRole("button")
+        .evaluateAll((buttons) =>
+          buttons.map((button) =>
+            Math.round(button.getBoundingClientRect().top),
+          ),
+        );
+      expect(new Set(tops).size).toBeLessThan(tops.length);
 
       await payload.getByRole("button", { name: "tiered" }).tap();
       await form(page).getByTestId("add-tier").first().tap();

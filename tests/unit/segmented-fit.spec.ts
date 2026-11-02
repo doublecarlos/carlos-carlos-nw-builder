@@ -1,6 +1,10 @@
-// SegmentedControl's one-row width and its fit decision.
+// SegmentedControl's one-row width, its fit decision and the grid it falls back to.
 import { describe, it, expect } from "vitest";
-import { fitsOneRow, oneRowWidth } from "../../src/lib/segmented-fit";
+import {
+  fitsOneRow,
+  gridColumns,
+  oneRowWidth,
+} from "../../src/lib/segmented-fit";
 
 const chrome = { paddingX: 16, border: 1 };
 
@@ -31,5 +35,34 @@ describe("fitsOneRow", () => {
 
   it("forgives subpixel rounding in the summed text widths", () => {
     expect(fitsOneRow(200.4, 200)).toBe(true);
+  });
+});
+
+describe("gridColumns", () => {
+  // Four 40px labels: one cell is 56px, so n columns need 56n + n + 1.
+  const four = [40, 40, 40, 40];
+
+  it("spreads columns evenly over the fewest rows that fit", () => {
+    // Three columns fit (172px), but two rows of two read better than three and one.
+    expect(gridColumns(four, chrome, 180)).toBe(2);
+  });
+
+  it("keeps three across when that is still one row fewer", () => {
+    // Five options in three columns: two rows, the last spanning what is left.
+    expect(gridColumns([40, 40, 40, 40, 40], chrome, 180)).toBe(3);
+  });
+
+  it("sizes every cell for the longest label", () => {
+    // Two 40px cells would fit 120px, but the 70px label widens both.
+    expect(gridColumns([40, 70, 40, 40], chrome, 120)).toBe(1);
+  });
+
+  it("falls back to a single column when two do not fit", () => {
+    expect(gridColumns(four, chrome, 100)).toBe(1);
+  });
+
+  it("is a single column for one option or none", () => {
+    expect(gridColumns([40], chrome, 30)).toBe(1);
+    expect(gridColumns([], chrome, 30)).toBe(1);
   });
 });
