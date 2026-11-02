@@ -1,7 +1,7 @@
 // Every mutation that writes the active build's *content* goes through here. Each one snapshots
 // before mutating, since the history store owns the undo stack, and ends with
 // `builds.finishEdit`, which empties any slot the edit made unavailable.
-import { computed, toRaw, watch } from "vue";
+import { computed, shallowRef, toRaw, watch } from "vue";
 import * as storage from "../storage/storage";
 import * as builds from "./builds";
 import * as compare from "./compare";
@@ -16,6 +16,7 @@ import {
 } from "../storage/migrate-item-ids";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
+import { changedSlots } from "../lib/build-changes";
 import { assignedRows, repetitionRows } from "../lib/inline-repetition";
 import {
   clearSlotData,
@@ -79,18 +80,31 @@ function buildSlots(source?: Build | null) {
   return expandSlots(db.value.slots, source ?? builds.build.value);
 }
 
+/** The rows the latest undo or redo changed, for the editor to show them. A new object per
+ *  step, so the same rows changing twice still counts twice. */
+export const historyStep = shallowRef<{ slotIds: string[] } | null>(null);
+
+/** Restores a history snapshot and records which rows it changed. The build is replaced, not
+ *  edited in place, so `before` still holds the state it replaced. */
+function restoreStep(json: string, before: Build) {
+  builds.restoreSnapshot(json);
+  const after = builds.build.value;
+  if (after?.id === before.id)
+    historyStep.value = { slotIds: changedSlots(db.value, before, after) };
+}
+
 export function undo() {
   const b = builds.build.value;
   if (!b) return;
   const json = history.undo("build", b.id, b);
-  if (json != null) builds.restoreSnapshot(json);
+  if (json != null) restoreStep(json, b);
 }
 
 export function redo() {
   const b = builds.build.value;
   if (!b) return;
   const json = history.redo("build", b.id, b);
-  if (json != null) builds.restoreSnapshot(json);
+  if (json != null) restoreStep(json, b);
 }
 
 // --- build content edits --------------------------------------------------------------------

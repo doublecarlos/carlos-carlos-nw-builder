@@ -240,7 +240,7 @@ syncRoute({ push: false });
              collapses. -->
         <div
           v-if="layout.nav === 'rail'"
-          class="relative flex flex-none border-r border-line"
+          class="relative flex flex-none border-r border-line [view-transition-name:rail-nav]"
           :style="{ width: navWidth + 'px' }"
           data-testid="nav-column"
         >
@@ -271,8 +271,11 @@ syncRoute({ push: false });
           <NavBar class="min-h-0 flex-1 overflow-y-auto" />
         </BaseSheet>
 
-        <!-- Columns 2 and 3 share the editor undo scope, so one ring wraps both. -->
-        <div class="relative flex min-w-0 flex-1">
+        <!-- Columns 2 and 3 share the editor undo scope, so one ring wraps both. Named for the
+             rail morph (rails.ts), like the rail columns either side. -->
+        <div
+          class="relative flex min-w-0 flex-1 [view-transition-name:rail-main]"
+        >
           <!-- Layer selected: editor spans columns 2 and 3 -->
           <template v-if="selectedLayer">
             <div class="flex min-w-0 flex-1">
@@ -296,7 +299,7 @@ syncRoute({ push: false });
                  rail; a fixed column or a phone pane has no width of its own to drag. -->
             <div
               v-show="layout.stats !== 'hidden'"
-              class="flex border-line"
+              class="flex border-line [view-transition-name:rail-details]"
               :class="STATS_COLUMN_CLASSES[layout.stats]"
               :style="
                 layout.stats === 'rail'

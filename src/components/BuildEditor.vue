@@ -56,6 +56,7 @@ import {
   type NestPosition,
 } from "../lib/slot-parent";
 import { useHoverCard, type HoverPosition } from "../composables/useHoverCard";
+import { useFoldSlide } from "../composables/useFoldSlide";
 import * as viewport from "../stores/viewport";
 import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
@@ -64,6 +65,7 @@ import * as storage from "../storage/storage";
 import * as router from "../lib/router";
 import * as builds from "../stores/builds";
 import * as buildEditor from "../stores/buildEditor";
+import { ringRow } from "../lib/row-slide";
 import * as compare from "../stores/compare";
 import * as slotFilter from "../stores/slotFilter";
 import * as pickerLens from "../stores/pickerLens";
@@ -348,6 +350,7 @@ function itemForHover(slotId: string, itemId?: string): Item | null {
 const {
   hover,
   pinned,
+  fadeIn: hoverCardFadeIn,
   pin,
   togglePinned,
   onRowEnter,
@@ -604,6 +607,14 @@ const sections = computed<SectionRow[]>(() => {
     })
     .filter((section) => section.slots.length > 0 || !anyFilterActive.value);
 });
+
+// Opening or closing a section slides the ones below instead of jumping them.
+useFoldSlide(root, () => ({
+  folds: sections.value.map((section) => section.id),
+  open: sections.value
+    .filter((section) => sectionExpanded(section.id))
+    .map((section) => section.id),
+}));
 
 /** Total rendered slots across every visible section, for the "N matches" indicator next to
  *  the filter controls. */
@@ -1106,6 +1117,46 @@ function sectionEl(sectionId: string) {
   );
 }
 
+/** Whether `row` shows in full in the editor, below its section's sticky header. */
+function showsInEditor(row: HTMLElement, clearance: number) {
+  const container = buildScrollEl.value;
+  if (!container) return false;
+  const box = container.getBoundingClientRect();
+  const rect = row.getBoundingClientRect();
+  return rect.top >= box.top + clearance && rect.bottom <= box.bottom;
+}
+
+// An undo or redo shows what it changed: the sections holding its rows open, the topmost row
+// is scrolled into view unless it already shows, and every changed row is ringed. Several
+// rows at once (a section copy undone) are all ringed; the scroll goes to the first.
+watch(buildEditor.historyStep, async (step) => {
+  if (!step?.slotIds.length) return;
+  for (const slotId of step.slotIds) {
+    const sectionId = db.value.slotFor(slotId)?.section;
+    if (sectionId && !sectionExpanded(sectionId)) expanded[sectionId] = true;
+  }
+  await nextTick();
+  const container = buildScrollEl.value;
+  const rows = step.slotIds
+    .map((slotId) =>
+      container?.querySelector<HTMLElement>(
+        `[data-cursor-key="slot:${CSS.escape(slotId)}"]`,
+      ),
+    )
+    .filter((row): row is HTMLElement => !!row)
+    .sort((a, b) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+    );
+  const first = rows[0];
+  if (!first) return;
+  const header = first
+    .closest("[data-section-id]")
+    ?.querySelector<HTMLElement>("[data-cursor-key^='header:']");
+  const clearance = header?.offsetHeight ?? 0;
+  if (!showsInEditor(first, clearance)) scrollIntoEditor(first, clearance);
+  rows.forEach(ringRow);
+});
+
 /**
  * The "go to" palette's destination, once it is this editor's turn to act on it (the palette
  * can be used while the Layer editor holds the columns, in which case the request waits in the
@@ -1454,7 +1505,7 @@ watch(
         <!-- One card for the whole list, moved and refilled on hover. A pinned one steps aside
              while a picker is open, so it never covers the menu or its preview, and returns
              where it was. -->
-        <BasePopover ref="tooltip" :width="320">
+        <BasePopover ref="tooltip" :width="320" :animate="hoverCardFadeIn">
           <ItemCard
             v-if="
               hover && !sheetTarget && cardProps && !(pinned && anyPickerOpen)

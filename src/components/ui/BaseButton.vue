@@ -17,7 +17,8 @@ type Shape = "label" | "icon";
 
 // Centered, so content stays in the middle when a coarse pointer's tap-size minimum widens the
 // button past it.
-const CONTENT = "inline-flex items-center justify-center gap-1 cursor-pointer";
+const CONTENT =
+  "inline-flex items-center justify-center gap-1 cursor-pointer transition-colors";
 const GHOST = `${CONTENT} [&_svg]:size-[14px] bg-transparent border-0 px-1 py-0.5 enabled:hover:text-accent`;
 const BOX = `${CONTENT} rounded-md border disabled:cursor-default disabled:opacity-60`;
 

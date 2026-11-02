@@ -35,6 +35,7 @@ import {
   pruneUnavailableSlots,
 } from "../lib/slot-availability";
 import type { Build, BuildNavEntry, BuildOption, TrashEntry } from "../types";
+import { stepGap } from "../composables/useDragAndDrop";
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -363,7 +364,7 @@ export function moveBuild(id: string, delta: number) {
   folders.placeBuild(
     id,
     folders.folderOf(id)?.id ?? null,
-    at.index + delta + (delta > 0 ? 1 : 0),
+    stepGap(at.index, delta),
   );
 }
 

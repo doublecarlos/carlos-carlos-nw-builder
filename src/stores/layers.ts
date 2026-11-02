@@ -11,7 +11,7 @@ import { computed, ref, toRaw } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { onPageHide } from "../lib/page-lifecycle";
 import { downloadJson } from "../lib/download";
-import { reorderIndex } from "../composables/useDragAndDrop";
+import { reorderIndex, stepGap } from "../composables/useDragAndDrop";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as navHistory from "./navHistory";
@@ -262,7 +262,7 @@ export async function moveLayerTo(id: string, toIndex: number) {
 export async function moveLayer(id: string, delta: number) {
   const idx = layerOrder.value.indexOf(id);
   if (idx === -1) return;
-  await moveLayerTo(id, idx + delta + (delta > 0 ? 1 : 0));
+  await moveLayerTo(id, stepGap(idx, delta));
 }
 
 /** The single write path the layer editor uses - replaces the layer's overlay wholesale. */

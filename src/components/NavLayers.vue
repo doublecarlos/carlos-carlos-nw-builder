@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Layer list section inside the left sidebar. Pure presentation.
-import { computed, type Component } from "vue";
+import { computed, useTemplateRef, type Component } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
@@ -12,6 +12,7 @@ import DropIndicator from "./ui/DropIndicator.vue";
 
 import { matchesQuery } from "../lib/text-filter";
 import { useDragHandles, useDropList } from "../composables/useDragAndDrop";
+import { useReorderMotion } from "../composables/useReorderMotion";
 import type { Layer } from "../types";
 
 const props = defineProps<{
@@ -57,6 +58,11 @@ const filteredLayers = computed(() => {
   return props.layers.filter((l) => matchesQuery(l.name, props.filter));
 });
 
+// Every layer, filtered out or not, so a filter changes nothing for the slide.
+useReorderMotion(useTemplateRef("list"), () =>
+  props.layers.map((layer) => layer.id),
+);
+
 const dropList = useDropList({
   accepts: (source) => source.kind === "layer",
   onDrop: (source, index) => emit("reorder", source.key, index),
@@ -97,6 +103,7 @@ function dragHandleProps(id: string, index: number) {
     />
 
     <div
+      ref="list"
       v-bind="dropList.listProps()"
       data-nav-list
       class="relative max-h-48 space-y-1 overflow-y-auto pl-1 pb-1"

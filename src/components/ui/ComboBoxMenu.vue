@@ -176,7 +176,8 @@ defineSlots<{
   <div
     v-else
     ref="box"
-    class="fixed z-menu flex flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lg"
+    data-testid="picker-shell"
+    class="fixed z-menu flex animate-fade-in flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lg"
     :class="menuClass"
     :style="style"
   >

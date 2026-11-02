@@ -9,15 +9,14 @@
 // Detach); the chevron is the accessible toggle and the rest of the row a wider hit area for
 // the same fold. A lone attached bonus starts open, several start closed, and a pending one is
 // always open.
-import { ref, computed, provide } from "vue";
+import { ref, computed, provide, useTemplateRef } from "vue";
 import BonusForm from "./BonusForm.vue";
 import BonusComboBox from "./BonusComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
+import FoldChevron from "../ui/FoldChevron.vue";
 import {
   ArrowDown,
   ArrowUp,
-  ChevronDown,
-  ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
   Unlink,
@@ -36,6 +35,8 @@ import {
   useDropList,
 } from "../../composables/useDragAndDrop";
 import ListAddRow from "../ui/ListAddRow.vue";
+import { useReorderMotion } from "../../composables/useReorderMotion";
+import { useFoldSlide } from "../../composables/useFoldSlide";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to
@@ -213,6 +214,18 @@ function onSlotDuplicate(slot: Slot) {
 const instanceId = `item-bonuses:${Math.random().toString(36).slice(2)}`;
 const bonusesContainerId = `bonuses:${instanceId}`;
 
+const bonusList = useTemplateRef("bonusList");
+
+useReorderMotion(bonusList, () =>
+  slots.value.map((slot) => slot.id ?? slot.key),
+);
+
+// Folding a bonus card slides everything below it, in this list and in the form around it.
+useFoldSlide(bonusList, () => ({
+  folds: slots.value.map((slot) => slot.key),
+  open: slots.value.filter(isExpanded).map((slot) => slot.key),
+}));
+
 const bonusesDropList = useDropList({
   accepts: (source) =>
     source.kind === "item-bonus" && source.containerId === bonusesContainerId,
@@ -275,12 +288,14 @@ function nudgeBonus(index: number, delta: -1 | 1) {
       </span>
     </FormSection>
 
-    <div v-bind="bonusesDropList.listProps()" class="relative">
+    <div ref="bonusList" v-bind="bonusesDropList.listProps()" class="relative">
       <DropIndicator :pos="bonusesDropList.separatorStyle.value" />
 
       <div
         v-for="slot in slots"
         :key="slot.key"
+        :data-flip-key="slot.id ?? slot.key"
+        :data-fold-key="slot.key"
         data-testid="bonus-card"
         :data-expanded="isExpanded(slot)"
         class="mb-2.5 rounded-md border border-line-strong bg-accent-soft/30 px-2.5 py-1"
@@ -324,8 +339,7 @@ function nudgeBonus(index: number, delta: -1 | 1) {
               data-testid="bonus-card-toggle"
               @click="toggleExpanded(slot)"
             >
-              <ChevronDown v-if="isExpanded(slot)" />
-              <ChevronRight v-else />
+              <FoldChevron :expanded="isExpanded(slot)" />
             </IconButton>
           </template>
           <template #after-title>

@@ -16,7 +16,7 @@
 // undo closures share (`putBuild`, `addFolder`, `removeFolder`) record nothing, which is also
 // what import goes through.
 import { computed } from "vue";
-import { reorderIndex } from "../composables/useDragAndDrop";
+import { reorderIndex, stepGap } from "../composables/useDragAndDrop";
 import { newId } from "../storage/storage";
 import { buildOrder, folders, persistMeta } from "./meta";
 import * as navHistory from "./navHistory";
@@ -258,7 +258,7 @@ export function moveFolderTo(id: string, toIndex: number) {
 export function moveFolder(id: string, delta: number) {
   const at = rowPosition(id);
   if (!at) return;
-  moveFolderTo(id, at.index + delta + (delta > 0 ? 1 : 0));
+  moveFolderTo(id, stepGap(at.index, delta));
 }
 
 /**

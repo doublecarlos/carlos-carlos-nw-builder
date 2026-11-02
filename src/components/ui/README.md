@@ -36,6 +36,7 @@ ordinary one.
 | DragHandle                                | The grip on a draggable row, `touch-none`; the only place a finger can start a drag                                                                            |
 | DropIndicator                             | The drag-and-drop insertion line for one `useDropList`                                                                                                         |
 | FilterChip                                | An active filter set from elsewhere, as a chip with its own clear button                                                                                       |
+| FoldChevron                               | A fold's open/closed chevron, turning down when expanded                                                                                                       |
 | FormulaInput                              | A one-line expression field marking each problem's range under it; `#leading` adornment                                                                        |
 | FormBar                                   | Sticky action bar at the top of an editing form                                                                                                                |
 | FormField                                 | Label-above-control stack; `<label for>` names the first ui control, `hint` describes it                                                                       |

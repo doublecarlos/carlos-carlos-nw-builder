@@ -57,7 +57,7 @@ defineExpose({
     <div
       ref="panel"
       data-fits-visual-viewport
-      class="fixed z-modal flex flex-col bg-surface pb-[env(safe-area-inset-bottom)] focus:outline-none"
+      class="fixed z-modal flex animate-fade-in flex-col bg-surface pb-[env(safe-area-inset-bottom)] focus:outline-none"
       :style="style"
       role="dialog"
       aria-modal="true"

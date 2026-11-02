@@ -11,16 +11,9 @@
 // `expanded` makes the card foldable: the chevron is the accessible toggle and a click on the
 // row's inert area toggles too.
 import { computed } from "vue";
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronRight,
-  CirclePlus,
-  Copy,
-  Trash,
-} from "@lucide/vue";
+import { ArrowDown, ArrowUp, CirclePlus, Copy, Trash } from "@lucide/vue";
 import DragHandle from "./DragHandle.vue";
+import FoldChevron from "./FoldChevron.vue";
 import IconButton from "./IconButton.vue";
 import type { DragHandleProps } from "../../composables/useDragAndDrop";
 import { clickedControl } from "../../lib/control-click";
@@ -74,8 +67,7 @@ function onRowClick(event: MouseEvent) {
           :data-testid="`${noun}-toggle`"
           @click="emit('toggle')"
         >
-          <ChevronDown v-if="expanded" />
-          <ChevronRight v-else />
+          <FoldChevron :expanded="!!expanded" />
         </IconButton>
         <span class="text-muted">{{ label }}</span>
       </div>

@@ -202,7 +202,7 @@ const cells = computed(() => {
         type="button"
         :data-testid="option.testid"
         :aria-pressed="model === option.value"
-        class="border border-line px-2 py-0.5"
+        class="border border-line px-2 py-0.5 transition-colors"
         :class="[
           model === option.value
             ? [toneClasses[option.tone ?? 'accent'], stacked && 'relative']

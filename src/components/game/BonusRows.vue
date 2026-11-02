@@ -7,7 +7,7 @@
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusForm.
 
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, useTemplateRef } from "vue";
 import ConditionRows, {
   type ConditionTreeLocation,
   type ConditionBranchTreeLocation,
@@ -62,6 +62,8 @@ import {
   useDropList,
 } from "../../composables/useDragAndDrop";
 import { useKeyedCache } from "../../composables/useKeyedCache";
+import { useReorderMotion } from "../../composables/useReorderMotion";
+import { useFoldSlide } from "../../composables/useFoldSlide";
 
 const emit = defineEmits<{ error: [message: string] }>();
 
@@ -208,6 +210,23 @@ function removeNameDescription(gIndex: number) {
 const instanceId = `bonus-rows:${Math.random().toString(36).slice(2)}`;
 const grantsContainerId = `grants:${instanceId}`;
 
+const grantList = useTemplateRef("grantList");
+
+// Grants, their tiers and their variants slide to their new place.
+useReorderMotion(grantList, () =>
+  props.store.grants.flatMap((grant) => [
+    grant.uid,
+    ...grant.tiers.map((tier) => tier.uid),
+    ...grant.variants.map((variant) => variant.uid),
+  ]),
+);
+
+// Folding a grant slides everything below it, in this list and in the form around it.
+useFoldSlide(grantList, () => ({
+  folds: props.store.grants.map((grant) => grant.uid),
+  open: props.store.grants.filter(isExpanded).map((grant) => grant.uid),
+}));
+
 const grantsDropList = useDropList({
   accepts: (source) =>
     source.kind === "grant" && source.containerId === grantsContainerId,
@@ -242,11 +261,11 @@ const tierDropList = useKeyedCache((grantUid: string) => {
     },
   });
 });
-function tierDragHandleProps(grantUid: string, index: number) {
+function tierDragHandleProps(grantUid: string, tierUid: string, index: number) {
   return dragHandle({
     kind: "tier",
     containerId: `tiers:${grantUid}`,
-    key: String(index),
+    key: tierUid,
     index,
   });
 }
@@ -437,12 +456,14 @@ function toggleJson(gIndex: number) {
     </span>
   </FormSection>
 
-  <div v-bind="grantsDropList.listProps()" class="relative">
+  <div ref="grantList" v-bind="grantsDropList.listProps()" class="relative">
     <DropIndicator :pos="grantsDropList.separatorStyle.value" />
 
     <div
       v-for="(grant, gIndex) in props.store.grants"
       :key="grant.uid"
+      :data-flip-key="grant.uid"
+      :data-fold-key="grant.uid"
       data-testid="bonus-grant-row"
       :data-expanded="isExpanded(grant)"
       class="mb-2 rounded-md border border-line bg-surface-2 p-2.5"
@@ -478,7 +499,7 @@ function toggleJson(gIndex: number) {
         </template>
       </ListCardHeader>
 
-      <template v-if="isExpanded(grant)">
+      <div v-if="isExpanded(grant)" class="animate-fade-in">
         <BaseTextarea
           v-if="grant.mode === 'json'"
           v-model="grant.json"
@@ -562,13 +583,12 @@ function toggleJson(gIndex: number) {
                      `bg-surface-2`, so stacked tiers stay apart. -->
                 <div
                   v-for="(tier, tIndex) in grant.tiers"
-                  :key="tIndex"
+                  :key="tier.uid"
+                  :data-flip-key="tier.uid"
                   data-testid="bonus-tier-row"
                   class="my-1.5 rounded-md border border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
                   :class="[
-                    dragSource?.containerId === `tiers:${grant.uid}` &&
-                      dragSource?.key === String(tIndex) &&
-                      'is-drag-source opacity-50',
+                    dragSource?.key === tier.uid && 'is-drag-source opacity-50',
                   ]"
                   v-bind="tierDropList(grant.uid).rowProps(tIndex)"
                 >
@@ -577,7 +597,9 @@ function toggleJson(gIndex: number) {
                     noun="tier"
                     :index="tIndex"
                     :count="grant.tiers.length"
-                    :drag-handle="tierDragHandleProps(grant.uid, tIndex)"
+                    :drag-handle="
+                      tierDragHandleProps(grant.uid, tier.uid, tIndex)
+                    "
                     drag-testid="tier-drag-handle"
                     @move="gs(gIndex).moveTier(tIndex, $event)"
                     @duplicate="gs(gIndex).duplicateTier(tIndex)"
@@ -636,6 +658,7 @@ function toggleJson(gIndex: number) {
                 <div
                   v-for="(variant, vIndex) in grant.variants"
                   :key="variant.uid"
+                  :data-flip-key="variant.uid"
                   data-testid="bonus-variant-row"
                   class="my-1.5 rounded-md border border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
                   :class="[
@@ -853,7 +876,7 @@ function toggleJson(gIndex: number) {
             </div>
           </div>
         </template>
-      </template>
+      </div>
     </div>
   </div>
   <ListAddRow

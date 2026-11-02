@@ -32,12 +32,11 @@ export function headerRow(page: Page, sectionId: string): Locator {
 
 /** Clicks a section's header to expand it, unless it's expanded already (a prior toggle in the
  *  same test, or a build switch, can leave collapse state ambiguous from the test's point of
- *  view) -- collapsed sections show "▸", expanded ones "▾". */
+ *  view). The header button's `aria-expanded` says which. */
 export async function ensureSectionExpanded(page: Page, sectionId: string) {
-  const arrow = await headerRow(page, sectionId)
-    .locator("span:first-child")
-    .textContent();
-  if (arrow === "▸") await headerRow(page, sectionId).click();
+  const header = headerRow(page, sectionId);
+  if ((await header.getAttribute("aria-expanded")) === "false")
+    await header.click();
 }
 
 /** Opens every build section through the toolbar. That button disables itself once nothing is

@@ -7,6 +7,9 @@
 // canceled the usual way, via the caller's `-mx-3`.
 //
 // `embedded`: a plain in-flow row inside another form's card, never a second sticky strip.
+//
+// The sticky bar is marked `data-scroll-inset-top`, so code scrolling a row into view inside
+// the form (useReorderMotion) keeps it clear of the bar.
 import { computed } from "vue";
 
 const props = withDefaults(defineProps<{ embedded?: boolean }>(), {
@@ -23,6 +26,7 @@ const classes = computed(() =>
 <template>
   <div
     data-testid="form-bar"
+    :data-scroll-inset-top="embedded ? undefined : ''"
     class="flex flex-wrap items-center gap-1.5"
     :class="classes"
   >

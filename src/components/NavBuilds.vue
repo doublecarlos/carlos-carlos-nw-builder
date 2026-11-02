@@ -5,7 +5,7 @@
 // folder (ids are unique across both, so one `menuOpenId`/`renamingId` covers each). The one
 // store read here is the nav history behind the heading's undo/redo pair: it is the sidebar's
 // own stack, with nothing for the parent to decide.
-import { computed, type Component } from "vue";
+import { computed, useTemplateRef, type Component } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 
 import BaseInput from "./ui/BaseInput.vue";
@@ -22,6 +22,8 @@ import {
   useDropList,
 } from "../composables/useDragAndDrop";
 import { useKeyedCache } from "../composables/useKeyedCache";
+import { useReorderMotion } from "../composables/useReorderMotion";
+import { useFoldSlide } from "../composables/useFoldSlide";
 import type { Build, BuildFolder, BuildNavEntry } from "../types";
 
 const props = defineProps<{
@@ -102,11 +104,35 @@ const rows = computed<Row[]>(() => {
   return out;
 });
 
+const list = useTemplateRef("list");
+
+/** Every build and folder, folder contents included, so moving a build into or out of a
+ *  folder reads as a reorder. Read off the unfiltered entries, so a filter or a fold leaves it
+ *  as is. */
+useReorderMotion(list, () =>
+  props.entries.flatMap((entry) =>
+    entry.kind === "build"
+      ? [entry.build.id]
+      : [entry.folder.id, ...entry.builds.map((build) => build.id)],
+  ),
+);
+
 /** A filter overrides the stored collapsed state: hiding the matches inside a collapsed
  *  folder would make the folder look empty rather than filtered. */
 function isOpen(folder: BuildFolder) {
   return !!props.filter || !folder.collapsed;
 }
+
+// Opening or closing a folder slides the rows below it.
+useFoldSlide(list, () => {
+  const folders = rows.value.flatMap((row) =>
+    row.kind === "folder" ? [row.folder] : [],
+  );
+  return {
+    folds: folders.map((folder) => folder.id),
+    open: folders.filter(isOpen).map((folder) => folder.id),
+  };
+});
 
 /** Only a build can go *inside* a folder - folders never nest, so a dragged folder gets the
  *  plain before/after reorder gesture on a folder header. */
@@ -182,6 +208,7 @@ function folderHandleProps(id: string, index: number) {
     />
 
     <div
+      ref="list"
       v-bind="rootDrop.listProps()"
       data-testid="nav-builds-list"
       data-nav-list
@@ -258,6 +285,7 @@ function folderHandleProps(id: string, index: number) {
           <div
             v-if="isOpen(row.folder)"
             v-bind="folderDrop(row.folder.id).listProps()"
+            :data-flip-key="`${row.folder.id}:builds`"
             data-testid="nav-folder-list"
             class="relative ml-3 space-y-1 pl-2 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-line before:content-['']"
           >

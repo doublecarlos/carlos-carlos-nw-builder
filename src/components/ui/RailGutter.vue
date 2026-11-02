@@ -47,7 +47,7 @@ const max = rails.maxWidth(props.rail);
     :class="[
       collapsed ? 'w-7' : 'w-3',
       draggable &&
-        'cursor-col-resize touch-none select-none hover:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
+        'cursor-col-resize touch-none select-none transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
       dragging && 'bg-surface-2',
     ]"
     :role="draggable ? 'separator' : undefined"

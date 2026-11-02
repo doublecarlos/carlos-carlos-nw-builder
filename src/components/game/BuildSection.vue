@@ -9,6 +9,7 @@
 // caller) -- a section made entirely of build_parameter slots (Options) naturally gets no badge
 // as a result, not because this component special-cases its id.
 import BaseBadge from "../ui/BaseBadge.vue";
+import FoldChevron from "../ui/FoldChevron.vue";
 import SectionActionsMenu from "./SectionActionsMenu.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, ref, useTemplateRef, watch } from "vue";
@@ -86,7 +87,11 @@ const bodyStyle = computed(() => ({
 <template>
   <!-- `data-section-id` is what BuildEditor's section-at-a-time cursor and the section rail's
        scroll spy both navigate by, the same way `data-cursor-key` marks a row. -->
-  <section class="rounded-md border border-line" :data-section-id="id">
+  <section
+    class="rounded-md border border-line"
+    :data-section-id="id"
+    :data-fold-key="id"
+  >
     <!-- Sticky within its own section, so a long one (Group is 28 rows, Artifact Call 26)
          still says which section you are reading once its top has scrolled away. The editor's
          `<main>` is the scroll container and the toolbar above it is a sibling, not an
@@ -102,9 +107,10 @@ const bodyStyle = computed(() => ({
         type="button"
         class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2 focus:outline-none"
         :data-cursor-key="'header:' + id"
+        :aria-expanded="expanded"
         @click="$emit('toggle')"
       >
-        <span class="w-2.5 text-muted">{{ expanded ? "▾" : "▸" }}</span>
+        <FoldChevron :expanded="expanded" class="size-3 flex-none text-muted" />
         <span class="truncate">{{ label }}</span>
         <span
           class="ml-auto font-normal text-muted"
@@ -133,7 +139,7 @@ const bodyStyle = computed(() => ({
     <div
       v-if="bodyMounted"
       v-show="expanded"
-      class="bg-surface pb-2 pt-1 grid gap-x-2.5 grid-cols-(--section-columns) max-md:grid-cols-[minmax(0,1fr)]"
+      class="bg-surface pb-2 pt-1 grid gap-x-2.5 animate-fade-in grid-cols-(--section-columns) max-md:grid-cols-[minmax(0,1fr)]"
       :class="hasAssignments && 'md:overflow-x-auto'"
       :style="bodyStyle"
       data-testid="section-body"

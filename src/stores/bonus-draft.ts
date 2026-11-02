@@ -21,7 +21,7 @@ import {
   type ConditionRow,
 } from "../engine/condition-draft";
 import type { GrantDraft } from "../lib/bonus-draft";
-import { reorderIndex } from "../composables/useDragAndDrop";
+import { reorderIndex, stepGap } from "../composables/useDragAndDrop";
 
 /** Which of a `BonusDraftStore`'s condition trees a location lives in -- a grant's own
  *  "Active when" tree (`scope: "grant"`) or one of its variants' "When" trees (`scope:
@@ -69,10 +69,12 @@ export class GrantStore {
     // Auto-create initial tier when switching to tiered mode (only if empty).
     if (payload === "tiers" && grant.tiers.length === 0) {
       const last = grant.tiers[grant.tiers.length - 1];
-      grant.tiers.push({
-        atLeast: (last?.atLeast ?? 0) + 1,
-        stats: last ? last.stats.map((s) => ({ ...s })) : [],
-      });
+      grant.tiers.push(
+        bonusDraft.newTier(
+          (last?.atLeast ?? 0) + 1,
+          last ? last.stats.map((s) => ({ ...s })) : [],
+        ),
+      );
     }
     // Auto-create variant when switching to variant mode.
     if (payload === "variants" && grant.variants.length === 0) {
@@ -163,10 +165,12 @@ export class GrantStore {
   addTier(): void {
     const grant = this.grant;
     const last = grant.tiers[grant.tiers.length - 1];
-    grant.tiers.push({
-      atLeast: (last?.atLeast ?? 0) + 1,
-      stats: last ? last.stats.map((s) => ({ ...s })) : [],
-    });
+    grant.tiers.push(
+      bonusDraft.newTier(
+        (last?.atLeast ?? 0) + 1,
+        last ? last.stats.map((s) => ({ ...s })) : [],
+      ),
+    );
     this.store.onChange();
   }
 
@@ -178,20 +182,25 @@ export class GrantStore {
   insertTier(index: number): void {
     const grant = this.grant;
     const ref = grant.tiers[index];
-    grant.tiers.splice(index + 1, 0, {
-      atLeast: (ref?.atLeast ?? 0) + 1,
-      stats: [],
-    });
+    grant.tiers.splice(
+      index + 1,
+      0,
+      bonusDraft.newTier((ref?.atLeast ?? 0) + 1),
+    );
     this.store.onChange();
   }
 
   duplicateTier(index: number): void {
     const grant = this.grant;
     const tier = grant.tiers[index];
-    grant.tiers.splice(index + 1, 0, {
-      ...tier,
-      stats: tier.stats.map((s) => ({ ...s })),
-    });
+    grant.tiers.splice(
+      index + 1,
+      0,
+      bonusDraft.newTier(
+        tier.atLeast,
+        tier.stats.map((s) => ({ ...s })),
+      ),
+    );
     this.store.onChange();
   }
 
@@ -209,7 +218,7 @@ export class GrantStore {
   }
 
   moveTier(index: number, delta: number): void {
-    this.moveTierTo(index, index + delta);
+    this.moveTierTo(index, stepGap(index, delta));
   }
 
   addVariant(): void {
@@ -252,7 +261,7 @@ export class GrantStore {
   }
 
   moveVariant(index: number, delta: number): void {
-    this.moveVariantTo(index, index + delta);
+    this.moveVariantTo(index, stepGap(index, delta));
   }
 
   /** Attempt to switch between simple/form and JSON editing.
@@ -338,7 +347,7 @@ export class BonusDraftStore {
   }
 
   moveGrant(index: number, delta: number): void {
-    this.moveGrantTo(index, index + delta);
+    this.moveGrantTo(index, stepGap(index, delta));
   }
 
   /** ConditionRows @update handler for grant-level conditions. */

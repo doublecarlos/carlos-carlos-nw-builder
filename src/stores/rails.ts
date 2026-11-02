@@ -3,7 +3,7 @@
 // A view preference, not a build edit: shared across every build, never on the undo stack, and
 // persisted alongside the BuildEditor's section-expanded state under the same key (see
 // storage.ts's `UiState`, whose write merges so the two owners don't clobber each other).
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import * as storage from "../storage/storage";
 
@@ -92,8 +92,23 @@ export const collapsed = (rail: RailId) => computed(() => state[rail]);
 
 export const isCollapsed = (rail: RailId) => state[rail];
 
+/** Collapses or restores a rail. Where the browser can, the columns morph between the two
+ *  layouts as a view transition: the layout changes once and the snapshots animate, rather
+ *  than every column re-laying out per frame. The columns' names and the morph's styles live
+ *  in App.vue, LayerEditor.vue and base.css. */
 export function toggle(rail: RailId) {
-  state[rail] = !state[rail];
+  const flip = () => {
+    state[rail] = !state[rail];
+  };
+  const canMorph =
+    typeof document !== "undefined" &&
+    typeof document.startViewTransition === "function" &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!canMorph) return flip();
+  document.startViewTransition(async () => {
+    flip();
+    await nextTick();
+  });
 }
 
 /** The rail's open column width, clamped to what the current viewport can carry. */

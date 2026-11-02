@@ -165,6 +165,43 @@ describe("BonusDraftStore.moveGrantTo", () => {
   });
 });
 
+// The arrow buttons in each card's header. Down used to land on the gap right under the row
+// itself and do nothing.
+describe("one-step moves", () => {
+  it("moveGrant moves a grant down and back up", () => {
+    const { grants, store } = makeMultiGrantStore(3);
+    const [a, b, c] = grants;
+    store.moveGrant(0, 1);
+    expect(grants).toEqual([b, a, c]);
+    store.moveGrant(1, -1);
+    expect(grants).toEqual([a, b, c]);
+  });
+
+  it("moveTier moves a tier down", () => {
+    const { gs } = makeStore("tiers");
+    gs.addTier();
+    const [first, second] = gs.grant.tiers;
+    gs.moveTier(0, 1);
+    expect(gs.grant.tiers).toEqual([second, first]);
+  });
+
+  it("a duplicated tier is a row of its own, so moving one never carries the other", () => {
+    const { gs } = makeStore("tiers");
+    gs.duplicateTier(0);
+    const [first, copy] = gs.grant.tiers;
+    expect(copy.uid).not.toBe(first.uid);
+    expect(copy.atLeast).toBe(first.atLeast);
+  });
+
+  it("moveVariant moves a variant down", () => {
+    const { gs } = makeStore("variants");
+    gs.addVariant();
+    const [first, second] = gs.grant.variants;
+    gs.moveVariant(0, 1);
+    expect(gs.grant.variants).toEqual([second, first]);
+  });
+});
+
 describe("GrantStore.moveTierTo / moveVariantTo", () => {
   it("moveTierTo drops a tier at an arbitrary index", () => {
     const { gs } = makeStore("tiers");
@@ -396,7 +433,9 @@ describe("BonusDraftStore.moveBranch", () => {
 describe("BonusDraftStore tier seeding", () => {
   it("setPayload('tiers') seeds one tier at 1", () => {
     const { gs } = makeStore("tiers");
-    expect(gs.grant.tiers).toEqual([{ atLeast: 1, stats: [] }]);
+    expect(gs.grant.tiers).toEqual([
+      { uid: expect.any(String), atLeast: 1, stats: [] },
+    ]);
   });
 
   it("addTier starts one above the tier before it, copying its stats", () => {

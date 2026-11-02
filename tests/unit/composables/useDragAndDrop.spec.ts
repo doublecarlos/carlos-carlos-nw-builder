@@ -7,6 +7,7 @@ import {
   separatorTop,
   autoscrollDelta,
   reorderIndex,
+  stepGap,
   armsDrag,
   useDragHandles,
 } from "../../../src/composables/useDragAndDrop";
@@ -97,6 +98,15 @@ describe("autoscrollDelta", () => {
 
   it("caps at maxSpeed right at the edge", () => {
     expect(autoscrollDelta(0, 24, 12)).toBe(12);
+  });
+});
+
+describe("stepGap", () => {
+  // A one-step move up/down, as the pre-removal gap `reorderIndex` takes. Down must skip the
+  // gap right under the row, or the row lands back where it was.
+  it("moves a row one place either way once `reorderIndex` resolves it", () => {
+    expect(reorderIndex(1, stepGap(1, 1))).toBe(2);
+    expect(reorderIndex(1, stepGap(1, -1))).toBe(0);
   });
 });
 
