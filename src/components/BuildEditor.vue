@@ -76,6 +76,7 @@ import * as goTo from "../stores/goTo";
 import * as details from "../stores/details";
 import { isMac } from "../lib/platform";
 import { animateScrollTop, type CancelScroll } from "../lib/animate-scroll";
+import { anyPickerOpen } from "../composables/useOpenPickers";
 import type {
   Build,
   Item,
@@ -1450,10 +1451,14 @@ watch(
           </template>
         </BuildSection>
 
-        <!-- One card for the whole list, moved and refilled on hover. -->
+        <!-- One card for the whole list, moved and refilled on hover. A pinned one steps aside
+             while a picker is open, so it never covers the menu or its preview, and returns
+             where it was. -->
         <BasePopover ref="tooltip" :width="320">
           <ItemCard
-            v-if="hover && !sheetTarget && cardProps"
+            v-if="
+              hover && !sheetTarget && cardProps && !(pinned && anyPickerOpen)
+            "
             v-bind="cardProps"
             pinnable
             :pinned="pinned"

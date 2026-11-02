@@ -18,6 +18,7 @@ import PanelHead from "./ui/PanelHead.vue";
 import StatPanelPairsTable from "./game/StatPanelPairsTable.vue";
 import CompareLine from "./ui/CompareLine.vue";
 import { useStatSourcePopover } from "../composables/useStatSourcePopover";
+import { anyPickerOpen } from "../composables/useOpenPickers";
 import { NW_SCHEMA } from "../data/data";
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../lib/format";
 import * as compare from "../stores/compare";
@@ -766,7 +767,7 @@ const {
 
     <BasePopover ref="tooltip" :width="320">
       <StatPanelSourceCard
-        v-if="openKey"
+        v-if="openKey && !(pinned && anyPickerOpen)"
         :label="openLabel"
         :sections="openSections"
         :db="engine.db.value"

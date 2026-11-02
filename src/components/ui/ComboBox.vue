@@ -60,6 +60,7 @@ import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 import ComboBoxScreen from "./ComboBoxScreen.vue";
 import BaseButton from "./BaseButton.vue";
+import { trackPickerOpen } from "../../composables/useOpenPickers";
 import BaseSheet from "./BaseSheet.vue";
 import IconButton from "./IconButton.vue";
 import { Info } from "@lucide/vue";
@@ -156,6 +157,7 @@ const model = defineModel<string>({ default: "" });
 
 const open = ref(false);
 watch(open, (value) => emit("update:open", value));
+trackPickerOpen(open);
 const query = ref("");
 watch(query, (value) => emit("update:query", value));
 const highlight = ref(0);
