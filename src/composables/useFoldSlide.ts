@@ -1,4 +1,4 @@
-import { toValue, watch, type MaybeRefOrGetter } from "vue";
+import { nextTick, toValue, watch, type MaybeRefOrGetter } from "vue";
 import type { Point } from "../lib/reorder-motion";
 import { measureRows, prefersReducedMotion, slideRows } from "../lib/row-slide";
 
@@ -31,12 +31,15 @@ export function useFoldSlide(
     { flush: "pre" },
   );
 
+  // A fold is usually a child's `v-show`, applied after this component's own post-flush
+  // watchers run; `nextTick` waits for the whole flush, still before the browser paints.
   watch(
     signature,
-    () => {
+    async () => {
       if (!before) return;
       const from = before;
       before = null;
+      await nextTick();
       slideRows(toValue(container), from);
     },
     { flush: "post" },

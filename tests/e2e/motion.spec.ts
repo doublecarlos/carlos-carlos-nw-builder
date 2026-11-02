@@ -117,11 +117,14 @@ function sectionOrder(page: Page) {
 test.describe("with motion, folding a section", () => {
   test.use({ contextOptions: { reducedMotion: "no-preference" } });
 
-  test("slides the sections below it, not itself or those above", async ({
+  test("slides the sections below it from where they were, not itself or those above", async ({
     page,
   }) => {
     await openBuilder(page);
     const [first, second, third] = await sectionOrder(page);
+    const next = page.locator(`[data-section-id="${third}"]`);
+    const topBefore = (await next.boundingBox())!.y;
+
     await headerRow(page, second).click();
     await expect
       .poll(async () => (await slidingSections(page)).includes(third))
@@ -129,6 +132,16 @@ test.describe("with motion, folding a section", () => {
     const sliding = await slidingSections(page);
     expect(sliding).not.toContain(first);
     expect(sliding).not.toContain(second);
+
+    // The slide's first frame draws the next section where it sat before the fold, so it
+    // travels the whole distance rather than jumping most of it.
+    const drawnAtStart = await next.evaluate((el) => {
+      const slide = el.getAnimations().find((a) => a.id === "row-slide")!;
+      slide.pause();
+      slide.currentTime = 0;
+      return el.getBoundingClientRect().top;
+    });
+    expect(Math.abs(drawnAtStart - topBefore)).toBeLessThan(2);
   });
 
   test("collapses a rail through a view transition", async ({ page }) => {
