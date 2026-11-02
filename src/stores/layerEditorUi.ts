@@ -13,6 +13,10 @@ import * as layers from "./layers";
 import * as selection from "./selection";
 import type { Item, SectionPreset } from "../types";
 import type { LayerEditorView } from "../lib/layer-editor-layout";
+import {
+  defaultItemListFilter,
+  type ItemListFilter,
+} from "../lib/item-list-filter";
 
 export interface LayerEditorUiState {
   section: string;
@@ -25,6 +29,8 @@ export interface LayerEditorUiState {
   filter: string;
   status: string;
   q: string;
+  /** The Items tab's quality, category and retired filters, never in the URL. */
+  itemFilter: ItemListFilter;
   view: LayerEditorView;
 }
 
@@ -40,6 +46,7 @@ function defaults(): LayerEditorUiState {
     filter: "",
     status: "",
     q: "",
+    itemFilter: defaultItemListFilter(),
     view: "list",
   };
 }

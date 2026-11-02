@@ -30,6 +30,7 @@ describe("layerEditorUi store", () => {
       filter: "",
       status: "",
       q: "",
+      itemFilter: { quality: "", category: "", hideRetired: true },
       view: "list",
     });
   });

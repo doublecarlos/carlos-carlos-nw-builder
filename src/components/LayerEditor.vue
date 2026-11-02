@@ -63,6 +63,7 @@ import {
   Upload,
 } from "@lucide/vue";
 import * as catalog from "../data/catalog";
+import { isRetired } from "../data/db";
 import { showNotice } from "../stores/notice";
 import * as router from "../lib/router";
 import * as engine from "../stores/resolved";
@@ -71,6 +72,11 @@ import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
 import * as rails from "../stores/rails";
 import { matchesQuery } from "../lib/text-filter";
+import {
+  defaultItemListFilter,
+  keepsItem,
+  type ItemListFilter,
+} from "../lib/item-list-filter";
 import { editorDb } from "../lib/editor-db";
 import { viewportKind } from "../lib/shell-layout";
 import {
@@ -228,6 +234,7 @@ const anySelected = () =>
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
+const itemFilter = ref<ItemListFilter>(defaultItemListFilter());
 
 /** An overlay group, as the editor authors it: each has a form and a tab. */
 type EditorGroup = CatalogGroup;
@@ -562,6 +569,15 @@ const filtered = computed(() => {
     if (
       ["added", "edited", "removed"].includes(statusFilter.value) &&
       row.status !== statusFilter.value
+    )
+      return false;
+    if (
+      row.kind === "item" &&
+      !keepsItem(
+        itemFilter.value,
+        row.item,
+        row.item ? isRetired(db.value, row.item.id) : false,
+      )
     )
       return false;
     return matchesQuery([row.name, row.filter ?? ""], query.value);
@@ -1343,8 +1359,8 @@ watch(query, (value) => {
 // has been cleared by `onUnmounted` below. `selectedBySection` is a reactive object, not a
 // ref, so it deep-watches by default even inside this array of sources.
 watch(
-  [tab, slotsGroup, selectedBySection, statusFilter, query],
-  ([activeTab, group, sel, status, q]) => {
+  [tab, slotsGroup, selectedBySection, statusFilter, query, itemFilter],
+  ([activeTab, group, sel, status, q, items]) => {
     ui.value.section = activeTab;
     ui.value.slotsGroup = group;
     ui.value.item = sel.items ?? "";
@@ -1355,6 +1371,7 @@ watch(
     ui.value.sectionId = sel.sections ?? "";
     ui.value.status = status === "all" ? "" : status;
     ui.value.q = q;
+    ui.value.itemFilter = items;
   },
 );
 
@@ -1403,6 +1420,7 @@ onMounted(() => {
   }
   if (isValidStatusFilter(source.status)) statusFilter.value = source.status;
   if (source.q) query.value = source.q;
+  itemFilter.value = ui.value.itemFilter;
 });
 
 useEventListener(window, "popstate", onPopState);
@@ -1423,6 +1441,7 @@ watch(
       ? ui.value.status
       : "all";
     query.value = ui.value.q;
+    itemFilter.value = ui.value.itemFilter;
   },
 );
 
@@ -1684,8 +1703,10 @@ onUnmounted(() => {
           v-else-if="!entriesCollapsed"
           v-model:query="query"
           v-model:status-filter="statusFilter"
+          v-model:item-filter="itemFilter"
           class="min-w-0 flex-1"
           :rows="filtered"
+          :categories="filters"
           :section="activeGroup"
           :selected-key="selectedKey"
           :status-filter-options="statusFilterOptions"
