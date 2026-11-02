@@ -1277,6 +1277,7 @@ export interface EngineError {
     | "maxCopies"
     | "outOfRange"
     | "missing"
+    | "slotFilter"
     | "bonusRule"
     | "insigniaSlot"
     | "publishConflict"

@@ -20,10 +20,10 @@ import { addLayer, layerRow } from "./support/nav";
 const OLD_ITEM = "ZZZ Test Retired Ring";
 const NEW_ITEM = "ZZZ Test Replacement Ring";
 
-async function createItem(page: Page, name: string) {
+async function createItem(page: Page, name: string, filter = "gear_ring") {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
-  await setItemFilter(page, "gear_ring");
+  await setItemFilter(page, filter);
   // Opts out of the copy cap gear_ring declares: the flows below hold one item in both rings.
   await page.getByTestId("item-max-copies").fill("0");
   await page.getByRole("button", { name: "Save item" }).click();
@@ -280,6 +280,33 @@ test("a replaced item keeps its slot until the offer is accepted", async ({
   await page.getByTestId("retired-items-apply").click();
   await expect(notice).toHaveCount(0);
   await expect(pickerInput(head)).toHaveValue(NEW_ITEM);
+});
+
+test("a replacement from another filter is flagged once it lands in the slot", async ({
+  page,
+}) => {
+  const NECK = "ZZZ Test Replacement Neck";
+  await openBuilder(page);
+  await addLayer(page);
+  await openLayer(page);
+  await createItem(page, OLD_ITEM);
+  await createItem(page, NECK, "gear_neck");
+
+  await openBuild(page);
+  await chooseItem(page, "gear.ring1", OLD_ITEM);
+
+  await openLayer(page);
+  await retireItem(page, OLD_ITEM, NECK);
+
+  await openBuild(page);
+  const head = slotRow(page, "gear.ring1");
+  await head.scrollIntoViewIfNeeded();
+  await expect(head).not.toContainText("does not fit");
+
+  // The swap still happens, but a ring slot holding a neck item is a build error.
+  await page.getByTestId("retired-items-apply").click();
+  await expect(pickerInput(head)).toHaveValue(NECK);
+  await expect(head).toContainText("does not fit");
 });
 
 test("a retired item with no replacement is flagged, and can be filtered to", async ({
