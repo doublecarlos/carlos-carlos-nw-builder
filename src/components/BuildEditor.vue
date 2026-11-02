@@ -56,6 +56,7 @@ import {
   type NestPosition,
 } from "../lib/slot-parent";
 import { useHoverCard, type HoverPosition } from "../composables/useHoverCard";
+import { useFoldSlide } from "../composables/useFoldSlide";
 import * as viewport from "../stores/viewport";
 import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
@@ -605,6 +606,14 @@ const sections = computed<SectionRow[]>(() => {
     })
     .filter((section) => section.slots.length > 0 || !anyFilterActive.value);
 });
+
+// Opening or closing a section slides the ones below instead of jumping them.
+useFoldSlide(root, () => ({
+  rows: sections.value.map((section) => section.id),
+  open: sections.value
+    .filter((section) => sectionExpanded(section.id))
+    .map((section) => section.id),
+}));
 
 /** Total rendered slots across every visible section, for the "N matches" indicator next to
  *  the filter controls. */

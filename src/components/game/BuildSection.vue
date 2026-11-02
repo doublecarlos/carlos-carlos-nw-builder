@@ -87,7 +87,11 @@ const bodyStyle = computed(() => ({
 <template>
   <!-- `data-section-id` is what BuildEditor's section-at-a-time cursor and the section rail's
        scroll spy both navigate by, the same way `data-cursor-key` marks a row. -->
-  <section class="rounded-md border border-line" :data-section-id="id">
+  <section
+    class="rounded-md border border-line"
+    :data-section-id="id"
+    :data-flip-key="id"
+  >
     <!-- Sticky within its own section, so a long one (Group is 28 rows, Artifact Call 26)
          still says which section you are reading once its top has scrolled away. The editor's
          `<main>` is the scroll container and the toolbar above it is a sibling, not an

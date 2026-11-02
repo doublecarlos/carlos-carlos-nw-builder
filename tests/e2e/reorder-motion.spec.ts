@@ -17,9 +17,7 @@ import {
 function sliding(page: Page) {
   return page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("[data-flip-key]")]
-      .filter((row) =>
-        row.getAnimations().some((a) => a.id === "reorder-slide"),
-      )
+      .filter((row) => row.getAnimations().some((a) => a.id === "row-slide"))
       .map((row) => row.dataset.flipKey),
   );
 }

@@ -4,27 +4,29 @@ import {
   isReorder,
   movedKeys,
   revealDelta,
-  slideOffsets,
   type Point,
 } from "../lib/reorder-motion";
+import {
+  keyedRows,
+  measureRows,
+  prefersReducedMotion,
+  slideRows,
+} from "../lib/row-slide";
 
-const SLIDE_MS = 150;
 const FLASH_MS = 700;
-const EASE_SNAPPY = "cubic-bezier(0.2, 0, 0, 1)";
 /** Room left between a revealed row and the edge of its scroll area. */
 const REVEAL_MARGIN = 8;
 
 /**
  * Shows where a reordered row went, on a drop, an undo or a move up/down. Every row slides from
- * where it was to where it lands, the list scrolls the moved row into view so it cannot slide
- * out of sight, and a ring on the moved row fades out to mark it. Rows are the elements under
- * `container` marked `data-flip-key`; `order` lists the rendered keys, and only a change of
- * their order counts (lib/reorder-motion.ts), so adding, removing, filtering and folding stay
- * instant.
+ * where it was to where it lands (lib/row-slide.ts), the list scrolls the moved row into view so
+ * it cannot slide out of sight, and a ring on the moved row fades out to mark it. Rows are the
+ * elements under `container` marked `data-flip-key`; `order` lists the rendered keys, and only
+ * a change of their order counts (lib/reorder-motion.ts), so adding, removing, filtering and
+ * folding stay instant.
  *
- * Transform and box-shadow only, ending with no fill, so a fixed descendant (ComboBoxMenu) is
- * offset for at most the slide itself. Under reduced motion the moved row is still scrolled to,
- * at once and without the slide or ring.
+ * Under reduced motion the moved row is still scrolled to, at once and without the slide or
+ * ring.
  */
 export function useReorderMotion(
   container: MaybeRefOrGetter<HTMLElement | null | undefined>,
@@ -33,34 +35,12 @@ export function useReorderMotion(
   let pending: { moved: string[]; before: Map<string, Point> | null } | null =
     null;
 
-  function rows(): HTMLElement[] {
-    const root = toValue(container);
-    return root
-      ? [...root.querySelectorAll<HTMLElement>("[data-flip-key]")]
-      : [];
-  }
-
-  function measure(): Map<string, Point> {
-    const positions = new Map<string, Point>();
-    for (const row of rows()) {
-      const rect = row.getBoundingClientRect();
-      positions.set(row.dataset.flipKey!, { x: rect.left, y: rect.top });
-    }
-    return positions;
-  }
-
-  function reducedMotion() {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }
-
   /** The keyed rows inside `key`'s own, which move along with it. */
   function nestedKeys(key: string): string[] {
-    const row = rows().find((el) => el.dataset.flipKey === key);
-    return row
-      ? [...row.querySelectorAll<HTMLElement>("[data-flip-key]")].map(
-          (el) => el.dataset.flipKey!,
-        )
-      : [];
+    const row = keyedRows(toValue(container)).find(
+      (el) => el.dataset.flipKey === key,
+    );
+    return row ? keyedRows(row).map((el) => el.dataset.flipKey!) : [];
   }
 
   /** The row holding focus, as rendered before the update. A keyboard move keeps it there. */
@@ -86,7 +66,7 @@ export function useReorderMotion(
           [droppedKey(), focusedKey()],
           nestedKeys,
         ),
-        before: reducedMotion() ? null : measure(),
+        before: prefersReducedMotion() ? null : measureRows(toValue(container)),
       };
     },
     { flush: "pre" },
@@ -98,33 +78,25 @@ export function useReorderMotion(
       if (!pending) return;
       const { moved, before } = pending;
       pending = null;
-      const elements = new Map(
-        rows().map((row) => [row.dataset.flipKey!, row]),
-      );
-      // A slide still running from a quick earlier move would skew the measure and the scroll
-      // target. The new slides start from where `before` saw the rows, so nothing jumps.
-      for (const row of elements.values())
-        for (const running of row.getAnimations())
-          if (running.id === "reorder-slide") running.cancel();
-      const target = moved.map((key) => elements.get(key)).find(Boolean);
+      const root = toValue(container);
+      const targetIn = (rows: ReadonlyMap<string, HTMLElement>) =>
+        moved.map((key) => rows.get(key)).find(Boolean);
 
-      const offsets = before
-        ? slideOffsets(before, measure(), (key) => parentKey(elements, key))
-        : new Map<string, Point>();
-
-      // Scrolled before the slides start, so the scroll aims at the row's final place.
-      if (target) reveal(target, before ? "smooth" : "instant");
-      if (!before) return;
-
-      for (const [key, { x, y }] of offsets) {
-        const slide = elements
-          .get(key)
-          ?.animate(
-            [{ transform: `translate(${x}px, ${y}px)` }, { transform: "none" }],
-            { duration: SLIDE_MS, easing: EASE_SNAPPY },
-          );
-        if (slide) slide.id = "reorder-slide";
+      if (!before) {
+        const rows = new Map(
+          keyedRows(root).map((row) => [row.dataset.flipKey!, row]),
+        );
+        const target = targetIn(rows);
+        if (target) reveal(target, "instant");
+        return;
       }
+
+      let target: HTMLElement | undefined;
+      // Scrolled before the slides start, so the scroll aims at the row's final place.
+      slideRows(root, before, (rows) => {
+        target = targetIn(rows);
+        if (target) reveal(target, "smooth");
+      });
       if (target) flash(target);
     },
     { flush: "post" },
@@ -165,17 +137,6 @@ function scrollParent(el: HTMLElement): HTMLElement | null {
       return node;
   }
   return null;
-}
-
-/** The nearest keyed row around `key`'s own, which carries it along when it moves. */
-function parentKey(
-  elements: ReadonlyMap<string, HTMLElement>,
-  key: string,
-): string | null {
-  return (
-    elements.get(key)?.parentElement?.closest<HTMLElement>("[data-flip-key]")
-      ?.dataset.flipKey ?? null
-  );
 }
 
 /** An accent ring inside the row, held briefly and then faded out. Resolved to a color here

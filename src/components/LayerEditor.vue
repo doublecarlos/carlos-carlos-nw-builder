@@ -1674,7 +1674,7 @@ onUnmounted(() => {
            margin keeps a touch-sized toggle from poking past the page's edge. -->
       <div
         v-if="layout.list"
-        class="flex min-h-0 items-stretch md:max-lg:mr-2 md:max-lg:max-h-[40%]"
+        class="flex min-h-0 items-stretch md:max-lg:mr-2 md:max-lg:max-h-[40%] [view-transition-name:rail-entries]"
         :class="[
           layout.form ? 'flex-none' : 'flex-1',
           entriesCollapsed && 'rounded-md border border-line bg-surface',
@@ -1727,7 +1727,7 @@ onUnmounted(() => {
 
       <div
         v-if="layout.form"
-        class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface px-3 pb-3"
+        class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface px-3 pb-3 [view-transition-name:rail-form]"
         data-testid="layer-form-pane"
       >
         <ItemForm

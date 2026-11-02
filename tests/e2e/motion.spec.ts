@@ -1,6 +1,7 @@
 // The motion budget, checked with motion turned back on (the suite runs with reduced motion):
 // overlays enter with a short animation, repeated actions do not replay it, and nothing an
-// entrance does gets in the way of input.
+// entrance does gets in the way of input. Folding a section slides the ones below it, and a
+// rail collapses through a view transition.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -95,7 +96,77 @@ test.describe("with motion", () => {
   });
 });
 
+/** The section ids sliding right now. */
+function slidingSections(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("[data-section-id]")]
+      .filter((el) => el.getAnimations().some((a) => a.id === "row-slide"))
+      .map((el) => el.dataset.sectionId),
+  );
+}
+
+/** The section ids in list order. */
+function sectionOrder(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("[data-section-id]")].map(
+      (el) => el.dataset.sectionId!,
+    ),
+  );
+}
+
+test.describe("with motion, folding a section", () => {
+  test.use({ contextOptions: { reducedMotion: "no-preference" } });
+
+  test("slides the sections below it, not itself or those above", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const [first, second, third] = await sectionOrder(page);
+    await headerRow(page, second).click();
+    await expect
+      .poll(async () => (await slidingSections(page)).includes(third))
+      .toBe(true);
+    const sliding = await slidingSections(page);
+    expect(sliding).not.toContain(first);
+    expect(sliding).not.toContain(second);
+  });
+
+  test("collapses a rail through a view transition", async ({ page }) => {
+    await openBuilder(page);
+    const toggle = page
+      .getByTestId("nav-column")
+      .getByTestId("rail-toggle-left");
+    await toggle.click();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          document
+            .getAnimations()
+            .some((a) =>
+              (a.effect as KeyframeEffect | null)?.pseudoElement?.includes(
+                "rail-nav",
+              ),
+            ),
+        ),
+      )
+      .toBe(true);
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
 test.describe("with reduced motion", () => {
+  test("folding a section slides nothing", async ({ page }) => {
+    await openBuilder(page);
+    const [, second] = await sectionOrder(page);
+    const before = await headerRow(page, second).getAttribute("aria-expanded");
+    await headerRow(page, second).click();
+    await expect(headerRow(page, second)).not.toHaveAttribute(
+      "aria-expanded",
+      before ?? "",
+    );
+    expect(await slidingSections(page)).toEqual([]);
+  });
+
   test("entrances collapse to effectively nothing", async ({ page }) => {
     await openBuilder(page);
 
