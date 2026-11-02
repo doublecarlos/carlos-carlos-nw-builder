@@ -360,6 +360,15 @@ function teardown() {
   window.removeEventListener("click", swallowClick, true);
 }
 
+/** The key of the row just dropped, until the update the drop caused has rendered. */
+let justDropped: string | null = null;
+
+/** The dropped row's key while its drop is being rendered, for useReorderMotion to tell the
+ *  moved row from the ones it displaced. */
+export function droppedKey(): string | null {
+  return justDropped;
+}
+
 function endDrag() {
   const { source, target } = state;
   teardown();
@@ -368,11 +377,16 @@ function endDrag() {
   if (!source || !target) return;
   const entry = registry.get(target.owner);
   if (!entry) return;
+  justDropped = source.key;
   if (target.resolved.zone === "into") {
     entry.onDrop(source, target.resolved.index, "into");
   } else {
     entry.onDrop(source, target.resolved.gap, "before");
   }
+  // Queued after the render the drop scheduled, so that render still sees the key.
+  queueMicrotask(() => {
+    justDropped = null;
+  });
 }
 
 function cancelDrag() {

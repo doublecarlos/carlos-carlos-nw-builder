@@ -7,7 +7,7 @@
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusForm.
 
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, useTemplateRef } from "vue";
 import ConditionRows, {
   type ConditionTreeLocation,
   type ConditionBranchTreeLocation,
@@ -62,6 +62,7 @@ import {
   useDropList,
 } from "../../composables/useDragAndDrop";
 import { useKeyedCache } from "../../composables/useKeyedCache";
+import { useReorderMotion } from "../../composables/useReorderMotion";
 
 const emit = defineEmits<{ error: [message: string] }>();
 
@@ -207,6 +208,15 @@ function removeNameDescription(gIndex: number) {
 // own uid.
 const instanceId = `bonus-rows:${Math.random().toString(36).slice(2)}`;
 const grantsContainerId = `grants:${instanceId}`;
+
+// Grants and their variants slide to their new place. Tiers are keyed by position, so a moved
+// tier is redrawn in place and has nothing to slide.
+useReorderMotion(useTemplateRef("grantList"), () =>
+  props.store.grants.flatMap((grant) => [
+    grant.uid,
+    ...grant.variants.map((variant) => variant.uid),
+  ]),
+);
 
 const grantsDropList = useDropList({
   accepts: (source) =>
@@ -437,12 +447,13 @@ function toggleJson(gIndex: number) {
     </span>
   </FormSection>
 
-  <div v-bind="grantsDropList.listProps()" class="relative">
+  <div ref="grantList" v-bind="grantsDropList.listProps()" class="relative">
     <DropIndicator :pos="grantsDropList.separatorStyle.value" />
 
     <div
       v-for="(grant, gIndex) in props.store.grants"
       :key="grant.uid"
+      :data-flip-key="grant.uid"
       data-testid="bonus-grant-row"
       :data-expanded="isExpanded(grant)"
       class="mb-2 rounded-md border border-line bg-surface-2 p-2.5"
@@ -636,6 +647,7 @@ function toggleJson(gIndex: number) {
                 <div
                   v-for="(variant, vIndex) in grant.variants"
                   :key="variant.uid"
+                  :data-flip-key="variant.uid"
                   data-testid="bonus-variant-row"
                   class="my-1.5 rounded-md border border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
                   :class="[

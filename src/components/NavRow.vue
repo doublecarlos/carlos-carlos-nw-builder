@@ -146,6 +146,7 @@ function onRowKeydown(event: KeyboardEvent) {
       kind === 'folder' && isDropInto && 'is-drop-into bg-accent-soft',
     ]"
     v-bind="rowProps"
+    :data-flip-key="id"
   >
     <DragHandle
       v-if="coarsePointer && !renaming"
