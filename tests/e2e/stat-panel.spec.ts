@@ -369,9 +369,13 @@ test("rating labels stay on one line at the panel's default width", async ({
   await openBuilder(page);
   await importStatItems(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
-  const labels = page.locator("tr[data-stat-row] td:first-child > span");
+  const labels = page.locator("tr[data-stat-row] td:first-child > div > span");
+  // Rows of a section that is not on screen measure zero and say nothing about wrapping.
   const heights = await labels.evaluateAll((spans) =>
-    spans.map((span) => span.getBoundingClientRect().height),
+    spans
+      .map((span) => span.getBoundingClientRect().height)
+      .filter((height) => height > 0),
   );
+  expect(heights.length).toBeGreaterThan(0);
   expect(new Set(heights).size).toBe(1);
 });

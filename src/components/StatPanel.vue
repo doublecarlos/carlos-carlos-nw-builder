@@ -653,7 +653,6 @@ const {
             >
               Overcap
             </td>
-            <td class="border-y border-line bg-surface-2/55"></td>
           </tr>
         </thead>
         <tbody>
@@ -670,7 +669,10 @@ const {
               class="border border-line px-1 py-0.5 align-top"
               :class="row.sepAfter && 'border-b-2 border-b-text/50'"
             >
-              <span>{{ row.label }}</span>
+              <div class="flex items-center">
+                <StatInfoButton :stat-key="row.key" :label="row.label" />
+                <span>{{ row.label }}</span>
+              </div>
               <CompareLine
                 v-if="row.compare"
                 :text="`↳ ${compareName}`"
@@ -726,12 +728,6 @@ const {
               ]"
             >
               {{ signedInt(row.rating.over) }}
-            </td>
-            <td
-              class="w-0 border-y border-line py-0.5 pr-0.5 align-top"
-              :class="row.sepAfter && 'border-b-2 border-b-text/50'"
-            >
-              <StatInfoButton :stat-key="row.key" :label="row.label" />
             </td>
           </tr>
         </tbody>

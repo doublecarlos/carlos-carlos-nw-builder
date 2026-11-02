@@ -7,7 +7,7 @@
 // `compareLabel` (that build's name) under the stat's label. Rows leave `compare` unset when
 // the two builds agree, so the panel only grows where there is something to see.
 //
-// A row with an `infoKey` ends in the info button for that stat's source card.
+// A row with an `infoKey` leads with the info button for that stat's source card.
 import CompareLine from "../ui/CompareLine.vue";
 import StatInfoButton from "./StatInfoButton.vue";
 
@@ -42,7 +42,15 @@ defineProps<{
           :data-stat-row="row.key"
         >
           <td class="px-1 py-0.5 align-top" :class="row.muted && 'text-muted'">
-            <span>{{ row.label }}</span>
+            <div class="flex items-center gap-0.5">
+              <StatInfoButton
+                v-if="row.infoKey"
+                class="flex-none"
+                :stat-key="row.infoKey"
+                :label="row.label"
+              />
+              <span>{{ row.label }}</span>
+            </div>
             <CompareLine
               v-if="row.compare"
               class="font-normal"
@@ -61,13 +69,6 @@ defineProps<{
               v-if="row.compare"
               class="font-normal tabular-nums"
               :text="row.compare"
-            />
-          </td>
-          <td class="w-0 py-0.5 pr-0.5 align-top">
-            <StatInfoButton
-              v-if="row.infoKey"
-              :stat-key="row.infoKey"
-              :label="row.label"
             />
           </td>
         </tr>
