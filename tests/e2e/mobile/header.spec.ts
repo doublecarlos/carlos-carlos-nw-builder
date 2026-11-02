@@ -189,6 +189,25 @@ test("a long notice wraps under the header row instead of truncating", async ({
   await expectHeaderFits(page);
 });
 
+// A coarse pointer widens buttons to a tap-sized minimum; an icon-only button keeps its icon in
+// the middle of that box rather than at its leading edge.
+test("icon-only header buttons center their icon", async ({ page }) => {
+  await page.setViewportSize({ width: MIN_SUPPORTED_WIDTH, height: 800 });
+  await openBuilder(page);
+
+  for (const id of ["header-nav-toggle", "header-menu"]) {
+    const button = page.getByTestId(id);
+    const outer = await box(button);
+    const icon = await box(button.locator("svg"));
+    expect(
+      Math.abs(icon.x + icon.width / 2 - (outer.x + outer.width / 2)),
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(icon.y + icon.height / 2 - (outer.y + outer.height / 2)),
+    ).toBeLessThanOrEqual(1);
+  }
+});
+
 for (const width of [768, 1000]) {
   test(`a tablet header keeps its file actions on one row at ${width}px`, async ({
     page,
