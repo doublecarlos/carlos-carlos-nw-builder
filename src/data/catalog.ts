@@ -20,7 +20,11 @@ import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
 import { isQuality } from "../lib/item-quality";
-import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
+import {
+  replacementBonusValuesOf,
+  replacementIdOf,
+  replacementValuesOf,
+} from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import {
   groupUnderParents,
@@ -2082,9 +2086,11 @@ export function validateSlotDefaults(
 export function validateReplacements(
   items: Item[],
   schema: Schema = NW_SCHEMA,
+  bonuses: Bonus[] = [],
 ): LintFinding[] {
   const findings: LintFinding[] = [];
   const byId = new Map(items.map((item) => [item.id, item]));
+  const bonusById = new Map(bonuses.map((bonus) => [bonus.id, bonus]));
   const statKeys = new Set(schema.statKeys);
 
   for (const item of items) {
@@ -2142,6 +2148,28 @@ export function validateReplacements(
           });
         }
       }
+    }
+
+    // Bonus seeds land only on a bonus the item ending the chain carries.
+    const bonusSeeds = replacementBonusValuesOf(item.replacedBy);
+    if (Object.keys(bonusSeeds).length) {
+      const carried = new Set(endOfChain(byId, item)?.bonuses ?? []);
+      const problems = [
+        ...bonusValuesProblems(bonusSeeds, bonusById),
+        ...Object.keys(bonusSeeds)
+          .filter((id) => bonusById.has(id) && !carried.has(id))
+          .map(
+            (id) =>
+              `bonusValues "${id}" is not on the replacement; it would be dropped on migration`,
+          ),
+      ];
+      for (const problem of problems)
+        findings.push({
+          level: "error",
+          kind: "item",
+          name: item.id,
+          message: `replacedBy ${problem}`,
+        });
     }
 
     // One finding per cycle member: each is an item whose `replacedBy` needs fixing.
@@ -2544,7 +2572,7 @@ export function validate(
     ...validateParamReaders(slots, bonuses),
     ...validateBonusAttachments(items, bonuses),
     ...validateRankTiers(items, bonuses),
-    ...validateReplacements(items, schema),
+    ...validateReplacements(items, schema, bonuses),
     ...validateMaxCopies(items, slots, db.filterDefaultsOf(filters)),
     ...validateStableSlots(slots),
     ...validateFilterFields(db.filterFieldsOf(filters)),

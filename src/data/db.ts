@@ -5,7 +5,11 @@
 // arguments so catalog.ts can hand it a composed (base + overlay) catalog instead.
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS, NW_FILTERS } from "./data";
-import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
+import {
+  replacementBonusValuesOf,
+  replacementIdOf,
+  replacementValuesOf,
+} from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import { getPath } from "../lib/build-path";
@@ -19,6 +23,7 @@ import {
 import type {
   Item,
   Bonus,
+  BonusValues,
   Schema,
   SlotsData,
   Slot,
@@ -74,12 +79,13 @@ function endOfChain(byId: Map<string, Item>, id: string): Item | null {
   return item && item.id !== id ? item : null;
 }
 
-/** Values a retired id carries forward, merged along the chain with a later hop winning. */
-function collectSeeds(
+/** Every `replacedBy` entry along `id`'s chain, in hop order, up to a missing or repeated
+ *  item. */
+function chainEntries(
   byId: Map<string, Item>,
   id: string,
-): Record<string, number> {
-  const seeds: Record<string, number> = {};
+): NonNullable<Item["replacedBy"]>[] {
+  const entries: NonNullable<Item["replacedBy"]>[] = [];
   let item = byId.get(id) ?? null;
   const seen = new Set<string>([id]);
   for (let hop = 0; hop < REPLACEMENT_DEPTH; hop++) {
@@ -88,14 +94,39 @@ function collectSeeds(
     if (seen.has(next)) break;
     const replacement = byId.get(next);
     if (!replacement) break;
-    for (const [stat, value] of Object.entries(
-      replacementValuesOf(item.replacedBy),
-    )) {
-      if (value !== undefined) seeds[stat] = value;
-    }
+    entries.push(item.replacedBy);
     seen.add(next);
     item = replacement;
   }
+  return entries;
+}
+
+/** Values a retired id carries forward, merged along the chain with a later hop winning. */
+function collectSeeds(
+  byId: Map<string, Item>,
+  id: string,
+): Record<string, number> {
+  const seeds: Record<string, number> = {};
+  for (const entry of chainEntries(byId, id))
+    for (const [stat, value] of Object.entries(replacementValuesOf(entry)))
+      if (value !== undefined) seeds[stat] = value;
+  return seeds;
+}
+
+/** Bonus settings a retired id carries forward, merged per setting with a later hop winning. */
+function collectBonusSeeds(
+  byId: Map<string, Item>,
+  id: string,
+): Record<string, BonusValues> {
+  const seeds: Record<string, BonusValues> = {};
+  for (const entry of chainEntries(byId, id))
+    for (const [bonusId, values] of Object.entries(
+      replacementBonusValuesOf(entry),
+    )) {
+      const merged = (seeds[bonusId] ??= {});
+      if (values.stat) merged.stat = { ...merged.stat, ...values.stat };
+      if (values.input) merged.input = { ...merged.input, ...values.input };
+    }
   return seeds;
 }
 
@@ -225,6 +256,12 @@ export function build(
     replacementSeeds(id: string | null | undefined) {
       if (id == null || id === "" || id === "-") return {};
       return collectSeeds(byId, id);
+    },
+
+    /** See `Db.replacementBonusSeeds`. */
+    replacementBonusSeeds(id: string | null | undefined) {
+      if (id == null || id === "" || id === "-") return {};
+      return collectBonusSeeds(byId, id);
     },
 
     /** Items selectable in a filter category, in `byItemLevel` order. */

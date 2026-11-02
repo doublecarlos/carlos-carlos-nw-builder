@@ -8,7 +8,15 @@
 import { retiredChoices } from "../data/db";
 import { getPath, setPath } from "../lib/build-path";
 import { writeTypedValues, type TypedValues } from "../lib/build-inputs";
-import type { Build, BuildContext, Db, SlotValues } from "../types";
+import { parseRowSlotId } from "../lib/item-picker-list";
+import { bonusStatConfigs } from "../engine/inputs";
+import type {
+  BonusValues,
+  Build,
+  BuildContext,
+  Db,
+  SlotValues,
+} from "../types";
 
 /** Every stored id in `build` that `db` now resolves to a different item, old id to new. */
 export function replacements(db: Db, build: Build): Map<string, string> {
@@ -90,12 +98,13 @@ export function migrateItemIds(db: Db, build: Build): Build {
 }
 
 /**
- * `build`'s typed values with each retired pick's carried magnitudes written in, so the
- * replacement starts on those numbers rather than its own defaults.
+ * `build`'s typed values with each retired pick's carried settings written in, so the
+ * replacement starts on them rather than its own defaults.
  *
- * Never overwrites a value the player typed, and skips a stat the replacement declares no
- * `dynamicStats` entry for, which nothing would read. `choices` only: a point_assignment row's
- * items share one slot, so per-item magnitudes could not be told apart there.
+ * Never overwrites a value the player set, and skips a setting the replacement does not
+ * declare, which nothing would read. Bonus settings are per build, so when two picks seed one,
+ * the first in slot order wins. `choices` only: a point_assignment row's items share one slot,
+ * so per-item magnitudes could not be told apart there.
  */
 function seedValues(
   db: Db,
@@ -108,25 +117,61 @@ function seedValues(
     values: { ...build.values },
     bonusValues: { ...build.bonusValues },
   };
-  for (const [slotId, itemId] of Object.entries(build.choices ?? {})) {
+  const picks = Object.entries(build.choices ?? {}).sort(
+    ([a], [b]) => slotRank(db, a) - slotRank(db, b),
+  );
+  for (const [slotId, itemId] of picks) {
     if (!itemId || (only !== undefined && slotId !== only)) continue;
     writeTypedValues(out, seedsFor(db, slotId, itemId), { overwrite: false });
   }
   return { values: out.values, bonusValues: out.bonusValues };
 }
 
+/** A slot's place in the layout; a list row sorts after its list's earlier rows. */
+function slotRank(db: Db, slotId: string): number {
+  const row = parseRowSlotId(slotId);
+  const base = db.slots.findIndex(
+    (slot) => slot.id === (row?.listId ?? slotId),
+  );
+  if (base < 0) return Infinity;
+  return row ? base + row.index / (row.index + 1) : base;
+}
+
 /** What a retired pick at `slotId` seeds, limited to what its replacement declares. */
 function seedsFor(db: Db, slotId: string, itemId: string): TypedValues {
-  // The replacement's configs, since that is the item the slot is about to hold.
+  // The replacement's declarations, since that is the item the slot is about to hold.
+  const to = db.replacementFor(itemId);
   const declared = new Set(
-    (db.replacementFor(itemId)?.dynamicStats ?? []).map(
-      (config) => config.stat,
-    ),
+    (to?.dynamicStats ?? []).map((config) => config.stat),
   );
   const stat: SlotValues["stat"] = {};
   for (const [key, value] of Object.entries(db.replacementSeeds(itemId)))
     if (value !== undefined && declared.has(key)) stat[key] = value;
-  return { values: { [slotId]: { stat } } };
+
+  const seeds = db.replacementBonusSeeds(itemId);
+  const bonusValues: Record<string, BonusValues> = {};
+  for (const { bonus } of to ? db.bonusesFor(to) : []) {
+    const seed = seeds[bonus.id];
+    if (!seed) continue;
+    const stats = new Set(bonusStatConfigs(bonus).map((config) => config.stat));
+    bonusValues[bonus.id] = {
+      stat: pick(seed.stat, (key) => stats.has(key)),
+      input: pick(seed.input, (name) =>
+        Object.hasOwn(bonus.inputs ?? {}, name),
+      ),
+    };
+  }
+  return { values: { [slotId]: { stat } }, bonusValues };
+}
+
+/** The entries of `record` whose key passes `keep`. */
+function pick<T>(
+  record: Record<string, T> | undefined,
+  keep: (key: string) => boolean,
+): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(record ?? {}).filter(([key]) => keep(key)),
+  );
 }
 
 /** One slot's retired pick swapped, leaving the rest of the build alone -- the per-row "update". */

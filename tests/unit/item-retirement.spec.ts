@@ -498,6 +498,90 @@ describe("migrating onto a dynamic stat", () => {
  * on import the retired id indexes under the replacement's name and disappears -- taking the
  * build's choice with it, and leaving a build that can be neither resolved nor migrated.
  */
+// Fixed variants retired onto one item with a setting: the retired pick's value is seeded into
+// the replacement's bonus input, so the swap keeps its numbers.
+describe("migrating onto a bonus input", () => {
+  const proc = {
+    id: "proc",
+    inputs: {
+      stacks: { type: "number" as const, min: 0, max: 5, default: 0 },
+    },
+    grants: [],
+  };
+  const retired = (id: string, stacks: number, extra = {}): Item => ({
+    id,
+    name: id,
+    filter: "test_ring",
+    hideFromPicker: true,
+    replacedBy: {
+      item: "proc-item",
+      bonusValues: { proc: { input: { stacks, ...extra } } },
+    },
+  });
+  const seeded = db.build(
+    [
+      retired("proc-3", 3, { undeclared: 1 }),
+      retired("proc-5", 5),
+      {
+        id: "proc-item",
+        name: "Proc",
+        filter: "test_ring",
+        bonuses: ["proc"],
+      },
+    ],
+    [proc],
+    NW_SCHEMA,
+    slotsData,
+  );
+  const migrate = (choices: Record<string, string>, overrides = {}) =>
+    migrateItemIds(seeded, buildWith({ choices, ...overrides })).bonusValues;
+
+  it("seeds the input the replacement's bonus declares, and nothing else", () => {
+    expect(migrate({ ring1: "proc-3" })).toEqual({
+      proc: { input: { stacks: 3 } },
+    });
+  });
+
+  it("never overwrites a setting the build already holds", () => {
+    expect(
+      migrate(
+        { ring1: "proc-3" },
+        { bonusValues: { proc: { input: { stacks: 1 } } } },
+      ),
+    ).toEqual({ proc: { input: { stacks: 1 } } });
+  });
+
+  // One setting per build: two retired picks seeding it resolve the same way every time.
+  it("lets the first slot win when two picks seed one setting", () => {
+    expect(migrate({ ring2: "proc-5", ring1: "proc-3" })).toEqual({
+      proc: { input: { stacks: 3 } },
+    });
+  });
+
+  it("reports a seed for a bonus the replacement does not carry", () => {
+    const messages = catalog
+      .validateReplacements(
+        [
+          {
+            id: "a",
+            name: "A",
+            filter: "f",
+            replacedBy: {
+              item: "b",
+              bonusValues: { proc: { input: { stacks: 3 } } },
+            },
+          },
+          { id: "b", name: "B", filter: "f" },
+        ],
+        NW_SCHEMA,
+        [proc],
+      )
+      .map((finding) => finding.message);
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain("not on the replacement");
+  });
+});
+
 describe("exporting a build that still holds a retired id", () => {
   const RETIRED = "old-export-item";
   const REPLACEMENT = "new-export-item";

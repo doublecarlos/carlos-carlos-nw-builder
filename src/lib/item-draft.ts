@@ -4,7 +4,16 @@
 // everything about what a draft looks like and how it reads/writes an `Item` lives here, where
 // it is unit-testable and Vue-free.
 import { NW_SCHEMA } from "../data/data";
-import { replacementIdOf, replacementValuesOf } from "./item-replacement";
+import {
+  replacementBonusValuesOf,
+  replacementIdOf,
+  replacementValuesOf,
+} from "./item-replacement";
+import {
+  bonusValuesDrafts,
+  bonusValuesFor,
+  type BonusValuesDraft,
+} from "./bonus-values-draft";
 import {
   entriesToRows,
   rowsToEntries,
@@ -39,6 +48,8 @@ export interface ItemDraft {
   replacedBy: string;
   /** `ItemReplacement.values` as rows; empty writes the bare-id form back out. */
   replacedByValues: { stat: string; value: number | string | null }[];
+  /** `ItemReplacement.bonusValues`, by bonus id. */
+  replacedByBonusValues: Record<string, BonusValuesDraft>;
   allowedClass: string[];
   tags: string[];
   gameIds: string[];
@@ -95,6 +106,9 @@ export function buildDraft(item: Item | null | undefined): ItemDraft {
       source.replacedBy ? replacementValuesOf(source.replacedBy) : {},
       (stat, value) => ({ stat, value: value ?? null }),
     ),
+    replacedByBonusValues: bonusValuesDrafts(
+      source.replacedBy ? replacementBonusValuesOf(source.replacedBy) : {},
+    ),
     allowedClass: [...(source.allowedClass ?? [])],
     tags: [...(source.tags ?? [])],
     gameIds: [...(source.gameIds ?? [])],
@@ -128,6 +142,9 @@ export function buildDraft(item: Item | null | undefined): ItemDraft {
  *  `allocatableIds`/`db.items`, both reactive props `toItem` has no business reading. */
 export interface ItemDraftContext {
   id: string;
+  /** The bonuses the item ending the `replacedBy` chain carries: the only ones a bonus seed
+   *  can land on. Unset keeps every seed. */
+  replacementBonusIds?: string[];
 }
 
 export function toItem(local: ItemDraft, ctx: ItemDraftContext): Item {
@@ -164,9 +181,15 @@ export function toItem(local: ItemDraft, ctx: ItemDraftContext): Item {
       (row) =>
         row.value === null || row.value === "" ? undefined : Number(row.value),
     );
-    item.replacedBy = Object.keys(values).length
-      ? { item: target, values }
-      : target;
+    const bonusValues = bonusValuesFor(
+      local.replacedByBonusValues,
+      ctx.replacementBonusIds ?? Object.keys(local.replacedByBonusValues),
+    );
+    const replacement: ItemReplacement = { item: target };
+    putIfSet(replacement, "values", values);
+    putIfSet(replacement, "bonusValues", bonusValues);
+    item.replacedBy =
+      Object.keys(replacement).length > 1 ? replacement : target;
   }
   putIfSet(item, "allowedClass", [...local.allowedClass]);
 

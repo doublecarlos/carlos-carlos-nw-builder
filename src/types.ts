@@ -523,7 +523,10 @@ export interface Item {
  */
 export interface ItemReplacement {
   item: string;
+  /** The replacement item's dynamic stats, seeded under its slot. */
   values?: StatValues;
+  /** Bonus settings to seed, by bonus id, in `SectionPreset.bonusValues`'s shape. */
+  bonusValues?: Record<string, BonusValues>;
 }
 
 /** Bounds shared by every typed per-build value. */
@@ -793,6 +796,10 @@ export interface Db {
   /** Values `id` carries forward when migrated, merged along the chain, later hops winning.
    * Consumed by `migrateItemIds`, the only place a seed lands. */
   replacementSeeds(id: string | null | undefined): StatValues;
+  /** Bonus settings `id` carries forward, merged the same way as `replacementSeeds`. */
+  replacementBonusSeeds(
+    id: string | null | undefined,
+  ): Record<string, BonusValues>;
   forFilter(filter: string): Item[];
   forSlot(slotId: string): Item[];
   /** `slotById.get`, extended to the row ids an `item_picker_list` expands into -- those exist

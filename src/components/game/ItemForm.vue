@@ -48,8 +48,11 @@ import {
   hasInlineRepetition,
   FIELD_GROUPS,
   type ItemDraft,
+  type ItemDraftContext,
   type FieldGroup,
 } from "../../lib/item-draft";
+import { settingGroups } from "../../lib/bonus-values-draft";
+import BonusValuesFields from "./BonusValuesFields.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import { showAllFields } from "../../stores/itemFormFields";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
@@ -193,9 +196,22 @@ function itemId(local: ItemDraft): string {
   return props.source?.id ?? computeId(local);
 }
 
+/** The item builds migrate onto: the end of the chain `replacedBy` starts. */
+function replacementItem(local: ItemDraft): Item | null {
+  const target = local.replacedBy.trim();
+  return props.db.replacementFor(target) ?? props.db.get(target);
+}
+
+function draftContext(local: ItemDraft): ItemDraftContext {
+  return {
+    id: itemId(local),
+    replacementBonusIds: replacementItem(local)?.bonuses ?? [],
+  };
+}
+
 function save() {
   error.value = "";
-  const item = toItem(draft.value, { id: itemId(draft.value) });
+  const item = toItem(draft.value, draftContext(draft.value));
   if (!item.name) {
     error.value = "The item needs a name.";
     return;
@@ -363,7 +379,7 @@ const { draft, error, dirty, displayId } = useEditorDraft<
   source: () => props.source,
   isNew,
   buildDraft: (source) => buildDraft(source ?? props.duplicateFrom),
-  toEntity: (local) => toItem(local, { id: itemId(local) }),
+  toEntity: (local) => toItem(local, draftContext(local)),
   diffLabel,
   hasContent: (d) => Boolean(d.name || d.stats.length),
   emit: (item, label) => emit("update:item", { item, label }),
@@ -377,6 +393,11 @@ const { draft, error, dirty, displayId } = useEditorDraft<
   },
   draftNoun: "item",
 });
+
+/** The settings of the bonuses a replacement seed can land on. */
+const replacementGroups = computed(() =>
+  settingGroups(replacementItem(draft.value)?.bonuses ?? [], props.db),
+);
 
 // Draft undo/redo (new-item history) replaces `draft.value` wholesale, bypassing the
 // add/remove handlers below, so resurface the group automatically whenever its fields come
@@ -1058,6 +1079,17 @@ function showsGroup(group: FieldGroup): boolean {
             </span>
           </template>
         </RepeatableRows>
+        <template v-if="replacementGroups.length">
+          <FormSectionDescription>
+            Bonus settings carried into the replacement. Left alone, a setting
+            keeps the build's own value or its default.
+          </FormSectionDescription>
+          <BonusValuesFields
+            v-model:values="draft.replacedByBonusValues"
+            :groups="replacementGroups"
+            testid-prefix="item-replaced-by"
+          />
+        </template>
       </template>
     </template>
   </div>
