@@ -339,13 +339,20 @@
           "id": "raceLeveling.raceAttributes1",
           "label": "Race Ability Score 1",
           "type": "item_picker",
-          "filter": "race_attributes"
+          "filter": "race_attributes",
+          "parent": "raceLeveling.race"
         },
         {
           "id": "raceLeveling.raceAttributes2",
           "label": "Race Ability Score 2",
           "type": "item_picker",
-          "filter": "race_attributes"
+          "filter": "race_attributes",
+          "parent": "raceLeveling.race",
+          "availableWhen": {
+            "equipped": {
+              "tag": "race-ability:two-picks"
+            }
+          }
         },
         {
           "id": "raceLeveling.leveling_str",
