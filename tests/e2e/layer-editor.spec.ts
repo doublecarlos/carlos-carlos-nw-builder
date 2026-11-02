@@ -578,3 +578,21 @@ test.describe("pending live edits", () => {
     await expect(nameInput).toHaveValue(first);
   });
 });
+
+// The layer's Import is a real, focusable button rather than a label around the file input,
+// so it behaves like the actions beside it while still opening the file chooser.
+test("the layer import is a focusable button that opens the file chooser", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addLayer(page);
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+
+  const importButton = page.getByTestId("layer-import");
+  await expect(importButton).toHaveRole("button");
+  await importButton.focus();
+  await expect(importButton).toBeFocused();
+  const chooser = page.waitForEvent("filechooser");
+  await importButton.click();
+  await chooser;
+});

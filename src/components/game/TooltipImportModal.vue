@@ -16,7 +16,7 @@
 // Modal rather than in-flow: pasting is the whole point, and a paste only reaches a handler
 // bound to an element once focus is already inside it. Owning the screen is what lets the
 // screenshot land wherever the cursor happens to be when the window opens.
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { ArrowRightToLine, Check, CirclePlus, LoaderCircle } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
@@ -50,6 +50,7 @@ const emit = defineEmits<{
 const text = ref("");
 const busy = ref(false);
 const error = ref("");
+const fileInput = useTemplateRef("fileInput");
 const result = computed(() => parseTooltip(text.value));
 
 /** One recognized value, in the shape both exits need: something to show, and the item-shaped
@@ -182,15 +183,17 @@ useEventListener(document, "paste", onPaste);
       <div class="flex flow-wrap items-baseline gap-2">
         <span class="text-muted">Paste or drop a screenshot.</span>
         <span class="flex-1"></span>
-        <BaseButton as="label" :disabled="busy"
-          >Choose image…
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            data-testid="tooltip-import-file"
-            @change="onPick"
-        /></BaseButton>
+        <BaseButton :disabled="busy" @click="fileInput?.click()"
+          >Choose image…</BaseButton
+        >
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          hidden
+          data-testid="tooltip-import-file"
+          @change="onPick"
+        />
       </div>
 
       <p v-if="busy" class="flex items-center gap-1.5 text-muted">

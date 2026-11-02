@@ -9,7 +9,7 @@ ordinary one.
 | Component                                 | Owns                                                                                                                                                           |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | BaseBadge                                 | Status/count chip (added/edited/removed/unsaved) on a row or list                                                                                              |
-| BaseButton                                | The shared button look; `as="label"` for button chrome on a native `<label>`                                                                                   |
+| BaseButton                                | The shared button look; `title` adds a tooltip, `shape="icon"` squares it                                                                                      |
 | BaseCard / BaseCardHeader / BaseCardBody  | Popover/hover-card shell: frame, sticky header, scrolling body                                                                                                 |
 | BaseCheckbox                              | A checkbox and its label as one clickable unit, `v-model` only                                                                                                 |
 | BaseDrawer                                | An in-flow panel worked alongside its surroundings; use BaseModal for open-use-leave                                                                           |
@@ -43,7 +43,7 @@ ordinary one.
 | FormSection                               | Section heading inside an editing form                                                                                                                         |
 | FormSectionDescription                    | Section description inside an editing form                                                                                                                     |
 | HistoryButtons                            | The undo/redo icon pair for one history; tooltips name the step each would apply                                                                               |
-| IconButton                                | Icon-only button; `title` is its tooltip and, unless `label` is given, its accessible name                                                                     |
+| IconButton                                | Icon-only `BaseButton`; `title` is its tooltip and, unless `label` is given, its accessible name                                                               |
 | IdField                                   | Read-only display of a frozen, generator-assigned id                                                                                                           |
 | InputRow                                  | A typed control in a fixed leading column, its description after it (above it on a phone)                                                                      |
 | ListAddRow                                | The add row after a list of cards: "+", other ways of adding, and the empty note                                                                               |
