@@ -1,11 +1,14 @@
 <script setup lang="ts">
-// The settings of a set of bonuses, once per bonus: each dynamic stat and each input, by the
-// input's type. Edits `bonusValues` drafts in place (lib/bonus-values-draft.ts). An input left
-// out reads as its default, so emptying a typed one drops it rather than storing a blank.
+// The settings of a set of bonuses, headed once per bonus: each dynamic stat and each input, by
+// the input's type. Edits `bonusValues` drafts in place (lib/bonus-values-draft.ts). A setting
+// left out keeps whatever the build holds. With `keepable`, every control shows that unset
+// state on its own ("- keep -", a blank field) instead of the default it would read as.
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
+import ComboBox from "../ui/ComboBox.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
+import FormSection from "../ui/FormSection.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import StatValueInput from "./StatValueInput.vue";
@@ -20,10 +23,18 @@ const props = defineProps<{
   groups: BonusSettingGroup[];
   /** Leads each control's test id, as `<prefix>-bonus-stat-<bonus>-<stat>`. */
   testidPrefix: string;
+  keepable?: boolean;
 }>();
 const values = defineModel<Record<string, BonusValuesDraft>>("values", {
   required: true,
 });
+
+const KEEP = { value: "", label: "- keep -" };
+const ON_OFF = [
+  KEEP,
+  { value: "true", label: "on" },
+  { value: "false", label: "off" },
+];
 
 const draftOf = (bonusId: string): BonusValuesDraft =>
   values.value[bonusId] ?? { stat: {}, input: {} };
@@ -40,9 +51,26 @@ function setStat(bonusId: string, key: string, value: number | string | null) {
   };
 }
 
+const stored = (bonusId: string, name: string) =>
+  values.value[bonusId]?.input[name];
+
 /** An input as set here, or its default while left alone. */
 function input(bonusId: string, name: string, def: InputDef) {
-  return values.value[bonusId]?.input[name] ?? def.default;
+  return stored(bonusId, name) ?? def.default;
+}
+
+/** A number input's field: blank while left alone when `keepable`. */
+function field(bonusId: string, name: string, def: InputDef) {
+  const value = props.keepable
+    ? stored(bonusId, name)
+    : input(bonusId, name, def);
+  return value === undefined ? "" : Number(value);
+}
+
+/** An on/off picker's value: `KEEP` while left alone. */
+function picked(bonusId: string, name: string) {
+  const value = stored(bonusId, name);
+  return value === undefined ? KEEP.value : String(value);
 }
 
 /** `null` leaves the input out, so it keeps whatever the build holds. */
@@ -53,6 +81,10 @@ function setInput(bonusId: string, name: string, value: InputValue | null) {
     ...current,
     input: value === null ? rest : { ...rest, [name]: value },
   };
+}
+
+function onPick(bonusId: string, name: string, raw: string) {
+  setInput(bonusId, name, raw === KEEP.value ? null : raw === "true");
 }
 
 /** A typed number applies as it is typed. An emptied field writes nothing yet, since the
@@ -78,66 +110,75 @@ const testid = (kind: string, bonusId: string, key: string) =>
 </script>
 
 <template>
-  <FormGrid
-    v-for="group in groups"
-    :key="group.bonusId"
-    class="mb-1"
-    :data-testid="`${testidPrefix}-bonus-settings`"
-  >
-    <FormField
-      v-for="config in group.configs"
-      :key="config.stat"
-      :label="`${group.name}: ${config.label ?? config.stat}`"
-    >
-      <StatValueInput
-        class="w-24"
-        :stat-key="config.stat"
-        :data-testid="testid('stat', group.bonusId, config.stat)"
-        :model-value="stat(group.bonusId, config.stat)"
-        @update:model-value="setStat(group.bonusId, config.stat, $event)"
-      />
-    </FormField>
-    <FormField
-      v-for="entry in group.inputs"
-      :key="entry.name"
-      :label="`${group.name}: ${entry.def.label ?? entry.name}`"
-    >
-      <BaseCheckbox
-        v-if="entry.def.type === 'boolean'"
-        :data-testid="testid('input', group.bonusId, entry.name)"
-        :model-value="Boolean(input(group.bonusId, entry.name, entry.def))"
-        @update:model-value="
-          setInput(group.bonusId, entry.name, $event as boolean)
-        "
-      />
-      <NumberStepper
-        v-else-if="numberControl(entry.def) === 'stepper'"
-        :min="entry.def.min ?? 0"
-        :max="entry.def.max ?? 0"
-        :step="entry.def.step"
-        :data-testid="testid('input', group.bonusId, entry.name)"
-        :model-value="Number(input(group.bonusId, entry.name, entry.def))"
-        @update:model-value="setInput(group.bonusId, entry.name, $event)"
-      />
-      <PercentInput
-        v-else-if="entry.def.type === 'percent'"
-        class="w-24"
-        :data-testid="testid('input', group.bonusId, entry.name)"
-        :model-value="Number(input(group.bonusId, entry.name, entry.def))"
-        @update:model-value="onPercent(group.bonusId, entry.name, $event)"
-      />
-      <BaseInput
-        v-else
-        type="number"
-        class="w-24"
-        :min="entry.def.min"
-        :max="entry.def.max"
-        :step="entry.def.step"
-        :data-testid="testid('input', group.bonusId, entry.name)"
-        :model-value="Number(input(group.bonusId, entry.name, entry.def))"
-        @update:model-value="onField(group.bonusId, entry.name, $event)"
-        @blur="onBlur(group.bonusId, entry.name, $event)"
-      />
-    </FormField>
-  </FormGrid>
+  <template v-for="group in groups" :key="group.bonusId">
+    <FormSection sub>{{ group.name }}</FormSection>
+    <FormGrid class="mb-1" :data-testid="`${testidPrefix}-bonus-settings`">
+      <FormField
+        v-for="config in group.configs"
+        :key="config.stat"
+        :label="config.label ?? config.stat"
+      >
+        <StatValueInput
+          class="w-24"
+          :stat-key="config.stat"
+          :data-testid="testid('stat', group.bonusId, config.stat)"
+          :model-value="stat(group.bonusId, config.stat)"
+          @update:model-value="setStat(group.bonusId, config.stat, $event)"
+        />
+      </FormField>
+      <FormField
+        v-for="entry in group.inputs"
+        :key="entry.name"
+        :label="entry.def.label ?? entry.name"
+      >
+        <ComboBox
+          v-if="keepable && entry.def.type === 'boolean'"
+          class="w-40"
+          :data-testid="testid('input', group.bonusId, entry.name)"
+          :model-value="picked(group.bonusId, entry.name)"
+          :options="ON_OFF"
+          :phone-screen="true"
+          :screen-label="entry.def.label ?? entry.name"
+          @update:model-value="onPick(group.bonusId, entry.name, $event)"
+        />
+        <BaseCheckbox
+          v-else-if="entry.def.type === 'boolean'"
+          :data-testid="testid('input', group.bonusId, entry.name)"
+          :model-value="Boolean(input(group.bonusId, entry.name, entry.def))"
+          @update:model-value="
+            setInput(group.bonusId, entry.name, $event as boolean)
+          "
+        />
+        <NumberStepper
+          v-else-if="!keepable && numberControl(entry.def) === 'stepper'"
+          :min="entry.def.min ?? 0"
+          :max="entry.def.max ?? 0"
+          :step="entry.def.step"
+          :data-testid="testid('input', group.bonusId, entry.name)"
+          :model-value="Number(input(group.bonusId, entry.name, entry.def))"
+          @update:model-value="setInput(group.bonusId, entry.name, $event)"
+        />
+        <PercentInput
+          v-else-if="entry.def.type === 'percent'"
+          class="w-24"
+          :data-testid="testid('input', group.bonusId, entry.name)"
+          :model-value="field(group.bonusId, entry.name, entry.def)"
+          @update:model-value="onPercent(group.bonusId, entry.name, $event)"
+        />
+        <BaseInput
+          v-else
+          type="number"
+          class="w-24"
+          :min="entry.def.min"
+          :max="entry.def.max"
+          :step="entry.def.step"
+          :placeholder="keepable ? 'keep' : undefined"
+          :data-testid="testid('input', group.bonusId, entry.name)"
+          :model-value="field(group.bonusId, entry.name, entry.def)"
+          @update:model-value="onField(group.bonusId, entry.name, $event)"
+          @blur="onBlur(group.bonusId, entry.name, $event)"
+        />
+      </FormField>
+    </FormGrid>
+  </template>
 </template>
