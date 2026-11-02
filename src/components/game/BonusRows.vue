@@ -209,11 +209,11 @@ function removeNameDescription(gIndex: number) {
 const instanceId = `bonus-rows:${Math.random().toString(36).slice(2)}`;
 const grantsContainerId = `grants:${instanceId}`;
 
-// Grants and their variants slide to their new place. Tiers are keyed by position, so a moved
-// tier is redrawn in place and has nothing to slide.
+// Grants, their tiers and their variants slide to their new place.
 useReorderMotion(useTemplateRef("grantList"), () =>
   props.store.grants.flatMap((grant) => [
     grant.uid,
+    ...grant.tiers.map((tier) => tier.uid),
     ...grant.variants.map((variant) => variant.uid),
   ]),
 );
@@ -252,11 +252,11 @@ const tierDropList = useKeyedCache((grantUid: string) => {
     },
   });
 });
-function tierDragHandleProps(grantUid: string, index: number) {
+function tierDragHandleProps(grantUid: string, tierUid: string, index: number) {
   return dragHandle({
     kind: "tier",
     containerId: `tiers:${grantUid}`,
-    key: String(index),
+    key: tierUid,
     index,
   });
 }
@@ -573,13 +573,12 @@ function toggleJson(gIndex: number) {
                      `bg-surface-2`, so stacked tiers stay apart. -->
                 <div
                   v-for="(tier, tIndex) in grant.tiers"
-                  :key="tIndex"
+                  :key="tier.uid"
+                  :data-flip-key="tier.uid"
                   data-testid="bonus-tier-row"
                   class="my-1.5 rounded-md border border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
                   :class="[
-                    dragSource?.containerId === `tiers:${grant.uid}` &&
-                      dragSource?.key === String(tIndex) &&
-                      'is-drag-source opacity-50',
+                    dragSource?.key === tier.uid && 'is-drag-source opacity-50',
                   ]"
                   v-bind="tierDropList(grant.uid).rowProps(tIndex)"
                 >
@@ -588,7 +587,9 @@ function toggleJson(gIndex: number) {
                     noun="tier"
                     :index="tIndex"
                     :count="grant.tiers.length"
-                    :drag-handle="tierDragHandleProps(grant.uid, tIndex)"
+                    :drag-handle="
+                      tierDragHandleProps(grant.uid, tier.uid, tIndex)
+                    "
                     drag-testid="tier-drag-handle"
                     @move="gs(gIndex).moveTier(tIndex, $event)"
                     @duplicate="gs(gIndex).duplicateTier(tIndex)"

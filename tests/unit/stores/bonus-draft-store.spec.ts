@@ -185,6 +185,14 @@ describe("one-step moves", () => {
     expect(gs.grant.tiers).toEqual([second, first]);
   });
 
+  it("a duplicated tier is a row of its own, so moving one never carries the other", () => {
+    const { gs } = makeStore("tiers");
+    gs.duplicateTier(0);
+    const [first, copy] = gs.grant.tiers;
+    expect(copy.uid).not.toBe(first.uid);
+    expect(copy.atLeast).toBe(first.atLeast);
+  });
+
   it("moveVariant moves a variant down", () => {
     const { gs } = makeStore("variants");
     gs.addVariant();
@@ -425,7 +433,9 @@ describe("BonusDraftStore.moveBranch", () => {
 describe("BonusDraftStore tier seeding", () => {
   it("setPayload('tiers') seeds one tier at 1", () => {
     const { gs } = makeStore("tiers");
-    expect(gs.grant.tiers).toEqual([{ atLeast: 1, stats: [] }]);
+    expect(gs.grant.tiers).toEqual([
+      { uid: expect.any(String), atLeast: 1, stats: [] },
+    ]);
   });
 
   it("addTier starts one above the tier before it, copying its stats", () => {

@@ -175,3 +175,30 @@ test("reduced motion keeps a moved grant clear of the sticky bar", async ({
   const { grant } = await grantUpFromBottom(page);
   expect(await headerShows(page, grant)).toBe(true);
 });
+
+test.describe("with motion, tiers", () => {
+  test.use({ contextOptions: { reducedMotion: "no-preference" } });
+
+  // Tiers carry their own identity, so a moved tier is a row that travels, not one redrawn in
+  // place with its neighbour's contents.
+  test("a tier moved down slides and is marked", async ({ page }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+    await page.getByTestId("new-bonus").click();
+    await page.getByLabel("Add grant").click();
+    const grant = page.getByTestId("bonus-grant-row").first();
+    await grant.getByRole("button", { name: "tiered" }).click();
+    await grant.getByTestId("add-tier").click();
+
+    const tiers = grant.getByTestId("bonus-tier-row");
+    const [first, second] = await tiers.evaluateAll((rows) =>
+      rows.map((row) => (row as HTMLElement).dataset.flipKey),
+    );
+    await tiers.nth(0).getByLabel("Move tier down").click();
+    await expect(tiers.nth(0)).toHaveAttribute("data-flip-key", second!);
+    expect((await sliding(page)).sort()).toEqual([first, second].sort());
+    expect(await flashing(page)).toEqual([first]);
+  });
+});

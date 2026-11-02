@@ -274,9 +274,17 @@ export function draftToSteps(draft: StepsDraft): ScaleSteps | undefined {
 }
 
 export interface TierDraft {
+  /** Draft-only identity, so a moved tier keeps its row. Never saved. */
+  uid: string;
   atLeast: number;
   stats: StatRow[];
 }
+
+export const newTier = (atLeast: number, stats: StatRow[] = []): TierDraft => ({
+  uid: `t${Math.random().toString(36).slice(2, 8)}`,
+  atLeast,
+  stats,
+});
 
 /** A tier row's threshold. 0 and below are kept, since a `tierBy` measure can reach them; a
  *  cleared field reads as 1. */
@@ -332,10 +340,9 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     dynamicStats: json ? [] : dynamicStatRows(grant.dynamicStats),
     tiers: json
       ? []
-      : (grant.tiers ?? []).map((tier) => ({
-          atLeast: tier.atLeast,
-          stats: statRows(tier.stats),
-        })),
+      : (grant.tiers ?? []).map((tier) =>
+          newTier(tier.atLeast, statRows(tier.stats)),
+        ),
     variants: json
       ? []
       : (grant.variants ?? []).map((variant) => ({
@@ -675,10 +682,12 @@ export function duplicateDraft(draft: GrantDraft): GrantDraft {
     tierBy: { ...draft.tierBy },
     stats: draft.stats.map((s) => ({ ...s })),
     dynamicStats: draft.dynamicStats.map((d) => ({ ...d })),
-    tiers: draft.tiers.map((tier) => ({
-      ...tier,
-      stats: tier.stats.map((s) => ({ ...s })),
-    })),
+    tiers: draft.tiers.map((tier) =>
+      newTier(
+        tier.atLeast,
+        tier.stats.map((s) => ({ ...s })),
+      ),
+    ),
     variants: draft.variants.map((variant) => ({
       ...newVariant(),
       conditions: variant.conditions.map(cloneRow),
