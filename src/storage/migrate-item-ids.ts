@@ -7,7 +7,8 @@
 // Pure and idempotent: an id it produces is one nothing supersedes.
 import { retiredChoices } from "../data/db";
 import { getPath, setPath } from "../lib/build-path";
-import type { Build, BuildContext, Db } from "../types";
+import { writeTypedValues, type TypedValues } from "../lib/build-inputs";
+import type { Build, BuildContext, Db, SlotValues } from "../types";
 
 /** Every stored id in `build` that `db` now resolves to a different item, old id to new. */
 export function replacements(db: Db, build: Build): Map<string, string> {
@@ -67,7 +68,7 @@ export function migrateItemIds(db: Db, build: Build): Build {
   for (const [slotId, itemId] of Object.entries(build.choices ?? {}))
     choices[slotId] = map.get(itemId) ?? itemId;
 
-  const values = seedValues(db, build);
+  const seeded = seedValues(db, build);
 
   const assignments: Record<string, Record<string, number>> = {};
   for (const [slotId, counts] of Object.entries(build.assignments ?? {}))
@@ -85,39 +86,47 @@ export function migrateItemIds(db: Db, build: Build): Build {
     setPath(context, path, moved);
   }
 
-  return { ...build, choices, values, assignments, context };
+  return { ...build, ...seeded, choices, assignments, context };
 }
 
 /**
- * `build.values` with each retired pick's carried magnitude written under its slot, so the
- * replacement starts on that number rather than its own `default`.
+ * `build`'s typed values with each retired pick's carried magnitudes written in, so the
+ * replacement starts on those numbers rather than its own defaults.
  *
  * Never overwrites a value the player typed, and skips a stat the replacement declares no
  * `dynamicStats` entry for, which nothing would read. `choices` only: a point_assignment row's
  * items share one slot, so per-item magnitudes could not be told apart there.
  */
-function seedValues(db: Db, build: Build, only?: string): Build["values"] {
-  let values = build.values;
+function seedValues(
+  db: Db,
+  build: Build,
+  only?: string,
+): Pick<Build, "values" | "bonusValues"> {
+  // Top-level copies are enough: `writeInput` replaces the inner maps it touches.
+  const out = {
+    ...build,
+    values: { ...build.values },
+    bonusValues: { ...build.bonusValues },
+  };
   for (const [slotId, itemId] of Object.entries(build.choices ?? {})) {
     if (!itemId || (only !== undefined && slotId !== only)) continue;
-    const seeds = db.replacementSeeds(itemId);
-    // The replacement's configs, since that is the item the slot is about to hold.
-    const declared = new Set(
-      (db.replacementFor(itemId)?.dynamicStats ?? []).map(
-        (config) => config.stat,
-      ),
-    );
-    for (const [stat, value] of Object.entries(seeds)) {
-      if (value === undefined || !declared.has(stat)) continue;
-      if (values[slotId]?.stat?.[stat] !== undefined) continue;
-      if (values === build.values) values = { ...build.values };
-      values[slotId] = {
-        ...values[slotId],
-        stat: { ...values[slotId]?.stat, [stat]: value },
-      };
-    }
+    writeTypedValues(out, seedsFor(db, slotId, itemId), { overwrite: false });
   }
-  return values;
+  return { values: out.values, bonusValues: out.bonusValues };
+}
+
+/** What a retired pick at `slotId` seeds, limited to what its replacement declares. */
+function seedsFor(db: Db, slotId: string, itemId: string): TypedValues {
+  // The replacement's configs, since that is the item the slot is about to hold.
+  const declared = new Set(
+    (db.replacementFor(itemId)?.dynamicStats ?? []).map(
+      (config) => config.stat,
+    ),
+  );
+  const stat: SlotValues["stat"] = {};
+  for (const [key, value] of Object.entries(db.replacementSeeds(itemId)))
+    if (value !== undefined && declared.has(key)) stat[key] = value;
+  return { values: { [slotId]: { stat } } };
 }
 
 /** One slot's retired pick swapped, leaving the rest of the build alone -- the per-row "update". */
@@ -127,7 +136,7 @@ export function migrateSlotItem(db: Db, build: Build, slotId: string): Build {
   if (!from || !to) return build;
 
   const choices = { ...build.choices, [slotId]: to.id };
-  const values = seedValues(db, { ...build, choices: build.choices }, slotId);
+  const seeded = seedValues(db, build, slotId);
 
-  return { ...build, choices, values };
+  return { ...build, ...seeded, choices };
 }

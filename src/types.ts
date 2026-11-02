@@ -871,12 +871,15 @@ export interface SlotValues {
   stat?: Record<StatKey, number>;
 }
 
+/** A bonus input's value: a boolean or a number. */
+export type InputValue = number | boolean;
+
 /** One bonus's settings, by kind then key. */
 export interface BonusValues {
   /** Grant/variant dynamic stats, by stat key. */
   stat?: Record<StatKey, number>;
   /** Bonus inputs, by input name. */
-  input?: Record<string, number | boolean>;
+  input?: Record<string, InputValue>;
 }
 
 /** Where one typed per-build value is stored. */

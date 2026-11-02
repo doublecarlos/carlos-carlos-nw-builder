@@ -34,11 +34,10 @@ import {
   rowSlotId,
 } from "../lib/item-picker-list";
 import {
-  bonusStatAddress,
   inputKey,
-  itemStatAddress,
   storedInput,
   writeInput,
+  writeTypedValues,
 } from "../lib/build-inputs";
 import type {
   BonusValues,
@@ -577,21 +576,8 @@ export function applyPreset(preset: SectionPreset) {
     if (slot?.type === "build_parameter") setPath(b.context, slot.path, value);
   }
 
-  for (const [slotId, value] of Object.entries(preset.values ?? {})) {
-    for (const [stat, n] of Object.entries(value.stat ?? {}))
-      writeInput(b, itemStatAddress(slotId, stat), n);
-  }
-
-  for (const [bonusId, value] of Object.entries(preset.bonusValues ?? {})) {
-    for (const [stat, n] of Object.entries(value.stat ?? {}))
-      writeInput(b, bonusStatAddress(bonusId, stat), n);
-    for (const [name, n] of Object.entries(value.input ?? {}))
-      writeInput(
-        b,
-        { store: "bonusValues", bonusId, kind: "input", key: name },
-        n,
-      );
-  }
+  // The player asked for the preset, so it replaces what the build holds.
+  writeTypedValues(b, preset, { overwrite: true });
 
   for (const [slotId, rows] of Object.entries(preset.assignments ?? {})) {
     b.assignments[slotId] = { ...b.assignments[slotId], ...rows };

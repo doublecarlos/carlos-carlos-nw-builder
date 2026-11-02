@@ -14,15 +14,14 @@ import {
   fieldDiffLabel,
   type DiffCheck,
 } from "./draft-fields";
-import { bonusStatConfigs } from "../engine/inputs";
-import type {
-  BonusValues,
-  DynamicStatConfig,
-  InputDef,
-  SectionPreset,
-  Db,
-  SlotValues,
-} from "../types";
+import {
+  bonusValuesDrafts,
+  bonusValuesFor,
+  settingGroups,
+  type BonusSettingGroup,
+  type BonusValuesDraft,
+} from "./bonus-values-draft";
+import type { SectionPreset, Db, SlotValues } from "../types";
 
 interface ParamRow {
   slotId: string;
@@ -55,12 +54,6 @@ export interface PresetDraft {
   bonusValues: Record<string, BonusValuesDraft>;
 }
 
-/** One bonus's settings as the form edits them: dynamic stats may be blank or mid-typing. */
-export interface BonusValuesDraft {
-  stat: Record<string, number | string | null>;
-  input: Record<string, number | boolean>;
-}
-
 export function buildDraft(
   preset: SectionPreset | null | undefined,
 ): PresetDraft {
@@ -82,12 +75,7 @@ export function buildDraft(
       counts: { ...counts },
     })),
     clearRows: (source.clears ?? []).map((slotId) => ({ slotId })),
-    bonusValues: Object.fromEntries(
-      Object.entries(source.bonusValues ?? {}).map(([bonusId, values]) => [
-        bonusId,
-        { stat: { ...values.stat }, input: { ...values.input } },
-      ]),
-    ),
+    bonusValues: bonusValuesDrafts(source.bonusValues),
   };
 }
 
@@ -113,32 +101,13 @@ function authoredBonusIdsOf(local: PresetDraft, db: Db): Set<string> {
   return ids;
 }
 
-/** One bonus's dynamic stats and inputs the form offers settings for. */
-export interface BonusSettingGroup {
-  bonusId: string;
-  name: string;
-  configs: DynamicStatConfig[];
-  inputs: { name: string; def: InputDef }[];
-}
-
 /** Every bonus the authored items carry that declares dynamic stats or inputs. What
  *  `toPreset` keeps `bonusValues` entries for. */
 export function bonusSettingGroups(
   local: PresetDraft,
   db: Db,
 ): BonusSettingGroup[] {
-  return [...authoredBonusIdsOf(local, db)].flatMap((bonusId) => {
-    const bonus = db.bonusById.get(bonusId);
-    if (!bonus) return [];
-    const configs = bonusStatConfigs(bonus);
-    const inputs = Object.entries(bonus.inputs ?? {}).map(([name, def]) => ({
-      name,
-      def,
-    }));
-    return configs.length || inputs.length
-      ? [{ bonusId, name: bonus.name ?? bonusId, configs, inputs }]
-      : [];
-  });
+  return settingGroups(authoredBonusIdsOf(local, db), db);
 }
 
 /** Resolved preset id, threaded in the same way `item-draft.ts`'s `ItemDraftContext` is: the
@@ -147,19 +116,6 @@ export function bonusSettingGroups(
 export interface PresetDraftContext {
   id: string;
   db: Db;
-}
-
-/** A draft's settings for one bonus, blanks dropped, or undefined once empty. */
-function bonusValuesOf(draft: BonusValuesDraft): BonusValues | undefined {
-  const out: BonusValues = {};
-  const stat: Record<string, number> = {};
-  for (const [key, raw] of Object.entries(draft.stat)) {
-    const number = numberOrUnset(raw);
-    if (number !== undefined) stat[key] = number;
-  }
-  if (Object.keys(stat).length) out.stat = stat;
-  if (Object.keys(draft.input).length) out.input = { ...draft.input };
-  return Object.keys(out).length ? out : undefined;
 }
 
 export function toPreset(
@@ -206,13 +162,11 @@ export function toPreset(
   }
   putIfSet(preset, "assignments", assignments);
 
-  const bonusValues: Record<string, BonusValues> = {};
-  for (const bonusId of authoredBonusIdsOf(local, ctx.db)) {
-    const draft = local.bonusValues[bonusId];
-    const values = draft && bonusValuesOf(draft);
-    if (values) bonusValues[bonusId] = values;
-  }
-  putIfSet(preset, "bonusValues", bonusValues);
+  putIfSet(
+    preset,
+    "bonusValues",
+    bonusValuesFor(local.bonusValues, authoredBonusIdsOf(local, ctx.db)),
+  );
 
   putIfSet(preset, "clears", [
     ...new Set(local.clearRows.map((row) => row.slotId).filter(Boolean)),
