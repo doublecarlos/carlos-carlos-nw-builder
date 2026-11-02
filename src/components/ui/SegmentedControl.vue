@@ -5,10 +5,11 @@
 // different palettes when active.
 //
 // A label never wraps inside its segment. When the one-row width does not fit the space the
-// control is given, the options stack as full-width lines instead. Both inputs to that decision
-// are layout independent, so switching never feeds back into it: each label's own text width
-// (an inline-block, never stretched by its button), and the root's width, which takes the
-// one-row width as its preferred size in either layout.
+// control is given, the options become a full-width grid of equal cells in the fewest rows
+// that fit, down to one column. Both inputs to that decision are layout independent, so
+// switching never feeds back into it: each label's own text width (an inline-block, never
+// stretched by its button), and the root's width, which takes the one-row width as its
+// preferred size in either layout.
 import {
   computed,
   nextTick,
@@ -18,7 +19,12 @@ import {
   useTemplateRef,
   watch,
 } from "vue";
-import { fitsOneRow, oneRowWidth } from "../../lib/segmented-fit";
+import {
+  fitsOneRow,
+  gridColumns,
+  oneRowWidth,
+  type SegmentChrome,
+} from "../../lib/segmented-fit";
 import { useFormFieldLabelId } from "../../composables/useFormField";
 
 const props = withDefaults(
@@ -48,14 +54,24 @@ const toneClasses: Record<"accent" | "danger" | "warn", string> = {
 const root = useTemplateRef<HTMLElement>("root");
 const labels = useTemplateRef<HTMLElement[]>("labels");
 
-/** The one-row width, once measured; null before the first measurement. */
-const rowWidth = ref<number | null>(null);
+/** Label text widths and segment chrome, once measured; null before the first measurement. */
+const measured = ref<{ widths: number[]; chrome: SegmentChrome } | null>(null);
 const available = ref(0);
+const rowWidth = computed(() =>
+  measured.value
+    ? oneRowWidth(measured.value.widths, measured.value.chrome)
+    : null,
+);
 const stacked = computed(
   () =>
     rowWidth.value !== null &&
     available.value > 0 &&
     !fitsOneRow(rowWidth.value, available.value),
+);
+const columns = computed(() =>
+  stacked.value && measured.value
+    ? gridColumns(measured.value.widths, measured.value.chrome, available.value)
+    : 1,
 );
 
 function measureRow() {
@@ -66,10 +82,13 @@ function measureRow() {
   // Not rendered (a hidden pane): keep the last measurement until it shows.
   if (widths.every((width) => width === 0)) return;
   const style = getComputedStyle(first);
-  rowWidth.value = oneRowWidth(widths, {
-    paddingX: parseFloat(style.paddingLeft) + parseFloat(style.paddingRight),
-    border: parseFloat(style.borderRightWidth),
-  });
+  measured.value = {
+    widths,
+    chrome: {
+      paddingX: parseFloat(style.paddingLeft) + parseFloat(style.paddingRight),
+      border: parseFloat(style.borderRightWidth),
+    },
+  };
 }
 
 function measureAvailable() {
@@ -128,6 +147,38 @@ const groupStyle = computed(() =>
     ? undefined
     : { width: `${rowWidth.value}px` },
 );
+
+/** The grid's columns, or nothing in a row. */
+const gridStyle = computed(() =>
+  stacked.value
+    ? { gridTemplateColumns: `repeat(${columns.value}, minmax(0, 1fr))` }
+    : undefined,
+);
+
+/** Per-segment grid placement: the outer corners rounded, neighbors overlapping onto one
+ *  shared border line, and the last segment spanning what its row leaves empty so the grid
+ *  stays a rectangle. The active segment is positioned so its tone border draws on top. */
+const cells = computed(() => {
+  const count = props.options.length;
+  const cols = columns.value;
+  const rows = Math.ceil(count / cols);
+  return props.options.map((_, index) => {
+    const column = index % cols;
+    const row = Math.floor(index / cols);
+    const last = index === count - 1;
+    return {
+      class: [
+        index === 0 && "rounded-tl-md",
+        index === cols - 1 && "rounded-tr-md",
+        index === (rows - 1) * cols && "rounded-bl-md",
+        last && "rounded-br-md",
+        column > 0 && "-ml-px",
+        row > 0 && "-mt-px",
+      ],
+      style: last ? { gridColumn: `span ${rows * cols - index}` } : undefined,
+    };
+  });
+});
 </script>
 
 <template>
@@ -137,15 +188,16 @@ const groupStyle = computed(() =>
     :aria-labelledby="labelledBy"
     class="flex min-w-0 max-w-full"
     :data-stacked="stacked ? '' : undefined"
+    :data-columns="stacked ? columns : undefined"
   >
     <div
       data-testid="segmented-group"
-      class="flex max-w-full"
-      :class="[stacked && 'flex-col', (fill || stacked) && 'w-full']"
-      :style="groupStyle"
+      class="max-w-full"
+      :class="stacked ? 'grid w-full' : ['flex', fill && 'w-full']"
+      :style="[groupStyle, gridStyle]"
     >
       <button
-        v-for="option in options"
+        v-for="(option, index) in options"
         :key="option.value"
         type="button"
         :data-testid="option.testid"
@@ -153,13 +205,14 @@ const groupStyle = computed(() =>
         class="border border-line px-2 py-0.5"
         :class="[
           model === option.value
-            ? toneClasses[option.tone ?? 'accent']
+            ? [toneClasses[option.tone ?? 'accent'], stacked && 'relative']
             : 'bg-surface text-muted',
           stacked
-            ? 'first:rounded-t-md last:rounded-b-md not-first:border-t-0'
+            ? cells[index]?.class
             : 'first:rounded-l-md last:rounded-r-md last:border-l-0',
           fill && !stacked && 'flex-1',
         ]"
+        :style="stacked ? cells[index]?.style : undefined"
         @click="model = option.value"
       >
         <span ref="labels" class="inline-block whitespace-nowrap">{{
