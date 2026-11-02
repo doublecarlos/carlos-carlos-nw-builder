@@ -15,7 +15,9 @@ type Variant = "default" | "primary" | "subtle" | "ghost";
 type Tone = Exclude<Variant, "ghost"> | "active" | "danger";
 type Shape = "label" | "icon";
 
-const CONTENT = "inline-flex items-center gap-1 cursor-pointer";
+// Centered, so content stays in the middle when a coarse pointer's tap-size minimum widens the
+// button past it.
+const CONTENT = "inline-flex items-center justify-center gap-1 cursor-pointer";
 const GHOST = `${CONTENT} [&_svg]:size-[14px] bg-transparent border-0 px-1 py-0.5 enabled:hover:text-accent`;
 const BOX = `${CONTENT} rounded-md border disabled:cursor-default disabled:opacity-60`;
 
@@ -24,7 +26,7 @@ const SHAPES: Record<Shape, string> = {
   // icon-only button stands as tall as a labeled one.
   label: "[&_svg]:w-[14px] [&_svg]:h-lh px-2 py-0.5 text-[13px]",
   // The icon follows the surrounding font size; the padding leaves room for the border.
-  icon: "[&_svg]:size-[1em] justify-center p-[3px]",
+  icon: "[&_svg]:size-[1em] p-[3px]",
 };
 
 const ACCENT = "bg-accent-soft border-accent";
