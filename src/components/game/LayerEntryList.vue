@@ -9,10 +9,16 @@ import { CirclePlus, RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
+import ItemListFilters from "./ItemListFilters.vue";
 import LayerListHeader from "./LayerListHeader.vue";
 import type { Item, Bonus, FilterDef } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 import { toneStyle } from "../../lib/item-quality";
+import {
+  defaultItemListFilter,
+  isItemListFilterActive,
+  type ItemListFilter,
+} from "../../lib/item-list-filter";
 
 export interface ItemRow {
   key: string;
@@ -43,12 +49,15 @@ export interface FilterRow {
 export type EditorRow = ItemRow | BonusRow | FilterRow;
 
 const props = defineProps<{
-  /** Already filtered by query/status; this component only renders and navigates them. */
+  /** Already filtered by query, status and `itemFilter`; this component only renders and
+   *  navigates them. */
   rows: EditorRow[];
   section: string; // items | bonuses | filters
   selectedKey: string | null;
   statusFilterOptions: { value: string; label: string }[];
   hasUnsavedDraft: (row: EditorRow) => boolean;
+  /** The Items tab's category choices. */
+  categories: string[];
 }>();
 
 /** The header text for each overlay group the list serves. */
@@ -84,6 +93,9 @@ const emit = defineEmits<{
 
 const query = defineModel<string>("query", { required: true });
 const statusFilter = defineModel<string>("statusFilter", { required: true });
+const itemFilter = defineModel<ItemListFilter>("itemFilter", {
+  required: true,
+});
 
 function onRowClick(row: EditorRow) {
   if (row.status === "removed") return;
@@ -129,7 +141,14 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
       v-model:status-filter="statusFilter"
       :search-placeholder="chrome.searchPlaceholder"
       :status-filter-options="statusFilterOptions"
+      :extra-filters-active="
+        section === 'items' && isItemListFilterActive(itemFilter)
+      "
+      @clear="itemFilter = defaultItemListFilter()"
     >
+      <template v-if="section === 'items'" #filters>
+        <ItemListFilters v-model="itemFilter" :categories="categories" />
+      </template>
       <template #create>
         <BaseButton
           class="flex-none justify-center"
