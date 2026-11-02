@@ -1,6 +1,6 @@
 // The DOM half of a row slide, shared by useReorderMotion (a list reordered) and useFoldSlide
-// (sections opened or closed): measure the keyed rows before an update, then slide each one
-// from where it was drawn to where it landed. Rows are the elements marked `data-flip-key`.
+// (a fold opened or closed): measure elements before an update, then slide each one from where
+// it was drawn to where it landed. A reorder's rows are the elements marked `data-flip-key`.
 import { slideOffsets, type Point } from "./reorder-motion";
 
 /** The id every slide animation carries, so a later slide can cancel it and tests can find it. */
@@ -10,6 +10,51 @@ const EASE_SNAPPY = "cubic-bezier(0.2, 0, 0, 1)";
 
 export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Stops any slide still running on `elements`, so they can be measured where they lie. */
+export function cancelSlides(elements: Iterable<HTMLElement>) {
+  for (const el of elements)
+    for (const running of el.getAnimations())
+      if (running.id === SLIDE_ID) running.cancel();
+}
+
+/** A frame that took longer than this is still busy with the update, not yet animating. */
+const BUSY_FRAME_MS = 34;
+/** The longest a slide waits for the browser to settle before it runs regardless. */
+const MAX_HOLD_MS = 250;
+
+/**
+ * Slides `el` from `x`/`y` pixels away back to where it lies. The slide holds its first frame
+ * until the browser draws frames promptly again: an expanded body can take a long frame or two
+ * to lay out, often a frame after the toggle, and a clock running through them would leave
+ * only the slide's last few frames to see.
+ */
+export function slideFrom(el: HTMLElement, x: number, y: number) {
+  const slide = el.animate(
+    [{ transform: `translate(${x}px, ${y}px)` }, { transform: "none" }],
+    { duration: SLIDE_MS, easing: EASE_SNAPPY },
+  );
+  slide.id = SLIDE_ID;
+  slide.pause();
+  whenSettled(() => {
+    if (slide.playState === "paused") slide.play();
+  });
+}
+
+/** Runs `fn` on the first prompt frame after at least two, or once `MAX_HOLD_MS` has passed. */
+function whenSettled(fn: () => void) {
+  const start = performance.now();
+  let last = start;
+  let frames = 0;
+  const tick = (now: number) => {
+    const gap = now - last;
+    last = now;
+    frames += 1;
+    if ((frames >= 2 && gap < BUSY_FRAME_MS) || now - start > MAX_HOLD_MS) fn();
+    else requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 export function keyedRows(root: HTMLElement | null | undefined): HTMLElement[] {
@@ -45,22 +90,15 @@ export function slideRows(
   const elements = new Map(
     keyedRows(root).map((row) => [row.dataset.flipKey!, row]),
   );
-  for (const row of elements.values())
-    for (const running of row.getAnimations())
-      if (running.id === SLIDE_ID) running.cancel();
+  cancelSlides(elements.values());
 
   const offsets = slideOffsets(before, measureRows(root), (key) =>
     parentKey(elements, key),
   );
   settle?.(elements);
   for (const [key, { x, y }] of offsets) {
-    const slide = elements
-      .get(key)
-      ?.animate(
-        [{ transform: `translate(${x}px, ${y}px)` }, { transform: "none" }],
-        { duration: SLIDE_MS, easing: EASE_SNAPPY },
-      );
-    if (slide) slide.id = SLIDE_ID;
+    const row = elements.get(key);
+    if (row) slideFrom(row, x, y);
   }
 }
 

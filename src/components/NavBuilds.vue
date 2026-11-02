@@ -23,6 +23,7 @@ import {
 } from "../composables/useDragAndDrop";
 import { useKeyedCache } from "../composables/useKeyedCache";
 import { useReorderMotion } from "../composables/useReorderMotion";
+import { useFoldSlide } from "../composables/useFoldSlide";
 import type { Build, BuildFolder, BuildNavEntry } from "../types";
 
 const props = defineProps<{
@@ -103,9 +104,11 @@ const rows = computed<Row[]>(() => {
   return out;
 });
 
+const list = useTemplateRef("list");
+
 /** Every listed build and folder, folder contents included, so moving a build into or out of
  *  a folder reads as a reorder. Folding leaves it as is. */
-useReorderMotion(useTemplateRef("list"), () =>
+useReorderMotion(list, () =>
   rows.value.flatMap((row) =>
     row.kind === "build"
       ? [row.build.id]
@@ -118,6 +121,17 @@ useReorderMotion(useTemplateRef("list"), () =>
 function isOpen(folder: BuildFolder) {
   return !!props.filter || !folder.collapsed;
 }
+
+// Opening or closing a folder slides the rows below it.
+useFoldSlide(list, () => {
+  const folders = rows.value.flatMap((row) =>
+    row.kind === "folder" ? [row.folder] : [],
+  );
+  return {
+    folds: folders.map((folder) => folder.id),
+    open: folders.filter(isOpen).map((folder) => folder.id),
+  };
+});
 
 /** Only a build can go *inside* a folder - folders never nest, so a dragged folder gets the
  *  plain before/after reorder gesture on a folder header. */

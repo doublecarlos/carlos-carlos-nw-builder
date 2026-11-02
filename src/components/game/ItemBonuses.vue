@@ -36,6 +36,7 @@ import {
 } from "../../composables/useDragAndDrop";
 import ListAddRow from "../ui/ListAddRow.vue";
 import { useReorderMotion } from "../../composables/useReorderMotion";
+import { useFoldSlide } from "../../composables/useFoldSlide";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to
@@ -213,9 +214,17 @@ function onSlotDuplicate(slot: Slot) {
 const instanceId = `item-bonuses:${Math.random().toString(36).slice(2)}`;
 const bonusesContainerId = `bonuses:${instanceId}`;
 
-useReorderMotion(useTemplateRef("bonusList"), () =>
+const bonusList = useTemplateRef("bonusList");
+
+useReorderMotion(bonusList, () =>
   slots.value.map((slot) => slot.id ?? slot.key),
 );
+
+// Folding a bonus card slides everything below it, in this list and in the form around it.
+useFoldSlide(bonusList, () => ({
+  folds: slots.value.map((slot) => slot.key),
+  open: slots.value.filter(isExpanded).map((slot) => slot.key),
+}));
 
 const bonusesDropList = useDropList({
   accepts: (source) =>
@@ -286,6 +295,7 @@ function nudgeBonus(index: number, delta: -1 | 1) {
         v-for="slot in slots"
         :key="slot.key"
         :data-flip-key="slot.id ?? slot.key"
+        :data-fold-key="slot.key"
         data-testid="bonus-card"
         :data-expanded="isExpanded(slot)"
         class="mb-2.5 rounded-md border border-line-strong bg-accent-soft/30 px-2.5 py-1"

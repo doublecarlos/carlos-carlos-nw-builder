@@ -126,21 +126,34 @@ test.describe("with motion, folding a section", () => {
     const topBefore = (await next.boundingBox())!.y;
 
     await headerRow(page, second).click();
+    // Read in one step and polled at frame pace, since a slide lasts only a moment. Its first
+    // frame draws the next section where it sat before the fold, so it travels the whole
+    // distance rather than jumping most of it.
+    let seen: { sliding: string[]; drawnAtStart: number } | null = null;
     await expect
-      .poll(async () => (await slidingSections(page)).includes(third))
+      .poll(
+        async () => {
+          seen = await next.evaluate((el) => {
+            const slide = el.getAnimations().find((a) => a.id === "row-slide");
+            if (!slide) return null;
+            const sliding = [
+              ...document.querySelectorAll<HTMLElement>("[data-section-id]"),
+            ]
+              .filter((section) =>
+                section.getAnimations().some((a) => a.id === "row-slide"),
+              )
+              .map((section) => section.dataset.sectionId!);
+            slide.currentTime = 0;
+            return { sliding, drawnAtStart: el.getBoundingClientRect().top };
+          });
+          return seen !== null;
+        },
+        { intervals: [16] },
+      )
       .toBe(true);
-    const sliding = await slidingSections(page);
+    const { sliding, drawnAtStart } = seen!;
     expect(sliding).not.toContain(first);
     expect(sliding).not.toContain(second);
-
-    // The slide's first frame draws the next section where it sat before the fold, so it
-    // travels the whole distance rather than jumping most of it.
-    const drawnAtStart = await next.evaluate((el) => {
-      const slide = el.getAnimations().find((a) => a.id === "row-slide")!;
-      slide.pause();
-      slide.currentTime = 0;
-      return el.getBoundingClientRect().top;
-    });
     expect(Math.abs(drawnAtStart - topBefore)).toBeLessThan(2);
   });
 

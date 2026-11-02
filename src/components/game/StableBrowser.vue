@@ -6,7 +6,7 @@
 // Applying a row overwrites a group, so it names what it will replace first.
 //
 // Tab and filter live in the store so the URL can mirror them; collapse state stays local.
-import { computed, ref, watch } from "vue";
+import { computed, ref, useTemplateRef, watch } from "vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
 import BaseModal from "../ui/BaseModal.vue";
 import BaseButton from "../ui/BaseButton.vue";
@@ -21,6 +21,7 @@ import { STABLE_ROLE_FILTER } from "../../data/catalog";
 import { PREFERRED_MARK, readGroup } from "../../engine/insignia";
 import { stableCards, type StableCard } from "../../lib/stable-rows";
 import * as stableBrowser from "../../stores/stableBrowser";
+import { useFoldSlide } from "../../composables/useFoldSlide";
 import type { Db, Build, Item } from "../../types";
 
 const props = defineProps<{
@@ -67,6 +68,12 @@ const expandAll = () => {
 
 /** The other side lists different ids, so an old collapse would land on whatever shares one. */
 watch(tab, expandAll);
+
+// Folding a card slides the cards below it.
+useFoldSlide(useTemplateRef("cardList"), () => ({
+  folds: cards.value.map((card) => card.id),
+  open: cards.value.filter((card) => !isCollapsed(card)).map((card) => card.id),
+}));
 
 const openCount = computed(
   () => cards.value.filter((card) => !isCollapsed(card)).length,
@@ -149,7 +156,7 @@ function create(filter: string) {
       />
     </div>
 
-    <div class="flex-1 overflow-y-auto p-4">
+    <div ref="cardList" class="flex-1 overflow-y-auto p-4">
       <p
         v-if="!cards.length"
         class="text-muted"
@@ -160,6 +167,7 @@ function create(filter: string) {
       <div
         v-for="card in cards"
         :key="card.id"
+        :data-fold-key="card.id"
         class="mb-3 rounded-md border border-line"
         data-testid="stable-group-card"
       >

@@ -609,7 +609,7 @@ const sections = computed<SectionRow[]>(() => {
 
 // Opening or closing a section slides the ones below instead of jumping them.
 useFoldSlide(root, () => ({
-  rows: sections.value.map((section) => section.id),
+  folds: sections.value.map((section) => section.id),
   open: sections.value
     .filter((section) => sectionExpanded(section.id))
     .map((section) => section.id),

@@ -63,6 +63,7 @@ import {
 } from "../../composables/useDragAndDrop";
 import { useKeyedCache } from "../../composables/useKeyedCache";
 import { useReorderMotion } from "../../composables/useReorderMotion";
+import { useFoldSlide } from "../../composables/useFoldSlide";
 
 const emit = defineEmits<{ error: [message: string] }>();
 
@@ -209,14 +210,22 @@ function removeNameDescription(gIndex: number) {
 const instanceId = `bonus-rows:${Math.random().toString(36).slice(2)}`;
 const grantsContainerId = `grants:${instanceId}`;
 
+const grantList = useTemplateRef("grantList");
+
 // Grants, their tiers and their variants slide to their new place.
-useReorderMotion(useTemplateRef("grantList"), () =>
+useReorderMotion(grantList, () =>
   props.store.grants.flatMap((grant) => [
     grant.uid,
     ...grant.tiers.map((tier) => tier.uid),
     ...grant.variants.map((variant) => variant.uid),
   ]),
 );
+
+// Folding a grant slides everything below it, in this list and in the form around it.
+useFoldSlide(grantList, () => ({
+  folds: props.store.grants.map((grant) => grant.uid),
+  open: props.store.grants.filter(isExpanded).map((grant) => grant.uid),
+}));
 
 const grantsDropList = useDropList({
   accepts: (source) =>
@@ -454,6 +463,7 @@ function toggleJson(gIndex: number) {
       v-for="(grant, gIndex) in props.store.grants"
       :key="grant.uid"
       :data-flip-key="grant.uid"
+      :data-fold-key="grant.uid"
       data-testid="bonus-grant-row"
       :data-expanded="isExpanded(grant)"
       class="mb-2 rounded-md border border-line bg-surface-2 p-2.5"

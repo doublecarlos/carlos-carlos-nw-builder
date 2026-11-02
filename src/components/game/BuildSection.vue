@@ -90,7 +90,7 @@ const bodyStyle = computed(() => ({
   <section
     class="rounded-md border border-line"
     :data-section-id="id"
-    :data-flip-key="id"
+    :data-fold-key="id"
   >
     <!-- Sticky within its own section, so a long one (Group is 28 rows, Artifact Call 26)
          still says which section you are reading once its top has scrolled away. The editor's

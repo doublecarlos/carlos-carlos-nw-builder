@@ -147,6 +147,7 @@ function onRowKeydown(event: KeyboardEvent) {
     ]"
     v-bind="rowProps"
     :data-flip-key="id"
+    :data-fold-key="kind === 'folder' ? id : undefined"
   >
     <DragHandle
       v-if="coarsePointer && !renaming"

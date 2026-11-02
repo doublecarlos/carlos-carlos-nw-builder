@@ -59,15 +59,20 @@ test.describe("with motion", () => {
     const [first, second] = await buildOrder(page);
 
     await moveDown(buildRow(page, "Build 1"));
-    await expect.poll(() => buildOrder(page)).toEqual([second, first]);
-    expect((await sliding(page)).sort()).toEqual([first, second].sort());
+    // Polled at frame pace: a slide lasts only a moment.
+    await expect
+      .poll(async () => (await sliding(page)).sort(), { intervals: [16] })
+      .toEqual([first, second].sort());
+    expect(await buildOrder(page)).toEqual([second, first]);
     // The row moved is marked, not the one it displaced.
     expect(await flashing(page)).toEqual([first]);
 
     await expect.poll(() => flashing(page)).toEqual([]);
     await page.getByTestId("nav-undo").click();
-    await expect.poll(() => buildOrder(page)).toEqual([first, second]);
-    expect((await sliding(page)).sort()).toEqual([first, second].sort());
+    await expect
+      .poll(async () => (await sliding(page)).sort(), { intervals: [16] })
+      .toEqual([first, second].sort());
+    expect(await buildOrder(page)).toEqual([first, second]);
   });
 
   test("filtering the list slides nothing", async ({ page }) => {
