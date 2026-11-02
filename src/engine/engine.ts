@@ -8,6 +8,7 @@ import * as bonus from "./bonus";
 import { scaleFactorFor, scaledStat } from "./scaling";
 import { assignedRows } from "../lib/inline-repetition";
 import { copyCounts } from "../lib/copy-counts";
+import { pickerAccepts } from "../lib/picker-accepts";
 import { misplacedInsignia, withDerivedBonuses } from "./insignia";
 import { itemStatAddress, readInput } from "../lib/build-inputs";
 import {
@@ -566,6 +567,17 @@ function rowErrors(
         });
       }
       continue;
+    }
+    // A pick can land outside its slot's filter by accepting a replacement from another
+    // category or by hand-editing a saved build. It still calculates, but is flagged.
+    if (row.slot.type === "item_picker" && !pickerAccepts(row.slot, row.item)) {
+      errors.push({
+        slotId: row.slotId,
+        kind: "slotFilter",
+        choice: row.item.name,
+        message: `${row.item.name} does not fit ${row.slot.label}`,
+        severity: "error",
+      });
     }
     errors.push(
       ...checkItemErrors(row.slotId, row.item, db, resolved.ctx.class, counts),
