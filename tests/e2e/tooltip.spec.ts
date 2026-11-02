@@ -4,10 +4,11 @@
 import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";
 
-/** A stat row's info button: an icon-only control whose whole label lives in its tooltip,
- *  which is exactly the case native `title` served worst. */
+/** The header's About button: an icon-only control whose whole label lives in its tooltip,
+ *  which is exactly the case native `title` served worst. Outside the build editor, whose
+ *  row cursor moves focus on its own. */
 const infoButton = (page: import("@playwright/test").Page) =>
-  page.locator(".stat-info-btn").first();
+  page.getByTestId("header-about");
 
 const tooltip = (page: import("@playwright/test").Page) =>
   page.getByTestId("tooltip");
@@ -25,9 +26,9 @@ test("a tooltip opens on hover and closes when the pointer leaves", async ({
   await openBuilder(page);
 
   await infoButton(page).hover();
-  await expect(tooltip(page)).toHaveText("Show sources");
+  await expect(tooltip(page)).toHaveText("About");
 
-  await page.getByTestId("app-header").hover();
+  await page.getByTestId("header-title").hover();
   await expect(tooltip(page)).toBeHidden();
 });
 
@@ -95,11 +96,9 @@ test("the tooltip describes its trigger while open", async ({ page }) => {
 
 test("only one tooltip shows at a time", async ({ page }) => {
   await openBuilder(page);
-  const buttons = page.locator(".stat-info-btn");
-
-  await buttons.nth(0).hover();
+  await page.getByTestId("header-shortcuts").hover();
   await expect(tooltip(page)).toBeVisible();
-  await buttons.nth(1).hover();
+  await infoButton(page).hover();
 
   await expect(tooltip(page)).toHaveCount(1);
 });
@@ -116,8 +115,8 @@ test("clicking a trigger dismisses its tooltip, so it can't cover what opened", 
   await button.click();
 
   await expect(tooltip(page)).toBeHidden();
-  // The click's own popover is what should be on screen now.
-  await expect(page.getByTestId("stat-card-title")).toBeVisible();
+  // The click's own dialog is what should be on screen now.
+  await expect(page.getByTestId("about-dialog")).toBeVisible();
 });
 
 test("wrapping a control leaves its layout and classes alone", async ({
@@ -127,9 +126,9 @@ test("wrapping a control leaves its layout and classes alone", async ({
 
   // BaseTooltip's wrapper is `display: contents`, and IconButton re-binds `$attrs` onto the
   // button -- together that keeps a caller's layout classes on the element that must carry
-  // them. Without either, `flex-none` would land on a wrapper and the row would reflow.
-  const button = page.locator(".stat-info-btn").first();
-  await expect(button).toHaveClass(/flex-none/);
+  // them. Without either, the menu's own trigger class would land on a wrapper.
+  const button = page.getByTestId("section-actions-gear");
+  await expect(button).toHaveClass(/section-actions-gear/);
   expect(
     await button.evaluate(
       // eslint-disable-next-line no-restricted-syntax

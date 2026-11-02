@@ -60,6 +60,7 @@ import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 import ComboBoxScreen from "./ComboBoxScreen.vue";
 import BaseButton from "./BaseButton.vue";
+import { trackPickerOpen } from "../../composables/useOpenPickers";
 import BaseSheet from "./BaseSheet.vue";
 import IconButton from "./IconButton.vue";
 import { Info } from "@lucide/vue";
@@ -133,8 +134,9 @@ defineSlots<{
   aside?(): unknown;
   /** One option's details on the phone screen, opened from its row's info button. */
   detail?(props: { option: T }): unknown;
-  /** Header actions on the phone screen. `close` closes it, handing focus back to the row, and
-   *  resolves once the history marker Back would have popped is gone. */
+  /** Actions that are not options: in the phone screen's header, or a footer under the
+   *  floating menu. `close` closes either, handing focus back to the row, and resolves once
+   *  the history marker Back would have popped is gone. */
   actions?(props: { close: () => Promise<void> }): unknown;
 }>();
 
@@ -155,6 +157,7 @@ const model = defineModel<string>({ default: "" });
 
 const open = ref(false);
 watch(open, (value) => emit("update:open", value));
+trackPickerOpen(open);
 const query = ref("");
 watch(query, (value) => emit("update:query", value));
 const highlight = ref(0);
@@ -387,6 +390,12 @@ function closeScreen(): Promise<void> {
   return backSettled;
 }
 
+/** The floating menu's counterpart to `closeScreen`, for its footer actions. */
+async function closeMenu() {
+  close();
+  blurToRowAnchor(input.value);
+}
+
 /** Ends an interaction that closes the picker, keeping the row cursor where there is one. */
 function dismiss() {
   if (screen.value) closeScreen();
@@ -613,6 +622,9 @@ for (const target of keyTargets) {
       </template>
       <template v-if="screen && $slots.actions" #actions>
         <slot name="actions" :close="closeScreen" />
+      </template>
+      <template v-else-if="$slots.actions" #footer>
+        <slot name="actions" :close="closeMenu" />
       </template>
       <!-- Keyed by position: one option may be listed under several headings, so two rows can
            share a value. -->

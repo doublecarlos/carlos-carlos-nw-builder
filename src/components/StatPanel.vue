@@ -10,8 +10,7 @@ import ComboBox from "./ui/ComboBox.vue";
 import BuildComboBox from "./game/BuildComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseLink from "./ui/BaseLink.vue";
-import IconButton from "./ui/IconButton.vue";
-import { CircleAlert } from "@lucide/vue";
+import StatInfoButton from "./game/StatInfoButton.vue";
 import StatPanelSourceCard from "./game/StatPanelSourceCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BasePanel from "./ui/BasePanel.vue";
@@ -19,6 +18,7 @@ import PanelHead from "./ui/PanelHead.vue";
 import StatPanelPairsTable from "./game/StatPanelPairsTable.vue";
 import CompareLine from "./ui/CompareLine.vue";
 import { useStatSourcePopover } from "../composables/useStatSourcePopover";
+import { anyPickerOpen } from "../composables/useOpenPickers";
 import { NW_SCHEMA } from "../data/data";
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../lib/format";
 import * as compare from "../stores/compare";
@@ -297,7 +297,7 @@ const otherRows = computed(() => {
         stages.value.totals[stat.key] ?? 0,
         compareStages.value?.totals[stat.key] ?? 0,
       ),
-      onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
+      infoKey: stat.key,
     }));
 });
 
@@ -313,7 +313,7 @@ const abilityRows = computed(() =>
         compareStages.value?.totals[stat.key] ?? 0,
         int,
       ),
-      onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
+      infoKey: stat.key,
     })),
 );
 
@@ -331,7 +331,7 @@ const enemyRows = computed(() =>
         stages.value.totals[stat.key] ?? 0,
         compareStages.value?.totals[stat.key] ?? 0,
       ),
-      onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
+      infoKey: stat.key,
     })),
 );
 
@@ -345,7 +345,7 @@ const ilHpRows = computed(() => [
       compareDerived.value?.itemLevel,
     ),
     lead: true,
-    onInfo: (event: MouseEvent) => toggleCard(event, "il"),
+    infoKey: "il",
   },
   {
     key: "hp",
@@ -483,21 +483,23 @@ function capCompare(
 
 // The stat source popover ("why is this number what it is", per stat) -- source attribution
 // itself lives in stat-sources.ts, since it's pure data derivation with no template of its
-// own. See useStatSourcePopover for the click-to-open/close/click-outside behavior.
+// own. See useStatSourcePopover for how the card opens, pins and closes.
 const {
-  root,
   tooltip,
-  openCard,
+  openKey,
+  pinned,
+  pin,
+  closeCard,
+  onCardEnter,
+  onCardLeave,
   openLabel,
   openSections,
-  toggleCard,
-  closeCard,
   goToSlot,
 } = useStatSourcePopover(result);
 </script>
 
 <template>
-  <BasePanel ref="root">
+  <BasePanel data-stat-panel>
     <div
       v-if="errorList.length"
       class="mb-2.5 rounded-md bg-danger-soft px-2.5 py-1.5 text-danger"
@@ -669,15 +671,7 @@ const {
               :class="row.sepAfter && 'border-b-2 border-b-text/50'"
             >
               <div class="flex items-center">
-                <IconButton
-                  title="Show sources"
-                  :label="`Show sources for ${row.label}`"
-                  class="stat-info-btn"
-                  :data-stat-key="row.key"
-                  @click="toggleCard($event, row.key)"
-                >
-                  <CircleAlert />
-                </IconButton>
+                <StatInfoButton :stat-key="row.key" :label="row.label" />
                 <span>{{ row.label }}</span>
               </div>
               <CompareLine
@@ -773,13 +767,17 @@ const {
 
     <BasePopover ref="tooltip" :width="320">
       <StatPanelSourceCard
-        v-if="openCard"
+        v-if="openKey && !(pinned && anyPickerOpen)"
         :label="openLabel"
         :sections="openSections"
         :db="engine.db.value"
-        :data-stat-key="openCard.key"
+        :pinned="pinned"
+        :data-stat-key="openKey"
+        @pin="pin"
         @close="closeCard"
         @go-to-slot="goToSlot"
+        @mouseenter="onCardEnter"
+        @mouseleave="onCardLeave"
       />
     </BasePopover>
   </BasePanel>

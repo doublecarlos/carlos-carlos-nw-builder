@@ -3,7 +3,8 @@ import type { Locator, Page } from "@playwright/test";
 
 /** The circle-alert button that opens a stat's source popover, keyed by its schema stat key
  * (`data-stat-key`, StatPanel.vue's own test hook -- same convention as BuildEditor.vue's
- * `data-cursor-key`). Scoped to `button` since the open popover carries the same attribute. */
+ * `data-cursor-key`). Scoped to `button` since the open popover carries the same attribute.
+ * Hovering it previews the card; clicking it opens the card pinned. */
 export function statInfoButton(page: Page, key: string): Locator {
   return page.locator(`button[data-stat-key="${key}"]`);
 }
@@ -13,8 +14,14 @@ export function statCard(page: Page): Locator {
   return page.locator('[data-testid="stat-card"]');
 }
 
+/** The header button of a pinned card, which closes it. */
 export function statCardClose(page: Page): Locator {
-  return statCard(page).locator('[data-testid="stat-card-close"]');
+  return statCard(page).getByTestId("card-close");
+}
+
+/** The header button of a previewed card, which pins it. */
+export function statCardPin(page: Page): Locator {
+  return statCard(page).getByTestId("card-pin");
 }
 
 /**

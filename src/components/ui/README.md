@@ -56,6 +56,7 @@ ordinary one.
 | OcrTextField                              | A description field that also OCRs a pasted screenshot into it                                                                                                 |
 | PaletteInput                              | GoToPalette's own combobox-trigger search field                                                                                                                |
 | PanelHead                                 | A panel's own internal section heading (not BasePanel's header slot)                                                                                           |
+| PinButton                                 | A hover card's header button: pins the card, then closes it once pinned                                                                                        |
 | PercentInput                              | A percent field over a decimal-stored value (`0.09` stored, `9` typed)                                                                                         |
 | PresetButtons                             | A row of one-click values next to a number field, the current one highlighted                                                                                  |
 | RailGutter / RailToggle                   | A side rail's show/hide-and-resize edge, and the button that collapses/restores it                                                                             |

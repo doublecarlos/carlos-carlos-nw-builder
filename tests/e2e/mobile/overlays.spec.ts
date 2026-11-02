@@ -142,9 +142,8 @@ test("a swipe on a row's body scrolls the list instead of dragging", async ({
 
 test("a tap on a button with a tooltip shows no tooltip", async ({ page }) => {
   await openBuilder(page);
-  await page.getByTestId("pane-stats").tap();
-  await page.locator("button.stat-info-btn").first().tap();
-  await expect(page.getByTestId("stat-card")).toBeVisible();
+  await page.getByTestId("section-actions-gear").tap();
+  await expect(page.getByTestId("section-actions-panel")).toBeVisible();
   await expect(page.getByTestId("tooltip")).toHaveCount(0);
 });
 

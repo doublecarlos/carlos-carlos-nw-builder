@@ -6,10 +6,8 @@
 // card. Rendered once by BuildEditor.vue, not once per row: 180 slots must not mean 180 cards.
 //
 // Interactive: a long card scrolls internally (BaseCardBody, capped by BasePopover's
-// max-height), so it must accept the pointer -- the root carries `.itemcard` so
-// useHoverCard's window-level scroll listener can tell a scroll inside the card apart from
-// one outside it that should close the card. BuildEditor keeps it open while the pointer is
-// over it and closes it on leave.
+// max-height), so it must accept the pointer. BuildEditor keeps it open while the pointer is
+// over it and closes it on leave, unless it is `pinned`.
 //
 // ItemPicker.vue also shows one beside its open menu for the highlighted candidate, `readonly`
 // there since the candidate is not in the build to navigate from.
@@ -47,6 +45,7 @@ import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
 import IconButton from "../ui/IconButton.vue";
+import PinButton from "../ui/PinButton.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import DescriptionText from "../ui/DescriptionText.vue";
@@ -89,6 +88,9 @@ const props = withDefaults(
     context?: EvalContext | null;
     /** Content only: links render as plain text and the action buttons are hidden. */
     readonly?: boolean;
+    /** Offer a pin button in the header, which turns into a close button once `pinned`. */
+    pinnable?: boolean;
+    pinned?: boolean;
   }>(),
   {
     bonuses: () => [],
@@ -101,11 +103,15 @@ const props = withDefaults(
     bonusById: () => new Map(),
     context: null,
     readonly: false,
+    pinnable: false,
+    pinned: false,
   },
 );
 
 const emit = defineEmits<{
   edit: [];
+  pin: [];
+  close: [];
   "open-stable": [];
   "go-to-slot": [slotId: string];
   /** Asks the caller to narrow its slot list to what could supply an unmet condition. */
@@ -278,12 +284,20 @@ const rows = computed(() =>
       <IconButton
         v-if="editLabel && !readonly"
         :title="editLabel"
-        class="-my-1 -mr-1"
+        class="-my-1"
+        :class="!(pinnable && !readonly) && '-mr-1'"
         data-testid="item-card-edit"
         @click="$emit('edit')"
       >
         <SquarePen />
       </IconButton>
+      <PinButton
+        v-if="pinnable && !readonly"
+        :pinned="pinned"
+        class="-my-1 -mr-1"
+        @pin="emit('pin')"
+        @close="emit('close')"
+      />
     </BaseCardHeader>
     <BaseCardBody>
       <div v-if="slotLabel" class="mb-1 text-muted">

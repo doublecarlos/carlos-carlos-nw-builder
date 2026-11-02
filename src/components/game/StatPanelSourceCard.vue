@@ -1,33 +1,34 @@
 <script setup lang="ts">
-// Click-triggered popover for a stat row in StatPanel.vue: which items/bonuses/pipeline
-// stages fed the number on screen. Its rows are the shared `StatRows`, rendered
-// once for the whole panel and refilled per click, not once per row.
+// Hover card for a stat row in StatPanel.vue: which items/bonuses/pipeline stages fed the
+// number on screen. Its rows are the shared `StatRows`, rendered once for the whole panel and
+// refilled per row, not once per row.
 //
-// Opened by a click on the row's own circle-alert button, closed by the × here or by
-// StatPanel.vue's click-outside handler. Click trigger only, on purpose: in a dense stat
-// table the pointer's path to a row ran through other rows' trigger buttons, so hover-to-open
-// kept swapping the card's contents out from under the pointer.
+// Previewed by hovering the row's info button and opened pinned by clicking it
+// (useStatSourcePopover). The header's pin button pins a previewed card, then closes it.
 import { computed } from "vue";
 import { signedStat } from "../../lib/format";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
+import PinButton from "../ui/PinButton.vue";
 import StatRows from "./StatRows.vue";
 import type { StatRow } from "./StatRows.vue";
 import type { StatSourceSection } from "../../engine/stat-sources";
 import type { Db } from "../../types";
-import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
 const props = defineProps<{
   label: string;
   sections: StatSourceSection[];
   /** Resolves a source's item to its quality, for tinting its line. */
   db: Db;
+  pinned: boolean;
 }>();
 
-const emit = defineEmits<{ close: []; "go-to-slot": [slotId: string] }>();
-
-useEscapeToClose(() => emit("close"));
+const emit = defineEmits<{
+  pin: [];
+  close: [];
+  "go-to-slot": [slotId: string];
+}>();
 
 /** One row per source. A source with a slot becomes the button that jumps to it. */
 const sectionRows = computed(() =>
@@ -44,10 +45,6 @@ const sectionRows = computed(() =>
     })),
   })),
 );
-
-// Width (`w-64` = 256px) and max-height (`max-h-96` = 384px) are read back by StatPanel.vue's
-// own positioning logic (`CARD_W`) -- keep them in step. `.statcard` on the root is a bare JS
-// hook for that same positioning code (`closest('.statcard')`), not a style.
 </script>
 
 <template>
@@ -58,15 +55,12 @@ const sectionRows = computed(() =>
         data-testid="stat-card-title"
         >{{ label }}</span
       >
-      <button
-        type="button"
-        class="statcard-close flex-none pl-2 leading-none text-muted hover:text-text"
-        aria-label="Close"
-        data-testid="stat-card-close"
-        @click="$emit('close')"
-      >
-        ×
-      </button>
+      <PinButton
+        :pinned="pinned"
+        class="-my-1 -mr-1"
+        @pin="emit('pin')"
+        @close="emit('close')"
+      />
     </BaseCardHeader>
     <BaseCardBody>
       <template v-for="(section, i) in sectionRows" :key="section.key">

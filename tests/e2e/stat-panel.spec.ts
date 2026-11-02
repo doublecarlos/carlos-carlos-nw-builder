@@ -12,6 +12,7 @@ import {
   statInfoButton,
   statCard,
   statCardClose,
+  statCardPin,
   statCardSourceGroups,
 } from "./support/stats";
 import { importTestCatalog } from "./support/testCatalog";
@@ -167,7 +168,7 @@ test.describe("stat source popover", () => {
     await expect(card.getByTestId("stat-card-multiplicative")).toBeVisible();
   });
 
-  test("clicking an item's row closes the card and jumps to its build row", async ({
+  test("clicking an item's row jumps to its build row, leaving a pinned card open", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -185,7 +186,7 @@ test.describe("stat source popover", () => {
       .filter({ hasText: HEAD_ITEM })
       .click();
 
-    await expect(statCard(page)).toBeHidden();
+    await expect(statCard(page)).toBeVisible();
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "slot:gear.head",
@@ -220,6 +221,43 @@ test.describe("stat source popover", () => {
     ).toHaveText("Accuracy");
   });
 
+  test("hovering a stat's button previews its card, which closes when the pointer leaves", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await statInfoButton(page, "power").hover();
+    await expect(
+      statCard(page).locator('[data-testid="stat-card-title"]'),
+    ).toHaveText("Power");
+    await expect(statCardPin(page)).toBeVisible();
+
+    await page.getByTestId("app-header").hover();
+    await expect(statCard(page)).toBeHidden();
+  });
+
+  test("a previewed card's pin button keeps it open after the pointer leaves", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await statInfoButton(page, "power").hover();
+    await statCardPin(page).click();
+    await expect(statCardClose(page)).toBeVisible();
+
+    await page.getByTestId("app-header").hover();
+    await expect(statCard(page)).toBeVisible();
+  });
+
+  test("the card opens beside the panel, clear of the stat buttons", async ({
+    page,
+  }) => {
+    // The pointer's way from a button to its card must not cross other rows' buttons.
+    await openBuilder(page);
+    await statInfoButton(page, "power").hover();
+    const cardBox = await statCard(page).boundingBox();
+    const buttonBox = await statInfoButton(page, "power").boundingBox();
+    expect(cardBox!.x + cardBox!.width).toBeLessThan(buttonBox!.x);
+  });
+
   test("the close button closes the card", async ({ page }) => {
     await openBuilder(page);
     await statInfoButton(page, "power").click();
@@ -229,12 +267,18 @@ test.describe("stat source popover", () => {
     await expect(statCard(page)).toBeHidden();
   });
 
-  test("clicking outside the card closes it", async ({ page }) => {
+  test("a pinned card outlasts a click elsewhere and closes on Escape", async ({
+    page,
+  }) => {
+    // Pinned means it stays until the reader dismisses it on purpose.
     await openBuilder(page);
     await statInfoButton(page, "power").click();
     await expect(statCard(page)).toBeVisible();
 
     await page.locator("h1").click();
+    await expect(statCard(page)).toBeVisible();
+
+    await page.keyboard.press("Escape");
     await expect(statCard(page)).toBeHidden();
   });
 
@@ -316,4 +360,22 @@ test.describe("effective hit points", () => {
       (await row.textContent())!.trim(),
     );
   });
+});
+
+test("rating labels stay on one line at the panel's default width", async ({
+  page,
+}) => {
+  // The default rail width is chosen so the longest label never wraps beside real numbers.
+  await openBuilder(page);
+  await importStatItems(page);
+  await chooseItem(page, "gear.head", HEAD_ITEM);
+  const labels = page.locator("tr[data-stat-row] td:first-child > div > span");
+  // Rows of a section that is not on screen measure zero and say nothing about wrapping.
+  const heights = await labels.evaluateAll((spans) =>
+    spans
+      .map((span) => span.getBoundingClientRect().height)
+      .filter((height) => height > 0),
+  );
+  expect(heights.length).toBeGreaterThan(0);
+  expect(new Set(heights).size).toBe(1);
 });

@@ -58,12 +58,12 @@ const props = defineProps<{
   nested?: boolean;
   /** The row's label, heading the picker's phone screen. */
   label?: string;
-  /** Offer "New item" on the picker's phone screen, which emits `newItem`. */
+  /** Offer "New item" in the open picker, which emits `newItem`. */
   canCreateItem?: boolean;
 }>();
 
 const emit = defineEmits<{
-  /** Author a new item for this row, the phone's stand in for Ctrl+click on an empty row. */
+  /** Author a new item for this row, the picker's counterpart to Ctrl+click on an empty row. */
   newItem: [];
 }>();
 

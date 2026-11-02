@@ -76,6 +76,7 @@ import * as goTo from "../stores/goTo";
 import * as details from "../stores/details";
 import { isMac } from "../lib/platform";
 import { animateScrollTop, type CancelScroll } from "../lib/animate-scroll";
+import { anyPickerOpen } from "../composables/useOpenPickers";
 import type {
   Build,
   Item,
@@ -346,6 +347,9 @@ function itemForHover(slotId: string, itemId?: string): Item | null {
 
 const {
   hover,
+  pinned,
+  pin,
+  togglePinned,
   onRowEnter,
   onRowLeave,
   onCardEnter,
@@ -354,9 +358,9 @@ const {
   onFocusOut,
   closeCard,
   suppressUntilPointerMoves,
-} = useHoverCard(
+} = useHoverCard<HoverPosition>(
   tooltip,
-  (slotId, itemId) => itemForHover(slotId, itemId) !== null,
+  ({ slotId, itemId }) => itemForHover(slotId, itemId) !== null,
   { disabled: viewport.coarsePointer },
 );
 
@@ -386,10 +390,20 @@ const cardDynamicValues = computed(() => {
   return dynamicValuesFor(slotId, item);
 });
 
-function openItemSheet(slotId: string) {
-  closeCard();
-  sheetTarget.value = { slotId };
+/** A row's info button: the sheet on a touch screen, else the card pinned under the button.
+ *  It sits at the row's far right, so the card opens leftward, over the editor rather than
+ *  over the stat panel. */
+function onRowInfo(button: HTMLElement, slotId: string) {
+  if (viewport.coarsePointer.value) {
+    closeCard();
+    sheetTarget.value = { slotId };
+  } else togglePinned({ slotId }, button, "before");
 }
+
+/** A pinned card is about its slot, so it closes once that slot has no item left to show. */
+watch(cardItem, (item) => {
+  if (!item && pinned.value) closeCard();
+});
 
 /** Dismisses whichever card is showing. */
 function closeCards() {
@@ -683,8 +697,9 @@ function openStableFromCard() {
   const group = cardStableGroup.value;
   const item = cardItem.value;
   if (!group || !item) return;
-  // The sheet would trap focus away from the browser opening over it.
-  sheetTarget.value = null;
+  // The sheet would trap focus away from the browser opening over it, and a pinned card would
+  // sit above it.
+  closeCards();
   stableBrowser.openFor(group, {
     tab: item.insigniaSlots ? "mount" : "bonus",
     query: item.name,
@@ -879,7 +894,7 @@ function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
 }
 
 /** Opens the layer editor on a new item seeded for `slotId`, when the row has a seed. Ctrl+click
- *  on an empty row, or the picker's "New item" on a phone. */
+ *  on an empty row, or the picker's "New item". */
 function openNewItemFor(slotId: string) {
   const seed = newItemSeedFor(slotId);
   if (seed) void layerEditorUi.openNewItem(seed);
@@ -899,20 +914,25 @@ function onCardEdit() {
   openInLayerEditor(item.id);
 }
 
+/** Dismisses a card that is not pinned, which a pinned one outlasts on purpose. */
+function closeUnpinnedCards() {
+  if (!pinned.value) closeCards();
+}
+
 /** Same dismissal: the row the jump lands on may be the one the card is hanging over. */
 function onCardGoToSlot(slotId: string) {
-  closeCards();
+  closeUnpinnedCards();
   goTo.requestJump({ slotId });
 }
 
 function onCardInspect(bonusId: string) {
-  closeCards();
+  closeUnpinnedCards();
   details.inspectBonus(bonusId);
 }
 
 /** Same dismissal: the filter rewrites the list under the card, likely dropping its own row. */
 function onCardLocate(need: SupplyNeed, label: string) {
-  closeCards();
+  closeUnpinnedCards();
   slotFilter.showSuppliersOf(need, label);
 }
 
@@ -1417,9 +1437,12 @@ watch(
               :placeholder="rowDataFor(slotDef.id).placeholder"
               :label-override="rowDataFor(slotDef.id).labelOverride"
               :diff="rowDataFor(slotDef.id).diff"
-              @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
+              @enter="
+                (event, itemId) =>
+                  onRowEnter(event, { slotId: slotDef.id, itemId })
+              "
               @leave="onRowLeave"
-              @info="openItemSheet(slotDef.id)"
+              @info="(button) => onRowInfo(button, slotDef.id)"
               @new-item="openNewItemFor(slotDef.id)"
               @rowclick="
                 (event, itemId) => onRowClick(event, slotDef.id, itemId)
@@ -1428,11 +1451,19 @@ watch(
           </template>
         </BuildSection>
 
-        <!-- One card for the whole list, moved and refilled on hover. -->
+        <!-- One card for the whole list, moved and refilled on hover. A pinned one steps aside
+             while a picker is open, so it never covers the menu or its preview, and returns
+             where it was. -->
         <BasePopover ref="tooltip" :width="320">
           <ItemCard
-            v-if="hover && !sheetTarget && cardProps"
+            v-if="
+              hover && !sheetTarget && cardProps && !(pinned && anyPickerOpen)
+            "
             v-bind="cardProps"
+            pinnable
+            :pinned="pinned"
+            @pin="pin"
+            @close="closeCard"
             @edit="onCardEdit"
             @go-to-slot="onCardGoToSlot"
             @locate="onCardLocate"

@@ -110,9 +110,9 @@ const emit = defineEmits<{
   enter: [event: MouseEvent, itemId?: string];
   leave: [];
   rowclick: [event: MouseEvent, itemId?: string];
-  /** The info button: show this row's item card. */
-  info: [];
-  /** The picker's "New item" action, on a phone. */
+  /** The info button: show this row's item card, beside `button`. */
+  info: [button: HTMLElement];
+  /** The picker's "New item" action. */
   newItem: [];
 }>();
 
@@ -181,8 +181,13 @@ function onToggle(event: Event) {
       !(event.target as HTMLInputElement).checked,
     );
 }
-/** A touch screen gets no hover card, so a row holding an item offers it from a button. */
-const showInfo = computed(() => coarsePointer.value && !!props.item);
+/** A row holding an item offers its card from a button: the only way to it on a touch screen,
+ *  which gets no hover card, and the way to open it pinned with a mouse. */
+const showInfo = computed(() => !!props.item);
+
+function onInfo(event: MouseEvent) {
+  emit("info", event.currentTarget as HTMLElement);
+}
 
 const controlId = computed(() => `slot-${props.slotDef.id}`);
 const labelId = computed(() => `slot-${props.slotDef.id}-label`);
@@ -209,8 +214,10 @@ useCursorRowKeys(anchor, {
 
 <template>
   <div
-    class="relative grid col-span-full pr-2.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent [grid-template-columns:subgrid]"
+    class="group/slot relative grid col-span-full focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent [grid-template-columns:subgrid]"
     :class="[
+      // A mouse keeps the far right free for the info button, on every row so they align.
+      coarsePointer ? 'pr-2.5' : 'pr-8',
       // A nested row is an attachment of the one above it, so it reads smaller and tighter.
       nest ? 'py-0.5 text-[13px]' : 'py-1',
       noBorder || (nest && !nest.last)
@@ -262,11 +269,30 @@ useCursorRowKeys(anchor, {
         />
       </BaseTooltip>
       <IconButton
-        v-if="showInfo"
+        v-if="showInfo && coarsePointer"
         class="shrink-0"
         :title="`Show the item in ${labelOverride || slotDef.label}`"
         :data-testid="'slot-info:' + slotDef.id"
-        @click.stop="emit('info')"
+        @click.stop="onInfo"
+        ><Info
+      /></IconButton>
+    </div>
+
+    <!-- With a mouse the button stays out of sight until the row is hovered or focused, so a
+         long list does not carry an icon on every line. -->
+    <div
+      v-if="showInfo && !coarsePointer"
+      class="absolute right-1.5 flex items-center"
+      :class="[
+        nest ? 'top-0.5 h-6' : 'top-1 h-7',
+        !isHovered &&
+          'invisible group-hover/slot:visible group-focus-within/slot:visible',
+      ]"
+    >
+      <IconButton
+        :title="`Show the item in ${labelOverride || slotDef.label}`"
+        :data-testid="'slot-info:' + slotDef.id"
+        @click.stop="onInfo"
         ><Info
       /></IconButton>
     </div>

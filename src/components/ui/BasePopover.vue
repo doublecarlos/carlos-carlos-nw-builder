@@ -48,8 +48,11 @@ const GAP = 8;
  * `end` lines the panel's right edge up with the anchor's, for a menu dropping from a trigger.
  * Placed by coordinates rather than a transform, so a fixed descendant (ComboBoxMenu) still
  * positions against the viewport.
+ *
+ * `before` is `beside` mirrored: it ends at the anchor's left edge and flips to its right when
+ * there is no room, for a card about a column at the screen's right edge.
  */
-type PopoverAlign = "beside" | "center" | "end";
+export type PopoverAlign = "beside" | "before" | "center" | "end";
 
 /** Ends `width` at the anchor's right edge, kept inside the viewport. */
 function endLeft(anchor: DOMRect, width: number) {
@@ -76,6 +79,12 @@ function place(
   } else if (align === "end") {
     // Same opening guess as `center`, corrected below to the rendered width.
     left = endLeft(anchor, props.width);
+  } else if (align === "before") {
+    left = anchor.left - props.width - GAP;
+    if (left < MARGIN) {
+      const right = window.innerWidth - props.width - MARGIN;
+      left = Math.max(Math.min(anchor.right + GAP, right), MARGIN);
+    }
   } else {
     // Horizontal: from pointer if given, else from anchor's right edge.
     const originX = pointerX ?? anchor.right + GAP;
