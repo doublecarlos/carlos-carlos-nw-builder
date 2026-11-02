@@ -6,9 +6,10 @@
 // A row carrying `compare` stacks the compare build's own number under its value, tagged with
 // `compareLabel` (that build's name) under the stat's label. Rows leave `compare` unset when
 // the two builds agree, so the panel only grows where there is something to see.
-import IconButton from "../ui/IconButton.vue";
+//
+// A row with an `infoKey` ends in the info button for that stat's source card.
 import CompareLine from "../ui/CompareLine.vue";
-import { CircleAlert } from "@lucide/vue";
+import StatInfoButton from "./StatInfoButton.vue";
 
 defineProps<{
   rows: {
@@ -18,7 +19,8 @@ defineProps<{
     lead?: boolean;
     muted?: boolean;
     compare?: string | null;
-    onInfo?: (event: MouseEvent) => void;
+    /** The stat whose sources the row's info button shows. */
+    infoKey?: string;
   }[];
   /** The compare build's name, shown once per compared row. */
   compareLabel?: string;
@@ -40,19 +42,7 @@ defineProps<{
           :data-stat-row="row.key"
         >
           <td class="px-1 py-0.5 align-top" :class="row.muted && 'text-muted'">
-            <div class="flex items-center gap-0.5">
-              <IconButton
-                v-if="row.onInfo"
-                title="Show sources"
-                :label="`Show sources for ${row.label}`"
-                class="stat-info-btn flex-none"
-                :data-stat-key="row.key"
-                @click="row.onInfo"
-              >
-                <CircleAlert />
-              </IconButton>
-              <span>{{ row.label }}</span>
-            </div>
+            <span>{{ row.label }}</span>
             <CompareLine
               v-if="row.compare"
               class="font-normal"
@@ -71,6 +61,13 @@ defineProps<{
               v-if="row.compare"
               class="font-normal tabular-nums"
               :text="row.compare"
+            />
+          </td>
+          <td class="w-0 py-0.5 pr-0.5 align-top">
+            <StatInfoButton
+              v-if="row.infoKey"
+              :stat-key="row.infoKey"
+              :label="row.label"
             />
           </td>
         </tr>

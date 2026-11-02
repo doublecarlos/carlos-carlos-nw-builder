@@ -1,5 +1,6 @@
 // The hover card opens on row enter after a delay, resumes instantly when sweeping between
-// rows, and stays shut after a programmatic scroll until the pointer moves.
+// rows, and stays shut after a programmatic scroll until the pointer moves. A pinned card stays
+// put until closed.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { effectScope, ref } from "vue";
 import { useHoverCard } from "../../src/composables/useHoverCard";
@@ -47,9 +48,12 @@ function setup() {
   const tooltip = ref({
     place: vi.fn(),
     close: vi.fn(),
+    el: null,
   } as unknown as InstanceType<typeof BasePopover>);
   const scope = effectScope();
-  const card = scope.run(() => useHoverCard(tooltip, () => true))!;
+  const card = scope.run(() =>
+    useHoverCard<{ slotId: string }>(tooltip, () => true),
+  )!;
   return { card, tooltip, dispose: () => scope.stop() };
 }
 
@@ -66,24 +70,24 @@ afterEach(() => {
 describe("useHoverCard", () => {
   it("opens after the hover delay", () => {
     const { card, dispose } = setup();
-    card.onRowEnter(rowEnterEvent(), "head");
+    card.onRowEnter(rowEnterEvent(), { slotId: "head" });
     expect(card.hover.value).toBeNull();
     vi.advanceTimersByTime(HOVER_DELAY_MS);
-    expect(card.hover.value).toEqual({ slotId: "head", itemId: undefined });
+    expect(card.hover.value).toEqual({ slotId: "head" });
     dispose();
   });
 
   it("resumes instantly when re-entering a row soon after a close", () => {
     const { card, dispose } = setup();
-    card.onRowEnter(rowEnterEvent(), "head");
+    card.onRowEnter(rowEnterEvent(), { slotId: "head" });
     vi.advanceTimersByTime(HOVER_DELAY_MS);
     card.closeCard();
     expect(card.hover.value).toBeNull();
 
     vi.advanceTimersByTime(100);
-    card.onRowEnter(rowEnterEvent(), "neck");
+    card.onRowEnter(rowEnterEvent(), { slotId: "neck" });
     vi.advanceTimersByTime(0);
-    expect(card.hover.value).toEqual({ slotId: "neck", itemId: undefined });
+    expect(card.hover.value).toEqual({ slotId: "neck" });
     dispose();
   });
 
@@ -117,7 +121,7 @@ describe("useHoverCard", () => {
       const { card, dispose } = setup();
       card.suppressUntilPointerMoves();
 
-      card.onRowEnter(rowEnterEvent(), "head");
+      card.onRowEnter(rowEnterEvent(), { slotId: "head" });
       vi.advanceTimersByTime(HOVER_DELAY_MS * 2);
       expect(card.hover.value).toBeNull();
       dispose();
@@ -125,7 +129,7 @@ describe("useHoverCard", () => {
 
     it("cancels a hover already pending when armed", () => {
       const { card, dispose } = setup();
-      card.onRowEnter(rowEnterEvent(), "head");
+      card.onRowEnter(rowEnterEvent(), { slotId: "head" });
       card.suppressUntilPointerMoves();
       vi.advanceTimersByTime(HOVER_DELAY_MS * 2);
       expect(card.hover.value).toBeNull();
@@ -137,7 +141,7 @@ describe("useHoverCard", () => {
       card.suppressUntilPointerMoves();
       mouseMove(50, 50);
 
-      card.onRowEnter(rowEnterEvent(50, 50), "head");
+      card.onRowEnter(rowEnterEvent(50, 50), { slotId: "head" });
       vi.advanceTimersByTime(HOVER_DELAY_MS * 2);
       expect(card.hover.value).toBeNull();
       dispose();
@@ -149,7 +153,7 @@ describe("useHoverCard", () => {
       mouseMove(50, 50);
       mouseMove(50, 50);
 
-      card.onRowEnter(rowEnterEvent(50, 50), "head");
+      card.onRowEnter(rowEnterEvent(50, 50), { slotId: "head" });
       mouseMove(50, 50);
       vi.advanceTimersByTime(HOVER_DELAY_MS * 2);
       expect(card.hover.value).toBeNull();
@@ -160,26 +164,26 @@ describe("useHoverCard", () => {
       const { card, dispose } = setup();
       // A card closes right before the jump, which would normally put the next row on the
       // "resume" fast path.
-      card.onRowEnter(rowEnterEvent(), "head");
+      card.onRowEnter(rowEnterEvent(), { slotId: "head" });
       vi.advanceTimersByTime(HOVER_DELAY_MS);
       card.closeCard();
       card.suppressUntilPointerMoves();
 
       // The browser's replay for the row now under the still pointer, then a real move.
-      card.onRowEnter(rowEnterEvent(50, 50), "neck");
+      card.onRowEnter(rowEnterEvent(50, 50), { slotId: "neck" });
       mouseMove(50, 50);
       mouseMove(53, 52);
       vi.advanceTimersByTime(HOVER_DELAY_MS - 1);
       expect(card.hover.value).toBeNull();
       vi.advanceTimersByTime(1);
-      expect(card.hover.value).toEqual({ slotId: "neck", itemId: undefined });
+      expect(card.hover.value).toEqual({ slotId: "neck" });
       dispose();
     });
 
     it("lets a suppressed mouseenter supply the baseline", () => {
       const { card, dispose } = setup();
       card.suppressUntilPointerMoves();
-      card.onRowEnter(rowEnterEvent(50, 50), "head");
+      card.onRowEnter(rowEnterEvent(50, 50), { slotId: "head" });
 
       mouseMove(50, 50);
       vi.advanceTimersByTime(HOVER_DELAY_MS * 2);
@@ -187,19 +191,60 @@ describe("useHoverCard", () => {
 
       mouseMove(48, 50);
       vi.advanceTimersByTime(HOVER_DELAY_MS);
-      expect(card.hover.value).toEqual({ slotId: "head", itemId: undefined });
+      expect(card.hover.value).toEqual({ slotId: "head" });
       dispose();
     });
 
     it("forgets a latched row the pointer left before moving", () => {
       const { card, dispose } = setup();
       card.suppressUntilPointerMoves();
-      card.onRowEnter(rowEnterEvent(50, 50), "head");
+      card.onRowEnter(rowEnterEvent(50, 50), { slotId: "head" });
       card.onRowLeave();
 
       mouseMove(53, 52);
       vi.advanceTimersByTime(HOVER_DELAY_MS * 2);
       expect(card.hover.value).toBeNull();
+      dispose();
+    });
+  });
+
+  describe("pinning", () => {
+    const anchor = {
+      getBoundingClientRect: () => ({}) as DOMRect,
+    } as HTMLElement;
+
+    it("keeps a pinned card through hovering other rows, leaving it and scrolling", () => {
+      const { card, dispose } = setup();
+      card.onRowEnter(rowEnterEvent(), { slotId: "head" });
+      vi.advanceTimersByTime(HOVER_DELAY_MS);
+      card.pin();
+
+      card.onRowLeave();
+      card.onRowEnter(rowEnterEvent(), { slotId: "neck" });
+      card.onCardLeave();
+      fakeWindow.dispatchEvent(new Event("scroll"));
+      vi.advanceTimersByTime(HOVER_DELAY_MS * 2);
+      expect(card.hover.value).toEqual({ slotId: "head" });
+      expect(card.pinned.value).toBe(true);
+
+      card.closeCard();
+      expect(card.pinned.value).toBe(false);
+      dispose();
+    });
+
+    it("opens pinned from a row's button, and the same button closes it again", () => {
+      const { card, dispose } = setup();
+      card.togglePinned({ slotId: "head" }, anchor);
+      expect(card.hover.value).toEqual({ slotId: "head" });
+      expect(card.pinned.value).toBe(true);
+
+      // Another row's button moves the pin over rather than closing it.
+      card.togglePinned({ slotId: "neck" }, anchor);
+      expect(card.hover.value).toEqual({ slotId: "neck" });
+
+      card.togglePinned({ slotId: "neck" }, anchor);
+      expect(card.hover.value).toBeNull();
+      expect(card.pinned.value).toBe(false);
       dispose();
     });
   });

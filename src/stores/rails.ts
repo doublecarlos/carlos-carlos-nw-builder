@@ -27,7 +27,7 @@ export type RailId = (typeof RAILS)[keyof typeof RAILS];
  */
 export const RAIL_DEFAULTS: Record<RailId, number> = {
   nav: 230,
-  details: 430,
+  details: 460,
   layerEntries: 396,
 };
 

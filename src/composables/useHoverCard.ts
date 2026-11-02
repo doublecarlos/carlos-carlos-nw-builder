@@ -1,6 +1,7 @@
 import {
   onScopeDispose,
   ref,
+  shallowRef,
   toValue,
   type MaybeRefOrGetter,
   type Ref,
@@ -9,6 +10,7 @@ import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import { isFormControl } from "./focus";
 import { useEscapeToClose } from "./useEscapeToClose";
 import type BasePopover from "../components/ui/BasePopover.vue";
+import type { PopoverAlign } from "../components/ui/BasePopover.vue";
 
 const HOVER_DELAY_MS = 220;
 // If the pointer lands on a new row this soon after the last card closed, treat it as still
@@ -24,10 +26,21 @@ export interface HoverPosition {
   itemId?: string;
 }
 
+/** Two targets name the same row when every field matches. */
+function sameTarget<T extends object>(a: T | null, b: T): boolean {
+  if (!a) return false;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  return [...keys].every((key) => a[key as keyof T] === b[key as keyof T]);
+}
+
 /**
  * One hover card for a whole scrolling list of rows: positions via a `BasePopover` (which
- * Teleports to body and handles viewport-edge flipping). `hasItem` gates opening (an empty
- * slot has nothing to show).
+ * Teleports to body and handles viewport-edge flipping). `T` is what a row hands over to name
+ * itself, and `hasItem` gates opening on it (an empty slot has nothing to show).
+ *
+ * A pinned card stays where it is until closed: hovering other rows, leaving the card,
+ * scrolling and focus moves all leave it alone. `pin` freezes the card on screen, and
+ * `togglePinned` opens one already pinned from a row's own button.
  *
  * The caller must wire `onFocusIn`/`onFocusOut` to the container's own `focusin`/`focusout` --
  * they can't be registered here via `addEventListener`, because `editing` has to turn on only
@@ -43,19 +56,26 @@ export interface HoverPosition {
  *
  * While `disabled` holds no card opens: a touch screen fires `mouseenter` on every tap, and a
  * card dropping over the row just tapped would cover what the tap was for.
+ *
+ * The card opens beside the row, from the pointer. `anchor` and `align` place it against
+ * another rectangle instead, for rows whose card should keep clear of their neighbours.
  */
-export function useHoverCard(
+export function useHoverCard<T extends object>(
   tooltip: Ref<InstanceType<typeof BasePopover> | null>,
-  hasItem: (slotId: string, itemId?: string) => boolean,
-  options: { disabled?: MaybeRefOrGetter<boolean> } = {},
+  hasItem: (target: T) => boolean,
+  options: {
+    disabled?: MaybeRefOrGetter<boolean>;
+    anchor?: (row: HTMLElement) => DOMRect;
+    align?: PopoverAlign;
+  } = {},
 ) {
-  const hover = ref<HoverPosition | null>(null);
+  const hover = shallowRef<T | null>(null);
+  const pinned = ref(false);
   /** The row waiting to open, kept for the hover timers and, while suppressed, for the pointer
    *  move that lifts suppression. Its rect is read at open time because the row may still be
    *  scrolling when the pointer enters it. */
   let pending: {
-    slotId: string;
-    itemId?: string;
+    target: T;
     row: HTMLElement;
     x: number;
   } | null = null;
@@ -68,10 +88,20 @@ export function useHoverCard(
   /** Stops the window `mousemove` listener, which exists only while suppressed. */
   let stopPointerWatch: (() => void) | null = null;
 
+  function placeBeside(
+    row: HTMLElement,
+    x?: number,
+    align: PopoverAlign | undefined = options.align,
+  ) {
+    if (options.anchor)
+      tooltip.value?.place(options.anchor(row), undefined, align);
+    else tooltip.value?.place(row.getBoundingClientRect(), x, align);
+  }
+
   function openPending() {
     if (pending) {
-      tooltip.value?.place(pending.row.getBoundingClientRect(), pending.x);
-      hover.value = { slotId: pending.slotId, itemId: pending.itemId };
+      placeBeside(pending.row, pending.x);
+      hover.value = pending.target;
     }
     pending = null;
   }
@@ -92,15 +122,19 @@ export function useHoverCard(
     close();
   }, HOVER_CLOSE_GRACE_MS);
 
-  function onRowEnter(event: MouseEvent, slotId: string, itemId?: string) {
-    if (toValue(options.disabled) || editing || !hasItem(slotId, itemId))
+  function onRowEnter(event: MouseEvent, target: T) {
+    if (
+      toValue(options.disabled) ||
+      pinned.value ||
+      editing ||
+      !hasItem(target)
+    )
       return;
     stopHoverTimer();
     stopHoverTimerNow();
     stopLeaveTimer();
     pending = {
-      slotId,
-      itemId,
+      target,
       row: event.currentTarget as HTMLElement,
       x: event.clientX,
     };
@@ -117,6 +151,7 @@ export function useHoverCard(
     stopHoverTimer();
     stopHoverTimerNow();
     pending = null;
+    if (pinned.value) return;
     // Grace period, not an instant close: the card sits outside the row's own bounds, so
     // reaching it always crosses this "gap" first. Without the grace period the card would
     // vanish the instant the pointer leaves the row, before it ever reaches the card.
@@ -124,13 +159,17 @@ export function useHoverCard(
     startLeaveTimer();
   }
 
-  /** Entering the card itself cancels any pending close from leaving the row. */
+  /** Entering the card itself cancels any pending close from leaving the row, and any row
+   *  crossed on the way there, which would otherwise swap the card out from under the pointer. */
   function onCardEnter() {
     stopLeaveTimer();
+    stopHoverTimer();
+    stopHoverTimerNow();
+    pending = null;
   }
 
   function onCardLeave() {
-    close();
+    if (!pinned.value) close();
   }
 
   function close() {
@@ -140,24 +179,48 @@ export function useHoverCard(
       tooltip.value?.close();
     }
     hover.value = null;
+    pinned.value = false;
   }
 
-  /**
-   * Close on any scroll outside the card itself. With Teleport the card lives under
-   * `<body>`, so `.itemcard` is checked globally - no need for a `root` ref.
-   */
-  function onScroll(event: Event) {
-    if ((event.target as HTMLElement)?.closest?.(".itemcard")) return;
+  /** Freezes the card on screen as it is. */
+  function pin() {
+    if (!hover.value) return;
+    stopLeaveTimer();
+    pinned.value = true;
+  }
+
+  /** Opens `target`'s card pinned, beside `anchor`, or closes it when it is the one pinned.
+   *  `align` overrides the hover card's own, for a button placed apart from where the pointer
+   *  usually enters its row. */
+  function togglePinned(target: T, anchor: HTMLElement, align?: PopoverAlign) {
+    if (pinned.value && sameTarget(hover.value, target)) {
+      close();
+      return;
+    }
+    if (!hasItem(target)) return;
     stopHoverTimer();
     stopHoverTimerNow();
-    if (hover.value) close();
+    stopLeaveTimer();
+    pending = null;
+    placeBeside(anchor, undefined, align ?? options.align);
+    hover.value = target;
+    pinned.value = true;
+  }
+
+  /** Closes on any scroll outside the card itself. The card is teleported, so it is found
+   *  through the popover rather than as an ancestor of anything here. */
+  function onScroll(event: Event) {
+    if (tooltip.value?.el?.contains(event.target as Node)) return;
+    stopHoverTimer();
+    stopHoverTimerNow();
+    if (hover.value && !pinned.value) close();
   }
 
   function onFocusIn(event: FocusEvent) {
     editing = isFormControl(event.target as Element | null);
     stopHoverTimer();
     stopHoverTimerNow();
-    close();
+    if (!pinned.value) close();
   }
 
   function onFocusOut() {
@@ -205,6 +268,9 @@ export function useHoverCard(
 
   return {
     hover,
+    pinned,
+    pin,
+    togglePinned,
     onRowEnter,
     onRowLeave,
     onCardEnter,

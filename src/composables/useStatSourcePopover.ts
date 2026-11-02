@@ -1,92 +1,92 @@
-import { ref, computed, type Ref, type ComputedRef } from "vue";
-import { onClickOutside } from "@vueuse/core";
+import {
+  computed,
+  provide,
+  ref,
+  type ComputedRef,
+  type InjectionKey,
+  type Ref,
+} from "vue";
 import { sectionsFor } from "../engine/stat-sources";
 import { NW_SCHEMA } from "../data/data";
 import * as goTo from "../stores/goTo";
-import type BasePanel from "../components/ui/BasePanel.vue";
+import { coarsePointer, isPhone } from "../stores/viewport";
+import { useHoverCard } from "./useHoverCard";
 import type BasePopover from "../components/ui/BasePopover.vue";
 import type { ResolvedBuild } from "../types";
 
+/** What a stat row's info button reports to the panel's one source card. */
+export interface StatSourceTrigger {
+  enter: (event: MouseEvent, key: string) => void;
+  leave: () => void;
+  toggle: (event: MouseEvent, key: string) => void;
+}
+
+export const STAT_SOURCE_TRIGGER: InjectionKey<StatSourceTrigger> = Symbol(
+  "stat-source-trigger",
+);
+
 /**
- * StatPanel's "why is this number what it is" popover: click a stat's info button, get a
- * card breaking its value down by source. Click-triggered rather than hover-triggered -- a
- * dense stat table put the pointer's path from a row to its own hover card through *other*
- * rows' triggers often enough that a hover card kept getting swapped out from under the
- * pointer before it ever arrived; a deliberate click has no such transit to go wrong.
+ * StatPanel's "why is this number what it is" card: hovering a stat's info button previews a
+ * card breaking its value down by source, and clicking the button opens it pinned. The same
+ * hover card as the build editor's item card (useHoverCard), triggered by the button rather
+ * than the whole row: in a dense table the pointer's path to a row's card would otherwise run
+ * through other rows and swap the card out from under it.
+ *
+ * The card opens to the left of the panel, so that path never crosses the column of buttons.
+ * Provides the trigger the buttons inject (StatInfoButton.vue).
  */
 export function useStatSourcePopover(
   result: Ref<ResolvedBuild> | ComputedRef<ResolvedBuild>,
 ) {
-  const root = ref<InstanceType<typeof BasePanel> | null>(null);
   const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
 
-  interface OpenCard {
-    key: string;
+  /** The row's height, at the left edge of the panel StatPanel marks `data-stat-panel`. */
+  function besidePanel(button: HTMLElement): DOMRect {
+    const row = (button.closest("tr") ?? button).getBoundingClientRect();
+    const panel = button.closest("[data-stat-panel]")?.getBoundingClientRect();
+    return new DOMRect(panel?.left ?? row.left, row.top, 0, row.height);
   }
-  const openCard = ref<OpenCard | null>(null);
+
+  const card = useHoverCard<{ key: string }>(tooltip, () => true, {
+    disabled: coarsePointer,
+    anchor: besidePanel,
+    align: "before",
+  });
+
+  const openKey = computed(() => card.hover.value?.key ?? null);
 
   const openLabel = computed(
     () =>
-      NW_SCHEMA.statByKey[openCard.value?.key ?? ""]?.label ??
-      openCard.value?.key ??
-      "",
+      NW_SCHEMA.statByKey[openKey.value ?? ""]?.label ?? openKey.value ?? "",
   );
   const openSections = computed(() =>
-    openCard.value ? sectionsFor(result.value, openCard.value.key) : [],
+    openKey.value ? sectionsFor(result.value, openKey.value) : [],
   );
 
-  /**
-   * Anchored to the trigger button: delegates to BasePopover's place() which handles
-   * horizontal flip and vertical overflow detection.
-   */
-  function placeCard(key: string, rect: DOMRect) {
-    tooltip.value?.place(rect);
-    openCard.value = { key };
-  }
-
-  function closeCard() {
-    openCard.value = null;
-  }
-
-  /** A source line's link: the card gives way to the build row it names. */
+  /** A source line's link: an unpinned card gives way to the build row it names. On a phone
+   *  the jump switches panes, so even a pinned card would be left over the wrong one. */
   function goToSlot(slotId: string) {
-    closeCard();
+    if (!card.pinned.value || isPhone.value) card.closeCard();
     goTo.requestJump({ slotId });
   }
 
-  /** A second click on the same row's own button closes it again; a click on a *different*
-   * row's button just switches the card straight over. */
-  function toggleCard(event: MouseEvent, key: string) {
-    if (openCard.value?.key === key) {
-      closeCard();
-      return;
-    }
-    placeCard(
-      key,
-      (event.currentTarget as HTMLElement).getBoundingClientRect(),
-    );
-  }
-
-  /** Closes the popover on any click outside its panel element. Clicks on stat info
-   *  buttons (`.stat-info-btn`) are ignored, so a click on a different row's trigger
-   *  reaches `toggleCard` and switches the card over instead of closing it first. */
-  onClickOutside(
-    () => tooltip.value?.el,
-    () => closeCard(),
-    {
-      ignore: [".stat-info-btn"],
-      capture: false,
-    },
-  );
+  provide(STAT_SOURCE_TRIGGER, {
+    enter: (event, key) => card.onRowEnter(event, { key }),
+    leave: card.onRowLeave,
+    toggle: (event, key) =>
+      card.togglePinned({ key }, event.currentTarget as HTMLElement),
+  });
 
   return {
-    root,
     tooltip,
-    openCard,
+    openKey,
+    pinned: card.pinned,
+    pin: card.pin,
+    closeCard: card.closeCard,
+    onCardEnter: card.onCardEnter,
+    onCardLeave: card.onCardLeave,
     openLabel,
     openSections,
-    toggleCard,
-    closeCard,
     goToSlot,
   };
 }

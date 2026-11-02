@@ -59,13 +59,14 @@ export function slotRow(page: Page, slotId: string): Locator {
  * Clicks the row's right-hand gutter, past whatever control sits on its left. The row's label
  * used to serve as this target, back when its `for` named an id no control claimed; now that
  * the association works, clicking a label focuses (and opens) that row's control, which is the
- * opposite of parking.
+ * opposite of parking. The gutter's last few pixels, since a mouse row keeps its info button
+ * just inside them.
  */
 export async function parkCursorOnRow(page: Page, slotId: string) {
   const row = slotRow(page, slotId);
   const box = await row.boundingBox();
   if (!box) throw new Error(`slot row "${slotId}" has no layout box`);
-  await row.click({ position: { x: box.width - 8, y: box.height / 2 } });
+  await row.click({ position: { x: box.width - 3, y: box.height / 2 } });
   await expect(row).toHaveAttribute("data-cursor-key", `slot:${slotId}`);
 }
 

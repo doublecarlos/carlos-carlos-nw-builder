@@ -27,6 +27,10 @@ import {
 // Pressing on it keeps focus in the input that owns the menu, and its clicks stay its own: a
 // host row reacting to them (BuildSlot's cursor parking) would blur that input.
 //
+// The optional `footer` slot sits under the rows, outside the listbox and its scroll, for
+// actions that are not options (ItemPicker's "New item"). Pressing on it keeps focus in the
+// input, like the aside.
+//
 // `fill` drops the floating shell for a plain list filling the rest of its parent, which is
 // how ComboBoxScreen shows the rows. It has no aside.
 
@@ -52,7 +56,10 @@ const GAP = 2;
 const MARGIN = 8;
 
 const el = useTemplateRef("el");
-const anchor = computed(() => el.value?.parentElement ?? null);
+/** The floating shell around the listbox and footer, absent with `fill`. */
+const box = useTemplateRef("box");
+const footerEl = useTemplateRef("footer");
+const anchor = computed(() => (box.value ?? el.value)?.parentElement ?? null);
 const { left, top, bottom, width } = useElementBounding(anchor);
 const { width: viewportWidth, height: viewportHeight } = useWindowSize();
 
@@ -65,13 +72,14 @@ const measure = () => {
   const rows = el.value?.childElementCount ?? 0;
   if (rows === measuredRows) return;
   measuredRows = rows;
-  contentHeight.value = el.value?.scrollHeight ?? 0;
+  contentHeight.value =
+    (el.value?.scrollHeight ?? 0) + (footerEl.value?.offsetHeight ?? 0);
 };
 onMounted(measure);
 onUpdated(measure);
 
 const asideEl = useTemplateRef("aside");
-const menuBox = useElementBounding(el);
+const menuBox = useElementBounding(() => box.value ?? el.value);
 const asideBox = useElementBounding(asideEl);
 
 /** Drops below the input, or opens upward when the rows don't fit below and there is more
@@ -150,24 +158,47 @@ defineExpose({ scrollToHighlighted });
 defineSlots<{
   default(): unknown;
   aside?(): unknown;
+  footer?(): unknown;
 }>();
 </script>
 
 <template>
   <div
+    v-if="props.fill"
     :id="listboxId"
     ref="el"
     role="listbox"
     data-testid="picker-menu"
-    class="overflow-y-auto bg-surface"
-    :class="
-      props.fill
-        ? 'min-h-0 flex-1 overscroll-contain'
-        : ['fixed z-menu rounded-md border border-line shadow-lg', menuClass]
-    "
-    :style="props.fill ? undefined : style"
+    class="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-surface"
   >
     <slot />
+  </div>
+  <div
+    v-else
+    ref="box"
+    class="fixed z-menu flex flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lg"
+    :class="menuClass"
+    :style="style"
+  >
+    <div
+      :id="listboxId"
+      ref="el"
+      role="listbox"
+      data-testid="picker-menu"
+      class="min-h-0 flex-1 overflow-y-auto"
+    >
+      <slot />
+    </div>
+    <div
+      v-if="$slots.footer"
+      ref="footer"
+      class="flex flex-none justify-end border-t border-line p-1"
+      data-testid="picker-footer"
+      @mousedown.prevent
+      @click.stop
+    >
+      <slot name="footer" />
+    </div>
   </div>
   <div
     v-if="$slots.aside && !props.fill"
