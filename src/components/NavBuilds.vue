@@ -106,13 +106,14 @@ const rows = computed<Row[]>(() => {
 
 const list = useTemplateRef("list");
 
-/** Every listed build and folder, folder contents included, so moving a build into or out of
- *  a folder reads as a reorder. Folding leaves it as is. */
+/** Every build and folder, folder contents included, so moving a build into or out of a
+ *  folder reads as a reorder. Read off the unfiltered entries, so a filter or a fold leaves it
+ *  as is. */
 useReorderMotion(list, () =>
-  rows.value.flatMap((row) =>
-    row.kind === "build"
-      ? [row.build.id]
-      : [row.folder.id, ...row.builds.map((child) => child.build.id)],
+  props.entries.flatMap((entry) =>
+    entry.kind === "build"
+      ? [entry.build.id]
+      : [entry.folder.id, ...entry.builds.map((build) => build.id)],
   ),
 );
 

@@ -6,6 +6,9 @@ import { slideOffsets, type Point } from "./reorder-motion";
 /** The id every slide animation carries, so a later slide can cancel it and tests can find it. */
 export const SLIDE_ID = "row-slide";
 const SLIDE_MS = 150;
+/** The id a new row's fade-in carries, so tests can find it. */
+export const FADE_ID = "row-fade";
+const FADE_MS = 120;
 const EASE_SNAPPY = "cubic-bezier(0.2, 0, 0, 1)";
 
 export function prefersReducedMotion(): boolean {
@@ -42,6 +45,19 @@ export function slideFrom(el: HTMLElement, x: number, y: number) {
   });
 }
 
+/** Fades a row that just arrived in, held like a slide until the browser settles. */
+export function fadeInRow(row: HTMLElement) {
+  const fade = row.animate([{ opacity: 0 }, { opacity: 1 }], {
+    duration: FADE_MS,
+    easing: EASE_SNAPPY,
+  });
+  fade.id = FADE_ID;
+  fade.pause();
+  whenSettled(() => {
+    if (fade.playState === "paused") fade.play();
+  });
+}
+
 /** Runs `fn` on the first prompt frame after at least two, or once `MAX_HOLD_MS` has passed. */
 function whenSettled(fn: () => void) {
   const start = performance.now();
@@ -55,6 +71,35 @@ function whenSettled(fn: () => void) {
     else requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
+}
+
+/** The id a row's ring carries, so tests can find it. */
+export const RING_ID = "row-ring";
+const RING_MS = 700;
+
+/**
+ * Marks a row the user should notice (one just moved, one an undo changed) with an accent ring
+ * inside it, held briefly and then faded out. Under reduced motion the ring is held for the
+ * same time and then removed without a fade: it carries the information, not the motion.
+ * Resolved to a color here so it follows the theme in effect.
+ */
+export function ringRow(row: HTMLElement) {
+  const accent = getComputedStyle(row).getPropertyValue("--accent").trim();
+  const ring = `inset 0 0 0 2px ${accent}`;
+  for (const running of row.getAnimations())
+    if (running.id === RING_ID) running.cancel();
+  const animation = row.animate(
+    [
+      { boxShadow: ring },
+      { boxShadow: ring, offset: 0.4 },
+      { boxShadow: "inset 0 0 0 2px transparent" },
+    ],
+    {
+      duration: RING_MS,
+      easing: prefersReducedMotion() ? "steps(1, end)" : "ease-out",
+    },
+  );
+  animation.id = RING_ID;
 }
 
 export function keyedRows(root: HTMLElement | null | undefined): HTMLElement[] {

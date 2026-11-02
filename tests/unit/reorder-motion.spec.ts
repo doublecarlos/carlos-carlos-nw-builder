@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import {
   isReorder,
+  listChange,
   movedKeys,
   revealDelta,
   slideOffsets,
@@ -24,6 +25,23 @@ describe("isReorder", () => {
     expect(isReorder(["a", "b"], ["b", "a", "c"])).toBe(false);
     expect(isReorder(["a", "b", "c"], ["c", "a"])).toBe(false);
     expect(isReorder(["a", "b"], ["b", "c"])).toBe(false);
+  });
+});
+
+describe("listChange", () => {
+  // Decides what a list's rows do: a reorder slides and marks the moved row, an insertion
+  // slides the rest and fades the new row in, any other change only slides the rest.
+  it("tells a reorder, an insertion and other changes apart", () => {
+    expect(listChange(["a", "b"], ["b", "a"])).toBe("reorder");
+    expect(listChange(["a", "b"], ["a", "x", "b"])).toBe("insert");
+    expect(listChange(["a", "b", "c"], ["a", "c"])).toBe("change");
+    expect(listChange(["a", "n1"], ["a", "id:n1"])).toBe("change");
+  });
+
+  it("is null for the first read, no change, or a different list", () => {
+    expect(listChange(undefined, ["a"])).toBeNull();
+    expect(listChange(["a", "b"], ["a", "b"])).toBeNull();
+    expect(listChange(["a", "b"], ["c", "d"])).toBeNull();
   });
 });
 

@@ -58,8 +58,9 @@ const filteredLayers = computed(() => {
   return props.layers.filter((l) => matchesQuery(l.name, props.filter));
 });
 
+// Every layer, filtered out or not, so a filter changes nothing for the slide.
 useReorderMotion(useTemplateRef("list"), () =>
-  filteredLayers.value.map((layer) => layer.id),
+  props.layers.map((layer) => layer.id),
 );
 
 const dropList = useDropList({

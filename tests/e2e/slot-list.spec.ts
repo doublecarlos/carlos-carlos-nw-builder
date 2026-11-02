@@ -218,15 +218,19 @@ test.describe("section collapse/expand", () => {
   test("a collapsed section shows current data when expanded again", async ({
     page,
   }) => {
-    // Collapsed bodies stay mounted, so their rows must keep following the build: changes
-    // made while hidden (undo, a build switch) have to show on the next expand.
+    // Collapsed bodies stay mounted, so their rows must keep following the build: a change
+    // made while hidden (a build switch) has to show on the next expand. An undo opens the
+    // section holding its change by itself, showing the restored value.
     await openBuilder(page);
     await importTestHead(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
 
     await headerRow(page, "gear").click();
     await undoButton(page).click();
-    await headerRow(page, "gear").click();
+    await expect(headerRow(page, "gear")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue("");
 
     await chooseItem(page, "gear.head", HEAD_ITEM);

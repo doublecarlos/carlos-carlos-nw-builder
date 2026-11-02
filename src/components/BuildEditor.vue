@@ -65,6 +65,7 @@ import * as storage from "../storage/storage";
 import * as router from "../lib/router";
 import * as builds from "../stores/builds";
 import * as buildEditor from "../stores/buildEditor";
+import { ringRow } from "../lib/row-slide";
 import * as compare from "../stores/compare";
 import * as slotFilter from "../stores/slotFilter";
 import * as pickerLens from "../stores/pickerLens";
@@ -1115,6 +1116,46 @@ function sectionEl(sectionId: string) {
     `[data-section-id="${CSS.escape(sectionId)}"]`,
   );
 }
+
+/** Whether `row` shows in full in the editor, below its section's sticky header. */
+function showsInEditor(row: HTMLElement, clearance: number) {
+  const container = buildScrollEl.value;
+  if (!container) return false;
+  const box = container.getBoundingClientRect();
+  const rect = row.getBoundingClientRect();
+  return rect.top >= box.top + clearance && rect.bottom <= box.bottom;
+}
+
+// An undo or redo shows what it changed: the sections holding its rows open, the topmost row
+// is scrolled into view unless it already shows, and every changed row is ringed. Several
+// rows at once (a section copy undone) are all ringed; the scroll goes to the first.
+watch(buildEditor.historyStep, async (step) => {
+  if (!step?.slotIds.length) return;
+  for (const slotId of step.slotIds) {
+    const sectionId = db.value.slotFor(slotId)?.section;
+    if (sectionId && !sectionExpanded(sectionId)) expanded[sectionId] = true;
+  }
+  await nextTick();
+  const container = buildScrollEl.value;
+  const rows = step.slotIds
+    .map((slotId) =>
+      container?.querySelector<HTMLElement>(
+        `[data-cursor-key="slot:${CSS.escape(slotId)}"]`,
+      ),
+    )
+    .filter((row): row is HTMLElement => !!row)
+    .sort((a, b) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+    );
+  const first = rows[0];
+  if (!first) return;
+  const header = first
+    .closest("[data-section-id]")
+    ?.querySelector<HTMLElement>("[data-cursor-key^='header:']");
+  const clearance = header?.offsetHeight ?? 0;
+  if (!showsInEditor(first, clearance)) scrollIntoEditor(first, clearance);
+  rows.forEach(ringRow);
+});
 
 /**
  * The "go to" palette's destination, once it is this editor's turn to act on it (the palette

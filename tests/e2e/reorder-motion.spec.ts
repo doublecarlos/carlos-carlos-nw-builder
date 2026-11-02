@@ -1,16 +1,19 @@
 // A reordered row slides to its new place, on a move and on its undo, so it is clear where it
-// went: the moved row is marked and kept in view, clear of a form's sticky bar. Filtering the
-// list rearranges nothing and slides nothing, and reduced motion turns the slide off but still
-// keeps the row in view.
+// went: the moved row is marked and kept in view, clear of a form's sticky bar. Rows coming or
+// going slide the rest from where they were, and a new row fades in. Filtering the list
+// rearranges nothing and slides nothing, and reduced motion turns the slide off but still
+// keeps a moved row in view.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import {
   addBuild,
   addLayer,
   buildRow,
+  confirmDangerAction,
   filterBuilds,
   layerRow,
   moveDown,
+  openRowMenu,
 } from "./support/nav";
 
 /** The rows sliding right now, by their flip key. */
@@ -26,9 +29,7 @@ function sliding(page: Page) {
 function flashing(page: Page) {
   return page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("[data-flip-key]")]
-      .filter((row) =>
-        row.getAnimations().some((a) => a.id === "reorder-flash"),
-      )
+      .filter((row) => row.getAnimations().some((a) => a.id === "row-ring"))
       .map((row) => row.dataset.flipKey),
   );
 }
@@ -204,4 +205,93 @@ test.describe("with motion, tiers", () => {
     expect((await sliding(page)).sort()).toEqual([first, second].sort());
     expect(await flashing(page)).toEqual([first]);
   });
+});
+
+/** Once a slide carries `target`, sets it to its first frame and returns where the target is
+ *  drawn there, in one step and polled at frame pace, since a slide lasts only a moment. */
+async function drawnAtSlideStart(target: ReturnType<Page["locator"]>) {
+  let top: number | null = null;
+  await expect
+    .poll(
+      async () => {
+        top = await target.evaluate((el) => {
+          const slide = el.getAnimations().find((a) => a.id === "row-slide");
+          if (!slide) return null;
+          slide.currentTime = 0;
+          return el.getBoundingClientRect().top;
+        });
+        return top !== null;
+      },
+      { intervals: [16] },
+    )
+    .toBe(true);
+  return top!;
+}
+
+test.describe("with motion, rows coming and going", () => {
+  test.use({ contextOptions: { reducedMotion: "no-preference" } });
+
+  test("deleting a build slides the rows below it up from where they were", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addBuild(page);
+    await addBuild(page);
+    const below = buildRow(page, "Build 3");
+    await expect(below).toBeVisible();
+    await expect.poll(() => sliding(page)).toEqual([]);
+    const before = (await below.boundingBox())!.y;
+
+    const menu = await openRowMenu(buildRow(page, "Build 2"));
+    await confirmDangerAction(menu, "Delete");
+    expect(Math.abs((await drawnAtSlideStart(below)) - before)).toBeLessThan(2);
+  });
+
+  test("a grant inserted below another fades in while the next one slides down", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+    await page.getByTestId("new-bonus").click();
+    const addGrant = page.getByLabel("Add grant");
+    await addGrant.click();
+    await addGrant.click();
+    const grants = page.getByTestId("bonus-grant-row");
+    const next = page.locator(
+      `[data-flip-key="${await grants.nth(1).getAttribute("data-flip-key")}"]`,
+    );
+    // Scrolled first, so the click does not scroll after the position is taken.
+    const insert = grants.nth(0).getByLabel("Insert grant below");
+    await insert.scrollIntoViewIfNeeded();
+    await expect.poll(() => sliding(page)).toEqual([]);
+    const before = (await next.boundingBox())!.y;
+
+    await insert.click();
+    expect(Math.abs((await drawnAtSlideStart(next)) - before)).toBeLessThan(2);
+    await expect
+      .poll(
+        () =>
+          grants
+            .nth(1)
+            .evaluate((el) =>
+              el.getAnimations().some((a) => a.id === "row-fade"),
+            ),
+        { intervals: [16] },
+      )
+      .toBe(true);
+  });
+});
+
+test("reduced motion deletes a build without sliding the rest", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await addBuild(page);
+  const menu = await openRowMenu(buildRow(page, "Build 2"));
+  await confirmDangerAction(menu, "Delete");
+  await expect(buildRow(page, "Build 2")).toHaveCount(0);
+  expect(await sliding(page)).toEqual([]);
 });

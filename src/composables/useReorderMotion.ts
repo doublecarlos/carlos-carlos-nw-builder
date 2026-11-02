@@ -1,39 +1,44 @@
 import { toValue, watch, type MaybeRefOrGetter } from "vue";
 import { droppedKey } from "./useDragAndDrop";
 import {
-  isReorder,
+  listChange,
   movedKeys,
   revealDelta,
   type Point,
 } from "../lib/reorder-motion";
 import {
+  fadeInRow,
   keyedRows,
   measureRows,
   prefersReducedMotion,
+  ringRow,
   slideRows,
 } from "../lib/row-slide";
 
-const FLASH_MS = 700;
 /** Room left between a revealed row and the edge of its scroll area. */
 const REVEAL_MARGIN = 8;
 
 /**
- * Shows where a reordered row went, on a drop, an undo or a move up/down. Every row slides from
- * where it was to where it lands (lib/row-slide.ts), the list scrolls the moved row into view so
- * it cannot slide out of sight, and a ring on the moved row fades out to mark it. Rows are the
- * elements under `container` marked `data-flip-key`; `order` lists the rendered keys, and only
- * a change of their order counts (lib/reorder-motion.ts), so adding, removing, filtering and
- * folding stay instant.
+ * Shows how a list's rows changed (lib/reorder-motion.ts's `listChange`). Every row that stays
+ * slides from where it was to where it lands (lib/row-slide.ts). On a reorder (a drop, an undo,
+ * a move up/down) the list also scrolls the moved row into view so it cannot slide out of
+ * sight, and a ring marks it. On an insertion the new row fades in; a removed row just goes.
+ * Rows are the elements under `container` marked `data-flip-key`, and `order` lists every key
+ * the list holds, filtered out or folded away or not, so filtering and folding change nothing
+ * here.
  *
- * Under reduced motion the moved row is still scrolled to, at once and without the slide or
- * ring.
+ * Under reduced motion only a reorder does anything: the moved row is still scrolled to and
+ * marked, at once and without the slide.
  */
 export function useReorderMotion(
   container: MaybeRefOrGetter<HTMLElement | null | undefined>,
   order: () => readonly string[],
 ) {
-  let pending: { moved: string[]; before: Map<string, Point> | null } | null =
-    null;
+  let pending: {
+    moved: string[];
+    added: string[];
+    before: Map<string, Point> | null;
+  } | null = null;
 
   /** The keyed rows inside `key`'s own, which move along with it. */
   function nestedKeys(key: string): string[] {
@@ -58,15 +63,22 @@ export function useReorderMotion(
     order,
     (next, previous) => {
       pending = null;
-      if (!previous || !isReorder(previous, next)) return;
+      const kind = listChange(previous, next);
+      const reduced = prefersReducedMotion();
+      if (!kind || (kind !== "reorder" && reduced)) return;
+      const old = new Set(previous);
       pending = {
-        moved: movedKeys(
-          previous,
-          next,
-          [droppedKey(), focusedKey()],
-          nestedKeys,
-        ),
-        before: prefersReducedMotion() ? null : measureRows(toValue(container)),
+        moved:
+          kind === "reorder"
+            ? movedKeys(
+                previous!,
+                next,
+                [droppedKey(), focusedKey()],
+                nestedKeys,
+              )
+            : [],
+        added: kind === "insert" ? next.filter((key) => !old.has(key)) : [],
+        before: reduced ? null : measureRows(toValue(container)),
       };
     },
     { flush: "pre" },
@@ -76,7 +88,7 @@ export function useReorderMotion(
     order,
     () => {
       if (!pending) return;
-      const { moved, before } = pending;
+      const { moved, added, before } = pending;
       pending = null;
       const root = toValue(container);
       const targetIn = (rows: ReadonlyMap<string, HTMLElement>) =>
@@ -87,17 +99,25 @@ export function useReorderMotion(
           keyedRows(root).map((row) => [row.dataset.flipKey!, row]),
         );
         const target = targetIn(rows);
-        if (target) reveal(target, "instant");
+        if (target) {
+          reveal(target, "instant");
+          ringRow(target);
+        }
         return;
       }
 
       let target: HTMLElement | undefined;
+      let arrived: HTMLElement[] = [];
       // Scrolled before the slides start, so the scroll aims at the row's final place.
       slideRows(root, before, (rows) => {
         target = targetIn(rows);
         if (target) reveal(target, "smooth");
+        arrived = added
+          .map((key) => rows.get(key))
+          .filter((row): row is HTMLElement => !!row);
       });
-      if (target) flash(target);
+      if (target) ringRow(target);
+      arrived.forEach(fadeInRow);
     },
     { flush: "post" },
   );
@@ -137,20 +157,4 @@ function scrollParent(el: HTMLElement): HTMLElement | null {
       return node;
   }
   return null;
-}
-
-/** An accent ring inside the row, held briefly and then faded out. Resolved to a color here
- *  so it follows the theme in effect. */
-function flash(row: HTMLElement) {
-  const accent = getComputedStyle(row).getPropertyValue("--accent").trim();
-  const ring = `inset 0 0 0 2px ${accent}`;
-  const animation = row.animate(
-    [
-      { boxShadow: ring },
-      { boxShadow: ring, offset: 0.4 },
-      { boxShadow: "inset 0 0 0 2px transparent" },
-    ],
-    { duration: FLASH_MS, easing: "ease-out" },
-  );
-  animation.id = "reorder-flash";
 }

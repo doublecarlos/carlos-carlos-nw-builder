@@ -1,5 +1,33 @@
-// Pure parts of the reorder slide (useReorderMotion): deciding that a list was reordered, which
-// row the user moved, and how far each row has to travel back to where it was drawn.
+// Pure parts of the list slide (useReorderMotion): what kind of change a list went through,
+// which row the user moved, and how far each row has to travel back to where it was drawn.
+
+/**
+ * How a list's keys changed, for what its rows should do about it:
+ * - `reorder`: the same keys in another order (a drop, an undo, a move up/down);
+ * - `insert`: keys only added, the rest kept in order (add, insert, duplicate);
+ * - `change`: anything else that keeps at least one key (a delete, a save that re-keys a row);
+ * - `null`: the first read, nothing changed, or no key survived (another list entirely).
+ */
+export function listChange(
+  previous: readonly string[] | undefined,
+  next: readonly string[],
+): "reorder" | "insert" | "change" | null {
+  if (!previous) return null;
+  if (isReorder(previous, next)) return "reorder";
+  if (
+    previous.length === next.length &&
+    previous.every((key, i) => key === next[i])
+  )
+    return null;
+  const kept = new Set(next);
+  if (!previous.some((key) => kept.has(key))) return null;
+  const old = new Set(previous);
+  const survivors = next.filter((key) => old.has(key));
+  const onlyAdded =
+    survivors.length === previous.length &&
+    survivors.every((key, i) => key === previous[i]);
+  return onlyAdded ? "insert" : "change";
+}
 
 /** True when `next` holds exactly the keys of `previous`, in a different order: a drop, an
  *  undo or a move up/down. A row added, removed, filtered out or folded away is not one. */
