@@ -13,8 +13,10 @@ import {
   pickerInput,
   slotFilterInput,
   hoverForCard,
+  chooseItem,
 } from "./support/app";
 import { importTestCatalog } from "./support/testCatalog";
+import { shippedItemName } from "./support/shippedData";
 
 const SLOT_ID = "boons.tier1";
 const POWER_ID = "test-tier1-power";
@@ -480,11 +482,16 @@ test.describe("point_assignment shared column layout", () => {
   test("a picker's menu is not clipped by the horizontally scrolling body", async ({
     page,
   }) => {
+    const SLOT_ID = "raceLeveling.race";
+    const ITEM_ID = shippedItemName("race-aasimar");
+
     await page.setViewportSize({ width: 1400, height: 1400 });
     await openRaceSection(page);
+    await chooseItem(page, SLOT_ID, ITEM_ID);
+
     // Filtered down to one picker row, so the body is far shorter than the menu.
-    await slotFilterInput(page).fill("Race Ability Score 2");
-    const row = slotRow(page, "raceLeveling.raceAttributes2");
+    await slotFilterInput(page).fill("Race Ability Score 1");
+    const row = slotRow(page, "raceLeveling.raceAttributes1");
     await expect(slotRow(page, STR_SLOT)).toBeHidden();
     await pickerInput(row).click();
 
