@@ -245,3 +245,32 @@ test("a collapsed desktop entry list still shows on a phone and stays collapsed 
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.getByTestId("layer-entries-collapsed")).toBeVisible();
 });
+
+// A bonus input's card has several fields, so its add/remove pair sits in the card's header,
+// beside the id, rather than beside whichever field comes last.
+test("a bonus input card keeps its add/remove pair in the header", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: MIN_SUPPORTED_WIDTH, height: 740 });
+  await openNewLayer(page);
+  await page.getByTestId("tab-bonuses").tap();
+  await page.locator(".editor-search").fill("Lightning Flash");
+  await rows(page)
+    .filter({
+      has: page.locator(".editor-row-name", { hasText: /^Lightning Flash$/ }),
+    })
+    .first()
+    .tap();
+  await expectFormView(page);
+
+  const card = page.locator(".bonus-input-row").first();
+  await card.scrollIntoViewIfNeeded();
+  const actions = (await card
+    .getByTestId("repeatable-row-actions")
+    .boundingBox())!;
+  const lead = (await card.getByTestId("repeatable-row-lead").boundingBox())!;
+  const rest = (await card.getByTestId("repeatable-row-rest").boundingBox())!;
+  expect(actions.y).toBeGreaterThanOrEqual(lead.y);
+  expect(actions.y + actions.height).toBeLessThanOrEqual(rest.y);
+  await expectFits(page);
+});

@@ -6,12 +6,16 @@
 //
 // A row that also fills `#lead` becomes a card on a phone: the lead control alone on the first
 // line, the `#row` content below it with the pair pinned right, so every row has the same shape
-// and its controls line up with the next row's. From `md` up the wrappers are `display:
-// contents`, leaving the caller's own `rowClass` layout untouched.
+// and its controls line up with the next row's. With `headerActions` the pair sits on the
+// lead's line instead, and the rest takes the full width below: for a row of several fields
+// or nested content, where a pinned pair would sit beside whichever control comes last. From
+// `md` up the wrappers are `display: contents`, leaving the caller's own `rowClass` layout
+// untouched.
+import { computed } from "vue";
 import IconButton from "./IconButton.vue";
 import { Plus, Trash } from "@lucide/vue";
 
-defineProps<{
+const props = defineProps<{
   rows: T[];
   rowClass: string;
   addLabel: string;
@@ -22,6 +26,8 @@ defineProps<{
    *  preview) leaves it in place. Pair with a top-aligned `rowClass`. A phone card drops the
    *  blank label and pins the pair as usual. */
   labeledFields?: boolean;
+  /** On a phone card, the pair goes on the lead's line rather than beside the rest. */
+  headerActions?: boolean;
 }>();
 defineEmits<{ add: []; remove: [index: number] }>();
 
@@ -35,8 +41,18 @@ const slots = defineSlots<{
 /** The phone card: a full-width first line, then the rest beside the pinned pair. */
 const CARD =
   "repeatable-card max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-1.5 max-md:mb-1.5 max-md:rounded-md max-md:border max-md:border-line max-md:bg-surface-2 max-md:p-2";
-/** The pair's place in the phone card: bottom right, beside the rest of the row. */
-const PINNED = "max-md:col-start-2 max-md:row-start-2 max-md:self-end";
+/** The pair's place in the phone card: beside the rest of the row, or on the lead's line. */
+const PINNED = computed(() =>
+  props.headerActions
+    ? "max-md:col-start-2 max-md:row-start-1 max-md:self-end"
+    : "max-md:col-start-2 max-md:row-start-2 max-md:self-end",
+);
+const LEAD = computed(() =>
+  props.headerActions ? "max-md:col-start-1" : "max-md:col-span-2",
+);
+const REST = computed(() =>
+  props.headerActions ? "max-md:col-span-2" : "max-md:col-start-1",
+);
 </script>
 
 <template>
@@ -81,13 +97,15 @@ const PINNED = "max-md:col-start-2 max-md:row-start-2 max-md:self-end";
     </div>
     <template v-if="slots.lead">
       <div
-        class="min-w-0 md:contents max-md:col-span-2 max-md:row-start-1"
+        class="min-w-0 md:contents max-md:row-start-1"
+        :class="LEAD"
         data-testid="repeatable-row-lead"
       >
         <slot name="lead" :row="row" :index="index" />
       </div>
       <div
-        class="flex min-w-0 flex-wrap items-center gap-1.5 md:contents max-md:col-start-1 max-md:row-start-2"
+        class="flex min-w-0 flex-wrap items-center gap-1.5 md:contents max-md:row-start-2"
+        :class="REST"
         data-testid="repeatable-row-rest"
       >
         <slot name="row" :row="row" :index="index" />

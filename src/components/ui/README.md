@@ -87,7 +87,8 @@ Wide, the form primitives keep the desktop layout their callers size: a field's 
 - InputRow puts its description first and the control under it on a phone (`max-md:`), and
   its `#presets` on a line of their own below that.
 - RepeatableRows turns a row with a `#lead` into a card on a phone; from `md` up the
-  caller's `rowClass` lays the row out as before.
+  caller's `rowClass` lays the row out as before. `headerActions` puts the card's
+  Add/Remove pair on the lead's line, for a row of several fields or nested content.
 - SegmentedControl measures instead: a breakpoint cannot know how long its labels are. It
   compares the one-row width of its labels with its own width (`src/lib/segmented-fit.ts`).
 - FormField provides the label association (`src/composables/useFormField.ts`). A new text

@@ -1,6 +1,7 @@
 // The item form's stat rows on a phone: each row is a card of two lines, the picker on the
-// first and the value beside the Add/Remove pair on the second. Fit at phone widths is checked
-// in layout-sweep.spec.ts.
+// first. A stat row's value sits beside the Add/Remove pair on the second; a dynamic stat row
+// has several fields, so its pair sits beside the picker instead. Fit at phone widths is
+// checked in layout-sweep.spec.ts.
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { pickerScreen } from "../support/app";
 import { confirmDialog, openNewLayer } from "../support/nav";
@@ -50,6 +51,7 @@ async function cardLayout(row: Locator) {
     leadInset: lead.x > card.x,
     restBelowLead: rest.y >= leadBottom,
     actionsBelowLead: actions.y >= leadBottom,
+    actionsAboveRest: actions.y + actions.height <= rest.y,
   };
 }
 
@@ -57,6 +59,15 @@ const TWO_LINE_CARD = {
   leadInset: true,
   restBelowLead: true,
   actionsBelowLead: true,
+  actionsAboveRest: false,
+};
+
+/** The pair on the picker's line, the fields below both. */
+const HEADER_CARD = {
+  leadInset: true,
+  restBelowLead: true,
+  actionsBelowLead: false,
+  actionsAboveRest: true,
 };
 
 for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
@@ -69,7 +80,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
 
     await addRows(dynamicRows(page), "Add dynamic stat", 2);
     for (let i = 0; i < 2; i++)
-      expect(await cardLayout(dynamicRows(page).nth(i))).toEqual(TWO_LINE_CARD);
+      expect(await cardLayout(dynamicRows(page).nth(i))).toEqual(HEADER_CARD);
   });
 }
 
