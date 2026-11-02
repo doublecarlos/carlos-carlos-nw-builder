@@ -7,7 +7,16 @@
 // Pure and idempotent: an id it produces is one nothing supersedes.
 import { retiredChoices } from "../data/db";
 import { getPath, setPath } from "../lib/build-path";
-import type { Build, BuildContext, Db } from "../types";
+import { writeTypedValues, type TypedValues } from "../lib/build-inputs";
+import { parseRowSlotId } from "../lib/item-picker-list";
+import { bonusStatConfigs } from "../engine/inputs";
+import type {
+  BonusValues,
+  Build,
+  BuildContext,
+  Db,
+  SlotValues,
+} from "../types";
 
 /** Every stored id in `build` that `db` now resolves to a different item, old id to new. */
 export function replacements(db: Db, build: Build): Map<string, string> {
@@ -67,7 +76,7 @@ export function migrateItemIds(db: Db, build: Build): Build {
   for (const [slotId, itemId] of Object.entries(build.choices ?? {}))
     choices[slotId] = map.get(itemId) ?? itemId;
 
-  const values = seedValues(db, build);
+  const seeded = seedValues(db, build);
 
   const assignments: Record<string, Record<string, number>> = {};
   for (const [slotId, counts] of Object.entries(build.assignments ?? {}))
@@ -85,39 +94,84 @@ export function migrateItemIds(db: Db, build: Build): Build {
     setPath(context, path, moved);
   }
 
-  return { ...build, choices, values, assignments, context };
+  return { ...build, ...seeded, choices, assignments, context };
 }
 
 /**
- * `build.values` with each retired pick's carried magnitude written under its slot, so the
- * replacement starts on that number rather than its own `default`.
+ * `build`'s typed values with each retired pick's carried settings written in, so the
+ * replacement starts on them rather than its own defaults.
  *
- * Never overwrites a value the player typed, and skips a stat the replacement declares no
- * `dynamicStats` entry for, which nothing would read. `choices` only: a point_assignment row's
- * items share one slot, so per-item magnitudes could not be told apart there.
+ * Never overwrites a value the player set, and skips a setting the replacement does not
+ * declare, which nothing would read. Bonus settings are per build, so when two picks seed one,
+ * the first in slot order wins. `choices` only: a point_assignment row's items share one slot,
+ * so per-item magnitudes could not be told apart there.
  */
-function seedValues(db: Db, build: Build, only?: string): Build["values"] {
-  let values = build.values;
-  for (const [slotId, itemId] of Object.entries(build.choices ?? {})) {
+function seedValues(
+  db: Db,
+  build: Build,
+  only?: string,
+): Pick<Build, "values" | "bonusValues"> {
+  // Top-level copies are enough: `writeInput` replaces the inner maps it touches.
+  const out = {
+    ...build,
+    values: { ...build.values },
+    bonusValues: { ...build.bonusValues },
+  };
+  const picks = Object.entries(build.choices ?? {}).sort(
+    ([a], [b]) => slotRank(db, a) - slotRank(db, b),
+  );
+  for (const [slotId, itemId] of picks) {
     if (!itemId || (only !== undefined && slotId !== only)) continue;
-    const seeds = db.replacementSeeds(itemId);
-    // The replacement's configs, since that is the item the slot is about to hold.
-    const declared = new Set(
-      (db.replacementFor(itemId)?.dynamicStats ?? []).map(
-        (config) => config.stat,
-      ),
-    );
-    for (const [stat, value] of Object.entries(seeds)) {
-      if (value === undefined || !declared.has(stat)) continue;
-      if (values[slotId]?.stat?.[stat] !== undefined) continue;
-      if (values === build.values) values = { ...build.values };
-      values[slotId] = {
-        ...values[slotId],
-        stat: { ...values[slotId]?.stat, [stat]: value },
-      };
-    }
+    writeTypedValues(out, seedsFor(db, slotId, itemId), { overwrite: false });
   }
-  return values;
+  return { values: out.values, bonusValues: out.bonusValues };
+}
+
+/** A slot's place in the layout; a list row sorts after its list's earlier rows. */
+function slotRank(db: Db, slotId: string): number {
+  const row = parseRowSlotId(slotId);
+  const base = db.slots.findIndex(
+    (slot) => slot.id === (row?.listId ?? slotId),
+  );
+  if (base < 0) return Infinity;
+  return row ? base + row.index / (row.index + 1) : base;
+}
+
+/** What a retired pick at `slotId` seeds, limited to what its replacement declares. */
+function seedsFor(db: Db, slotId: string, itemId: string): TypedValues {
+  // The replacement's declarations, since that is the item the slot is about to hold.
+  const to = db.replacementFor(itemId);
+  const declared = new Set(
+    (to?.dynamicStats ?? []).map((config) => config.stat),
+  );
+  const stat: SlotValues["stat"] = {};
+  for (const [key, value] of Object.entries(db.replacementSeeds(itemId)))
+    if (value !== undefined && declared.has(key)) stat[key] = value;
+
+  const seeds = db.replacementBonusSeeds(itemId);
+  const bonusValues: Record<string, BonusValues> = {};
+  for (const { bonus } of to ? db.bonusesFor(to) : []) {
+    const seed = seeds[bonus.id];
+    if (!seed) continue;
+    const stats = new Set(bonusStatConfigs(bonus).map((config) => config.stat));
+    bonusValues[bonus.id] = {
+      stat: pick(seed.stat, (key) => stats.has(key)),
+      input: pick(seed.input, (name) =>
+        Object.hasOwn(bonus.inputs ?? {}, name),
+      ),
+    };
+  }
+  return { values: { [slotId]: { stat } }, bonusValues };
+}
+
+/** The entries of `record` whose key passes `keep`. */
+function pick<T>(
+  record: Record<string, T> | undefined,
+  keep: (key: string) => boolean,
+): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(record ?? {}).filter(([key]) => keep(key)),
+  );
 }
 
 /** One slot's retired pick swapped, leaving the rest of the build alone -- the per-row "update". */
@@ -127,7 +181,7 @@ export function migrateSlotItem(db: Db, build: Build, slotId: string): Build {
   if (!from || !to) return build;
 
   const choices = { ...build.choices, [slotId]: to.id };
-  const values = seedValues(db, { ...build, choices: build.choices }, slotId);
+  const seeded = seedValues(db, build, slotId);
 
-  return { ...build, choices, values };
+  return { ...build, ...seeded, choices };
 }

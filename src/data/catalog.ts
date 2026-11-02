@@ -20,7 +20,11 @@ import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
 import { isQuality } from "../lib/item-quality";
-import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
+import {
+  replacementBonusValuesOf,
+  replacementIdOf,
+  replacementValuesOf,
+} from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import {
   groupUnderParents,
@@ -29,7 +33,7 @@ import {
 } from "../lib/slot-parent";
 import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { INSIGNIA_SHAPES } from "../types";
-import { canStep } from "../engine/inputs";
+import { bonusStatConfigs, canStep } from "../engine/inputs";
 import {
   formulaSites,
   inputFormulaClashes,
@@ -51,6 +55,7 @@ import {
 import type {
   Item,
   Bonus,
+  BonusValues,
   Schema,
   CatalogOverlay,
   CatalogGroup,
@@ -1505,16 +1510,62 @@ export function validateSections(
   return findings;
 }
 
+/** What is wrong with `value` as `def`'s value, or null. */
+function inputValueProblem(def: InputDef, value: unknown): string | null {
+  if (def.type === "boolean")
+    return typeof value === "boolean" ? null : "takes true or false";
+  return typeof value === "number" && Number.isFinite(value)
+    ? null
+    : "takes a number";
+}
+
+/**
+ * What is wrong with a `bonusValues` payload (a preset's, or a replacement's seeds) against the
+ * catalog: a bonus that does not exist, a stat none of its grants make dynamic, an input it
+ * does not declare, or a value that does not fit its input. Each would be dropped or misread
+ * once written into a build.
+ */
+export function bonusValuesProblems(
+  bonusValues: Record<string, BonusValues> | undefined,
+  bonusById: ReadonlyMap<string, Bonus>,
+): string[] {
+  const out: string[] = [];
+  for (const [bonusId, values] of Object.entries(bonusValues ?? {})) {
+    const bonus = bonusById.get(bonusId);
+    if (!bonus) {
+      out.push(`bonusValues names "${bonusId}", which is not a bonus`);
+      continue;
+    }
+    const stats = new Set(bonusStatConfigs(bonus).map((config) => config.stat));
+    for (const stat of Object.keys(values.stat ?? {}))
+      if (!stats.has(stat))
+        out.push(
+          `bonusValues "${bonusId}": "${stat}" is not one of its dynamic stats`,
+        );
+    for (const [name, value] of Object.entries(values.input ?? {})) {
+      const def = bonus.inputs?.[name];
+      const problem = def
+        ? inputValueProblem(def, value)
+        : "is not an input of it";
+      if (problem)
+        out.push(`bonusValues "${bonusId}": input "${name}" ${problem}`);
+    }
+  }
+  return out;
+}
+
 /**
  * Lint every `SectionPreset`: duplicate ids, a missing section, and slot references that are
- * missing, belong to another section, or have the wrong type for their field. Needs only the
- * lists, not a composed catalog.
+ * missing, belong to another section, or have the wrong type for their field. With `bonuses`,
+ * its `bonusValues` too (`bonusValuesProblems`).
  */
 export function validatePresets(
   presets: SectionPreset[],
   slots: Slot[],
   sections: SlotSection[] = NW_SLOTS.sections ?? [],
+  bonuses?: Bonus[],
 ): LintFinding[] {
+  const bonusById = bonuses && new Map(bonuses.map((b) => [b.id, b]));
   const findings: LintFinding[] = [];
   const resolve = slotResolver(slots);
   const sectionIds = new Set(sections.map((section) => section.id));
@@ -1578,6 +1629,15 @@ export function validatePresets(
         }
       }
     }
+
+    if (bonusById)
+      for (const message of bonusValuesProblems(preset.bonusValues, bonusById))
+        findings.push({
+          level: "error",
+          kind: "sectionPreset",
+          name: preset.id,
+          message: `preset "${preset.id}": ${message}`,
+        });
 
     // `clears` is a bare list rather than a keyed map, and it accepts any of the three
     // value-holding slot types, so it can't ride the PRESET_FIELD_SLOT_TYPE loop above.
@@ -2026,9 +2086,11 @@ export function validateSlotDefaults(
 export function validateReplacements(
   items: Item[],
   schema: Schema = NW_SCHEMA,
+  bonuses: Bonus[] = [],
 ): LintFinding[] {
   const findings: LintFinding[] = [];
   const byId = new Map(items.map((item) => [item.id, item]));
+  const bonusById = new Map(bonuses.map((bonus) => [bonus.id, bonus]));
   const statKeys = new Set(schema.statKeys);
 
   for (const item of items) {
@@ -2086,6 +2148,28 @@ export function validateReplacements(
           });
         }
       }
+    }
+
+    // Bonus seeds land only on a bonus the item ending the chain carries.
+    const bonusSeeds = replacementBonusValuesOf(item.replacedBy);
+    if (Object.keys(bonusSeeds).length) {
+      const carried = new Set(endOfChain(byId, item)?.bonuses ?? []);
+      const problems = [
+        ...bonusValuesProblems(bonusSeeds, bonusById),
+        ...Object.keys(bonusSeeds)
+          .filter((id) => bonusById.has(id) && !carried.has(id))
+          .map(
+            (id) =>
+              `bonusValues "${id}" is not on the replacement; it would be dropped on migration`,
+          ),
+      ];
+      for (const problem of problems)
+        findings.push({
+          level: "error",
+          kind: "item",
+          name: item.id,
+          message: `replacedBy ${problem}`,
+        });
     }
 
     // One finding per cycle member: each is an item whose `replacedBy` needs fixing.
@@ -2483,12 +2567,12 @@ export function validate(
     ...validateSlotAvailability({ items, bonuses, slots }),
     ...validateSlotParents({ items, bonuses, slots }),
     ...validateSections(sections, slots, sectionOrder),
-    ...validatePresets(presets, slots, sections),
+    ...validatePresets(presets, slots, sections, bonuses),
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
     ...validateBonusAttachments(items, bonuses),
     ...validateRankTiers(items, bonuses),
-    ...validateReplacements(items, schema),
+    ...validateReplacements(items, schema, bonuses),
     ...validateMaxCopies(items, slots, db.filterDefaultsOf(filters)),
     ...validateStableSlots(slots),
     ...validateFilterFields(db.filterFieldsOf(filters)),

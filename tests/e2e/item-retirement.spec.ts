@@ -98,12 +98,14 @@ test("a retirement carries its own value onto the replacement's dynamic stat", a
   await retireItem(page, OLD_ITEM, NEW_ITEM);
   // The value this retired item hands to the replacement, instead of its default of 500.
   await page.getByTestId("item-add-carried-value").click();
-  const carried = page.locator(".replaced-by-value-row").last();
-  const carriedStat = carried.getByTestId("picker-input");
+  const carried = page.getByTestId("item-carried");
+  const carriedStat = carried
+    .getByTestId("item-carried-stat")
+    .getByTestId("picker-input");
   await carriedStat.click();
   await carriedStat.fill("Power");
   await carried.getByText("Power", { exact: true }).click();
-  await carried.locator('input[type="number"]').fill("200");
+  await carried.getByTestId("item-carried-stat-value").fill("200");
 
   await openBuild(page);
   const row = slotRow(page, "gear.ring1");
@@ -120,6 +122,54 @@ test("a retirement carries its own value onto the replacement's dynamic stat", a
   await expect(page.getByTestId("retired-items")).toHaveCount(0);
   await expect(pickerInput(row)).toHaveValue(NEW_ITEM);
   await expect(row.getByTestId("slot-dynamic:power")).toHaveValue("200");
+});
+
+// A retirement can carry a bonus setting: a fixed variant retired onto an item with a setting
+// keeps its numbers by seeding that setting.
+test("a retirement carries a bonus input onto the replacement", async ({
+  page,
+}) => {
+  const OLD_ENCHANT = "ZZZ Test Retired Enchant";
+  const SLOT = "enchantments.combatOffense";
+  await openBuilder(page);
+  await addLayer(page);
+  await openLayer(page);
+  await page.getByTestId("new-item").click();
+  await page.getByTestId("item-name-input").fill(OLD_ENCHANT);
+  await setItemFilter(page, "combat_enchant_offense");
+  await page.getByRole("button", { name: "Save item" }).click();
+
+  await openBuild(page);
+  await chooseItem(page, SLOT, OLD_ENCHANT);
+
+  await openLayer(page);
+  await page
+    .locator(".editor-row-name", { hasText: OLD_ENCHANT })
+    .first()
+    .click();
+  await page.getByTestId("item-hide-from-picker").click();
+  const combo = page.getByTestId("item-replaced-by");
+  await combo.locator("input").click();
+  await combo.locator("input").fill("(lightning-flash)");
+  await page
+    .getByText("Celestial Lightning Flash (lightning-flash)", { exact: true })
+    .click();
+  // Left alone, the setting keeps the build's own value rather than the default.
+  const setting = page.getByTestId(
+    "item-replaced-by-bonus-input-lightning-flash-stacks",
+  );
+  await expect(setting).toHaveValue("");
+  await setting.fill("1");
+
+  await openBuild(page);
+  await page.getByTestId("retired-items-apply").click();
+  const row = slotRow(page, SLOT);
+  await expect(pickerInput(row).first()).toHaveValue(
+    "Celestial Lightning Flash",
+  );
+  await expect(
+    row.getByTestId("bonus-input-lightning-flash-stacks"),
+  ).toHaveValue("1");
 });
 
 test("each retired row carries its own badge and update button", async ({

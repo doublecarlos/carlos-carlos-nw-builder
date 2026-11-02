@@ -12,6 +12,7 @@ import StatValueInput from "./StatValueInput.vue";
 import StatRowList from "./StatRowList.vue";
 import DynamicStatRowList from "./DynamicStatRowList.vue";
 import IconButton from "../ui/IconButton.vue";
+import ListAddRow from "../ui/ListAddRow.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import { Plus, ScanText, Trash } from "@lucide/vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -48,8 +49,11 @@ import {
   hasInlineRepetition,
   FIELD_GROUPS,
   type ItemDraft,
+  type ItemDraftContext,
   type FieldGroup,
 } from "../../lib/item-draft";
+import { settingGroups } from "../../lib/bonus-values-draft";
+import BonusValuesFields from "./BonusValuesFields.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import { showAllFields } from "../../stores/itemFormFields";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
@@ -193,9 +197,22 @@ function itemId(local: ItemDraft): string {
   return props.source?.id ?? computeId(local);
 }
 
+/** The item builds migrate onto: the end of the chain `replacedBy` starts. */
+function replacementItem(local: ItemDraft): Item | null {
+  const target = local.replacedBy.trim();
+  return props.db.replacementFor(target) ?? props.db.get(target);
+}
+
+function draftContext(local: ItemDraft): ItemDraftContext {
+  return {
+    id: itemId(local),
+    replacementBonusIds: replacementItem(local)?.bonuses ?? [],
+  };
+}
+
 function save() {
   error.value = "";
-  const item = toItem(draft.value, { id: itemId(draft.value) });
+  const item = toItem(draft.value, draftContext(draft.value));
   if (!item.name) {
     error.value = "The item needs a name.";
     return;
@@ -363,7 +380,7 @@ const { draft, error, dirty, displayId } = useEditorDraft<
   source: () => props.source,
   isNew,
   buildDraft: (source) => buildDraft(source ?? props.duplicateFrom),
-  toEntity: (local) => toItem(local, { id: itemId(local) }),
+  toEntity: (local) => toItem(local, draftContext(local)),
   diffLabel,
   hasContent: (d) => Boolean(d.name || d.stats.length),
   emit: (item, label) => emit("update:item", { item, label }),
@@ -377,6 +394,28 @@ const { draft, error, dirty, displayId } = useEditorDraft<
   },
   draftNoun: "item",
 });
+
+/** The settings of the bonuses a replacement seed can land on. */
+const replacementGroups = computed(() =>
+  settingGroups(replacementItem(draft.value)?.bonuses ?? [], props.db),
+);
+
+/** The stats a carried value can land on: the replacement's dynamic stats. */
+const carriedStatOptions = computed(() => {
+  const declared = new Set(
+    (replacementItem(draft.value)?.dynamicStats ?? []).map((c) => c.stat),
+  );
+  return statPickerOptions.filter((option) => declared.has(option.value));
+});
+
+/** Shown while the replacement takes something, or the draft still carries a stale seed. */
+const showsCarried = computed(
+  () =>
+    Boolean(draft.value.replacedBy) &&
+    (carriedStatOptions.value.length > 0 ||
+      replacementGroups.value.length > 0 ||
+      draft.value.replacedByValues.length > 0),
+);
 
 // Draft undo/redo (new-item history) replaces `draft.value` wholesale, bypassing the
 // add/remove handlers below, so resurface the group automatically whenever its fields come
@@ -991,9 +1030,8 @@ function showsGroup(group: FieldGroup): boolean {
     <template v-if="showsGroup('retirement')">
       <FormSection data-testid="group-retirement">Retirement</FormSection>
       <FormSectionDescription>
-        Retired items are not offered in item pickers. <br />
-        Builds using a retired item will still work, and the Build Editor will
-        offer the replacement set below.
+        A retired item leaves the pickers; builds still holding it keep working
+        and are offered its replacement.
       </FormSectionDescription>
       <div
         class="mb-1.5 flex items-center gap-x-4 gap-y-1.5 max-md:flex-col max-md:items-stretch md:flex-wrap"
@@ -1016,49 +1054,73 @@ function showsGroup(group: FieldGroup): boolean {
         </div>
       </div>
 
-      <template v-if="draft.replacedBy">
-        <RepeatableRows
-          :rows="draft.replacedByValues"
-          row-class="replaced-by-value-row flex md:flex-wrap items-center gap-1.5 mb-1"
-          add-label="Add carried value"
-          remove-label="Remove carried value"
-          add-testid="item-add-carried-value"
-          @add="addReplacedByValue"
-          @remove="removeReplacedByValue"
+      <!-- What a build accepting the update starts on, nested under the replacement. -->
+      <div
+        v-if="showsCarried"
+        class="mb-1.5 border-l-1 border-line pl-3 md:ml-1"
+        data-testid="item-carried"
+      >
+        <FormSectionDescription>
+          Carried into the replacement when a build accepts the update, unless
+          the build already sets it.
+        </FormSectionDescription>
+        <template
+          v-if="carriedStatOptions.length || draft.replacedByValues.length"
         >
-          <template #lead="{ row }">
-            <FormField label="Carry stat">
+          <FormSection sub>Dynamic stats</FormSection>
+          <div
+            v-if="draft.replacedByValues.length"
+            class="grid max-w-md grid-cols-[minmax(0,3fr)_minmax(0,2fr)_auto] items-center gap-x-1.5 gap-y-1"
+          >
+            <span class="text-muted">Stat</span>
+            <span class="text-muted">Value</span>
+            <span />
+            <template
+              v-for="(row, index) in draft.replacedByValues"
+              :key="index"
+            >
               <ComboBox
-                class="combo--stat w-full md:w-52"
+                class="combo--stat w-full"
                 :model-value="row.stat"
-                :options="statPickerOptions"
+                :options="carriedStatOptions"
                 placeholder="- pick a stat -"
                 phone-screen
-                screen-label="Carry stat"
+                screen-label="Carried stat"
+                data-testid="item-carried-stat"
                 @update:model-value="(v) => (row.stat = v)"
               />
-            </FormField>
-          </template>
-          <template #row="{ row }">
-            <FormField
-              label="Value on the replacement"
-              class="w-full md:w-auto"
-            >
               <StatValueInput
                 v-model="row.value"
                 :stat-key="row.stat"
-                class="w-full md:w-24"
+                class="w-full"
                 step="any"
+                data-testid="item-carried-stat-value"
               />
-            </FormField>
-          </template>
-          <template #empty>
-            <span class="text-muted">
-              Carry a value into the replacement's dynamic stat settings.
-            </span>
-          </template>
-        </RepeatableRows>
-      </template>
+              <IconButton
+                title="Remove carried stat"
+                @click="removeReplacedByValue(index)"
+                ><Trash
+              /></IconButton>
+            </template>
+          </div>
+          <ListAddRow
+            title="Add carried stat"
+            testid="item-add-carried-value"
+            :empty="!draft.replacedByValues.length"
+            @add="addReplacedByValue"
+          >
+            <template #empty>No carried stats.</template>
+          </ListAddRow>
+        </template>
+        <template v-if="replacementGroups.length">
+          <BonusValuesFields
+            v-model:values="draft.replacedByBonusValues"
+            :groups="replacementGroups"
+            keepable
+            testid-prefix="item-replaced-by"
+          />
+        </template>
+      </div>
     </template>
   </div>
 </template>

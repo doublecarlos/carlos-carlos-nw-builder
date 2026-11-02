@@ -1,7 +1,13 @@
 // Read and write access to every typed per-build value by its `InputAddress`, so each
 // mechanism shares one storage path, one default fallback and one way of clearing.
 import { getPath, setPath } from "./build-path";
-import type { Build, InputAddress } from "../types";
+import type {
+  BonusValues,
+  Build,
+  InputAddress,
+  InputValue,
+  SlotValues,
+} from "../types";
 
 type Stored = number | boolean | undefined;
 
@@ -117,7 +123,45 @@ export function writeInput(
   }
 }
 
-const toNumber = (value: number | boolean | null) =>
+/** Typed values in `Build`'s shape: what a preset applies and a replacement seeds. */
+export interface TypedValues {
+  /** Item dynamic stats, by slot. */
+  values?: Record<string, SlotValues>;
+  /** Bonus dynamic stats and inputs, by bonus id. */
+  bonusValues?: Record<string, BonusValues>;
+}
+
+/** Every value `payload` names, with where it is stored. */
+export function typedValueEntries(
+  payload: TypedValues,
+): [InputAddress, InputValue][] {
+  const out: [InputAddress, InputValue][] = [];
+  for (const [slotId, slot] of Object.entries(payload.values ?? {}))
+    for (const [stat, value] of Object.entries(slot.stat ?? {}))
+      out.push([itemStatAddress(slotId, stat), value]);
+  for (const [bonusId, bonus] of Object.entries(payload.bonusValues ?? {})) {
+    for (const [stat, value] of Object.entries(bonus.stat ?? {}))
+      out.push([bonusStatAddress(bonusId, stat), value]);
+    for (const [name, value] of Object.entries(bonus.input ?? {}))
+      out.push([bonusInputAddress(bonusId, name), value]);
+  }
+  return out;
+}
+
+/** Writes `payload` into `build`. Without `overwrite`, a value the build already stores is
+ *  kept. */
+export function writeTypedValues(
+  build: Build,
+  payload: TypedValues,
+  { overwrite }: { overwrite: boolean },
+) {
+  for (const [address, value] of typedValueEntries(payload)) {
+    if (!overwrite && storedInput(build, address) !== undefined) continue;
+    writeInput(build, address, value);
+  }
+}
+
+const toNumber = (value: InputValue | null) =>
   value === null ? null : Number(value);
 
 /** A stable string for `address`: a history coalescing key, or a key to match two builds'

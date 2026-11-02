@@ -44,6 +44,7 @@ const controlOptions = [
     :rows="rows"
     row-class="bonus-input-row flex md:flex-wrap items-start gap-1.5 mb-1"
     labeled-fields
+    header-actions
     add-label="Add input"
     remove-label="Remove input"
     add-testid="add-bonus-input"

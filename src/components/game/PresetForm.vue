@@ -16,8 +16,7 @@ import { Plus, Trash } from "@lucide/vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import ItemPicker from "./ItemPicker.vue";
 import PointAssignmentInput from "./PointAssignmentInput.vue";
-import StatValueInput from "./StatValueInput.vue";
-import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import BonusValuesFields from "./BonusValuesFields.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -26,11 +25,8 @@ import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import FormSection from "../ui/FormSection.vue";
 import IdField from "../ui/IdField.vue";
-import NumberStepper from "../ui/NumberStepper.vue";
-import PercentInput from "../ui/PercentInput.vue";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
-import { numberControl } from "../../engine/inputs";
 import { parseRowSlotId, rowSlot } from "../../lib/item-picker-list";
 import {
   bonusSettingGroups,
@@ -44,7 +40,6 @@ import type {
   Db,
   BuildParameterSlot,
   ItemPickerSlot,
-  InputDef,
   ItemPickerListSlot,
   PointAssignmentSlot,
 } from "../../types";
@@ -130,67 +125,6 @@ const { draft, error, dirty, displayId } = useEditorDraft<
 
 /** Settings for every bonus the rows' items carry, stored once per bonus like the build's. */
 const bonusGroups = computed(() => bonusSettingGroups(draft.value, props.db));
-
-function bonusStat(bonusId: string, stat: string) {
-  return draft.value.bonusValues[bonusId]?.stat[stat] ?? "";
-}
-
-/** A bonus input as the preset sets it, or its default while the preset leaves it alone. */
-function bonusInput(bonusId: string, name: string, def: InputDef) {
-  return draft.value.bonusValues[bonusId]?.input[name] ?? def.default;
-}
-
-/** `null` leaves the input out of the preset, so applying it keeps the build's value. */
-function setBonusInput(
-  bonusId: string,
-  name: string,
-  value: number | boolean | null,
-) {
-  const current = draft.value.bonusValues[bonusId] ?? { stat: {}, input: {} };
-  const { [name]: _dropped, ...input } = current.input;
-  draft.value.bonusValues[bonusId] = {
-    ...current,
-    input: value === null ? input : { ...input, [name]: value },
-  };
-}
-
-/** A typed number applies as it is typed. An emptied field writes nothing yet, since the
- *  default would refill it mid-edit; once left empty, the input drops out of the preset. */
-function onBonusInputField(
-  bonusId: string,
-  name: string,
-  raw: string | number | null,
-) {
-  if (typeof raw === "number" && Number.isFinite(raw))
-    setBonusInput(bonusId, name, raw);
-}
-
-function onBonusInputBlur(bonusId: string, name: string, event: FocusEvent) {
-  if ((event.target as HTMLInputElement).value.trim() === "")
-    setBonusInput(bonusId, name, null);
-}
-
-/** PercentInput holds its own text while focused, so an emptied one can clear at once. */
-function onBonusInputPercent(
-  bonusId: string,
-  name: string,
-  raw: string | number | null,
-) {
-  if (raw === "" || raw === null) setBonusInput(bonusId, name, null);
-  else onBonusInputField(bonusId, name, raw);
-}
-
-function setBonusStat(
-  bonusId: string,
-  stat: string,
-  value: number | string | null,
-) {
-  const current = draft.value.bonusValues[bonusId] ?? { stat: {}, input: {} };
-  draft.value.bonusValues[bonusId] = {
-    ...current,
-    stat: { ...current.stat, [stat]: value },
-  };
-}
 
 // --- Common ---------------------------------------------------------------------------
 
@@ -512,84 +446,11 @@ const SLOT_ROW =
           Dynamic stats and inputs of the bonuses these items carry, set once
           per bonus.
         </FormSectionDescription>
-        <FormGrid
-          v-for="group in bonusGroups"
-          :key="group.bonusId"
-          class="mb-1"
-          data-testid="preset-bonus-settings"
-        >
-          <FormField
-            v-for="config in group.configs"
-            :key="config.stat"
-            :label="`${group.name}: ${config.label ?? config.stat}`"
-          >
-            <StatValueInput
-              class="w-24"
-              :stat-key="config.stat"
-              :data-testid="`preset-bonus-stat-${group.bonusId}-${config.stat}`"
-              :model-value="bonusStat(group.bonusId, config.stat)"
-              @update:model-value="
-                setBonusStat(group.bonusId, config.stat, $event)
-              "
-            />
-          </FormField>
-          <FormField
-            v-for="input in group.inputs"
-            :key="input.name"
-            :label="`${group.name}: ${input.def.label ?? input.name}`"
-          >
-            <BaseCheckbox
-              v-if="input.def.type === 'boolean'"
-              :data-testid="`preset-bonus-input-${group.bonusId}-${input.name}`"
-              :model-value="
-                Boolean(bonusInput(group.bonusId, input.name, input.def))
-              "
-              @update:model-value="
-                setBonusInput(group.bonusId, input.name, $event as boolean)
-              "
-            />
-            <NumberStepper
-              v-else-if="numberControl(input.def) === 'stepper'"
-              :min="input.def.min ?? 0"
-              :max="input.def.max ?? 0"
-              :step="input.def.step"
-              :data-testid="`preset-bonus-input-${group.bonusId}-${input.name}`"
-              :model-value="
-                Number(bonusInput(group.bonusId, input.name, input.def))
-              "
-              @update:model-value="
-                setBonusInput(group.bonusId, input.name, $event)
-              "
-            />
-            <PercentInput
-              v-else-if="input.def.type === 'percent'"
-              class="w-24"
-              :data-testid="`preset-bonus-input-${group.bonusId}-${input.name}`"
-              :model-value="
-                Number(bonusInput(group.bonusId, input.name, input.def))
-              "
-              @update:model-value="
-                onBonusInputPercent(group.bonusId, input.name, $event)
-              "
-            />
-            <BaseInput
-              v-else
-              type="number"
-              class="w-24"
-              :min="input.def.min"
-              :max="input.def.max"
-              :step="input.def.step"
-              :data-testid="`preset-bonus-input-${group.bonusId}-${input.name}`"
-              :model-value="
-                Number(bonusInput(group.bonusId, input.name, input.def))
-              "
-              @update:model-value="
-                onBonusInputField(group.bonusId, input.name, $event)
-              "
-              @blur="onBonusInputBlur(group.bonusId, input.name, $event)"
-            />
-          </FormField>
-        </FormGrid>
+        <BonusValuesFields
+          v-model:values="draft.bonusValues"
+          :groups="bonusGroups"
+          testid-prefix="preset"
+        />
       </template>
       <FormSection
         >Cleared slots

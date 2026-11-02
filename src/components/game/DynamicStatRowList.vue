@@ -25,6 +25,7 @@ const BOUNDS = [
   <RepeatableRows
     :rows="rows"
     row-class="dynamic-stat-row flex md:flex-wrap items-center gap-1.5 mb-1"
+    header-actions
     add-label="Add dynamic stat"
     remove-label="Remove dynamic stat"
     @add="emit('add')"

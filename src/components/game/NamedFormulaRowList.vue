@@ -44,6 +44,7 @@ function rowIssues(row: NamedFormulaDraft): FormulaInputIssue[] {
     :rows="rows"
     row-class="bonus-formula-row flex md:flex-wrap items-start gap-1.5 mb-1"
     labeled-fields
+    header-actions
     add-label="Add formula"
     remove-label="Remove formula"
     add-testid="add-bonus-formula"
