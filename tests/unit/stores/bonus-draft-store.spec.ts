@@ -165,6 +165,35 @@ describe("BonusDraftStore.moveGrantTo", () => {
   });
 });
 
+// The arrow buttons in each card's header. Down used to land on the gap right under the row
+// itself and do nothing.
+describe("one-step moves", () => {
+  it("moveGrant moves a grant down and back up", () => {
+    const { grants, store } = makeMultiGrantStore(3);
+    const [a, b, c] = grants;
+    store.moveGrant(0, 1);
+    expect(grants).toEqual([b, a, c]);
+    store.moveGrant(1, -1);
+    expect(grants).toEqual([a, b, c]);
+  });
+
+  it("moveTier moves a tier down", () => {
+    const { gs } = makeStore("tiers");
+    gs.addTier();
+    const [first, second] = gs.grant.tiers;
+    gs.moveTier(0, 1);
+    expect(gs.grant.tiers).toEqual([second, first]);
+  });
+
+  it("moveVariant moves a variant down", () => {
+    const { gs } = makeStore("variants");
+    gs.addVariant();
+    const [first, second] = gs.grant.variants;
+    gs.moveVariant(0, 1);
+    expect(gs.grant.variants).toEqual([second, first]);
+  });
+});
+
 describe("GrantStore.moveTierTo / moveVariantTo", () => {
   it("moveTierTo drops a tier at an arbitrary index", () => {
     const { gs } = makeStore("tiers");

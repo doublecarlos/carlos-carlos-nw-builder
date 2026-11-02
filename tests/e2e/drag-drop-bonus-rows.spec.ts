@@ -79,3 +79,31 @@ test("Move grant up still works after drag-and-drop is wired in", async ({
   await expect(descriptions.nth(0)).toHaveValue("Second");
   await expect(descriptions.nth(1)).toHaveValue("First");
 });
+
+// Down is the case that once did nothing: its target gap sat right under the grant itself.
+test("Move grant down moves the first grant below the next", async ({
+  page,
+}) => {
+  await openNewBonus(page);
+
+  const addGrant = page.getByLabel("Add grant");
+  await addGrant.click();
+  await addGrant.click();
+
+  for (let i = 0; i < 2; i++) {
+    await page.getByTestId("add-grant-name-description").first().click();
+  }
+
+  const descriptions = page.getByTestId("grant-short-description");
+  await descriptions.nth(0).fill("First");
+  await descriptions.nth(1).fill("Second");
+
+  await page
+    .getByTestId("bonus-grant-row")
+    .nth(0)
+    .getByLabel("Move grant down")
+    .click();
+
+  await expect(descriptions.nth(0)).toHaveValue("Second");
+  await expect(descriptions.nth(1)).toHaveValue("First");
+});

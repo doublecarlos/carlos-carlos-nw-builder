@@ -92,6 +92,12 @@ export function reorderIndex(fromIndex: number, toIndex: number): number {
   return toIndex > fromIndex ? toIndex - 1 : toIndex;
 }
 
+/** Pure. The pre-removal gap a one-step move up/down targets, in the terms `reorderIndex`
+ *  takes. Down skips the gap right under the row itself, which would leave it in place. */
+export function stepGap(index: number, delta: number): number {
+  return index + delta + (delta > 0 ? 1 : 0);
+}
+
 /** Pure. Resolves a pointer's `y` against row rects into an insertion gap (0..rows.length) or
  *  an "into" band over the middle half of a row that accepts drops. The 25/75 split keeps the
  *  reorder gesture reachable beside a folder. Positions index the given `rows` array. */

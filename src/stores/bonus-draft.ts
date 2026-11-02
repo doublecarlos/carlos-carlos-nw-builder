@@ -21,7 +21,7 @@ import {
   type ConditionRow,
 } from "../engine/condition-draft";
 import type { GrantDraft } from "../lib/bonus-draft";
-import { reorderIndex } from "../composables/useDragAndDrop";
+import { reorderIndex, stepGap } from "../composables/useDragAndDrop";
 
 /** Which of a `BonusDraftStore`'s condition trees a location lives in -- a grant's own
  *  "Active when" tree (`scope: "grant"`) or one of its variants' "When" trees (`scope:
@@ -209,7 +209,7 @@ export class GrantStore {
   }
 
   moveTier(index: number, delta: number): void {
-    this.moveTierTo(index, index + delta);
+    this.moveTierTo(index, stepGap(index, delta));
   }
 
   addVariant(): void {
@@ -252,7 +252,7 @@ export class GrantStore {
   }
 
   moveVariant(index: number, delta: number): void {
-    this.moveVariantTo(index, index + delta);
+    this.moveVariantTo(index, stepGap(index, delta));
   }
 
   /** Attempt to switch between simple/form and JSON editing.
@@ -338,7 +338,7 @@ export class BonusDraftStore {
   }
 
   moveGrant(index: number, delta: number): void {
-    this.moveGrantTo(index, index + delta);
+    this.moveGrantTo(index, stepGap(index, delta));
   }
 
   /** ConditionRows @update handler for grant-level conditions. */
