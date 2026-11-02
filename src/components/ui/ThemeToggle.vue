@@ -19,14 +19,15 @@ export const THEME_ICONS = {
 // System -> Light -> Dark -> System, one click at a time. Icon mirrors the current preference
 // (monitor for system, sun for light, moon for dark).
 import BaseButton from "./BaseButton.vue";
-import BaseTooltip from "./BaseTooltip.vue";
 import { preference, cyclePreference } from "../../stores/theme";
 </script>
 
 <template>
-  <BaseTooltip :text="`${THEME_LABELS[preference]}`">
-    <BaseButton :aria-label="THEME_LABELS[preference]" @click="cyclePreference">
-      <component :is="THEME_ICONS[preference]" />
-    </BaseButton>
-  </BaseTooltip>
+  <BaseButton
+    :title="THEME_LABELS[preference]"
+    :aria-label="THEME_LABELS[preference]"
+    @click="cyclePreference"
+  >
+    <component :is="THEME_ICONS[preference]" />
+  </BaseButton>
 </template>

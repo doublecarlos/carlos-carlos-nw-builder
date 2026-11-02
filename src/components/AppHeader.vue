@@ -11,7 +11,6 @@ import BaseLink from "./ui/BaseLink.vue";
 import BaseMenu from "./ui/BaseMenu.vue";
 import BaseMenuItem from "./ui/BaseMenuItem.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
-import BaseTooltip from "./ui/BaseTooltip.vue";
 import AboutDialog from "./AboutDialog.vue";
 import AutosaveIndicator from "./AutosaveIndicator.vue";
 import BundleExport from "./BundleExport.vue";
@@ -215,14 +214,13 @@ async function onImportFile(event: Event) {
 
     <!-- The app's only file entry point, so it says what it takes: `importFileText` sniffs
          the file and routes it, rather than the caller picking a kind up front. -->
-    <BaseTooltip
+    <BaseButton
       v-if="inBar('import')"
-      text="Import a build, layer or bundle file."
+      title="Import a build, layer or bundle file."
+      data-testid="header-import"
+      @click="triggerImport"
+      ><Upload />Import</BaseButton
     >
-      <BaseButton data-testid="header-import" @click="triggerImport"
-        ><Upload />Import</BaseButton
-      >
-    </BaseTooltip>
 
     <!-- Mounted here for every entry point, as the game-import wizard is. -->
     <ImportPicker v-if="pendingImport" :plan="pendingImport" />
@@ -328,25 +326,25 @@ async function onImportFile(event: Event) {
       class="h-4 w-px bg-line"
     />
 
-    <BaseTooltip v-if="inBar('shortcuts')" text="Keyboard shortcuts (?)">
-      <BaseButton
-        data-testid="header-shortcuts"
-        aria-label="Keyboard shortcuts"
-        @click="shortcutHelp.toggle()"
-        ><Keyboard
-      /></BaseButton>
-    </BaseTooltip>
+    <BaseButton
+      v-if="inBar('shortcuts')"
+      title="Keyboard shortcuts (?)"
+      data-testid="header-shortcuts"
+      aria-label="Keyboard shortcuts"
+      @click="shortcutHelp.toggle()"
+      ><Keyboard
+    /></BaseButton>
 
-    <BaseTooltip v-if="inBar('about')" text="About">
-      <BaseButton
-        data-testid="header-about"
-        aria-label="About"
-        @click="showAbout = true"
-        ><Info
-      /></BaseButton>
-    </BaseTooltip>
+    <BaseButton
+      v-if="inBar('about')"
+      title="About"
+      data-testid="header-about"
+      aria-label="About"
+      @click="showAbout = true"
+      ><Info
+    /></BaseButton>
 
-    <ThemeToggle v-if="inBar('theme')" class="w-30 justify-center" />
+    <ThemeToggle v-if="inBar('theme')" />
 
     <BaseMenu
       v-if="layout.menu.length"

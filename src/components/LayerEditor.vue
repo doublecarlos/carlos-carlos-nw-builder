@@ -15,6 +15,7 @@ import {
   provide,
   reactive,
   ref,
+  useTemplateRef,
   watch,
 } from "vue";
 import BaseModal from "./ui/BaseModal.vue";
@@ -1312,6 +1313,8 @@ function onDeleteBonus(id: string) {
   showNotice(`Removed bonus "${label}"`);
 }
 
+const overlayFileInput = useTemplateRef("overlayFileInput");
+
 async function importOverlay(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -1571,13 +1574,19 @@ onUnmounted(() => {
           @click="showExport = !showExport"
           ><Download
         /></IconButton>
-        <IconButton as="label" title="Import"
-          ><Upload /><input
-            type="file"
-            accept=".json"
-            hidden
-            @change="importOverlay"
+        <IconButton
+          title="Import"
+          data-testid="layer-import"
+          @click="overlayFileInput?.click()"
+          ><Upload
         /></IconButton>
+        <input
+          ref="overlayFileInput"
+          type="file"
+          accept=".json"
+          hidden
+          @change="importOverlay"
+        />
 
         <span class="mx-1 h-4 w-px bg-line"></span>
 

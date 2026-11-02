@@ -262,11 +262,13 @@ const builtInActions = computed<FormBarAction[]>(() =>
       >
         <!-- A top-level bar with room names its actions; an embedded one stays icons, like
              the caller's own extra actions beside them. -->
-        <IconButton
+        <BaseButton
           v-for="action in actions"
           :key="action.key"
-          class="gap-1"
+          variant="subtle"
+          :shape="embedded ? 'icon' : 'label'"
           :title="action.title"
+          :aria-label="action.title"
           :data-testid="action.testid"
           @click="action.run($event)"
         >
@@ -277,7 +279,7 @@ const builtInActions = computed<FormBarAction[]>(() =>
             data-testid="form-bar-action-label"
             >{{ action.title }}</span
           >
-        </IconButton>
+        </BaseButton>
         <slot name="extra-actions" />
       </span>
     </span>
