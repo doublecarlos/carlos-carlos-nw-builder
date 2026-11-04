@@ -1553,7 +1553,7 @@ watch(
               :build="build"
               :db="db"
               :compare-build="compareBuild"
-              :highlight-diff="highlightDiff"
+              :highlight-diff="highlightDiff && !!rowDataFor(slotDef.id).diff"
               :is-hovered="hover?.slotId === slotDef.id"
               :no-border="noBorderIds.has(slotDef.id)"
               :nest="nestById.get(slotDef.id)"

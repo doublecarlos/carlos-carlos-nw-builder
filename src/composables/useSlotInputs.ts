@@ -6,6 +6,7 @@
 import { computed, toValue, type MaybeRefOrGetter } from "vue";
 import { inputCopies, inputsBySlot, resolvedIndex } from "../stores/resolved";
 import { inputKey } from "../lib/build-inputs";
+import { keepEqual } from "../lib/keep-identity";
 import { isCarried } from "../lib/bonus-inspector";
 import {
   numberControl,
@@ -105,43 +106,47 @@ const VIEWS: Record<InputKindId, InputView> = {
 const NO_BONUSES: ReadonlyMap<string, EvaluatedBonus> = new Map();
 
 /** `slot`'s typed values. `pinned` names addresses shown whatever their view says, such as
- *  the row's compare diffs. */
+ *  the row's compare diffs. The list keeps its previous identity while its entries are
+ *  unchanged, so a new resolve with the same values re-renders nothing. */
 export function useSlotInputs(
   slot: MaybeRefOrGetter<Slot>,
   pinned: MaybeRefOrGetter<readonly InputAddress[]> = [],
 ) {
-  return computed<BuildInput[]>(() => {
-    const row = toValue(slot);
-    const own = inputsBySlot.value.get(row.id) ?? [];
-    const notes = copyNotes(row);
-    if (!own.length) return notes;
+  return computed<BuildInput[]>((previous) =>
+    keepEqual(previous, slotInputs(toValue(slot), toValue(pinned))),
+  );
+}
 
-    const index = resolvedIndex.value;
-    const bonuses = index.slotBonuses.get(row.id) ?? NO_BONUSES;
-    const forced = new Set(
-      [
-        ...toValue(pinned),
-        ...(index.errors.get(row.id) ?? []).flatMap((error) =>
-          error.address ? [error.address] : [],
-        ),
-      ].map(inputKey),
-    );
+function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
+  const own = inputsBySlot.value.get(row.id) ?? [];
+  const notes = copyNotes(row);
+  if (!own.length) return notes;
 
-    const controls = own.flatMap((entry) => {
-      const view = VIEWS[entry.kind];
-      if (!view.visible(entry, bonuses) && !forced.has(inputKey(entry.address)))
-        return [];
-      return [
-        {
-          ...entry,
-          anchor: { slotId: row.id, itemId: view.itemId(entry) },
-          testid: view.testid(entry, row),
-          control: view.control(entry),
-        },
-      ];
-    });
-    return [...controls, ...notes];
+  const index = resolvedIndex.value;
+  const bonuses = index.slotBonuses.get(row.id) ?? NO_BONUSES;
+  const forced = new Set(
+    [
+      ...pinned,
+      ...(index.errors.get(row.id) ?? []).flatMap((error) =>
+        error.address ? [error.address] : [],
+      ),
+    ].map(inputKey),
+  );
+
+  const controls = own.flatMap((entry) => {
+    const view = VIEWS[entry.kind];
+    if (!view.visible(entry, bonuses) && !forced.has(inputKey(entry.address)))
+      return [];
+    return [
+      {
+        ...entry,
+        anchor: { slotId: row.id, itemId: view.itemId(entry) },
+        testid: view.testid(entry, row),
+        control: view.control(entry),
+      },
+    ];
   });
+  return [...controls, ...notes];
 }
 
 /** A note for each bonus input whose bonus also comes from `row` but renders elsewhere. */

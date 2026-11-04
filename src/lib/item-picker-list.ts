@@ -33,11 +33,23 @@ export function listRowCount(
   return build?.listRows?.[slot.id] ?? slot.defaultRows ?? 0;
 }
 
-/** One row of `slot`, as the ordinary `item_picker` slot every consumer downstream sees. */
+const rowSlots = new WeakMap<ItemPickerListSlot, Map<number, ItemPickerSlot>>();
+
+/** One row of `slot`, as the ordinary `item_picker` slot every consumer downstream sees. The
+ *  same object for the same container and row, so a row keeps its identity across builds and
+ *  edits and a prop compared by identity stays unchanged. */
 export function rowSlot(
   slot: ItemPickerListSlot,
   index: number,
 ): ItemPickerSlot {
+  let rows = rowSlots.get(slot);
+  if (!rows) rowSlots.set(slot, (rows = new Map()));
+  let row = rows.get(index);
+  if (!row) rows.set(index, (row = newRowSlot(slot, index)));
+  return row;
+}
+
+function newRowSlot(slot: ItemPickerListSlot, index: number): ItemPickerSlot {
   return {
     id: rowSlotId(slot.id, index),
     label: `${slot.label} ${index}`,
