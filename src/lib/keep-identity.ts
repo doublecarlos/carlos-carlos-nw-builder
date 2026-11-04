@@ -20,6 +20,16 @@ export function keepMap<K, V>(
   return previous;
 }
 
+/** `previous` when it holds the same members, otherwise `next`. */
+export function keepSet<T>(
+  previous: ReadonlySet<T> | undefined,
+  next: ReadonlySet<T>,
+): ReadonlySet<T> {
+  if (!previous || previous.size !== next.size) return next;
+  for (const value of next) if (!previous.has(value)) return next;
+  return previous;
+}
+
 /** `previous` when it is deeply equal to `next`, otherwise `next`. For small plain values that
  *  are rebuilt as new objects on every pass. */
 export function keepEqual<T>(previous: T | undefined, next: T): T {

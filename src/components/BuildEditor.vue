@@ -50,7 +50,7 @@ import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotsWithCompare } from "../lib/slot-availability";
-import { keepArray, keepEqual, keepMap } from "../lib/keep-identity";
+import { keepArray, keepEqual, keepMap, keepSet } from "../lib/keep-identity";
 import {
   nestedParentId,
   parentOf,
@@ -306,7 +306,7 @@ function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
       section.label,
       slotDef.label,
       itemIn(slotDef.id)?.name ?? "",
-      statSummary(slotDef.id),
+      rowDataFor(slotDef.id).statSummary,
     ],
     filterText.value,
   );
@@ -538,9 +538,12 @@ const allSlotsBySection = computed(() =>
 );
 
 /** Every section with every row, so typing in the filter flips `hidden` instead of
- *  unmounting and remounting rows. A section with no shown row is hidden the same way. */
-const sections = computed<SectionRow[]>(() =>
+ *  unmounting and remounting rows. A section with no shown row is hidden the same way. Its
+ *  row sets and presets keep their previous identity while unchanged, so a keystroke
+ *  re-renders only the sections whose rows it changed. */
+const sections = computed<SectionRow[]>((previous) =>
   allSlotsBySection.value.map(({ section, slots: allSlots }) => {
+    const before = previous?.find((row) => row.id === section.id);
     // Counted off the section's full slotDef list, not the (possibly onlyDiff/filter-
     // narrowed) one below -- the badge's job is telling a *collapsed* section apart, where
     // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
@@ -552,18 +555,24 @@ const sections = computed<SectionRow[]>(() =>
     // A matching nested slot keeps its parent on screen, as context.
     const matchedIds = new Set(matched.map((slotDef) => slotDef.id));
     const wanted = new Set(matched.map((slotDef) => parentOf(slotDef)));
-    const context = new Set(
-      allSlots
-        .filter(
-          (slotDef) => wanted.has(slotDef.id) && !matchedIds.has(slotDef.id),
-        )
-        .map((slotDef) => slotDef.id),
+    const context = keepSet(
+      before?.context,
+      new Set(
+        allSlots
+          .filter(
+            (slotDef) => wanted.has(slotDef.id) && !matchedIds.has(slotDef.id),
+          )
+          .map((slotDef) => slotDef.id),
+      ),
     );
-    const shown = anyFilterActive.value
-      ? allSlots.filter(
-          (slotDef) => matchedIds.has(slotDef.id) || context.has(slotDef.id),
-        )
-      : allSlots;
+    const shown = keepArray(
+      before?.shown,
+      anyFilterActive.value
+        ? allSlots.filter(
+            (slotDef) => matchedIds.has(slotDef.id) || context.has(slotDef.id),
+          )
+        : allSlots,
+    );
     // The fill-count badge only means anything for item_picker slots -- a build_parameter
     // always has *some* value, "filled" isn't a meaningful state for it. A section made
     // entirely of build_parameter slots ends up with total 0, so the badge just doesn't render.
@@ -599,7 +608,10 @@ const sections = computed<SectionRow[]>(() =>
       ...section,
       slots: allSlots,
       shown,
-      shownIds: new Set(shown.map((slotDef) => slotDef.id)),
+      shownIds: keepSet(
+        before?.shownIds,
+        new Set(shown.map((slotDef) => slotDef.id)),
+      ),
       filled,
       errors,
       warnings,
@@ -611,8 +623,9 @@ const sections = computed<SectionRow[]>(() =>
             ...pointSlots.map((slotDef) => db.value.forSlot(slotDef.id).length),
           )
         : 0,
-      presets: db.value.presets.filter(
-        (preset) => preset.section === section.id,
+      presets: keepArray(
+        before?.presets,
+        db.value.presets.filter((preset) => preset.section === section.id),
       ),
     };
   }),
@@ -945,6 +958,19 @@ function openNewItemFor(slotId: string) {
 
 /** One set of BuildSlot listeners per row, kept across renders: a fresh closure is a changed
  *  prop, which would re-render every row whenever the editor renders. */
+/** The same for each BuildSection. The label is read at call time: a layer can rename the
+ *  section after its handlers were cached. */
+const sectionHandlers = useKeyedCache((sectionId: string) => {
+  const label = () =>
+    sections.value.find((section) => section.id === sectionId)?.label ?? "";
+  return {
+    toggle: () => toggle(sectionId),
+    copy: (fromId: string) => buildEditor.copySection(fromId, [sectionId]),
+    createPreset: () => onCreatePreset(sectionId, label()),
+    clear: () => buildEditor.clearSection(sectionId, label()),
+  };
+});
+
 const rowHandlers = useKeyedCache((slotId: string) => ({
   enter: (event: MouseEvent, itemId?: string) =>
     onRowEnter(event, { slotId, itemId }),
@@ -1476,12 +1502,12 @@ watch(
           :highlight-diff="highlightDiff"
           :other-builds="otherBuilds"
           :presets="section.presets"
-          @toggle="toggle(section.id)"
-          @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
+          @toggle="sectionHandlers(section.id).toggle"
+          @copy="sectionHandlers(section.id).copy"
           @apply-preset="(preset) => buildEditor.applyPreset(preset)"
-          @create-preset="onCreatePreset(section.id, section.label)"
+          @create-preset="sectionHandlers(section.id).createPreset"
           @update-preset="onUpdatePreset"
-          @clear="buildEditor.clearSection(section.id, section.label)"
+          @clear="sectionHandlers(section.id).clear"
         >
           <template
             #default="{ slotDef, shown }: { slotDef: Slot; shown: boolean }"
