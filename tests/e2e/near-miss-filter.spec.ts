@@ -143,7 +143,9 @@ async function openBonusesWithRing(page: Page) {
   await openBonuses(page);
 }
 
-const slotRows = (page: Page) => page.locator('[data-cursor-key^="slot:"]');
+/** Rows the filter leaves on screen. The ones it drops stay mounted, hidden. */
+const slotRows = (page: Page) =>
+  page.locator('[data-cursor-key^="slot:"]:visible');
 
 test("a bonus nothing on the build carries is not listed", async ({ page }) => {
   await openBuilder(page);

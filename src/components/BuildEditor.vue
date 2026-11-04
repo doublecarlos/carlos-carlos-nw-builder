@@ -313,9 +313,11 @@ function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
 /** While filtering, a section with any surviving slot is forced open so its matches are
  *  actually visible -- otherwise a match inside a collapsed section would never show. The
  *  manually-toggled `expanded` state underneath is left untouched, so clearing the filter
- *  restores whatever the user had before. */
+ *  restores whatever the user had before. A section the filter hides keeps its own state, so
+ *  a collapsed one does not mount its body for nothing. */
 function sectionExpanded(sectionId: string) {
-  return anyFilterActive.value ? true : expanded[sectionId];
+  if (!anyFilterActive.value) return expanded[sectionId];
+  return shownSectionIds.value.has(sectionId) || expanded[sectionId];
 }
 
 /** slotId -> the engine's resolved row, so the item object is never looked up twice. */
@@ -470,7 +472,11 @@ const { rowDiff, rowHasDiff } = useCompareDiff({
 });
 
 interface SectionRow extends SlotSection {
+  /** Every row the section renders. Rows the filter drops stay mounted, hidden. */
   slots: Slot[];
+  /** The rows the filter leaves on screen, in order: matches plus their context parents. */
+  shown: Slot[];
+  shownIds: ReadonlySet<string>;
   filled: number;
   errors: number;
   warnings: number;
@@ -529,89 +535,101 @@ const allSlotsBySection = computed(() =>
   })),
 );
 
-const sections = computed<SectionRow[]>(() => {
-  return allSlotsBySection.value
-    .map(({ section, slots: allSlots }) => {
-      // Counted off the section's full slotDef list, not the (possibly onlyDiff/filter-
-      // narrowed) one below -- the badge's job is telling a *collapsed* section apart, where
-      // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
-      const diffs = compareBuild.value ? allSlots.filter(rowDiffers).length : 0;
-      const matched = allSlots.filter(
-        (slotDef) =>
-          !anyFilterActive.value || slotMatchesFilters(section, slotDef),
-      );
-      // A matching nested slot keeps its parent on screen, as context.
-      const matchedIds = new Set(matched.map((slotDef) => slotDef.id));
-      const wanted = new Set(matched.map((slotDef) => parentOf(slotDef)));
-      const context = new Set(
-        allSlots
-          .filter(
-            (slotDef) => wanted.has(slotDef.id) && !matchedIds.has(slotDef.id),
+/** Every section with every row, so typing in the filter flips `hidden` instead of
+ *  unmounting and remounting rows. A section with no shown row is hidden the same way. */
+const sections = computed<SectionRow[]>(() =>
+  allSlotsBySection.value.map(({ section, slots: allSlots }) => {
+    // Counted off the section's full slotDef list, not the (possibly onlyDiff/filter-
+    // narrowed) one below -- the badge's job is telling a *collapsed* section apart, where
+    // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
+    const diffs = compareBuild.value ? allSlots.filter(rowDiffers).length : 0;
+    const matched = allSlots.filter(
+      (slotDef) =>
+        !anyFilterActive.value || slotMatchesFilters(section, slotDef),
+    );
+    // A matching nested slot keeps its parent on screen, as context.
+    const matchedIds = new Set(matched.map((slotDef) => slotDef.id));
+    const wanted = new Set(matched.map((slotDef) => parentOf(slotDef)));
+    const context = new Set(
+      allSlots
+        .filter(
+          (slotDef) => wanted.has(slotDef.id) && !matchedIds.has(slotDef.id),
+        )
+        .map((slotDef) => slotDef.id),
+    );
+    const shown = anyFilterActive.value
+      ? allSlots.filter(
+          (slotDef) => matchedIds.has(slotDef.id) || context.has(slotDef.id),
+        )
+      : allSlots;
+    // The fill-count badge only means anything for item_picker slots -- a build_parameter
+    // always has *some* value, "filled" isn't a meaningful state for it. A section made
+    // entirely of build_parameter slots ends up with total 0, so the badge just doesn't render.
+    // A compare-only row is not this build's to fill.
+    const pickerSlots = matched.filter(
+      (slotDef) =>
+        slotDef.type === "item_picker" && !compareOnly.value.has(slotDef.id),
+    );
+    let filled = 0;
+    let errors = 0;
+    let warnings = 0;
+    for (const slotDef of pickerSlots) {
+      if (rowBySlot.value.get(slotDef.id)?.item) filled += 1;
+      for (const error of errorsBySlot.value.get(slotDef.id) ?? []) {
+        if (error.severity === "warning") warnings += 1;
+        else errors += 1;
+      }
+    }
+    // point_assignment slots can also produce errors (class/maxCopies/outOfRange, per-item
+    // rather than per-slot), but they never count toward `filled` -- like build_parameter, a
+    // point_assignment slot always has *some* value, so "filled" isn't meaningful for it.
+    for (const slotDef of matched) {
+      if (slotDef.type !== "point_assignment") continue;
+      for (const error of errorsBySlot.value.get(slotDef.id) ?? []) {
+        if (error.severity === "warning") warnings += 1;
+        else errors += 1;
+      }
+    }
+    const pointSlots = allSlots.filter(
+      (slotDef) => slotDef.type === "point_assignment",
+    );
+    return {
+      ...section,
+      slots: allSlots,
+      shown,
+      shownIds: new Set(shown.map((slotDef) => slotDef.id)),
+      filled,
+      errors,
+      warnings,
+      diffs,
+      total: pickerSlots.length,
+      context,
+      assignmentColumns: pointSlots.length
+        ? Math.max(
+            ...pointSlots.map((slotDef) => db.value.forSlot(slotDef.id).length),
           )
-          .map((slotDef) => slotDef.id),
-      );
-      const slots = allSlots.filter(
-        (slotDef) => matchedIds.has(slotDef.id) || context.has(slotDef.id),
-      );
-      // The fill-count badge only means anything for item_picker slots -- a build_parameter
-      // always has *some* value, "filled" isn't a meaningful state for it. A section made
-      // entirely of build_parameter slots ends up with total 0, so the badge just doesn't render.
-      // A compare-only row is not this build's to fill.
-      const pickerSlots = matched.filter(
-        (slotDef) =>
-          slotDef.type === "item_picker" && !compareOnly.value.has(slotDef.id),
-      );
-      let filled = 0;
-      let errors = 0;
-      let warnings = 0;
-      for (const slotDef of pickerSlots) {
-        if (rowBySlot.value.get(slotDef.id)?.item) filled += 1;
-        for (const error of errorsBySlot.value.get(slotDef.id) ?? []) {
-          if (error.severity === "warning") warnings += 1;
-          else errors += 1;
-        }
-      }
-      // point_assignment slots can also produce errors (class/maxCopies/outOfRange, per-item
-      // rather than per-slot), but they never count toward `filled` -- like build_parameter, a
-      // point_assignment slot always has *some* value, so "filled" isn't meaningful for it.
-      for (const slotDef of matched) {
-        if (slotDef.type !== "point_assignment") continue;
-        for (const error of errorsBySlot.value.get(slotDef.id) ?? []) {
-          if (error.severity === "warning") warnings += 1;
-          else errors += 1;
-        }
-      }
-      const pointSlots = allSlots.filter(
-        (slotDef) => slotDef.type === "point_assignment",
-      );
-      return {
-        ...section,
-        slots,
-        filled,
-        errors,
-        warnings,
-        diffs,
-        total: pickerSlots.length,
-        context,
-        assignmentColumns: pointSlots.length
-          ? Math.max(
-              ...pointSlots.map(
-                (slotDef) => db.value.forSlot(slotDef.id).length,
-              ),
-            )
-          : 0,
-        presets: db.value.presets.filter(
-          (preset) => preset.section === section.id,
-        ),
-      };
-    })
-    .filter((section) => section.slots.length > 0 || !anyFilterActive.value);
-});
+        : 0,
+      presets: db.value.presets.filter(
+        (preset) => preset.section === section.id,
+      ),
+    };
+  }),
+);
+
+/** Sections with any row on screen: all of them unless a filter is active. */
+const shownSections = computed(() =>
+  sections.value.filter(
+    (section) => section.shown.length > 0 || !anyFilterActive.value,
+  ),
+);
+const shownSectionIds = computed(
+  () => new Set(shownSections.value.map((section) => section.id)),
+);
 
 // Opening or closing a section slides the ones below instead of jumping them.
 useFoldSlide(root, () => ({
-  folds: sections.value.map((section) => section.id),
-  open: sections.value
+  folds: shownSections.value.map((section) => section.id),
+  open: shownSections.value
     .filter((section) => sectionExpanded(section.id))
     .map((section) => section.id),
 }));
@@ -619,46 +637,45 @@ useFoldSlide(root, () => ({
 /** Total rendered slots across every visible section, for the "N matches" indicator next to
  *  the filter controls. */
 const filteredSlotCount = computed(() =>
-  sections.value.reduce(
-    (sum, section) => sum + section.slots.length - section.context.size,
+  shownSections.value.reduce(
+    (sum, section) => sum + section.shown.length - section.context.size,
     0,
   ),
 );
 
-/** Ids of rows immediately followed by a separator in their section's rendered slot list --
- *  BuildSlot.vue suppresses its own bottom border for these, so a row's border and the
- *  separator's own bar never double up right next to each other. Derived from the same
- *  (possibly onlyDiff-filtered) list actually rendered, so a filtered-out separator correctly
- *  stops suppressing its neighbour's border. */
+/** Ids of rows whose bottom border BuildSlot.vue suppresses: those followed by a separator in
+ *  the shown list, so a border and the separator's bar never double up, and each section's
+ *  last shown row, which `last:` misses while hidden rows still follow it. A separator the
+ *  filter hides stops suppressing its neighbour's border. */
 const noBorderIds = computed(() => {
   const ids = new Set<string>();
-  for (const section of sections.value) {
-    for (let i = 0; i < section.slots.length - 1; i += 1) {
-      if (section.slots[i + 1].type === "separator")
-        ids.add(section.slots[i].id);
+  for (const { shown } of shownSections.value) {
+    for (let i = 0; i < shown.length - 1; i += 1) {
+      if (shown[i + 1].type === "separator") ids.add(shown[i].id);
     }
+    const last = shown.at(-1);
+    if (last) ids.add(last.id);
   }
   return ids;
 });
 
 /** Parents rendered only as context for a matching nested slot, across every section. */
 const contextIds = computed(
-  () => new Set(sections.value.flatMap((section) => [...section.context])),
+  () => new Set(shownSections.value.flatMap((section) => [...section.context])),
 );
 
-/** Rendered rows nested under a parent that renders in the same section, by id, with where
- *  each sits among its siblings. */
+/** Shown rows nested under a parent shown in the same section, by id, with where each sits
+ *  among its siblings. */
 const nestById = computed(() => {
   const nest = new Map<string, NestPosition>();
-  for (const section of sections.value) {
-    const rendered = new Set(section.slots.map((slotDef) => slotDef.id));
-    const parents = section.slots.map((slotDef) => {
+  for (const { shown, shownIds } of shownSections.value) {
+    const parents = shown.map((slotDef) => {
       const parentId = nestedParentId(slotDef, db.value.slotById);
-      return parentId && rendered.has(parentId) ? parentId : undefined;
+      return parentId && shownIds.has(parentId) ? parentId : undefined;
     });
     parents.forEach((parentId, i) => {
       if (!parentId) return;
-      nest.set(section.slots[i].id, {
+      nest.set(shown[i].id, {
         first: parents[i - 1] !== parentId,
         last: parents[i + 1] !== parentId,
       });
@@ -735,8 +752,9 @@ function stablePlaceholder(slotId: string): string | undefined {
 }
 
 /** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
- *  (`slotCandidateList` and `statSummary` aren't cheap). Covers collapsed sections too: their
- *  bodies stay mounted once expanded (BuildSection.vue), so hidden rows stay current. */
+ *  (`slotCandidateList` and `statSummary` aren't cheap). Covers every row, whatever the filter:
+ *  collapsed bodies and filtered rows stay mounted, hidden, so they stay current, and typing in
+ *  the filter never recomputes this. */
 interface SlotRowData {
   item: Item | null;
   items: Item[];
@@ -767,8 +785,8 @@ const rowDataBySlot = computed(() => {
   // One context for the whole pass: the copy tally and published class are the same for every
   // row.
   const candidateContext = slotCandidateContext(db.value, build.value);
-  for (const section of sections.value) {
-    for (const slotDef of section.slots) {
+  for (const { slots } of allSlotsBySection.value) {
+    for (const slotDef of slots) {
       if (
         slotDef.type === "separator" ||
         slotDef.type === "text" ||
@@ -1023,9 +1041,10 @@ function moveCursorByRow(dir: 1 | -1) {
  * previous one" does not.
  */
 function moveCursorBySection(dir: 1 | -1) {
+  // A section the filter hides stays mounted, so it is skipped like a hidden row.
   const sectionEls = Array.from(
     root.value?.querySelectorAll("[data-section-id]") ?? [],
-  );
+  ).filter((el) => el.checkVisibility());
   if (!sectionEls.length) return;
   const current = activeElement.value?.closest("[data-section-id]");
   const idx = current ? sectionEls.indexOf(current) : -1;
@@ -1143,7 +1162,8 @@ watch(buildEditor.historyStep, async (step) => {
         `[data-cursor-key="slot:${CSS.escape(slotId)}"]`,
       ),
     )
-    .filter((row): row is HTMLElement => !!row)
+    // A row the filter hides stays mounted but has nothing to show.
+    .filter((row): row is HTMLElement => !!row?.checkVisibility())
     .sort((a, b) =>
       a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
     );
@@ -1172,14 +1192,15 @@ async function runJump(target: goTo.JumpTarget) {
     target.sectionId ?? db.value.slotFor(target.slotId)?.section;
   if (!sectionId) return;
   if (target.slotId) {
-    // A row a filter hides is not in the DOM to land on, and "take me to this row" outranks
+    // A row a filter hides has nowhere to land, and "take me to this row" outranks
     // a filter left behind.
     if (anyFilterActive.value) clearAllFilters();
     expanded[sectionId] = true;
     await nextTick();
   }
   const section = sectionEl(sectionId);
-  if (!section) return;
+  // A section the filter hides stays mounted, with nowhere to land.
+  if (!section?.checkVisibility()) return;
   const header = section.querySelector<HTMLElement>(
     "[data-cursor-key^='header:']",
   );
@@ -1415,8 +1436,10 @@ watch(
           v-for="section in sections"
           :id="section.id"
           :key="section.id"
+          :hidden="!shownSectionIds.has(section.id)"
           :label="section.label"
           :slots="section.slots"
+          :shown-ids="section.shownIds"
           :filled="section.filled"
           :total="section.total"
           :errors="section.errors"
@@ -1435,25 +1458,31 @@ watch(
           @update-preset="onUpdatePreset"
           @clear="buildEditor.clearSection(section.id, section.label)"
         >
-          <template #default="{ slotDef }: { slotDef: Slot }">
+          <template
+            #default="{ slotDef, shown }: { slotDef: Slot; shown: boolean }"
+          >
             <SeparatorRow
               v-if="slotDef.type === 'separator'"
+              :hidden="!shown"
               :slot-def="slotDef"
               class="col-span-full"
             />
             <TextRow
               v-else-if="slotDef.type === 'text'"
+              :hidden="!shown"
               :slot-def="slotDef"
               class="col-span-full"
             />
             <ItemPickerListRow
               v-else-if="slotDef.type === 'item_picker_list'"
+              :hidden="!shown"
               :slot-def="slotDef"
               class="col-span-full"
               :on-arrow="moveCursor"
             />
             <CompareOnlyRow
               v-else-if="compareOnly.has(slotDef.id)"
+              :hidden="!shown"
               :slot-def="slotDef"
               :compare-name="compareBuild?.name ?? ''"
               :other-choice-label="
@@ -1468,6 +1497,7 @@ watch(
             />
             <BuildSlot
               v-else
+              :hidden="!shown"
               :slot-def="slotDef"
               :build="build"
               :db="db"
