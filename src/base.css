@@ -301,6 +301,8 @@
     height: auto;
     animation-duration: 180ms;
   }
+  /* The outgoing snapshot stays opaque and the incoming one fades in over it, so the live
+   * content under a rail never shows through mid-morph. */
   ::view-transition-old(rail-nav),
   ::view-transition-old(rail-details),
   ::view-transition-old(rail-entries) {
