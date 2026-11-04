@@ -277,31 +277,39 @@
     animation-timing-function: var(--ease-snappy);
   }
 
-  /* The rail morph (stores/rails.ts). Each column's group resizes while its snapshots keep
-   * their real size, pinned to the edge away from the gutter and clipped, so content is
-   * revealed or covered rather than stretched. */
+  /* The rail morph (stores/rails.ts). Only the rail columns are captured: the root is left
+   * out and the content beside a rail draws live at its new width. Each rail's group resizes
+   * while its snapshots keep their real size, pinned to the edge away from the gutter and
+   * clipped, so the rail is revealed or covered rather than stretched. */
+  :root[data-rail-morph] {
+    view-transition-name: none;
+  }
   ::view-transition-group(rail-nav),
-  ::view-transition-group(rail-main),
   ::view-transition-group(rail-details),
-  ::view-transition-group(rail-entries),
-  ::view-transition-group(rail-form) {
+  ::view-transition-group(rail-entries) {
     overflow: clip;
     animation-duration: 180ms;
     animation-timing-function: var(--ease-snappy);
   }
   ::view-transition-old(rail-nav),
   ::view-transition-new(rail-nav),
-  ::view-transition-old(rail-main),
-  ::view-transition-new(rail-main),
   ::view-transition-old(rail-details),
   ::view-transition-new(rail-details),
   ::view-transition-old(rail-entries),
-  ::view-transition-new(rail-entries),
-  ::view-transition-old(rail-form),
-  ::view-transition-new(rail-form) {
+  ::view-transition-new(rail-entries) {
     width: auto;
     height: auto;
     animation-duration: 180ms;
+  }
+  ::view-transition-old(rail-nav),
+  ::view-transition-old(rail-details),
+  ::view-transition-old(rail-entries) {
+    animation-name: none;
+  }
+  ::view-transition-new(rail-nav),
+  ::view-transition-new(rail-details),
+  ::view-transition-new(rail-entries) {
+    animation-name: fade-in;
   }
   ::view-transition-old(rail-details),
   ::view-transition-new(rail-details) {

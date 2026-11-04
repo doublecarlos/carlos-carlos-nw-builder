@@ -1,7 +1,7 @@
 // The motion budget, checked with motion turned back on (the suite runs with reduced motion):
 // overlays enter with a short animation, repeated actions do not replay it, and nothing an
 // entrance does gets in the way of input. Folding a section slides the ones below it, and a
-// rail collapses through a view transition.
+// rail collapses through a view transition that captures only the rails.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -96,6 +96,16 @@ test.describe("with motion", () => {
   });
 });
 
+/** The view transition groups animating right now, by name. */
+function morphingGroups(page: Page) {
+  return page.evaluate(() =>
+    document
+      .getAnimations()
+      .map((a) => (a.effect as KeyframeEffect | null)?.pseudoElement ?? "")
+      .flatMap((p) => /^::view-transition-group\((.+)\)$/.exec(p)?.[1] ?? []),
+  );
+}
+
 /** The section ids sliding right now. */
 function slidingSections(page: Page) {
   return page.evaluate(() =>
@@ -177,6 +187,62 @@ test.describe("with motion, folding a section", () => {
       )
       .toBe(true);
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  // Only the rails are snapshotted: capturing the root, or the column beside a rail, costs
+  // long frames on a heavy build.
+  test("a rail morph captures the rails and nothing else", async ({ page }) => {
+    await openBuilder(page);
+    await page
+      .getByTestId("nav-column")
+      .getByTestId("rail-toggle-left")
+      .click();
+    await expect
+      .poll(() => morphingGroups(page), { intervals: [16] })
+      .toContain("rail-nav");
+    const rails = ["rail-nav", "rail-details", "rail-entries"];
+    const others = (await morphingGroups(page)).filter(
+      (name) => !rails.includes(name),
+    );
+    expect(others).toEqual([]);
+  });
+
+  // The marker that keeps the root out of a rail morph has to go once the morph is over,
+  // even when a second toggle cuts the first one short, or the theme cross-fade would lose
+  // the page.
+  test("the root is unmarked once a rail morph settles, even one cut short", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const toggle = page
+      .getByTestId("nav-column")
+      .getByTestId("rail-toggle-left");
+    await toggle.evaluate((button: HTMLElement) => {
+      button.click();
+      requestAnimationFrame(() => button.click());
+    });
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(page.locator("html")).not.toHaveAttribute(
+      "data-rail-morph",
+      /.*/,
+    );
+
+    const theme = page.getByRole("button", { name: /^Theme:/ });
+    await theme.click();
+    await theme.click();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          document
+            .getAnimations()
+            .some(
+              (a) =>
+                (a.effect as KeyframeEffect | null)?.pseudoElement ===
+                "::view-transition-new(root)",
+            ),
+        ),
+      )
+      .toBe(true);
   });
 });
 
