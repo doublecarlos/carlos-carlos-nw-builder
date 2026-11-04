@@ -50,6 +50,7 @@ import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotsWithCompare } from "../lib/slot-availability";
+import { keepArray, keepEqual, keepMap } from "../lib/keep-identity";
 import {
   nestedParentId,
   parentOf,
@@ -57,6 +58,7 @@ import {
 } from "../lib/slot-parent";
 import { useHoverCard, type HoverPosition } from "../composables/useHoverCard";
 import { useFoldSlide } from "../composables/useFoldSlide";
+import { useKeyedCache } from "../composables/useKeyedCache";
 import * as viewport from "../stores/viewport";
 import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
@@ -665,8 +667,8 @@ const contextIds = computed(
 );
 
 /** Shown rows nested under a parent shown in the same section, by id, with where each sits
- *  among its siblings. */
-const nestById = computed(() => {
+ *  among its siblings. A position that did not move keeps its previous object. */
+const nestById = computed<Map<string, NestPosition>>((previous) => {
   const nest = new Map<string, NestPosition>();
   for (const { shown, shownIds } of shownSections.value) {
     const parents = shown.map((slotDef) => {
@@ -675,10 +677,14 @@ const nestById = computed(() => {
     });
     parents.forEach((parentId, i) => {
       if (!parentId) return;
-      nest.set(shown[i].id, {
-        first: parents[i - 1] !== parentId,
-        last: parents[i + 1] !== parentId,
-      });
+      const id = shown[i].id;
+      nest.set(
+        id,
+        keepEqual(previous?.get(id), {
+          first: parents[i - 1] !== parentId,
+          last: parents[i + 1] !== parentId,
+        }),
+      );
     });
   }
   return nest;
@@ -702,8 +708,10 @@ const bonusesBySlot = computed(() => {
 // An unset class/race constrains nothing: with both fields defaulting to empty, a fresh build
 // would otherwise hide every restricted item with no explanation. Equipping one still flags
 // the `requires X` error once a class/race is (not) chosen.
+const NO_ERRORS: EngineError[] = [];
+
 function errorsFor(slotId: string) {
-  return errorsBySlot.value.get(slotId) ?? [];
+  return errorsBySlot.value.get(slotId) ?? NO_ERRORS;
 }
 
 const derivedBonuses = computed(() => {
@@ -754,7 +762,8 @@ function stablePlaceholder(slotId: string): string | undefined {
 /** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
  *  (`slotCandidateList` and `statSummary` aren't cheap). Covers every row, whatever the filter:
  *  collapsed bodies and filtered rows stay mounted, hidden, so they stay current, and typing in
- *  the filter never recomputes this. */
+ *  the filter never recomputes this. A field whose contents did not change keeps its previous
+ *  identity, so an edit re-renders only the rows it actually changed. */
 interface SlotRowData {
   item: Item | null;
   items: Item[];
@@ -780,7 +789,7 @@ const EMPTY_ROW_DATA: SlotRowData = {
   diff: undefined,
 };
 
-const rowDataBySlot = computed(() => {
+const rowDataBySlot = computed<Map<string, SlotRowData>>((previous) => {
   const map = new Map<string, SlotRowData>();
   // One context for the whole pass: the copy tally and published class are the same for every
   // row.
@@ -793,8 +802,10 @@ const rowDataBySlot = computed(() => {
         slotDef.type === "item_picker_list"
       )
         continue;
+      const before = previous?.get(slotDef.id);
+      const diff = keepEqual(before?.diff, rowDiff(slotDef.id));
       if (compareOnly.value.has(slotDef.id)) {
-        map.set(slotDef.id, { ...EMPTY_ROW_DATA, diff: rowDiff(slotDef.id) });
+        map.set(slotDef.id, { ...EMPTY_ROW_DATA, diff });
         continue;
       }
       const candidates = slotCandidateList(
@@ -805,14 +816,17 @@ const rowDataBySlot = computed(() => {
       );
       map.set(slotDef.id, {
         item: itemIn(slotDef.id),
-        items: candidates.items,
-        hiddenReasons: candidates.reasons,
-        errors: errorsFor(slotDef.id),
+        items: keepArray(before?.items, candidates.items),
+        hiddenReasons: keepMap(
+          before?.hiddenReasons ?? undefined,
+          candidates.reasons,
+        ),
+        errors: keepEqual(before?.errors, errorsFor(slotDef.id)),
         statSummary: statSummary(slotDef.id),
         canCreateItem: newItemSeedFor(slotDef.id) !== null,
         placeholder: stablePlaceholder(slotDef.id),
         labelOverride: stableLabel(slotDef.id),
-        diff: rowDiff(slotDef.id),
+        diff,
       });
     }
   }
@@ -928,6 +942,17 @@ function openNewItemFor(slotId: string) {
   const seed = newItemSeedFor(slotId);
   if (seed) void layerEditorUi.openNewItem(seed);
 }
+
+/** One set of BuildSlot listeners per row, kept across renders: a fresh closure is a changed
+ *  prop, which would re-render every row whenever the editor renders. */
+const rowHandlers = useKeyedCache((slotId: string) => ({
+  enter: (event: MouseEvent, itemId?: string) =>
+    onRowEnter(event, { slotId, itemId }),
+  info: (button: HTMLElement) => onRowInfo(button, slotId),
+  newItem: () => openNewItemFor(slotId),
+  rowclick: (event: MouseEvent, itemId?: string) =>
+    onRowClick(event, slotId, itemId),
+}));
 
 function openInLayerEditor(itemId: string) {
   const layer = layers.ensureTargetLayer();
@@ -1518,16 +1543,11 @@ watch(
               :placeholder="rowDataFor(slotDef.id).placeholder"
               :label-override="rowDataFor(slotDef.id).labelOverride"
               :diff="rowDataFor(slotDef.id).diff"
-              @enter="
-                (event, itemId) =>
-                  onRowEnter(event, { slotId: slotDef.id, itemId })
-              "
+              @enter="rowHandlers(slotDef.id).enter"
               @leave="onRowLeave"
-              @info="(button) => onRowInfo(button, slotDef.id)"
-              @new-item="openNewItemFor(slotDef.id)"
-              @rowclick="
-                (event, itemId) => onRowClick(event, slotDef.id, itemId)
-              "
+              @info="rowHandlers(slotDef.id).info"
+              @new-item="rowHandlers(slotDef.id).newItem"
+              @rowclick="rowHandlers(slotDef.id).rowclick"
             />
           </template>
         </BuildSection>
