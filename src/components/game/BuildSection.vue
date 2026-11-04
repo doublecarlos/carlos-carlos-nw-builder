@@ -19,6 +19,8 @@ const props = defineProps<{
   id: string;
   label: string;
   slots: Slot[];
+  /** Ids of the rows the filter leaves on screen. The rest stay mounted, hidden. */
+  shownIds: ReadonlySet<string>;
   filled: number;
   total: number;
   errors: number;
@@ -45,7 +47,10 @@ defineEmits<{
 }>();
 
 defineSlots<{
-  default(props: { slotDef: Slot }): unknown;
+  /** `shown` goes on the row's own root as `hidden`: a wrapper would sit between the body
+   *  grid and the row's subgrid, and `v-show` on a component re-renders it on every parent
+   *  render. */
+  default(props: { slotDef: Slot; shown: boolean }): unknown;
 }>();
 
 /** The header button is its own cursor target: while it has focus it IS the highlighted row,
@@ -145,7 +150,7 @@ const bodyStyle = computed(() => ({
       data-testid="section-body"
     >
       <template v-for="slot in slots" :key="slot.id">
-        <slot :slot-def="slot" />
+        <slot :slot-def="slot" :shown="shownIds.has(slot.id)" />
       </template>
     </div>
   </section>
