@@ -1,11 +1,17 @@
 // The controller owns the one piece of tooltip state that is genuinely shared: which tooltip
 // is showing. Its whole job is that only one ever is.
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { effectScope } from "vue";
 import {
   useTooltipController,
   _resetTooltips,
   revealsOnFocus,
+  pointerEntered,
+  triggerFocused,
+  triggerLeft,
+  triggerClicked,
+  pressedOutside,
+  scrolled,
 } from "../../src/composables/useTooltipController";
 
 /** Each tooltip instance lives in its own component scope; `onScopeDispose` is what unmounting
@@ -17,6 +23,35 @@ function inScope<T>(fn: () => T): { value: T; dispose: () => void } {
 }
 
 beforeEach(() => _resetTooltips());
+
+/** Stands in for a trigger element: the controller only marks it and asks what it contains,
+ *  so the rules run without a DOM. */
+function fakeTrigger(): Element & { attrs: Set<string> } {
+  const attrs = new Set<string>();
+  const el = {
+    attrs,
+    setAttribute: (name: string) => attrs.add(name),
+    removeAttribute: (name: string) => attrs.delete(name),
+    contains: (other: unknown) => other === el,
+  };
+  return el as unknown as Element & { attrs: Set<string> };
+}
+
+/** A tooltip instance registered on its own fake trigger, revealing the way BaseTooltip
+ *  does: straight into `show`. */
+function attached(options: { delayMs?: number; tappable?: boolean } = {}) {
+  const trigger = fakeTrigger();
+  const { value: tip, dispose } = inScope(() => {
+    const controller = useTooltipController();
+    controller.attach(trigger, {
+      delayMs: () => options.delayMs ?? 300,
+      tappable: () => options.tappable ?? false,
+      reveal: () => controller.show(),
+    });
+    return controller;
+  });
+  return { trigger, tip, dispose };
+}
 
 describe("useTooltipController", () => {
   it("starts closed", () => {
@@ -89,5 +124,156 @@ describe("revealsOnFocus", () => {
   it("stays shut for a click's focus or a script's focus after one", () => {
     expect(revealsOnFocus(false, null)).toBe(false);
     expect(revealsOnFocus(false, "mouse")).toBe(false);
+  });
+});
+
+// The delegated listeners resolve an event to its trigger and hand it to these rules; the
+// rules are what decide when a bubble opens and closes.
+describe("tooltip trigger rules", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("marks a registered trigger and unmarks it on unmount", () => {
+    const { trigger, dispose } = attached();
+    // The delegated listeners find triggers by this attribute.
+    expect(trigger.attrs.has("data-tooltip")).toBe(true);
+
+    dispose();
+
+    expect(trigger.attrs.has("data-tooltip")).toBe(false);
+  });
+
+  it("opens on hover only after the delay", () => {
+    const { trigger, tip } = attached({ delayMs: 300 });
+
+    pointerEntered(trigger);
+    vi.advanceTimersByTime(299);
+    expect(tip.open.value).toBe(false);
+
+    vi.advanceTimersByTime(1);
+    expect(tip.open.value).toBe(true);
+  });
+
+  it("drops a pending open when the pointer leaves first", () => {
+    const { trigger, tip } = attached();
+
+    pointerEntered(trigger);
+    triggerLeft(trigger);
+    vi.runAllTimers();
+
+    expect(tip.open.value).toBe(false);
+  });
+
+  it("runs one hover delay at a time, for the trigger entered last", () => {
+    const first = attached();
+    const second = attached();
+
+    pointerEntered(first.trigger);
+    pointerEntered(second.trigger);
+    vi.runAllTimers();
+
+    expect(first.tip.open.value).toBe(false);
+    expect(second.tip.open.value).toBe(true);
+  });
+
+  it("keeps a pending open when a different trigger is left", () => {
+    // Over and out arrive in either order when the pointer crosses between two triggers.
+    const first = attached();
+    const second = attached();
+
+    pointerEntered(second.trigger);
+    triggerLeft(first.trigger);
+    vi.runAllTimers();
+
+    expect(second.tip.open.value).toBe(true);
+  });
+
+  it("opens on keyboard focus at once and cancels a pending hover", () => {
+    const hovered = attached();
+    const focused = attached();
+
+    pointerEntered(hovered.trigger);
+    triggerFocused(focused.trigger);
+    expect(focused.tip.open.value).toBe(true);
+
+    vi.runAllTimers();
+    expect(hovered.tip.open.value).toBe(false);
+    expect(focused.tip.open.value).toBe(true);
+  });
+
+  it("closes on a click, so it can't cover what the click opened", () => {
+    const { trigger, tip } = attached();
+    triggerFocused(trigger);
+
+    triggerClicked(trigger, false);
+
+    expect(tip.open.value).toBe(false);
+  });
+
+  it("toggles a tappable tooltip on tap, but not on a mouse click", () => {
+    const { trigger, tip } = attached({ tappable: true });
+
+    triggerClicked(trigger, false);
+    expect(tip.open.value).toBe(false);
+
+    triggerClicked(trigger, true);
+    expect(tip.open.value).toBe(true);
+
+    triggerClicked(trigger, true);
+    expect(tip.open.value).toBe(false);
+  });
+
+  it("does not open a plain tooltip on tap", () => {
+    const { trigger, tip } = attached();
+
+    triggerClicked(trigger, true);
+
+    expect(tip.open.value).toBe(false);
+  });
+
+  it("closes a tapped-open tooltip on a press outside its trigger only", () => {
+    const { trigger, tip } = attached({ tappable: true });
+    triggerClicked(trigger, true);
+
+    pressedOutside(trigger as unknown as Node);
+    expect(tip.open.value).toBe(true);
+
+    pressedOutside(null);
+    expect(tip.open.value).toBe(false);
+  });
+
+  it("leaves a plain tooltip open on a press elsewhere", () => {
+    // A hovered bubble closes when the pointer leaves, not on a press.
+    const { trigger, tip } = attached();
+    triggerFocused(trigger);
+
+    pressedOutside(null);
+
+    expect(tip.open.value).toBe(true);
+  });
+
+  it("closes on scroll but keeps a pending hover open", () => {
+    const open = attached();
+    const pending = attached();
+    triggerFocused(open.trigger);
+    pointerEntered(pending.trigger);
+
+    scrolled();
+    expect(open.tip.open.value).toBe(false);
+
+    // The scroll may be what brought the trigger under the pointer.
+    vi.runAllTimers();
+    expect(pending.tip.open.value).toBe(true);
+  });
+
+  it("drops an unmounted trigger's pending open", () => {
+    const { trigger, tip, dispose } = attached();
+    const reveal = vi.spyOn(tip, "show");
+
+    pointerEntered(trigger);
+    dispose();
+    vi.runAllTimers();
+
+    expect(reveal).not.toHaveBeenCalled();
   });
 });
