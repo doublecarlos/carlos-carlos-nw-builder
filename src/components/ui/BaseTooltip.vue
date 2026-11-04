@@ -69,6 +69,7 @@ onMounted(() => {
   if (!el) return;
   trigger.value = el;
   attach(el, {
+    enabled: () => !!props.text,
     delayMs: () => props.delayMs,
     tappable: () => props.tappable,
     reveal,

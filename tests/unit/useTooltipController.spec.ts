@@ -12,6 +12,7 @@ import {
   triggerClicked,
   pressedOutside,
   scrolled,
+  enabledTrigger,
 } from "../../src/composables/useTooltipController";
 
 /** Each tooltip instance lives in its own component scope; `onScopeDispose` is what unmounting
@@ -24,26 +25,41 @@ function inScope<T>(fn: () => T): { value: T; dispose: () => void } {
 
 beforeEach(() => _resetTooltips());
 
-/** Stands in for a trigger element: the controller only marks it and asks what it contains,
- *  so the rules run without a DOM. */
-function fakeTrigger(): Element & { attrs: Set<string> } {
+type FakeTrigger = Element & { attrs: Set<string> };
+
+/** Stands in for a trigger element: the controller only marks it, asks what it contains and
+ *  walks up to marked ancestors, so the rules run without a DOM. */
+function fakeTrigger(parent: FakeTrigger | null = null): FakeTrigger {
   const attrs = new Set<string>();
   const el = {
     attrs,
+    parentElement: parent,
     setAttribute: (name: string) => attrs.add(name),
     removeAttribute: (name: string) => attrs.delete(name),
     contains: (other: unknown) => other === el,
+    closest: (): FakeTrigger | null =>
+      attrs.size
+        ? (el as unknown as FakeTrigger)
+        : (parent?.closest("") ?? null),
   };
-  return el as unknown as Element & { attrs: Set<string> };
+  return el as unknown as FakeTrigger;
 }
 
 /** A tooltip instance registered on its own fake trigger, revealing the way BaseTooltip
  *  does: straight into `show`. */
-function attached(options: { delayMs?: number; tappable?: boolean } = {}) {
-  const trigger = fakeTrigger();
+function attached(
+  options: {
+    delayMs?: number;
+    tappable?: boolean;
+    enabled?: boolean;
+    parent?: FakeTrigger;
+  } = {},
+) {
+  const trigger = fakeTrigger(options.parent);
   const { value: tip, dispose } = inScope(() => {
     const controller = useTooltipController();
     controller.attach(trigger, {
+      enabled: () => options.enabled ?? true,
       delayMs: () => options.delayMs ?? 300,
       tappable: () => options.tappable ?? false,
       reveal: () => controller.show(),
@@ -141,6 +157,22 @@ describe("tooltip trigger rules", () => {
     dispose();
 
     expect(trigger.attrs.has("data-tooltip")).toBe(false);
+  });
+
+  it("passes over a trigger with no text to the tooltip around it", () => {
+    // A BaseButton wraps itself in a tooltip for its `title`, so a caller's tooltip around
+    // a button without one must still answer for it.
+    const outer = attached();
+    const inner = attached({ enabled: false, parent: outer.trigger });
+
+    expect(enabledTrigger(inner.trigger)).toBe(outer.trigger);
+  });
+
+  it("lets the innermost trigger with text answer", () => {
+    const outer = attached();
+    const inner = attached({ parent: outer.trigger });
+
+    expect(enabledTrigger(inner.trigger)).toBe(inner.trigger);
   });
 
   it("opens on hover only after the delay", () => {

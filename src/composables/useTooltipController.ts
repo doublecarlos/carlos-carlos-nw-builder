@@ -13,6 +13,8 @@ const active = ref<symbol | null>(null);
 
 /** What a trigger registers with `attach`. Getters, so a caller's props stay reactive. */
 export interface TooltipTriggerOptions {
+  /** Whether it has text to show. An empty one lets events reach a tooltip around it. */
+  enabled: () => boolean;
   /** Hover open delay in ms. */
   delayMs: () => number;
   /** A tap toggles the bubble, and a press anywhere else closes it. */
@@ -123,8 +125,19 @@ export function revealsOnFocus(
   return focusVisible && (press === null || press === "mouse");
 }
 
+/** The innermost registered trigger at or above `el` that has text to show. A BaseButton
+ *  wraps itself in a tooltip for its `title`, so a caller's tooltip around one sits outside
+ *  an empty inner trigger. */
+export function enabledTrigger(el: Element | null): Element | null {
+  let trigger = el?.closest(`[${TRIGGER_ATTR}]`) ?? null;
+  while (trigger && !triggers.get(trigger)?.enabled()) {
+    trigger = trigger.parentElement?.closest(`[${TRIGGER_ATTR}]`) ?? null;
+  }
+  return trigger;
+}
+
 function triggerOf(target: EventTarget | null): Element | null {
-  return target instanceof Element ? target.closest(`[${TRIGGER_ATTR}]`) : null;
+  return target instanceof Element ? enabledTrigger(target) : null;
 }
 
 /** Whether a pointer coming from or going to `related` crosses `trigger`'s edge. Over and out
@@ -141,7 +154,7 @@ let bound = false;
  *  covered by tests/e2e/tooltip.spec.ts.
  *
  *  Trigger events listen in the capture phase, so a `@click.stop` on a trigger can't keep
- *  its bubble from closing. `closest()` makes the innermost of nested triggers the one that
+ *  its bubble from closing. The innermost of nested triggers with text is the one that
  *  responds. */
 function bindListeners() {
   if (bound || typeof document === "undefined") return;
