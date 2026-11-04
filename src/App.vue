@@ -271,11 +271,8 @@ syncRoute({ push: false });
           <NavBar class="min-h-0 flex-1 overflow-y-auto" />
         </BaseSheet>
 
-        <!-- Columns 2 and 3 share the editor undo scope, so one ring wraps both. Named for the
-             rail morph (rails.ts), like the rail columns either side. -->
-        <div
-          class="relative flex min-w-0 flex-1 [view-transition-name:rail-main]"
-        >
+        <!-- Columns 2 and 3 share the editor undo scope, so one ring wraps both. -->
+        <div class="relative flex min-w-0 flex-1">
           <!-- Layer selected: editor spans columns 2 and 3 -->
           <template v-if="selectedLayer">
             <div class="flex min-w-0 flex-1">

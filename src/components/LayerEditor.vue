@@ -1727,7 +1727,7 @@ onUnmounted(() => {
 
       <div
         v-if="layout.form"
-        class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface px-3 pb-3 [view-transition-name:rail-form]"
+        class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface px-3 pb-3"
         data-testid="layer-form-pane"
       >
         <ItemForm

@@ -14,6 +14,7 @@ import {
   slotFilterInput,
   slotFilterStatCombo,
   slotFilterClearButton,
+  cursorRow,
 } from "./support/app";
 import { expectTopmost } from "./support/occlusion";
 import { importTestCatalog } from "./support/testCatalog";
@@ -94,6 +95,38 @@ test.describe("slot filter: text", () => {
     await expect(slotRow(page, "gear.head")).toBeHidden();
     // Options has no slot or header matching "Arms", so it disappears entirely.
     await expect(headerRow(page, "options")).toBeHidden();
+  });
+
+  // Typing must not remount rows: rebuilding every row a keystroke drops or brings back is
+  // what made the filter stall, so a hidden row keeps its element throughout.
+  test("a row the filter hides keeps its element when the filter is cleared", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const head = slotRow(page, "gear.head");
+    const before = await head.elementHandle();
+
+    await slotFilterInput(page).fill("Arms");
+    await expect(head).toBeHidden();
+    await slotFilterClearButton(page).click();
+    await expect(head).toBeVisible();
+
+    expect(await head.evaluate((el, prev) => el === prev, before)).toBe(true);
+  });
+
+  // Sections the filter hides stay mounted, and the section cursor must not stop on one.
+  test("Mod+arrow skips sections the filter hides", async ({ page }) => {
+    await openBuilder(page);
+    await slotFilterInput(page).fill("Arms");
+    await expect(headerRow(page, "options")).toBeHidden();
+
+    await headerRow(page, "gear").focus();
+    await page.keyboard.press("ControlOrMeta+ArrowUp");
+
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.arms",
+    );
   });
 
   test("a matching section header shows every slot underneath, unfiltered", async ({

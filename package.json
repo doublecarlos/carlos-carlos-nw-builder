@@ -15,6 +15,7 @@
     "fixture": "tsx scripts/update-fixture.ts --dry-run",
     "fixture:update": "tsx scripts/update-fixture.ts",
     "icons": "tsx scripts/generate-icons.ts",
+    "perf": "tsx scripts/perf.ts",
     "test": "vitest run",
     "test:ui": "playwright test",
     "test:watch": "vitest",

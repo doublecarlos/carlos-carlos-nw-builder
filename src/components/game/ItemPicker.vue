@@ -25,12 +25,14 @@ import { itemScaleFactor, itemScalers } from "../../composables/useItemScale";
 import { scaledStat } from "../../engine/scaling";
 import { itemSearchText } from "../../lib/item-search";
 import {
-  candidatePreviews,
+  canConflict,
   samePreviewInputs,
   type CandidatePreview,
   type PreviewInputs,
 } from "../../lib/candidate-preview";
+import { useCandidatePreviews } from "../../composables/useCandidatePreviews";
 import * as pickerLens from "../../stores/pickerLens";
+import { resolved } from "../../stores/resolved";
 import { isPhone } from "../../stores/viewport";
 import { PREFERRED_MARK, itemDisplay } from "../../engine/insignia";
 import { qualityColor, toneStyle } from "../../lib/item-quality";
@@ -60,7 +62,7 @@ const props = withDefaults(
      * the row's own stat summary would show once it's actually picked. Left
      * unset by callers with no live build to resolve against (PresetForm's item rows, which
      * pick a default for a slot rather than editing a real build). The same resolve also finds
-     * the candidates a `hideFromPicker` problem grant withholds, at no extra pass. */
+     * the candidates a `hideFromPicker` problem grant withholds. */
     bonusPreview?: PreviewInputs;
     /** Render bare item names -- no item level, no conditional-bonus marker, no stat/bonus
      * preview lines -- and let the menu match the input's width instead of widening to make
@@ -113,9 +115,8 @@ const model = defineModel<string>({ default: "" });
 
 const combobox = ref<ComboBoxExposed | null>(null);
 
-/** Mirrors ComboBox's own open state so the filtering/preview work below can stay gated to
- *  "only while this dropdown is actually open" the same way `matchMap` already was -- see the
- *  comment on `candidateStats` further down. */
+/** Mirrors ComboBox's own open state so the filtering and preview work below runs only while
+ *  this dropdown is actually open. */
 const isOpen = ref(false);
 
 /** `bonusPreview`, kept while its db, build and slot are unchanged, so a caller passing a fresh
@@ -149,23 +150,25 @@ const EMPTY_PREVIEW: ReturnType<typeof bonusStatPreview> = {
   more: 0,
 };
 
-/** One resolve per candidate, shared by filtering (`visibleItems`), the row previews
- *  (`matchMap`) and the card. Null while closed, and checked before any resolve, so a closed
- *  picker tracks only `isOpen` and never the build. */
-const candidateStats = computed(() => {
-  if (!isOpen.value) return null;
-  const inputs = previewInputs.value;
-  return inputs
-    ? candidatePreviews(inputs, props.items)
-    : new Map<string, CandidatePreview | null>();
-});
+/** One resolve per candidate, made on first read: by the conflict check (`withheld`), a
+ *  rendered row (`rowFor`) or the card. Null while closed, so a closed picker tracks only
+ *  `isOpen` and never the build. */
+const previews = useCandidatePreviews(() =>
+  isOpen.value ? previewInputs.value : undefined,
+);
 
 /** The caller's `hiddenReasons` plus this component's own conflict check. Names every withheld
- *  candidate, listed or not: `visibleItems` needs the full set to decide from. */
+ *  candidate, listed or not: `visibleItems` needs the full set to decide from. Only a candidate
+ *  that `canConflict` is resolved here. */
 const withheld = computed(() => {
   const map = new Map<string, string>(props.hiddenReasons ?? []);
-  for (const [id, stats] of candidateStats.value ?? []) {
-    if (stats?.conflict && !map.has(id)) map.set(id, stats.conflict);
+  const cache = previews.value;
+  const db = previewInputs.value?.db;
+  if (!cache || !db) return map;
+  for (const item of props.items) {
+    if (map.has(item.id) || !canConflict(db, item)) continue;
+    const conflict = cache.get(item)?.conflict;
+    if (conflict) map.set(item.id, conflict);
   }
   return map;
 });
@@ -182,8 +185,8 @@ const namedById = computed(() => {
 /** Where "show unavailable" and the exact-id override are actually applied. Re-shown
  *  candidates sort last, so turning the option on appends rather than reshuffles. */
 const visibleItems = computed(() => {
-  // Null while closed, and a closed picker has nothing listed to filter.
-  if (!candidateStats.value) return props.items;
+  // A closed picker has nothing listed to filter.
+  if (!isOpen.value) return props.items;
   const reasons = withheld.value;
   const listed = pickerLens.showHidden.value
     ? [...props.items]
@@ -196,7 +199,7 @@ const visibleItems = computed(() => {
   );
 });
 
-/** Kept off `matchMap`, which the preview options skip: a row's name is not a preview. */
+/** Kept off `rowFor`, which the preview options skip: a row's name is not a preview. */
 const displayMap = computed(
   () =>
     new Map(
@@ -254,47 +257,62 @@ const options = computed(() => {
  *  cut the list mid-heading. */
 const maxRows = computed(() => (props.groups ? 240 : 60));
 
-/** Decorated once per filter change rather than once per render pass -- and, since this reads
- *  `visibleItems`/`candidateStats`, only pays the per-candidate resolve cost while this
- *  particular dropdown is open, not on every keystroke elsewhere in the build. */
-const matchMap = computed(() => {
-  const map = new Map<
+const itemById = computed(
+  () => new Map(props.items.map((item) => [item.id, item])),
+);
+
+interface RowPreview {
+  preview: ReturnType<typeof itemPreview>;
+  il: number;
+  bonusPreview: ReturnType<typeof bonusStatPreview>;
+  potentialPreview: ReturnType<typeof bonusStatPreview>;
+  flagged: boolean;
+}
+
+/** Formatted rows, each kept while its candidate's preview is the same object. A plain `Map`,
+ *  so filling it during render writes nothing reactive. Starts over with a new preview cache,
+ *  a new resolve of the build (the scale factors read it) or a change of formatting option. */
+const rowCache = computed(() => {
+  void previews.value;
+  void resolved.value;
+  void pickerLens.showPotential.value;
+  return new Map<
     string,
-    {
-      item: Item;
-      preview: ReturnType<typeof itemPreview>;
-      il: number;
-      bonusPreview: ReturnType<typeof bonusStatPreview>;
-      potentialPreview: ReturnType<typeof bonusStatPreview>;
-      flagged: boolean;
-    }
+    { source: CandidatePreview | null; row: RowPreview }
   >();
-  // Nothing in the template reads it while previews are off, so skip the formatting work.
-  if (previewsHidden.value) return map;
-  for (const item of visibleItems.value) {
-    const bonusStats = candidateStats.value?.get(item.id) ?? null;
-    const bonusPreview = bonusStatPreview(bonusStats?.current);
-    const potentialPreview = bonusStatPreview(bonusStats?.potential);
-    // One factor per candidate, shared by the row's item level and its stat preview -- ranking
-    // mounts by an unscaled item level while the preview under it is scaled would be worse
-    // than showing neither.
-    const factor = itemScaleFactor(item);
-    map.set(item.id, {
-      item,
-      il: scaledStat(item, "il", factor),
-      preview: itemPreview(item, 4, factor),
-      bonusPreview,
-      // "Potentially" is only worth showing when it says something "current" doesn't already.
-      potentialPreview:
-        !pickerLens.showPotential.value ||
-        sameParts(bonusPreview, potentialPreview)
-          ? EMPTY_PREVIEW
-          : potentialPreview,
-      flagged: hasBonuses(item),
-    });
-  }
-  return map;
 });
+
+/** A row's preview lines, read from the row's own markup so only the rows ComboBox renders
+ *  resolve their candidate. Null while previews are off. */
+function rowFor(id: string): RowPreview | null {
+  const item = itemById.value.get(id);
+  if (previewsHidden.value || !item) return null;
+  const source = previews.value?.get(item) ?? null;
+  const cache = rowCache.value;
+  const cached = cache.get(id);
+  if (cached && cached.source === source) return cached.row;
+
+  const bonusPreview = bonusStatPreview(source?.current);
+  const potentialPreview = bonusStatPreview(source?.potential);
+  // One factor per candidate, shared by the row's item level and its stat preview: ranking
+  // mounts by an unscaled item level while the preview under it is scaled would be worse
+  // than showing neither.
+  const factor = itemScaleFactor(item);
+  const row: RowPreview = {
+    il: scaledStat(item, "il", factor),
+    preview: itemPreview(item, 4, factor),
+    bonusPreview,
+    // "Potentially" is only worth showing when it says something "current" doesn't already.
+    potentialPreview:
+      !pickerLens.showPotential.value ||
+      sameParts(bonusPreview, potentialPreview)
+        ? EMPTY_PREVIEW
+        : potentialPreview,
+    flagged: hasBonuses(item),
+  };
+  cache.set(id, { source, row });
+  return row;
+}
 
 const int = (value: unknown) => fmtInt(value);
 
@@ -339,7 +357,7 @@ const cardItem = computed(() => {
   return props.items.find((item) => item.id === id) ?? null;
 });
 
-/** Reads the candidate's resolve from `candidateStats`. Without one (no build, or a resolve
+/** Reads the candidate's resolve from `previews`. Without one (no build, or a resolve
  *  that threw) the card shows the item's own lines and no bonuses. */
 const card = computed(() => (cardItem.value ? cardFor(cardItem.value) : null));
 
@@ -347,7 +365,7 @@ const card = computed(() => (cardItem.value ? cardFor(cardItem.value) : null));
 const itemFor = (id: string) => props.items.find((item) => item.id === id);
 
 function cardFor(item: Item) {
-  const preview = candidateStats.value?.get(item.id) ?? null;
+  const preview = previews.value?.get(item) ?? null;
   return {
     item,
     bonuses: preview?.bonuses ?? [],
@@ -449,19 +467,17 @@ defineExpose({
           <!-- Stays a native `title`: this marker lives inside an already-open dropdown, and
                a BaseTooltip here would be a second floating layer stacked over the first. -->
           <span
-            v-if="matchMap.get(option.value)?.flagged"
+            v-if="rowFor(option.value)?.flagged"
             class="text-accent"
             title="has conditional bonuses"
             >◈</span
           >
-          <span
-            v-if="matchMap.get(option.value)?.il"
-            class="text-muted tabular-nums"
-            >iL {{ int(matchMap.get(option.value)?.il) }}</span
+          <span v-if="rowFor(option.value)?.il" class="text-muted tabular-nums"
+            >iL {{ int(rowFor(option.value)?.il) }}</span
           >
         </template>
       </div>
-      <template v-if="!previewsHidden && matchMap.has(option.value)">
+      <template v-if="!previewsHidden && rowFor(option.value)">
         <!-- Indented under the name, so the row reads as "item, then what it's worth". -->
         <div
           class="flex flex-col gap-0.5"
@@ -472,56 +488,48 @@ defineExpose({
             class="flex flex-wrap gap-2 text-text"
           >
             <span
-              v-for="part in matchMap.get(option.value)?.preview?.parts ?? []"
+              v-for="part in rowFor(option.value)?.preview?.parts ?? []"
               :key="part"
               >{{ part }}</span
             >
-            <span
-              v-if="matchMap.get(option.value)?.preview?.more"
-              class="italic"
-              >+{{ matchMap.get(option.value)?.preview?.more }} more</span
+            <span v-if="rowFor(option.value)?.preview?.more" class="italic"
+              >+{{ rowFor(option.value)?.preview?.more }} more</span
             >
           </div>
           <!-- What picking this item would add via bonuses, e.g. a bonus tier it would
                complete -- distinct from the item's own stats above. -->
           <div
-            v-if="matchMap.get(option.value)?.bonusPreview?.parts?.length"
+            v-if="rowFor(option.value)?.bonusPreview?.parts?.length"
             data-testid="picker-option-bonus-preview"
             class="flex flex-wrap gap-2 text-accent"
           >
             <span
-              v-for="part in matchMap.get(option.value)?.bonusPreview?.parts ??
-              []"
+              v-for="part in rowFor(option.value)?.bonusPreview?.parts ?? []"
               :key="part"
               >{{ part }}</span
             >
-            <span
-              v-if="matchMap.get(option.value)?.bonusPreview?.more"
-              class="italic"
-              >+{{ matchMap.get(option.value)?.bonusPreview?.more }} more</span
+            <span v-if="rowFor(option.value)?.bonusPreview?.more" class="italic"
+              >+{{ rowFor(option.value)?.bonusPreview?.more }} more</span
             >
           </div>
           <!-- The ceiling: bonuses this item contributes to that aren't active yet -- hidden
                whenever it would just repeat the "current" line above. -->
           <div
-            v-if="matchMap.get(option.value)?.potentialPreview?.parts?.length"
+            v-if="rowFor(option.value)?.potentialPreview?.parts?.length"
             data-testid="picker-option-potential-preview"
             class="flex flex-wrap items-baseline gap-2 text-muted"
           >
             <span class="italic">Potentially:</span>
             <span
-              v-for="part in matchMap.get(option.value)?.potentialPreview
-                ?.parts ?? []"
+              v-for="part in rowFor(option.value)?.potentialPreview?.parts ??
+              []"
               :key="part"
               >{{ part }}</span
             >
             <span
-              v-if="matchMap.get(option.value)?.potentialPreview?.more"
+              v-if="rowFor(option.value)?.potentialPreview?.more"
               class="italic"
-              >+{{
-                matchMap.get(option.value)?.potentialPreview?.more
-              }}
-              more</span
+              >+{{ rowFor(option.value)?.potentialPreview?.more }} more</span
             >
           </div>
         </div>

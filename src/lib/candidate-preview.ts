@@ -49,21 +49,52 @@ export interface CandidatePreview {
  * so one bad combination leaves its own row empty instead of failing the whole list.
  */
 export function candidatePreviews(
-  { db, build, slotId }: PreviewInputs,
+  inputs: PreviewInputs,
   items: readonly Item[],
 ): Map<string, CandidatePreview | null> {
-  const map = new Map<string, CandidatePreview | null>();
-  for (const item of items) {
-    try {
-      map.set(item.id, candidatePreview(db, build, slotId, item));
-    } catch {
-      map.set(item.id, null);
-    }
-  }
-  return map;
+  return new Map(
+    items.map((item) => [item.id, candidatePreview(inputs, item)]),
+  );
 }
 
-function candidatePreview(
+/** One candidate's preview, or null when its resolve throws. */
+export function candidatePreview(
+  { db, build, slotId }: PreviewInputs,
+  item: Item,
+): CandidatePreview | null {
+  try {
+    return resolvePreview(db, build, slotId, item);
+  } catch {
+    return null;
+  }
+}
+
+const conflictCache = new WeakMap<Db, Map<string, boolean>>();
+
+/**
+ * Whether picking `item` could ever give it a `conflict`: one of its bonuses has a grant whose
+ * problem sets `hideFromPicker`. Only those candidates need a resolve before the list is built.
+ * Tier and variant payloads carry stats only, so the grant's own `problem` is the whole check.
+ */
+export function canConflict(db: Db, item: Item): boolean {
+  let byItem = conflictCache.get(db);
+  if (!byItem) {
+    byItem = new Map();
+    conflictCache.set(db, byItem);
+  }
+  let result = byItem.get(item.id);
+  if (result === undefined) {
+    result = db
+      .bonusesFor(item)
+      .some(({ bonus }) =>
+        (bonus.grants ?? []).some((grant) => grant.problem?.hideFromPicker),
+      );
+    byItem.set(item.id, result);
+  }
+  return result;
+}
+
+function resolvePreview(
   db: Db,
   build: Build,
   slotId: string,

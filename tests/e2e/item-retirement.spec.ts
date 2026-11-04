@@ -338,7 +338,7 @@ test("a retired item with no replacement is flagged, and can be filtered to", as
   await expect(page.getByTestId("slot-filter-retired")).toBeVisible();
   await expect(page.getByTestId("slot-filter-count")).toContainText("1 match");
   await expect(slotRow(page, "gear.ring1")).toBeVisible();
-  await expect(slotRow(page, "gear.ring2")).toHaveCount(0);
+  await expect(slotRow(page, "gear.ring2")).toBeHidden();
 
   await page.getByTestId("slot-filter-retired-clear").click();
   await expect(page.getByTestId("slot-filter-retired")).toHaveCount(0);

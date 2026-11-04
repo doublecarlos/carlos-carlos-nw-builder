@@ -92,10 +92,15 @@ export const collapsed = (rail: RailId) => computed(() => state[rail]);
 
 export const isCollapsed = (rail: RailId) => state[rail];
 
-/** Collapses or restores a rail. Where the browser can, the columns morph between the two
- *  layouts as a view transition: the layout changes once and the snapshots animate, rather
- *  than every column re-laying out per frame. The columns' names and the morph's styles live
- *  in App.vue, LayerEditor.vue and base.css. */
+// The rail morph in flight, so only the latest one clears the root's marker.
+let morph: ViewTransition | null = null;
+
+/** Collapses or restores a rail. Where the browser can, the rail morphs between the two
+ *  layouts as a view transition: the layout changes once and the rail's snapshots animate,
+ *  rather than every column re-laying out per frame. `data-rail-morph` on <html> keeps the
+ *  root out of the capture, so only the rail columns are snapshotted and the rest of the
+ *  page draws live at its new width. The rails' names live in App.vue and LayerEditor.vue,
+ *  the morph's styles in base.css. */
 export function toggle(rail: RailId) {
   const flip = () => {
     state[rail] = !state[rail];
@@ -105,10 +110,19 @@ export function toggle(rail: RailId) {
     typeof document.startViewTransition === "function" &&
     !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!canMorph) return flip();
-  document.startViewTransition(async () => {
+  const root = document.documentElement;
+  root.dataset.railMorph = "";
+  const transition = document.startViewTransition(async () => {
     flip();
     await nextTick();
   });
+  morph = transition;
+  const settle = () => {
+    if (morph !== transition) return;
+    morph = null;
+    delete root.dataset.railMorph;
+  };
+  transition.finished.then(settle, settle);
 }
 
 /** The rail's open column width, clamped to what the current viewport can carry. */
