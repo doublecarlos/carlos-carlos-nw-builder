@@ -94,6 +94,18 @@ test("the tooltip describes its trigger while open", async ({ page }) => {
   await expect(button).not.toHaveAttribute("aria-describedby", /./);
 });
 
+test("scrolling any panel dismisses an open tooltip", async ({ page }) => {
+  await openBuilder(page);
+
+  // The header trigger stays put while the editor scrolls, so only the scroll can close it.
+  await infoButton(page).hover();
+  await expect(tooltip(page)).toBeVisible();
+
+  await page.locator("main").evaluate((el) => el.scrollBy(0, 200));
+
+  await expect(tooltip(page)).toBeHidden();
+});
+
 test("only one tooltip shows at a time", async ({ page }) => {
   await openBuilder(page);
   await page.getByTestId("header-shortcuts").hover();
