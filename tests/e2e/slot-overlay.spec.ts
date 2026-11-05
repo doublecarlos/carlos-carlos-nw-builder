@@ -8,6 +8,7 @@ import {
   openSectionActions,
   pickerInput,
   slotRow,
+  pickerMenu,
 } from "./support/app";
 import { newInOutline, openSlotsTab } from "./support/layerEditor";
 import { addBuild, addLayer, layerRow } from "./support/nav";
@@ -168,10 +169,7 @@ test("an item picker's default seeds a new build and comes back on clear", async
   const defaultPicker = page.getByTestId("slot-item-default-input");
   await pickerInput(defaultPicker).click();
   await pickerInput(defaultPicker).fill(RING);
-  await defaultPicker
-    .getByTestId("picker-menu")
-    .getByText(RING, { exact: true })
-    .click();
+  await pickerMenu(defaultPicker).getByText(RING, { exact: true }).click();
   await page.getByTestId("save-slot").click();
 
   // A build minted now seeds the layer's default like a shipped one. The build that was

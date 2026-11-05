@@ -3,7 +3,7 @@
 // items' forms show no extra clutter. Each row pairs a build_parameter slot picker with that
 // slot's own control (BuildParamInput), reused as-is from the build editor.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, setItemFilter } from "./support/app";
+import { openBuilder, setItemFilter, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const UNIQUE_ITEM = "ZZZ Test Default Params Item";
@@ -51,12 +51,12 @@ test("picking a slot and value round-trips through save", async ({ page }) => {
   const slotPicker = row.getByTestId("picker-input").first();
   await slotPicker.click();
   await slotPicker.fill("Role");
-  await row.getByText("Role", { exact: true }).click();
+  await pickerMenu(row).getByText("Role", { exact: true }).click();
 
   const valuePicker = row.getByTestId("picker-input").last();
   await valuePicker.click();
   await valuePicker.fill("DPS");
-  await row.getByText("DPS", { exact: true }).click();
+  await pickerMenu(row).getByText("DPS", { exact: true }).click();
 
   await page.getByRole("button", { name: "Save item" }).click();
 

@@ -8,6 +8,7 @@ import {
   openBuilder,
   pickerInput,
   slotRow,
+  pickerMenu,
 } from "./support/app";
 import {
   TEST_HEAD_BONUS,
@@ -38,8 +39,7 @@ test.describe("item picker bonus preview", () => {
     const row = slotRow(page, "gear.head");
     await pickerInput(row).click();
 
-    const option = row
-      .getByTestId("picker-menu")
+    const option = pickerMenu(row)
       .getByTestId("picker-option")
       .filter({ hasText: HEAD_ITEM_WITH_BONUS });
     // Combat Advantage (ca_p) is granted by this item's own bonus, not one of its flat item
@@ -77,8 +77,7 @@ test.describe("item picker bonus preview", () => {
 
     const row = slotRow(page, "gear.ring1");
     await pickerInput(row).click();
-    const option = row
-      .getByTestId("picker-menu")
+    const option = pickerMenu(row)
       .getByTestId("picker-option")
       .filter({ hasText: name });
     await expect(option.getByTestId("picker-option-preview")).toHaveText(
@@ -93,8 +92,7 @@ test.describe("item picker bonus preview", () => {
     const row = slotRow(page, "gear.head");
     await pickerInput(row).click();
 
-    const option = row
-      .getByTestId("picker-menu")
+    const option = pickerMenu(row)
       .getByTestId("picker-option")
       .filter({ hasText: HEAD_ITEM_WITHOUT_BONUS });
     // The candidate itself has to be there, or the missing line proves nothing.
@@ -111,8 +109,7 @@ test.describe("item picker bonus preview", () => {
     const row = slotRow(page, "gear.head");
 
     await pickerInput(row).click();
-    await row
-      .getByTestId("picker-menu")
+    await pickerMenu(row)
       .getByText(HEAD_ITEM_WITH_BONUS, { exact: true })
       .click();
 

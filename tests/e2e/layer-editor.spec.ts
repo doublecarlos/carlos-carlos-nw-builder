@@ -2,7 +2,12 @@
 // Selecting a layer replaces the build editor and stat panel; editing an item in a layer shows
 // its effect on the build's resolved stats after switching back.
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { openBuilder, chooseItem, setItemFilter } from "./support/app";
+import {
+  openBuilder,
+  chooseItem,
+  setItemFilter,
+  pickerMenu,
+} from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { shippedItemName } from "./support/shippedData";
 
@@ -327,7 +332,7 @@ test.describe("bonus grant conditions", () => {
     // Now complete the condition by picking a class value. The next auto-save carries
     // the full tree, and the row still survives the round-trip.
     await values.getByTestId("token-query").fill("Cleric");
-    await values.getByTestId("picker-option").first().click();
+    await pickerMenu(values).getByTestId("picker-option").first().click();
     await expect(typePicker).toHaveValue("class");
     await expect(values.getByTestId("token-chip")).toHaveText(/Cleric/);
     await expect(statusBadge).toBeVisible();
@@ -356,7 +361,7 @@ test.describe("bonus stat payload editing", () => {
     const picker = row.getByTestId("picker-input");
     await picker.click();
     await picker.fill("Power");
-    await row.getByText("Power", { exact: true }).click();
+    await pickerMenu(row).getByText("Power", { exact: true }).click();
   }
 
   test("adding a stat to a tiered payload adds it to the tier and survives auto-save", async ({

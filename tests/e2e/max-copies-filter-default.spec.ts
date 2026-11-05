@@ -10,6 +10,7 @@ import {
   setItemFilter,
   slotRow,
   togglePickerOption,
+  pickerMenu,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { shippedItemName } from "./support/shippedData";
@@ -75,7 +76,7 @@ test("an item with no cap of its own is held to its filter's", async ({
   await input.click();
   await input.fill(INHERITED_ITEM);
   await expect(
-    other.getByTestId("picker-menu").getByText(INHERITED_ITEM, { exact: true }),
+    pickerMenu(other).getByText(INHERITED_ITEM, { exact: true }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
@@ -83,9 +84,9 @@ test("an item with no cap of its own is held to its filter's", async ({
   await other.scrollIntoViewIfNeeded();
   await input.click();
   await input.fill(INHERITED_ITEM);
-  await expect(other.getByTestId("picker-option-hidden-reason")).toHaveText(
-    "1/1 copies",
-  );
+  await expect(
+    pickerMenu(other).getByTestId("picker-option-hidden-reason"),
+  ).toHaveText("1/1 copies");
 });
 
 test("a typed 0 opts an item out of its filter's cap", async ({ page }) => {

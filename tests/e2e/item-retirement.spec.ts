@@ -14,6 +14,7 @@ import {
   pickerInput,
   chooseItem,
   setItemFilter,
+  pickerMenu,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
@@ -74,7 +75,7 @@ async function createDynamicItem(page: Page, name: string) {
   const statPicker = row.getByTestId("picker-input");
   await statPicker.click();
   await statPicker.fill("Power");
-  await row.getByText("Power", { exact: true }).click();
+  await pickerMenu(row).getByText("Power", { exact: true }).click();
   const numbers = row.locator('input[type="number"]');
   await numbers.nth(0).fill("0");
   await numbers.nth(1).fill("1000");
@@ -104,7 +105,7 @@ test("a retirement carries its own value onto the replacement's dynamic stat", a
     .getByTestId("picker-input");
   await carriedStat.click();
   await carriedStat.fill("Power");
-  await carried.getByText("Power", { exact: true }).click();
+  await pickerMenu(carried).getByText("Power", { exact: true }).click();
   await carried.getByTestId("item-carried-stat-value").fill("200");
 
   await openBuild(page);
@@ -237,7 +238,7 @@ test("a hidden item leaves every picker except the slot already holding it", asy
   // And still offered here, so the pick can be cleared and restored.
   await pickerInput(head).click();
   await expect(
-    head.getByTestId("picker-menu").getByText(OLD_ITEM, { exact: true }),
+    pickerMenu(head).getByText(OLD_ITEM, { exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
 
@@ -246,7 +247,7 @@ test("a hidden item leaves every picker except the slot already holding it", asy
   await other.scrollIntoViewIfNeeded();
   await pickerInput(other).click();
   await expect(
-    other.getByTestId("picker-menu").getByText(OLD_ITEM, { exact: true }),
+    pickerMenu(other).getByText(OLD_ITEM, { exact: true }),
   ).toHaveCount(0);
 });
 

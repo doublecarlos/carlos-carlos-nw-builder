@@ -3,7 +3,13 @@
 // would add once the rest of the bonus is in place, sourced from the same per-candidate resolve
 // the "current" bonus preview already runs.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
+import {
+  openBuilder,
+  slotRow,
+  pickerInput,
+  chooseItem,
+  pickerMenu,
+} from "./support/app";
 import { importTestCatalog } from "./support/testCatalog";
 
 // The pants carry two bonuses: one of their own, active alone, and half of a 2-occurrence
@@ -59,8 +65,7 @@ test.describe("item picker potential bonus preview", () => {
     const row = slotRow(page, "gear.pants");
     await pickerInput(row).click();
 
-    const option = row
-      .getByTestId("picker-menu")
+    const option = pickerMenu(row)
       .getByTestId("picker-option")
       .filter({ hasText: PANTS_ITEM });
 
@@ -86,8 +91,7 @@ test.describe("item picker potential bonus preview", () => {
 
     const row = slotRow(page, "gear.pants");
     await pickerInput(row).click();
-    const option = row
-      .getByTestId("picker-menu")
+    const option = pickerMenu(row)
       .getByTestId("picker-option")
       .filter({ hasText: PANTS_ITEM });
 

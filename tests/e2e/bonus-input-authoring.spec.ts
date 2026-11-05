@@ -1,7 +1,7 @@
 // Authoring a bonus's inputs in the layer editor, and gating a grant on one through the
 // "input" condition leaf.
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { openBuilder, chooseCombo } from "./support/app";
+import { openBuilder, chooseCombo, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const BONUS = "ZZZ Test Input Bonus";
@@ -47,8 +47,10 @@ test("a boolean input gates a grant and survives reopening", async ({
   // The id sits under the label, as a bonus's id does.
   const key = leaf.getByTestId("condition-input-key");
   await key.getByTestId("picker-input").click();
-  await expect(key.getByTestId("bonus-option-id")).toHaveText("procActive");
-  await key.getByText("Proc", { exact: true }).click();
+  await expect(pickerMenu(key).getByTestId("bonus-option-id")).toHaveText(
+    "procActive",
+  );
+  await pickerMenu(key).getByText("Proc", { exact: true }).click();
   await chooseCombo(leaf.getByTestId("condition-is"), "on");
   await page.getByRole("button", { name: "Save bonus" }).click();
 

@@ -7,6 +7,7 @@ import {
   confirmImport,
   importText,
   openBuilder,
+  pickerMenu,
   setItemFilter,
 } from "./support/app";
 import { layerRow } from "./support/nav";
@@ -50,7 +51,7 @@ async function openOccurrenceLeaf(page: Page): Promise<Locator> {
   await page.getByLabel("Add condition").click();
   const row = page.getByTestId("condition-row").first();
   await row.getByTestId("picker-input").first().click();
-  await row.getByText("occurrences", { exact: true }).click();
+  await pickerMenu(row).getByText("occurrences", { exact: true }).click();
   return row;
 }
 

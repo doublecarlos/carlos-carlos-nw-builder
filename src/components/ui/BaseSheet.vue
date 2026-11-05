@@ -19,6 +19,7 @@ import { trapTab } from "../../lib/focus-trap";
 import { useBackToClose } from "../../composables/useBackToClose";
 import { backClosesOverlays } from "../../stores/viewport";
 import { useVisualViewport } from "../../composables/useVisualViewport";
+import { provideOverlayLayer } from "../../composables/useOverlayLayer";
 
 // Attrs land on the backdrop, as BaseModal's do, so a `data-testid` there names the whole sheet.
 defineOptions({ inheritAttrs: false });
@@ -50,6 +51,9 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{ close: [] }>();
+
+const layer = computed(() => (props.aboveModal ? "z-popover" : "z-drawer"));
+provideOverlayLayer(() => layer.value);
 
 if (import.meta.env.DEV && !props.title && !props.label) {
   console.warn("BaseSheet: pass `title` or `label`, a dialog needs a name.");
@@ -121,7 +125,7 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <div
       class="fixed inset-0 animate-fade-in bg-scrim"
-      :class="aboveModal ? 'z-popover' : 'z-drawer'"
+      :class="layer"
       v-bind="$attrs"
       @click.self="emit('close')"
     >

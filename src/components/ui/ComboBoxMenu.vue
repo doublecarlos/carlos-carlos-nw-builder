@@ -13,19 +13,20 @@ import {
   placeAside,
   stackedMenuRoom,
 } from "../../lib/aside-placement";
+import { useOverlayLayer } from "../../composables/useOverlayLayer";
 
 // Floating dropdown shell used by ComboBox.vue. Same interaction (type to filter, arrow keys,
 // Enter, Escape), just different row content via the `#option` slot. `data-testid` rather than
 // a styling class: e2e specs need a stable hook that survives restyling.
 //
-// Rendered in place rather than teleported through BasePopover (base.css's exception), but
-// `fixed` against its parent's rect, so a scrolling ancestor (a point section's horizontally
-// scrolling body) can't clip it. `--anchor-width` carries the parent's width for `menuClass`.
+// Teleported to <body> so no ancestor clips or contains it, and `fixed` against the parent of a
+// hidden placeholder left in place. `--anchor-width` carries that parent's width for
+// `menuClass`. It takes the layer of the overlay it opens from (useOverlayLayer). Its DOM
+// events bubble through <body>, not the row that opened it.
 //
 // The optional `aside` slot is a detail panel beside the menu, top-aligned with it, on whichever
 // side has room. When neither does it stacks past the menu instead (lib/aside-placement.ts).
-// Pressing on it keeps focus in the input that owns the menu, and its clicks stay its own: a
-// host row reacting to them (BuildSlot's cursor parking) would blur that input.
+// Pressing on it keeps focus in the input that owns the menu.
 //
 // The optional `footer` slot sits under the rows, outside the listbox and its scroll, for
 // actions that are not options (ItemPicker's "New item"). Pressing on it keeps focus in the
@@ -59,7 +60,10 @@ const el = useTemplateRef("el");
 /** The floating shell around the listbox and footer, absent with `fill`. */
 const box = useTemplateRef("box");
 const footerEl = useTemplateRef("footer");
-const anchor = computed(() => (box.value ?? el.value)?.parentElement ?? null);
+/** Left where the menu is mounted, since the menu itself lives in <body>. */
+const placeholder = useTemplateRef("placeholder");
+const anchor = computed(() => placeholder.value?.parentElement ?? null);
+const layer = computed(useOverlayLayer());
 const { left, top, bottom, width } = useElementBounding(anchor);
 const { width: viewportWidth, height: viewportHeight } = useWindowSize();
 
@@ -173,43 +177,48 @@ defineSlots<{
   >
     <slot />
   </div>
-  <div
-    v-else
-    ref="box"
-    data-testid="picker-shell"
-    class="fixed z-menu flex animate-fade-in flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lg"
-    :class="menuClass"
-    :style="style"
-  >
-    <div
-      :id="listboxId"
-      ref="el"
-      role="listbox"
-      data-testid="picker-menu"
-      class="min-h-0 flex-1 overflow-y-auto"
-    >
-      <slot />
-    </div>
-    <div
-      v-if="$slots.footer"
-      ref="footer"
-      class="flex flex-none justify-end border-t border-line p-1"
-      data-testid="picker-footer"
-      @mousedown.prevent
-      @click.stop
-    >
-      <slot name="footer" />
-    </div>
-  </div>
-  <div
-    v-if="$slots.aside && !props.fill"
-    ref="aside"
-    class="fixed z-menu flex"
-    data-testid="picker-aside"
-    :style="asideStyle"
-    @mousedown.prevent
-    @click.stop
-  >
-    <slot name="aside" />
-  </div>
+  <template v-else>
+    <span ref="placeholder" hidden></span>
+    <Teleport to="body">
+      <div
+        ref="box"
+        data-testid="picker-shell"
+        class="fixed flex animate-fade-in flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lg"
+        :class="[layer, menuClass]"
+        :style="style"
+      >
+        <div
+          :id="listboxId"
+          ref="el"
+          role="listbox"
+          data-testid="picker-menu"
+          class="min-h-0 flex-1 overflow-y-auto"
+        >
+          <slot />
+        </div>
+        <div
+          v-if="$slots.footer"
+          ref="footer"
+          class="flex flex-none justify-end border-t border-line p-1"
+          data-testid="picker-footer"
+          @mousedown.prevent
+          @click.stop
+        >
+          <slot name="footer" />
+        </div>
+      </div>
+      <div
+        v-if="$slots.aside"
+        ref="aside"
+        class="fixed flex"
+        :class="layer"
+        data-testid="picker-aside"
+        :style="asideStyle"
+        @mousedown.prevent
+        @click.stop
+      >
+        <slot name="aside" />
+      </div>
+    </Teleport>
+  </template>
 </template>

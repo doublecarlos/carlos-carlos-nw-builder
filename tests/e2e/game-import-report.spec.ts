@@ -4,8 +4,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { openBuilder, setItemFilter } from "./support/app";
+import { openBuilder, setItemFilter, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { expectTopmost } from "./support/occlusion";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEMO_FIXTURE = join(__dirname, "../unit/fixtures/build-export.demo.txt");
@@ -147,8 +148,10 @@ test("mapping an unrecognized id via the report keeps the row (so it can be re-m
 
   const picker = unrecognized.getByTestId("game-import-report-map-picker");
   await picker.getByTestId("picker-input").click();
+  // The menu lives outside the dialog it opened from, and still paints over it.
+  await expectTopmost(pickerMenu(picker));
   // Index 0 is the picker's own "empty" option; the first real candidate is index 1.
-  const firstOption = picker.getByTestId("picker-option").nth(1);
+  const firstOption = pickerMenu(picker).getByTestId("picker-option").nth(1);
   const firstItemName = (
     await firstOption.locator(".font-semibold").innerText()
   ).trim();
@@ -178,7 +181,7 @@ test("mapping an unrecognized id via the report keeps the row (so it can be re-m
   // from the first item, so only one item ever claims it.
   await row.getByTestId("game-import-report-map-item").click();
   await picker.getByTestId("picker-input").click();
-  const secondOption = picker.getByTestId("picker-option").nth(2);
+  const secondOption = pickerMenu(picker).getByTestId("picker-option").nth(2);
   const secondItemName = (
     await secondOption.locator(".font-semibold").innerText()
   ).trim();

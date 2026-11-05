@@ -15,6 +15,7 @@ import {
   slotFilterStatCombo,
   slotFilterClearButton,
   cursorRow,
+  pickerMenu,
 } from "./support/app";
 import { expectTopmost } from "./support/occlusion";
 import { importTestCatalog } from "./support/testCatalog";
@@ -346,7 +347,7 @@ test.describe("stat filter menu stacking", () => {
     await openBuilder(page);
     await slotFilterStatCombo(page).getByTestId("picker-input").click();
 
-    const menu = slotFilterStatCombo(page).getByTestId("picker-menu");
+    const menu = pickerMenu(slotFilterStatCombo(page));
     await expect(menu).toBeVisible();
 
     // The menu drops out of the sticky toolbar and over the section list, whose own headers

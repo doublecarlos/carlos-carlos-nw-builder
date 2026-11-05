@@ -10,6 +10,7 @@ import {
   slotRow,
   pickerInput,
   setItemFilter,
+  pickerMenu,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
@@ -66,7 +67,7 @@ test("an item whose problem grant is flagged hideFromPicker is left out of its s
   await row.scrollIntoViewIfNeeded();
   await pickerInput(row).click();
 
-  const menu = row.getByTestId("picker-menu");
+  const menu = pickerMenu(row);
   await expect(menu.getByText(VISIBLE_ITEM, { exact: true })).toBeVisible();
   await expect(menu.getByText(HIDDEN_ITEM, { exact: true })).toHaveCount(0);
 });

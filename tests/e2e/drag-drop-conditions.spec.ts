@@ -3,7 +3,7 @@
 // dragging an existing condition into a freshly-added "not" block, including across grants,
 // variants, and (via ItemBonuses' cross-bonus registry) across bonuses on the same item.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, setItemFilter } from "./support/app";
+import { openBuilder, setItemFilter, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { dragOnto } from "./support/dragDrop";
 
@@ -73,9 +73,11 @@ test("dragging a branch reorders it within its group", async ({ page }) => {
       .getByTestId("picker-input")
       .first();
   await leafType(0).click();
-  await branches.nth(0).getByText("class", { exact: true }).click();
+  await pickerMenu(branches.nth(0)).getByText("class", { exact: true }).click();
   await leafType(1).click();
-  await branches.nth(1).getByText("enemies", { exact: true }).click();
+  await pickerMenu(branches.nth(1))
+    .getByText("enemies", { exact: true })
+    .click();
 
   await expect(leafType(0)).toHaveValue("class");
   await expect(leafType(1)).toHaveValue("enemies");
@@ -117,7 +119,9 @@ test("dragging a branch into a different group moves it there", async ({
     .getByTestId("picker-input")
     .first();
   await draggedLeafType.click();
-  await group1Branches.nth(0).getByText("class", { exact: true }).click();
+  await pickerMenu(group1Branches.nth(0))
+    .getByText("class", { exact: true })
+    .click();
 
   // Drag group 1's marked branch onto group 2's last branch -- lands after it.
   await dragOnto(

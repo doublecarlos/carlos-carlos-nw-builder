@@ -11,7 +11,9 @@
 //   npm run perf -- <url> --profile <scenario> [--top 40]
 //
 // The default run prints, per scenario, the median and max of each round's slowest
-// interaction (Event Timing, as INP counts it) and the long animation frames over all rounds.
+// interaction (Event Timing, as INP counts it), the median of each round's longest frame and
+// the long animation frames over all rounds. For `switch`, read the frame column: its click
+// returns before the editor repaints.
 // `--heavy` imports the golden fixture build (tests/unit/fixture.json) instead of a fresh one.
 // `--cpu` sets the CPU throttling rate (default 4), `--reduced` emulates reduced motion and
 // `--scripts` adds the LoAF script attributions. Window and document listener counts print
@@ -70,6 +72,8 @@ interface LoafRow {
 interface PerfLog {
   events: EventRow[];
   loaf: LoafRow[];
+  /** The longest gap between two animation frames since the last drain. */
+  frame: number;
 }
 // The Event Timing and LoAF fields read here, which lib.dom does not type yet.
 interface EventEntry extends PerformanceEntry {
@@ -86,8 +90,18 @@ interface LoafEntry extends PerformanceEntry {
 
 /** Collects Event Timing and LoAF entries in the page until the runner drains them. */
 function installObservers() {
-  const log: PerfLog = { events: [], loaf: [] };
+  const log: PerfLog = { events: [], loaf: [], frame: 0 };
   Object.assign(window, { __perf: log });
+  // A method, not a named arrow: tsx wraps those in a `__name` helper the page lacks.
+  const frames = {
+    last: 0,
+    tick(now: number) {
+      if (frames.last) log.frame = Math.max(log.frame, now - frames.last);
+      frames.last = now;
+      requestAnimationFrame(frames.tick);
+    },
+  };
+  requestAnimationFrame(frames.tick);
   const eventInit: PerformanceObserverInit & { durationThreshold: number } = {
     type: "event",
     durationThreshold: 16,
@@ -114,24 +128,87 @@ function installObservers() {
 const drain = (page: Page): Promise<PerfLog> =>
   page.evaluate(() => {
     const log = (window as unknown as { __perf: PerfLog }).__perf;
-    const out = { events: log.events, loaf: log.loaf };
+    const out = { events: log.events, loaf: log.loaf, frame: log.frame };
     log.events = [];
     log.loaf = [];
+    log.frame = 0;
     return out;
   });
 
 const settle = (page: Page) => page.waitForTimeout(SETTLE_MS);
 
+interface FixtureBuild {
+  choices: Record<string, string>;
+  assignments: Record<string, Record<string, number>>;
+  [key: string]: unknown;
+}
+
+const fixtureBuild = (): FixtureBuild =>
+  (JSON.parse(readFileSync(FIXTURE, "utf8")) as { build: FixtureBuild }[])[0]
+    .build;
+
+const jsonFile = (name: string, value: unknown) => ({
+  name,
+  mimeType: "application/json",
+  buffer: Buffer.from(JSON.stringify(value)),
+});
+
 /** The golden fixture's build, shaped like a build export file. */
-function heavyBuildFile() {
-  const [fixture] = JSON.parse(readFileSync(FIXTURE, "utf8")) as {
-    build: Record<string, unknown>;
-  }[];
-  return {
-    name: "heavy.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify({ name: "Heavy", ...fixture.build })),
+const heavyBuildFile = () =>
+  jsonFile("heavy.json", { name: "Heavy", ...fixtureBuild() });
+
+/** Names of the builds the `switch` scenario clicks between, in order. */
+const SWITCH_BUILDS = ["Switch full", "Switch half", "Switch sparse"];
+
+/** Golden fixture variants keeping every pick, every second pick and every third pick. */
+function switchBundleFile() {
+  const base = fixtureBuild();
+  const variant = (index: number) => {
+    const kept = Object.keys(base.choices).filter(
+      (_, i) => i % (index + 1) === 0,
+    );
+    const disabled = kept.filter((_, i) => index > 0 && i % 4 === 1);
+    const assignments = Object.fromEntries(
+      Object.entries(base.assignments).map(([slot, counts]) => [
+        slot,
+        Object.fromEntries(
+          Object.entries(counts).map(([id, n]) => [id, Math.max(0, n - index)]),
+        ),
+      ]),
+    );
+    return {
+      ...base,
+      id: `b_perf_switch_${index}`,
+      name: SWITCH_BUILDS[index],
+      choices: Object.fromEntries(kept.map((id) => [id, base.choices[id]])),
+      disabledSlots: Object.fromEntries(disabled.map((id) => [id, true])),
+      assignments,
+    };
   };
+  return jsonFile("switch.json", {
+    builds: SWITCH_BUILDS.map((_, index) => variant(index)),
+    layers: [],
+  });
+}
+
+async function importFile(page: Page, file: ReturnType<typeof jsonFile>) {
+  await page
+    .getByTestId("app-header")
+    .locator('input[type="file"]')
+    .setInputFiles(file);
+  await page.getByTestId("import-confirm").click();
+  await page.getByTestId("import-confirm").waitFor({ state: "detached" });
+}
+
+const navBuild = (page: Page, name: string) =>
+  page
+    .locator(".nav-row--build")
+    .filter({ hasText: name })
+    .locator(".nav-name");
+
+async function expandAll(page: Page) {
+  const button = page.getByTestId("editor-expand-all");
+  if (await button.isEnabled()) await button.click();
 }
 
 /** Opens a build with every section expanded and the pointer parked out of the way. */
@@ -142,22 +219,16 @@ async function setUp(page: Page) {
   await newBuild.or(gear).first().waitFor({ timeout: 30_000 });
   if (await newBuild.isVisible()) await newBuild.click();
   await gear.waitFor();
-  if (opts.heavy) {
-    await page
-      .getByTestId("app-header")
-      .locator('input[type="file"]')
-      .setInputFiles(heavyBuildFile());
-    await page.getByTestId("import-confirm").click();
-    await page.getByTestId("import-confirm").waitFor({ state: "detached" });
-  }
+  if (opts.heavy) await importFile(page, heavyBuildFile());
   await page.mouse.move(0, 0);
-  const expandAll = page.getByTestId("editor-expand-all");
-  if (await expandAll.isEnabled()) await expandAll.click();
+  await expandAll(page);
   await page.waitForTimeout(1500);
 }
 
 interface Scenario {
   label: string;
+  /** Runs once before the rounds, unmeasured. */
+  prepare?: (page: Page) => Promise<unknown>;
   run: (page: Page, round: number) => Promise<unknown>;
 }
 
@@ -228,6 +299,27 @@ const SCENARIOS: Record<string, Scenario> = {
       await filter.fill("");
     },
   },
+  switch: {
+    label: "switch build",
+    prepare: async (page) => {
+      // The rail scenarios can leave the builds rail collapsed.
+      const rail = page.getByTestId("rail-toggle-left").first();
+      if ((await rail.getAttribute("aria-expanded")) === "false")
+        await rail.click();
+      await importFile(page, switchBundleFile());
+      // Folds are per build, so expand each one once.
+      for (const name of SWITCH_BUILDS) {
+        await navBuild(page, name).click();
+        await expandAll(page);
+        await settle(page);
+      }
+      await page.mouse.move(0, 0);
+    },
+    run: async (page, round) => {
+      await navBuild(page, SWITCH_BUILDS[round % SWITCH_BUILDS.length]).click();
+      await page.mouse.move(0, 0);
+    },
+  },
 };
 
 /** Re-expands everything so a scenario never starts from another one's leftovers. */
@@ -265,6 +357,7 @@ interface ScenarioResult {
   label: string;
   median: number;
   max: number;
+  frame: number;
   loafCount: number;
   loafMs: number;
 }
@@ -275,12 +368,14 @@ async function measure(
   scriptTotals: Map<string, { duration: number; layout: number; n: number }>,
 ): Promise<ScenarioResult> {
   const worst: number[] = [];
+  const frames: number[] = [];
   let loafCount = 0;
   let loafMs = 0;
   for (let round = 0; round < rounds; round++) {
     await scenario.run(page, round);
     await settle(page);
-    const { events, loaf } = await drain(page);
+    const { events, loaf, frame } = await drain(page);
+    frames.push(frame);
     // The round's slowest interaction, each interaction taking its slowest event.
     const byId = new Map<number, number>();
     for (const e of events)
@@ -300,10 +395,12 @@ async function measure(
     }
   }
   worst.sort((a, b) => a - b);
+  frames.sort((a, b) => a - b);
   return {
     label: scenario.label,
     median: worst[Math.floor(rounds / 2)],
     max: worst[worst.length - 1],
+    frame: frames[Math.floor(rounds / 2)],
     loafCount,
     loafMs,
   };
@@ -314,11 +411,11 @@ function printTable(results: ScenarioResult[]) {
   const cell = (value: number | string, size = 8) =>
     String(value).padStart(size);
   console.log(
-    `${"scenario".padEnd(width)}${cell("median")}${cell("max")}${cell("LoAF")}${cell("LoAF ms", 10)}`,
+    `${"scenario".padEnd(width)}${cell("median")}${cell("max")}${cell("frame")}${cell("LoAF")}${cell("LoAF ms", 10)}`,
   );
   for (const r of results)
     console.log(
-      `${r.label.padEnd(width)}${cell(r.median.toFixed(0))}${cell(r.max.toFixed(0))}${cell(r.loafCount)}${cell(r.loafMs.toFixed(0), 10)}`,
+      `${r.label.padEnd(width)}${cell(r.median.toFixed(0))}${cell(r.max.toFixed(0))}${cell(r.frame.toFixed(0))}${cell(r.loafCount)}${cell(r.loafMs.toFixed(0), 10)}`,
     );
 }
 
@@ -393,6 +490,7 @@ try {
       throw new Error(
         `unknown scenario "${opts.profile}", expected one of: ${Object.keys(SCENARIOS).join(", ")}`,
       );
+    await scenario.prepare?.(page);
     await reset(page);
     await cdp.send("Profiler.enable");
     await cdp.send("Profiler.setSamplingInterval", { interval: 100 });
@@ -410,6 +508,7 @@ try {
       { duration: number; layout: number; n: number }
     >();
     for (const scenario of Object.values(SCENARIOS)) {
+      await scenario.prepare?.(page);
       await reset(page);
       results.push(await measure(page, scenario, scriptTotals));
     }

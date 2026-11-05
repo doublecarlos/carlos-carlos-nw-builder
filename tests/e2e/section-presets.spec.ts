@@ -17,6 +17,7 @@ import {
   chooseClass,
   className,
   undoButton,
+  pickerMenu,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { openSlotsTab, newInOutline } from "./support/layerEditor";
@@ -207,7 +208,7 @@ test("'Create new from current' opens a preset draft holding the section's state
   await chooseClass(page, "wizard");
   const roleRow = slotRow(page, "options.role");
   await roleRow.getByTestId("picker-input").click();
-  await roleRow.getByText("Tank", { exact: true }).click();
+  await pickerMenu(roleRow).getByText("Tank", { exact: true }).click();
 
   await presetMenu(page, "options").click();
   await page.getByTestId("preset-create-from-current").click();
@@ -239,10 +240,10 @@ test("'Create new from current' opens a preset draft holding the section's state
   await ensureSectionExpanded(page, "options");
   const changedRole = slotRow(page, "options.role");
   await changedRole.getByTestId("picker-input").click();
-  await changedRole.getByText("Healer", { exact: true }).click();
+  await pickerMenu(changedRole).getByText("Healer", { exact: true }).click();
   const damageRow = slotRow(page, "options.damageType");
   await damageRow.getByTestId("picker-input").click();
-  await damageRow.getByText("Magical", { exact: true }).click();
+  await pickerMenu(damageRow).getByText("Magical", { exact: true }).click();
 
   await presetMenu(page, "options").click();
   await page
@@ -271,7 +272,7 @@ test("'update from current' overwrites a preset with the section's current value
   // Move the section somewhere the preset does not describe.
   const roleRow = slotRow(page, "options.role");
   await roleRow.getByTestId("picker-input").click();
-  await roleRow.getByText("Tank", { exact: true }).click();
+  await pickerMenu(roleRow).getByText("Tank", { exact: true }).click();
   await chooseClass(page, "wizard");
 
   await presetMenu(page, "options").click();
@@ -312,7 +313,7 @@ test("'update from current' leaves the other presets in the section alone", asyn
 
   const roleRow = slotRow(page, "options.role");
   await roleRow.getByTestId("picker-input").click();
-  await roleRow.getByText("Tank", { exact: true }).click();
+  await pickerMenu(roleRow).getByText("Tank", { exact: true }).click();
 
   await presetMenu(page, "options").click();
   await page.getByTestId("section-actions-overwrite").click();

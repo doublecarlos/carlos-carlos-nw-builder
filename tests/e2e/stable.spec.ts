@@ -14,6 +14,7 @@ import {
   importText,
   bonusInputControl,
   undoButton,
+  pickerMenu,
 } from "./support/app";
 import { addBuild } from "./support/nav";
 
@@ -70,8 +71,7 @@ test("a mount's fixed slot only offers insignia of its own shape", async ({
   await first.click();
   await first.fill("Insignia of");
   await expect(
-    slotRow(page, "insignia.insignia1_1")
-      .getByTestId("picker-menu")
+    pickerMenu(slotRow(page, "insignia.insignia1_1"))
       .getByText(BARBED, { exact: true })
       .first(),
   ).toBeVisible();
@@ -83,14 +83,14 @@ test("a mount's fixed slot only offers insignia of its own shape", async ({
   await first.click();
   await first.fill("Insignia of");
   await expect(
-    slotRow(page, "insignia.insignia1_1")
-      .getByTestId("picker-menu")
-      .getByText(CRESCENT, { exact: true }),
+    pickerMenu(slotRow(page, "insignia.insignia1_1")).getByText(CRESCENT, {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
-    slotRow(page, "insignia.insignia1_1")
-      .getByTestId("picker-menu")
-      .getByText(BARBED, { exact: true }),
+    pickerMenu(slotRow(page, "insignia.insignia1_1")).getByText(BARBED, {
+      exact: true,
+    }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
@@ -99,8 +99,7 @@ test("a mount's fixed slot only offers insignia of its own shape", async ({
   await third.click();
   await third.fill("Insignia of");
   await expect(
-    slotRow(page, "insignia.insignia1_3")
-      .getByTestId("picker-menu")
+    pickerMenu(slotRow(page, "insignia.insignia1_3"))
       .getByText(BARBED, { exact: true })
       .first(),
   ).toBeVisible();
@@ -117,19 +116,16 @@ test("a slot offers only the half of a pair that belongs in it", async ({
   await fourth.click();
   await fourth.fill(ENLIGHTENED);
   const fourthRow = slotRow(page, "insignia.insignia1_4");
-  const offered = await fourthRow
-    .getByTestId("picker-menu")
+  const offered = await pickerMenu(fourthRow)
     .getByText(ENLIGHTENED, { exact: true })
     .count();
   expect(offered).toBeGreaterThan(0);
   // Every row on offer is starred, which is what says the ordinary half is not among them.
-  await expect(fourthRow.getByTestId("picker-option-preferred")).toHaveCount(
-    offered,
-  );
   await expect(
-    fourthRow
-      .getByTestId("picker-menu")
-      .getByText(`${ENLIGHTENED} (Pref)`, { exact: true }),
+    pickerMenu(fourthRow).getByTestId("picker-option-preferred"),
+  ).toHaveCount(offered);
+  await expect(
+    pickerMenu(fourthRow).getByText(`${ENLIGHTENED} (Pref)`, { exact: true }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
@@ -139,12 +135,11 @@ test("a slot offers only the half of a pair that belongs in it", async ({
   await third.fill(BARBED);
   const thirdRow = slotRow(page, "insignia.insignia1_3");
   await expect(
-    thirdRow
-      .getByTestId("picker-menu")
-      .getByText(BARBED, { exact: true })
-      .first(),
+    pickerMenu(thirdRow).getByText(BARBED, { exact: true }).first(),
   ).toBeVisible();
-  await expect(thirdRow.getByTestId("picker-option-preferred")).toHaveCount(0);
+  await expect(
+    pickerMenu(thirdRow).getByTestId("picker-option-preferred"),
+  ).toHaveCount(0);
 });
 
 test("clearing the mount hands the group back to manual and drops the preferred variant", async ({
@@ -160,7 +155,7 @@ test("clearing the mount hands the group back to manual and drops the preferred 
   const mount = pickerInput(slotRow(page, "insignia.mount1"));
   await mount.click();
   await mount.fill("");
-  await slotRow(page, "insignia.mount1")
+  await pickerMenu(slotRow(page, "insignia.mount1"))
     .getByText("- empty -", { exact: true })
     .click();
 
@@ -230,18 +225,18 @@ test("a universal slot heads its insignia with the bonus each leads to", async (
   // A fixed slot's candidates all share one shape, so every heading would list the same rows.
   const first = slotRow(page, "insignia.insignia1_1");
   await pickerInput(first).click();
-  await expect(first.getByTestId("picker-group")).toHaveCount(0);
+  await expect(pickerMenu(first).getByTestId("picker-group")).toHaveCount(0);
   await page.keyboard.press("Escape");
 
   // Crescent and regal are down, so Accursed Resolve is the nearest thing left.
   const third = slotRow(page, "insignia.insignia1_3");
   await pickerInput(third).click();
-  await expect(third.getByTestId("picker-group").first()).toHaveText(
-    "Accursed Resolve (4 insignia)",
-  );
+  await expect(
+    pickerMenu(third).getByTestId("picker-group").first(),
+  ).toHaveText("Accursed Resolve (4 insignia)");
   // One insignia, several headings: a barbed one is a step toward more than one bonus.
   expect(
-    await third.getByText(BARBED, { exact: true }).count(),
+    await pickerMenu(third).getByText(BARBED, { exact: true }).count(),
   ).toBeGreaterThan(1);
 });
 
@@ -352,7 +347,9 @@ test("the bonus row derives itself and cannot be picked by hand", async ({
   // The group is what gets edited, so the row states its result and opens no list.
   await expect(bonus).toHaveJSProperty("readOnly", true);
   await bonus.click();
-  await expect(row.getByTestId("picker-option-hidden-reason")).toHaveCount(0);
+  await expect(
+    pickerMenu(row).getByTestId("picker-option-hidden-reason"),
+  ).toHaveCount(0);
   await expect(row.getByTestId("unpin-bonus:insignia.bonus1")).toHaveCount(0);
 });
 

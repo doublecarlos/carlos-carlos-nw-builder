@@ -19,6 +19,7 @@ import { trapTab } from "../../lib/focus-trap";
 import { useBackToClose } from "../../composables/useBackToClose";
 import { backClosesOverlays } from "../../stores/viewport";
 import { modalClosed, modalOpened } from "../../stores/modals";
+import { provideOverlayLayer } from "../../composables/useOverlayLayer";
 
 // Attrs land on the backdrop, not the panel: `data-testid` on the outer element is what lets
 // a spec click the backdrop to dismiss, and `panelClass` covers the inner box.
@@ -55,6 +56,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{ close: [] }>();
+
+provideOverlayLayer(() => "z-modal");
 
 if (import.meta.env.DEV && !props.title && !props.label) {
   console.warn("BaseModal: pass `title` or `label` -- a dialog needs a name.");

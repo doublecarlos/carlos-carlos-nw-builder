@@ -7,6 +7,8 @@ import {
   pickerInput,
   slotRow,
   togglePickerOption,
+  pickerAside,
+  pickerMenu,
 } from "./support/app";
 import { layerRow } from "./support/nav";
 import { openSlotsTab } from "./support/layerEditor";
@@ -24,14 +26,10 @@ async function openWithHeadItem(page: Page) {
   });
 }
 
-const card = (scope: Locator) =>
-  scope.getByTestId("picker-aside").getByTestId("item-card");
+const card = (scope: Locator) => pickerAside(scope).getByTestId("item-card");
 
 const option = (scope: Locator, name: string) =>
-  scope
-    .getByTestId("picker-menu")
-    .getByTestId("picker-option")
-    .filter({ hasText: name });
+  pickerMenu(scope).getByTestId("picker-option").filter({ hasText: name });
 
 async function openHeadPicker(page: Page) {
   await openWithHeadItem(page);
@@ -42,8 +40,7 @@ async function openHeadPicker(page: Page) {
 
 test("the card follows the keyboard highlight", async ({ page }) => {
   const row = await openHeadPicker(page);
-  const highlighted = row
-    .getByTestId("picker-menu")
+  const highlighted = pickerMenu(row)
     .locator("[data-highlighted]")
     .getByTestId("picker-option-name");
 
@@ -85,11 +82,11 @@ test("pressing on the card keeps the picker open, Escape closes both", async ({
   const row = await openHeadPicker(page);
   await option(row, HEAD_ITEM_WITH_BONUS).hover();
   await card(row).click();
-  await expect(row.getByTestId("picker-menu")).toBeVisible();
+  await expect(pickerMenu(row)).toBeVisible();
   await expect(card(row)).toBeVisible();
 
   await pickerInput(row).press("Escape");
-  await expect(row.getByTestId("picker-menu")).toHaveCount(0);
+  await expect(pickerMenu(row)).toHaveCount(0);
   await expect(card(row)).toHaveCount(0);
 });
 
@@ -121,8 +118,7 @@ test("opening the picker highlights the equipped item", async ({ page }) => {
   await pickerInput(row).click();
 
   await expect(
-    row
-      .getByTestId("picker-menu")
+    pickerMenu(row)
       .locator("[data-highlighted]")
       .getByTestId("picker-option-name"),
   ).toHaveText(HEAD_ITEM_WITH_BONUS);

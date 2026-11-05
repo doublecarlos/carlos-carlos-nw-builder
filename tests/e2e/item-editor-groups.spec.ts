@@ -3,7 +3,7 @@
 // button that clears it back to unset rather than leaving stale values behind that a
 // disabled/empty-looking field can't fully clean up).
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, setItemFilter } from "./support/app";
+import { openBuilder, setItemFilter, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const UNIQUE_ITEM = "ZZZ Test Groups Item";
@@ -39,7 +39,7 @@ test("dynamic stat rows can be added and removed, like Stats", async ({
   const numberInputs = row.locator('input[type="number"]');
   await statPicker.click();
   await statPicker.fill("Item Level");
-  await row.getByText("Item Level", { exact: true }).click();
+  await pickerMenu(row).getByText("Item Level", { exact: true }).click();
   await numberInputs.nth(0).fill("10"); // Min
   await numberInputs.nth(1).fill("20"); // Max
   await numberInputs.nth(2).fill("15"); // Default
@@ -109,7 +109,7 @@ test("pre-added empty stat rows on a saved item survive filling one of them", as
   const picker = rows.first().getByTestId("picker-input");
   await picker.click();
   await picker.fill("Power");
-  await rows.first().getByText("Power", { exact: true }).click();
+  await pickerMenu(rows.first()).getByText("Power", { exact: true }).click();
 
   // Past the 700ms auto-save debounce.
   await page.clock.fastForward(1000);

@@ -9,6 +9,7 @@ import {
   pickerInput,
   setItemFilter,
   slotRow,
+  pickerMenu,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { statCard, statCardClose, statInfoButton } from "./support/stats";
@@ -52,7 +53,7 @@ test("a quality item is tinted in the menu, the closed picker and the card", asy
   await input.click();
   await input.fill(CELESTIAL);
   await expect(
-    row
+    pickerMenu(row)
       .getByTestId("picker-option-name")
       .filter({ hasText: CELESTIAL })
       .first(),
