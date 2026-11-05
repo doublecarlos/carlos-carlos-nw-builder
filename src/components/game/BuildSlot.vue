@@ -47,6 +47,7 @@ const props = defineProps<{
   /** Passed straight through to ItemPickerRow for its picker's bonus-aware preview. */
   db: Db;
   compareBuild?: Build | null;
+  /** Left false on a row with no diff, which renders the same either way. */
   highlightDiff: boolean;
   isHovered: boolean;
   /** Arrow keys on this row's cursor anchor: BuildEditor moves focus to the next/previous row. */

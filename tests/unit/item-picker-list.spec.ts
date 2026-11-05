@@ -82,6 +82,16 @@ describe("rowSlot", () => {
     expect(row.tags).toEqual(["a", "b"]);
     expect(row.filter).toBeUndefined();
   });
+
+  // The editor compares a row's slot by identity: a new object per expansion would re-render
+  // every list row on each edit.
+  it("is the same object for the same container and row, across builds", () => {
+    const first = expandSlots(SLOTS, buildWith({ "misc.misc": 2 }));
+    const second = expandSlots(SLOTS, buildWith({ "misc.misc": 3 }));
+    expect(second[1]).toBe(first[1]);
+    expect(rowSlot(misc, 2)).toBe(rowSlot(misc, 2));
+    expect(rowSlot({ ...misc }, 2)).not.toBe(rowSlot(misc, 2));
+  });
 });
 
 describe("expandSlots", () => {
