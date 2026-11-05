@@ -2,7 +2,7 @@
 // matches it as "one of", so they all edit their values as a set of chips. Requiring several
 // values at once is `all`, which stays a group of single-value rows.
 import { test, expect, type Page, type Locator } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 /** Opens a fresh layer, switches to its Bonuses tab, starts a new (unsaved) bonus and adds one
@@ -25,14 +25,17 @@ async function openNewConditionLeaf(page: Page) {
 
 async function setLeafType(row: Locator, type: string) {
   await row.getByTestId("picker-input").first().click();
-  await row.getByText(type, { exact: true }).click();
+  await pickerMenu(row).getByText(type, { exact: true }).click();
 }
 
 /** Types into the chip control and picks the offered option. */
 async function addValue(row: Locator, query: string, option: string) {
   const values = row.getByTestId("condition-values");
   await values.getByTestId("token-query").fill(query);
-  await values.getByTestId("picker-option").filter({ hasText: option }).click();
+  await pickerMenu(values)
+    .getByTestId("picker-option")
+    .filter({ hasText: option })
+    .click();
 }
 
 test("a role condition edits several values as chips and saves them as a list", async ({

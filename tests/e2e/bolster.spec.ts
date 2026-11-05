@@ -10,6 +10,7 @@ import {
   chooseItem,
   cursorRow,
   hoverForCard,
+  pickerMenu,
 } from "./support/app";
 import { statInfoButton, statCard, statCardClose } from "./support/stats";
 
@@ -208,7 +209,7 @@ test.describe("bolster is reflected everywhere an item's numbers appear", () => 
     await pickerInput(row).click();
     // Candidates preview at the build's own bolster, so they are comparable to each other and
     // to what equipping one would actually do.
-    await expect(row.getByText("iL 1,750").first()).toBeVisible();
+    await expect(pickerMenu(row).getByText("iL 1,750").first()).toBeVisible();
     await expect(row.getByText("iL 3,937")).toHaveCount(0);
   });
 });

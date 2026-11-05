@@ -4,13 +4,16 @@
 // `options.class` is the slot that asks for it: class items carry ability scores and baseline
 // bonuses, so without the flag every row would carry a stat block nobody picks a class by.
 import { test, expect, type Locator } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput, className } from "./support/app";
+import {
+  openBuilder,
+  slotRow,
+  pickerInput,
+  className,
+  pickerMenu,
+} from "./support/app";
 
 const pickerOption = (row: Locator, name: string) =>
-  row
-    .getByTestId("picker-menu")
-    .getByTestId("picker-option")
-    .filter({ hasText: name });
+  pickerMenu(row).getByTestId("picker-option").filter({ hasText: name });
 
 test.describe("item picker hidePreview", () => {
   test("the class picker's rows show the class name and nothing else", async ({
@@ -41,7 +44,7 @@ test.describe("item picker hidePreview", () => {
     const row = slotRow(page, "gear.head");
     await pickerInput(row).click();
 
-    await expect(row.getByTestId("picker-menu")).toContainText("iL");
+    await expect(pickerMenu(row)).toContainText("iL");
   });
 
   test("picking a class from the lean dropdown still works", async ({

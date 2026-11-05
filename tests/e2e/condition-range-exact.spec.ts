@@ -4,7 +4,7 @@
 // condition-draft.ts never read or wrote it -- typing into it silently did nothing. This
 // spec exercises that field for real, plus the newly added "exact" comparison mode.
 import { test, expect, type Page, type Locator } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 /** Opens a fresh layer, switches to its Bonuses tab, starts a new (unsaved) bonus, adds one
@@ -22,7 +22,7 @@ async function openNewConditionLeaf(page: Page) {
 
 async function setLeafType(row: Locator, type: string) {
   await row.getByTestId("picker-input").first().click();
-  await row.getByText(type, { exact: true }).click();
+  await pickerMenu(row).getByText(type, { exact: true }).click();
 }
 
 test("an equipped leaf's below bound is actually saved, not silently dropped", async ({

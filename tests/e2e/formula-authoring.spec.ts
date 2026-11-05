@@ -2,7 +2,7 @@
 // is typed and previewed against the build, named formulas and inputs offered to every field,
 // a tier measure, and the formula condition leaf, each surviving a save and reopen.
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { chooseCombo, openBuilder } from "./support/app";
+import { chooseCombo, openBuilder, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const BONUS = "ZZZ Test Formula Bonus";
@@ -32,7 +32,7 @@ async function reopen(page: Page, name: string) {
 
 async function setLeafType(row: Locator, type: string) {
   await row.getByTestId("picker-input").first().click();
-  await row.getByText(type, { exact: true }).click();
+  await pickerMenu(row).getByText(type, { exact: true }).click();
 }
 
 test("a scale is checked as it is typed and previewed against the build", async ({

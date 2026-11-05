@@ -1,6 +1,6 @@
 // Rows scrolling under a still pointer do not take a dropdown's highlight from the keyboard.
 import { test, expect, type Locator } from "@playwright/test";
-import { openBuilder, pickerInput, slotRow } from "./support/app";
+import { openBuilder, pickerInput, slotRow, pickerMenu } from "./support/app";
 
 /** Position of the highlighted row among the menu's choosable rows. */
 const highlightedIndex = (menu: Locator) =>
@@ -16,7 +16,7 @@ test("arrow keys keep the highlight while the menu scrolls under a still pointer
   await openBuilder(page);
   const row = slotRow(page, "gear.head");
   await pickerInput(row).click();
-  const menu = row.getByTestId("picker-menu");
+  const menu = pickerMenu(row);
 
   const box = await menu.boundingBox();
   expect(box).not.toBeNull();

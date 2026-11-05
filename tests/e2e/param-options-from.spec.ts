@@ -2,7 +2,7 @@
 // options from the item catalog, so extending the option set is an item edit rather than a
 // slot edit. Driven through a test tag carried by a few imported test items.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput } from "./support/app";
+import { openBuilder, slotRow, pickerInput, pickerMenu } from "./support/app";
 import { layerRow } from "./support/nav";
 import { openSlotsTab, newInOutline } from "./support/layerEditor";
 import { importTestCatalog } from "./support/testCatalog";
@@ -33,7 +33,7 @@ async function openParametersTab(page: Page) {
 async function chooseIn(page: Page, testId: string, label: string) {
   const combo = page.getByTestId(testId);
   await combo.getByTestId("picker-input").click();
-  await combo.getByText(label, { exact: true }).click();
+  await pickerMenu(combo).getByText(label, { exact: true }).click();
 }
 
 /** Authors a `list` param deriving its options from `TAG`. */
@@ -95,12 +95,14 @@ test("a derived parameter offers one option per matching item, in name order", a
   await expect(row).toBeVisible();
   await pickerInput(row).click();
   for (const name of PARAGONS) {
-    await expect(row.getByText(name, { exact: true })).toBeVisible();
+    await expect(
+      pickerMenu(row).getByText(name, { exact: true }),
+    ).toBeVisible();
   }
 
   // Picking a derived option stores it and equips the item behind it -- a derived option's
   // linkedItem *is* the item it came from, so it can't dangle the way a hand-written one can.
-  await row.getByText(PARAGONS[1], { exact: true }).click();
+  await pickerMenu(row).getByText(PARAGONS[1], { exact: true }).click();
   await expect(pickerInput(row)).toHaveValue(PARAGONS[1]);
 });
 
@@ -121,5 +123,7 @@ test("the empty row appears only when the parameter asks for it", async ({
 
   const row = slotRow(page, "options.preferred-paragon");
   await pickerInput(row).click();
-  await expect(row.getByText("- none -", { exact: true })).toBeVisible();
+  await expect(
+    pickerMenu(row).getByText("- none -", { exact: true }),
+  ).toBeVisible();
 });

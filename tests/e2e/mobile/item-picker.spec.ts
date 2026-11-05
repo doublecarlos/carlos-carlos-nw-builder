@@ -10,6 +10,8 @@ import {
   pickerScreen,
   slotFilterStatCombo,
   slotRow,
+  pickerMenu,
+  pickerAside,
 } from "../support/app";
 import { TEST_HEAD, importTestHead } from "../support/testHead";
 
@@ -243,10 +245,8 @@ test("a tablet keeps the floating menu and the item card", async ({ page }) => {
   await pickerInput(row).press("ArrowDown");
 
   await expect(pickerScreen(page)).toHaveCount(0);
-  await expect(row.getByTestId("picker-menu")).toBeVisible();
-  await expect(
-    row.getByTestId("picker-aside").getByTestId("item-card"),
-  ).toBeVisible();
+  await expect(pickerMenu(row)).toBeVisible();
+  await expect(pickerAside(row).getByTestId("item-card")).toBeVisible();
 });
 
 // A phone has no room for the card beside the list, so each candidate's info button opens it

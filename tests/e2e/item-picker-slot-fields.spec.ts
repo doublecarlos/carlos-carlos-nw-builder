@@ -13,6 +13,7 @@ import {
   openBuilder,
   pickerInput,
   slotRow,
+  pickerMenu,
 } from "./support/app";
 
 /** A plain candidate every fixture carries, with no repetition config of its own. */
@@ -84,10 +85,7 @@ test.describe("quick", () => {
 
     await input.click();
     await input.fill(PLAIN);
-    await picker
-      .getByTestId("picker-menu")
-      .getByText(PLAIN, { exact: true })
-      .click();
+    await pickerMenu(picker).getByText(PLAIN, { exact: true }).click();
 
     await expect(input).toHaveValue(PLAIN);
   });
@@ -108,7 +106,9 @@ test.describe("disallowEmpty", () => {
     await importOverlay(page, {});
     const row = slotRow(page, SLOT_ID);
     await pickerInput(row).click();
-    await expect(row.getByText("- empty -", { exact: true })).toBeVisible();
+    await expect(
+      pickerMenu(row).getByText("- empty -", { exact: true }),
+    ).toBeVisible();
   });
 
   test("a disallowEmpty slot does not", async ({ page }) => {
@@ -123,7 +123,7 @@ test.describe("disallowEmpty", () => {
     await pickerInput(row).click();
     // The candidates are still all there -- only the "no value" row is gone.
     await expect(
-      row.getByTestId("picker-menu").getByText(PLAIN, { exact: true }),
+      pickerMenu(row).getByText(PLAIN, { exact: true }),
     ).toBeVisible();
     await expect(row.getByText("- empty -", { exact: true })).toHaveCount(0);
   });

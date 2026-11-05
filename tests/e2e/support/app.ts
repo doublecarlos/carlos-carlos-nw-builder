@@ -96,6 +96,16 @@ export function pickerInput(row: Locator): Locator {
   return row.getByTestId("picker-input");
 }
 
+/** The open floating menu. It lives in <body>, so `scope` only supplies the page. */
+export function pickerMenu(scope: Locator): Locator {
+  return scope.page().getByTestId("picker-menu");
+}
+
+/** The detail panel beside the floating menu a combobox inside `scope` opened. */
+export function pickerAside(scope: Locator): Locator {
+  return scope.page().getByTestId("picker-aside");
+}
+
 /** A point_assignment row's stepper input for one item id. */
 export function assignmentInput(row: Locator, itemId: string): Locator {
   return row.getByTestId(`assignment-input-${itemId}`);
@@ -158,7 +168,7 @@ export async function chooseItem(page: Page, slotId: string, itemName: string) {
   const input = pickerInput(row);
   await input.click();
   const phone = isPhoneViewport(page);
-  const list = phone ? pickerScreen(page) : row;
+  const list = phone ? pickerScreen(page) : pickerMenu(row);
   await (phone ? list.getByTestId("picker-search") : input).fill(itemName);
   // A universal insignia slot lists one candidate under every bonus heading it belongs to, so
   // an exact-name match is not always a single row.
@@ -198,7 +208,7 @@ export function className(classId: string): string {
  * a fixed option list instead of the item catalog. */
 export async function chooseCombo(combo: Locator, label: string) {
   await combo.getByTestId("picker-input").click();
-  await combo.getByText(label, { exact: true }).click();
+  await pickerMenu(combo).getByText(label, { exact: true }).click();
 }
 
 /** The build slot text filter input, above the section list. */

@@ -3,7 +3,7 @@
 // coverage. Before this, a grant or variant carrying `dynamicStats` had no widget and was
 // always forced into the JSON escape hatch.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 /** Opens a fresh layer, switches to its Bonuses tab, and starts a new (unsaved) bonus --
@@ -35,7 +35,7 @@ test("a flat grant's dynamic stat rows can be added and removed without forcing 
   const numberInputs = row.locator('input[type="number"]');
   await statPicker.click();
   await statPicker.fill("Item Level");
-  await row.getByText("Item Level", { exact: true }).click();
+  await pickerMenu(row).getByText("Item Level", { exact: true }).click();
   await numberInputs.nth(0).fill("0"); // Min
   await numberInputs.nth(1).fill("5"); // Max
   await numberInputs.nth(2).fill("3"); // Default
@@ -72,7 +72,7 @@ test("a variant's own dynamic stat rows are independent of the grant's flat ones
   const statPicker = row.getByTestId("picker-input");
   await statPicker.click();
   await statPicker.fill("Item Level");
-  await row.getByText("Item Level", { exact: true }).click();
+  await pickerMenu(row).getByText("Item Level", { exact: true }).click();
   await row.locator('input[type="number"]').nth(2).fill("2"); // Default
 
   // Still form-editable, not forced to JSON.

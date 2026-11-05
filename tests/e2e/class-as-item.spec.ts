@@ -10,6 +10,7 @@ import {
   chooseItem,
   chooseClass,
   className,
+  pickerMenu,
 } from "./support/app";
 
 test("the class row is a picker over class items", async ({ page }) => {
@@ -19,14 +20,13 @@ test("the class row is a picker over class items", async ({ page }) => {
   await pickerInput(row).click();
   // One row per class item, named by the item rather than by a hand-written option label.
   await expect(
-    row.getByText(className("warlock"), { exact: true }),
+    pickerMenu(row).getByText(className("warlock"), { exact: true }),
   ).toBeVisible();
   await expect(
-    row.getByText(className("wizard"), { exact: true }),
+    pickerMenu(row).getByText(className("wizard"), { exact: true }),
   ).toBeVisible();
 
-  await row
-    .getByTestId("picker-menu")
+  await pickerMenu(row)
     .getByText(className("warlock"), { exact: true })
     .click();
   await expect(pickerInput(row)).toHaveValue(className("warlock"));
@@ -41,7 +41,9 @@ test("picking a class still filters class-restricted items out of other pickers"
   await chooseClass(page, "warlock");
   const paragon = slotRow(page, "options.paragon");
   await pickerInput(paragon).click();
-  await expect(paragon.getByText("Hellbringer", { exact: true })).toBeVisible();
+  await expect(
+    pickerMenu(paragon).getByText("Hellbringer", { exact: true }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
 
   await chooseClass(page, "wizard");

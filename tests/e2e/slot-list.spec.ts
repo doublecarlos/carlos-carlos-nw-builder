@@ -14,6 +14,7 @@ import {
   cursorKey,
   chooseItem,
   undoButton,
+  pickerMenu,
 } from "./support/app";
 import { TEST_HEAD, importTestHead } from "./support/testHead";
 
@@ -56,7 +57,7 @@ test.describe("choosing and clearing an item", () => {
     const row = slotRow(page, "gear.head");
 
     await pickerInput(row).click();
-    await row.getByText("- empty -", { exact: true }).click();
+    await pickerMenu(row).getByText("- empty -", { exact: true }).click();
 
     await expect(pickerInput(row)).toHaveValue("");
   });
@@ -458,7 +459,7 @@ test.describe("keyboard cursor", () => {
     const row = slotRow(page, "gear.head");
     await expect(pickerInput(row)).toBeFocused();
     await expect(pickerInput(row)).toHaveValue("d");
-    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await expect(pickerMenu(row)).toBeVisible();
   });
 
   test("arrow keys are not treated as row navigation while the picker input is focused", async ({
@@ -488,7 +489,7 @@ test.describe("keyboard cursor", () => {
 
     const row = slotRow(page, "gear.head");
     await pickerInput(row).click();
-    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await expect(pickerMenu(row)).toBeVisible();
 
     // The picker input now has focus and its own key handling owns the arrows -- keydowns
     // inside the input never reach the row's cursor anchor (a sibling, not an ancestor).
@@ -497,7 +498,7 @@ test.describe("keyboard cursor", () => {
       "data-cursor-key",
       "slot:gear.head",
     );
-    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await expect(pickerMenu(row)).toBeVisible();
   });
 
   test("Escape from an open picker keeps the row cursor", async ({ page }) => {
@@ -514,7 +515,7 @@ test.describe("keyboard cursor", () => {
     await page.keyboard.press("Enter");
     const row = slotRow(page, "gear.head");
     await expect(pickerInput(row)).toBeFocused();
-    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await expect(pickerMenu(row)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -535,7 +536,7 @@ test.describe("keyboard cursor", () => {
     // blurs to the row's cursor anchor (same as Escape), not to <body>.
     await page.keyboard.press("d");
     await expect(pickerInput(row)).toBeFocused();
-    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await expect(pickerMenu(row)).toBeVisible();
     await page.keyboard.press("Enter");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -662,9 +663,11 @@ test.describe("keyboard cursor: build_parameter rows", () => {
 
     await expect(row.getByTestId("picker-input")).toBeFocused();
     await expect(row.getByTestId("picker-input")).toHaveValue("t");
-    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await expect(pickerMenu(row)).toBeVisible();
     // The role list should be filtered to Tank only
-    await expect(row.getByText("Tank", { exact: true })).toBeVisible();
+    await expect(
+      pickerMenu(row).getByText("Tank", { exact: true }),
+    ).toBeVisible();
   });
 
   test("Backspace on a build_parameter row resets to its default", async ({
@@ -683,7 +686,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     const row = slotRow(page, "options.role");
     // Change to 'healer'
     await row.getByTestId("picker-input").click();
-    await row.getByText("Healer", { exact: true }).click();
+    await pickerMenu(row).getByText("Healer", { exact: true }).click();
 
     // Verify it changed
     await expect(row.getByTestId("picker-input")).toHaveValue("Healer");
@@ -710,7 +713,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     const row = slotRow(page, "options.class");
     // Open the combobox by clicking its input
     await row.getByTestId("picker-input").click();
-    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await expect(pickerMenu(row)).toBeVisible();
 
     // The input's own key handling owns arrows while it's focused.
     await page.keyboard.press("ArrowDown");
@@ -718,7 +721,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
       "data-cursor-key",
       "slot:options.class",
     );
-    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await expect(pickerMenu(row)).toBeVisible();
   });
 
   test("Delete (same as Backspace) resets to default", async ({ page }) => {
@@ -735,7 +738,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     const row = slotRow(page, "options.role");
     // Change to 'tank'
     await row.getByTestId("picker-input").click();
-    await row.getByText("Tank", { exact: true }).click();
+    await pickerMenu(row).getByText("Tank", { exact: true }).click();
 
     await expect(row.getByTestId("picker-input")).toHaveValue("Tank");
 

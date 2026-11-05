@@ -18,6 +18,7 @@ import {
   importText,
   confirmImport,
   openSectionActions,
+  pickerMenu,
 } from "./support/app";
 import {
   addBuild,
@@ -144,7 +145,7 @@ test.describe("build_parameter compare diff apply", () => {
     await openBuilder(page);
     const roleRow = slotRow(page, "options.role");
     await roleRow.getByTestId("picker-input").click();
-    await roleRow.getByText("Tank", { exact: true }).click();
+    await pickerMenu(roleRow).getByText("Tank", { exact: true }).click();
 
     // Build 2: role unset, compared against build 1
     await page.getByTestId("nav-add-build").click();
@@ -177,7 +178,7 @@ test.describe("build_parameter compare diff apply", () => {
     await openBuilder(page);
     const roleRow = slotRow(page, "options.role");
     await roleRow.getByTestId("picker-input").click();
-    await roleRow.getByText("Tank", { exact: true }).click();
+    await pickerMenu(roleRow).getByText("Tank", { exact: true }).click();
 
     // Build 2: role unset, compared against build 1
     await page.getByTestId("nav-add-build").click();
@@ -295,9 +296,11 @@ test.describe("folder names in the build pickers", () => {
     const combo = page.locator(".compare-select");
 
     await pickerInput(combo).click();
-    await expect(combo.getByTestId("picker-group")).toHaveText("Alts");
+    await expect(pickerMenu(combo).getByTestId("picker-group")).toHaveText(
+      "Alts",
+    );
     // The heading carries the folder, so the row itself is just the name.
-    const row = combo
+    const row = pickerMenu(combo)
       .getByTestId("picker-option")
       .filter({ hasText: "Build 1" });
     await expect(row).toHaveText("Build 1");
@@ -318,9 +321,11 @@ test.describe("folder names in the build pickers", () => {
     await pickerInput(combo).click();
 
     await expect(
-      combo.getByTestId("picker-option").filter({ hasText: "Build 2" }),
+      pickerMenu(combo)
+        .getByTestId("picker-option")
+        .filter({ hasText: "Build 2" }),
     ).toBeVisible();
-    await expect(combo.getByTestId("picker-group")).toHaveCount(0);
+    await expect(pickerMenu(combo).getByTestId("picker-group")).toHaveCount(0);
   });
 
   test("a heading is passed over rather than landed on", async ({ page }) => {
@@ -346,10 +351,14 @@ test.describe("folder names in the build pickers", () => {
     await pickerInput(combo).fill("Alts");
 
     await expect(
-      combo.getByTestId("picker-option").filter({ hasText: "Build 1" }),
+      pickerMenu(combo)
+        .getByTestId("picker-option")
+        .filter({ hasText: "Build 1" }),
     ).toBeVisible();
     // The heading only appears above builds that survived the filter.
-    await expect(combo.getByTestId("picker-group")).toHaveText("Alts");
+    await expect(pickerMenu(combo).getByTestId("picker-group")).toHaveText(
+      "Alts",
+    );
   });
 
   test("a name too long for the field keeps the dropdown inside the panel", async ({
@@ -368,7 +377,7 @@ test.describe("folder names in the build pickers", () => {
     // The field is a narrow stat-panel table cell and the panel's scroller clips
     // horizontally, so the menu grows rightward into the panel: growing leftward would put
     // the rows' text outside the clip.
-    const menuBox = await combo.getByTestId("picker-menu").boundingBox();
+    const menuBox = await pickerMenu(combo).boundingBox();
     const panelBox = await page.getByTestId("stat-panel-column").boundingBox();
     expect(menuBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
     expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(

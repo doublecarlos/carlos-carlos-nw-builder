@@ -11,6 +11,7 @@ import {
   redoButton,
   slotRow,
   undoButton,
+  pickerMenu,
 } from "./support/app";
 import {
   addBuild,
@@ -28,9 +29,7 @@ function activeScope(page: Page) {
 async function pickFirstHead(page: Page): Promise<string> {
   await parkCursorOnRow(page, "gear.head");
   await page.keyboard.press("Enter");
-  await expect(
-    slotRow(page, "gear.head").getByTestId("picker-menu"),
-  ).toBeVisible();
+  await expect(pickerMenu(slotRow(page, "gear.head"))).toBeVisible();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   const head = pickerInput(slotRow(page, "gear.head"));

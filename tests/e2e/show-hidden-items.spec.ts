@@ -13,6 +13,7 @@ import {
   setItemFilter,
   slotRow,
   togglePickerOption,
+  pickerMenu,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
@@ -74,12 +75,12 @@ test("a cleared retired pick can be picked back once the lens is on", async ({
   // Clearing the pick is what used to lose the item: the slot holding one is the only place
   // still offering it.
   await pickerInput(row).click();
-  await row.getByTestId("picker-menu").getByText("- empty -").click();
+  await pickerMenu(row).getByText("- empty -").click();
   await expect(pickerInput(row)).toHaveValue("");
 
   await pickerInput(row).click();
   await expect(
-    row.getByTestId("picker-menu").getByText(RETIRED_ITEM, { exact: true }),
+    pickerMenu(row).getByText(RETIRED_ITEM, { exact: true }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
@@ -88,13 +89,13 @@ test("a cleared retired pick can be picked back once the lens is on", async ({
   const input = pickerInput(row);
   await input.click();
   await input.fill(RETIRED_ITEM);
-  const option = row.getByTestId("picker-menu").getByText(RETIRED_ITEM, {
+  const option = pickerMenu(row).getByText(RETIRED_ITEM, {
     exact: true,
   });
   await expect(option).toBeVisible();
   // The row says what is wrong with it, so a wider list is not just a longer one.
   await expect(
-    row.getByTestId("picker-option-hidden-reason").first(),
+    pickerMenu(row).getByTestId("picker-option-hidden-reason").first(),
   ).toHaveText("retired");
 
   await option.click();
@@ -107,7 +108,7 @@ test("a cleared retired pick can be picked back once the lens is on", async ({
   await other.scrollIntoViewIfNeeded();
   await pickerInput(other).click();
   await expect(
-    other.getByTestId("picker-menu").getByText(RETIRED_ITEM, { exact: true }),
+    pickerMenu(other).getByText(RETIRED_ITEM, { exact: true }),
   ).toHaveCount(0);
 });
 
@@ -128,7 +129,7 @@ test("a candidate at its copy cap comes back saying how many are spent", async (
   await input.click();
   await input.fill(CAPPED_ITEM);
   await expect(
-    other.getByTestId("picker-menu").getByText(CAPPED_ITEM, { exact: true }),
+    pickerMenu(other).getByText(CAPPED_ITEM, { exact: true }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
@@ -137,11 +138,11 @@ test("a candidate at its copy cap comes back saying how many are spent", async (
   await input.click();
   await input.fill(CAPPED_ITEM);
   await expect(
-    other.getByTestId("picker-menu").getByText(CAPPED_ITEM, { exact: true }),
+    pickerMenu(other).getByText(CAPPED_ITEM, { exact: true }),
   ).toBeVisible();
-  await expect(other.getByTestId("picker-option-hidden-reason")).toHaveText(
-    "1/1 copies",
-  );
+  await expect(
+    pickerMenu(other).getByTestId("picker-option-hidden-reason"),
+  ).toHaveText("1/1 copies");
 });
 
 // Typing a full id is unambiguous, so the picker offers it even while the lens is off, with
@@ -168,16 +169,14 @@ test("an exact id offers a withheld candidate without turning the lens on", asyn
   await input.click();
   await input.fill(RETIRED_ITEM);
   await expect(
-    row.getByTestId("picker-menu").getByText(RETIRED_ITEM, { exact: true }),
+    pickerMenu(row).getByText(RETIRED_ITEM, { exact: true }),
   ).toHaveCount(0);
 
   await input.fill(itemId);
-  const option = row
-    .getByTestId("picker-menu")
-    .getByText(RETIRED_ITEM, { exact: true });
+  const option = pickerMenu(row).getByText(RETIRED_ITEM, { exact: true });
   await expect(option).toBeVisible();
   await expect(
-    row.getByTestId("picker-option-hidden-reason").first(),
+    pickerMenu(row).getByTestId("picker-option-hidden-reason").first(),
   ).toHaveText("retired");
 
   await option.click();
@@ -200,9 +199,7 @@ test("searching by id is opt-in for partial matches", async ({ page }) => {
   const row = slotRow(page, "gear.ring1");
   await row.scrollIntoViewIfNeeded();
   const input = pickerInput(row);
-  const option = row
-    .getByTestId("picker-menu")
-    .getByText(RETIRED_ITEM, { exact: true });
+  const option = pickerMenu(row).getByText(RETIRED_ITEM, { exact: true });
 
   await input.click();
   await input.fill(partial);

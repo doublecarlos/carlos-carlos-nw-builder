@@ -74,6 +74,22 @@ watch(
 /** True for a section holding point_assignment steppers, whose columns may overflow the body. */
 const hasAssignments = computed(() => props.assignmentColumns > 0);
 
+/** Off-screen bodies skip rendering (`content-visibility: auto`) and keep their last rendered
+ *  size. Containment starts after the first frame so that size is real, not an estimate that
+ *  shifts the page when it renders. The clip margin keeps focus rings from being cut. */
+const body = useTemplateRef("body");
+const contained = ref(false);
+watch(
+  body,
+  (el) => {
+    if (!el || contained.value) return;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => (contained.value = true)),
+    );
+  },
+  { flush: "post" },
+);
+
 /** Every section body is one grid and every row reuses its tracks via subgrid, so labels and
  *  controls line up across the whole editor. A point section adds one max-content stepper
  *  track plus a trailing filler every row spans, so the steppers neither wrap nor stretch and
@@ -144,8 +160,12 @@ const bodyStyle = computed(() => ({
     <div
       v-if="bodyMounted"
       v-show="expanded"
-      class="bg-surface pb-2 pt-1 grid gap-x-2.5 animate-fade-in grid-cols-(--section-columns) max-md:grid-cols-[minmax(0,1fr)]"
-      :class="hasAssignments && 'md:overflow-x-auto'"
+      ref="body"
+      class="bg-surface pb-2 pt-1 grid gap-x-2.5 animate-fade-in grid-cols-(--section-columns) max-md:grid-cols-[minmax(0,1fr)] [contain-intrinsic-block-size:auto_none]"
+      :class="[
+        hasAssignments && 'md:overflow-x-auto',
+        contained && '[content-visibility:auto] [overflow-clip-margin:4px]',
+      ]"
       :style="bodyStyle"
       data-testid="section-body"
     >

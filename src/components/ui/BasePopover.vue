@@ -10,6 +10,7 @@
 //
 // Sits above BaseModal's z-modal, so a control inside a modal can still have a tooltip.
 import { ref, nextTick, useTemplateRef } from "vue";
+import { provideOverlayLayer } from "../../composables/useOverlayLayer";
 
 const props = withDefaults(
   defineProps<{
@@ -29,6 +30,8 @@ const props = withDefaults(
   }>(),
   { width: 256, fitContent: false, animate: true },
 );
+
+provideOverlayLayer(() => "z-popover");
 
 const el = useTemplateRef("el");
 const pos = ref<{ left: number; top: number } | null>(null);
