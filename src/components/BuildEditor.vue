@@ -1053,6 +1053,17 @@ function statSummary(slotId: string) {
  *
  * Held with the platform modifier, the same arrows step a whole section per press instead.
  */
+/** Applies a compare-only row, which turns it into an ordinary row under the same cursor key,
+ *  and keeps the cursor on it. */
+async function applyCompareOnly(slotId: string) {
+  buildEditor.applyFromCompare(slotId);
+  await nextTick();
+  const row = root.value?.querySelector(
+    `[data-cursor-key="slot:${CSS.escape(slotId)}"]`,
+  );
+  if (row) focusRow(row);
+}
+
 function moveCursor(dir: 1 | -1, bySection = false) {
   if (bySection) moveCursorBySection(dir);
   else moveCursorByRow(dir);
@@ -1554,6 +1565,8 @@ watch(
               :highlight-diff="highlightDiff"
               :no-border="noBorderIds.has(slotDef.id)"
               :nest="nestById.get(slotDef.id)"
+              :on-arrow="moveCursor"
+              @apply="applyCompareOnly(slotDef.id)"
             />
             <BuildSlot
               v-else

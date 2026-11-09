@@ -143,6 +143,39 @@ test.describe("comparing against a build with more rows", () => {
     await expect(slotRow(page, row(1))).toBeHidden();
   });
 
+  // Applying the extra row adds it here with the compare build's pick, so it stops differing.
+  test("applying the extra row adds it with the compare build's pick", async ({
+    page,
+  }) => {
+    await compareWithLongerList(page);
+    await page.getByRole("checkbox", { name: "Highlight changes" }).check();
+    await extraRow(page).getByTestId("compare-only-apply").click();
+
+    await expect(extraRow(page)).toHaveCount(0);
+    await expect(pickerInput(slotRow(page, row(2)))).toHaveValue(
+      MISC_ITEM.name,
+    );
+    await expect(slotRow(page, row(2))).not.toHaveAttribute("data-diff");
+  });
+
+  // Enter on the extra row applies it and the cursor stays on the row it became.
+  test("Enter on the extra row applies it and keeps the cursor", async ({
+    page,
+  }) => {
+    await compareWithLongerList(page);
+    await page.getByRole("checkbox", { name: "Highlight changes" }).check();
+    await slotRow(page, row(1)).locator("[data-cursor-anchor]").focus();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+
+    await expect(pickerInput(slotRow(page, row(2)))).toHaveValue(
+      MISC_ITEM.name,
+    );
+    await expect(
+      slotRow(page, row(2)).locator("[data-cursor-anchor]"),
+    ).toBeFocused();
+  });
+
   // Adding the row in this build turns the read-only row into an ordinary, editable one.
   test("adding the row replaces the read-only one", async ({ page }) => {
     await compareWithLongerList(page);
