@@ -22,6 +22,7 @@ defineProps<{ nest: NestPosition }>();
   />
   <span
     aria-hidden="true"
+    data-testid="nest-elbow"
     class="pointer-events-none absolute left-3.5 top-4 h-px w-3.5 bg-line"
   />
   <span
