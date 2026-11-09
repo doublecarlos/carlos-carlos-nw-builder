@@ -250,6 +250,8 @@ export function applyFromCompare(slotId: string) {
       : `clear ${slot} (from "${other.name}")`,
     b,
   );
+  // A list row past this build's count is one the compare build has: add it first.
+  growListTo(b, slotId);
   copySlotData(b, other, slotId);
   builds.finishEdit(b.id);
 }
@@ -590,12 +592,15 @@ function growListsFor(b: Build, preset: SectionPreset) {
     ...Object.keys(preset.values ?? {}),
     ...Object.keys(preset.assignments ?? {}),
   ];
-  for (const slotId of named) {
-    const row = parseRowSlotId(slotId);
-    const slot = row ? db.value.slotById.get(row.listId) : undefined;
-    if (!row || slot?.type !== "item_picker_list") continue;
-    b.listRows[row.listId] = Math.max(listRowCount(b, slot), row.index);
-  }
+  for (const slotId of named) growListTo(b, slotId);
+}
+
+/** Grows the list behind a row id to hold that row. Any other id is left alone. */
+function growListTo(b: Build, slotId: string) {
+  const row = parseRowSlotId(slotId);
+  const slot = row ? db.value.slotById.get(row.listId) : undefined;
+  if (!row || slot?.type !== "item_picker_list") return;
+  b.listRows[row.listId] = Math.max(listRowCount(b, slot), row.index);
 }
 
 export function applyPreset(preset: SectionPreset) {

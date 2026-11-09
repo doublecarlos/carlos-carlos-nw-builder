@@ -8,7 +8,7 @@
 import { collect, type Collected } from "../engine/bonus";
 import { evaluate } from "../engine/conditions";
 import { withDerivedBonuses } from "../engine/insignia";
-import { expandSlots, parseRowSlotId } from "./item-picker-list";
+import { expandSlots, listRowCount, parseRowSlotId } from "./item-picker-list";
 import { SLOT_FIELDS, clearSlotData, storedSlotIds } from "./slot-fields";
 import { nestedParentId } from "./slot-parent";
 import type { Build, ConditionWhen, Db, EvalContext, Slot } from "../types";
@@ -49,17 +49,22 @@ export function slotShown(slot: Slot, hidden: ReadonlySet<string>): boolean {
   return !(slot.type === "item_picker" && slot.list && hidden.has(slot.list));
 }
 
+/** Why a compare-only row has nothing of this build's: the slot is hidden here, or it is a list
+ *  row past this build's own count. */
+export type CompareOnlyReason = "unavailable" | "extraRow";
+
 export interface ComparedSlots {
   /** In render order, a list expanded into its rows. */
   slots: Slot[];
-  /** Ids of the rows `build` hides but the compare build fills. */
-  compareOnly: ReadonlySet<string>;
+  /** Ids of the rows the compare build fills and `build` has no row for, with why. */
+  compareOnly: ReadonlyMap<string, CompareOnlyReason>;
 }
 
 /**
- * `build`'s slots as the editor lists them: the ones it shows, plus, in place of each one it
- * hides, the rows `compare` fills there. A hidden slot holds nothing of its own, so without
- * these a compare build's pick in it would have no row to differ on.
+ * `build`'s slots as the editor lists them: the ones it shows, plus the rows `compare` fills
+ * where `build` has none. That is each slot it hides, in place, and each list row past its own
+ * count, after its own rows. Without these a compare build's pick there would have no row to
+ * differ on.
  */
 export function slotsWithCompare(
   slots: Slot[],
@@ -68,22 +73,34 @@ export function slotsWithCompare(
   compare: Build | null,
 ): ComparedSlots {
   const out: Slot[] = [];
-  const compareOnly = new Set<string>();
+  const compareOnly = new Map<string, CompareOnlyReason>();
+  const addFilled = (rows: Slot[], reason: CompareOnlyReason) => {
+    for (const row of rows) {
+      if (!compare?.choices?.[row.id]) continue;
+      out.push(row);
+      compareOnly.set(row.id, reason);
+    }
+  };
   for (const slot of slots) {
     if (!hidden.has(slot.id)) {
-      out.push(...expandSlots([slot], build));
+      if (slot.type !== "item_picker_list" || !compare) {
+        out.push(...expandSlots([slot], build));
+        continue;
+      }
+      // Own rows, then the compare build's extra rows, then the container's "Add" row.
+      const own = listRowCount(build, slot);
+      out.push(...expandSlots([slot], build).slice(0, -1));
+      addFilled(expandSlots([slot], compare).slice(own, -1), "extraRow");
+      out.push(slot);
       continue;
     }
     if (!compare) continue;
-    const rows =
+    addFilled(
       slot.type === "item_picker_list"
-        ? expandSlots([slot], compare).filter((row) => row !== slot)
-        : [slot];
-    for (const row of rows) {
-      if (!compare.choices?.[row.id]) continue;
-      out.push(row);
-      compareOnly.add(row.id);
-    }
+        ? expandSlots([slot], compare).slice(0, -1)
+        : [slot],
+      "unavailable",
+    );
   }
   return { slots: out, compareOnly };
 }

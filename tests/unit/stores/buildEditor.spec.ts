@@ -1080,6 +1080,44 @@ describe("buildEditor slot data", () => {
     expect(mine.assignments[SLOT]).not.toBe(other.assignments[SLOT]);
   });
 
+  // Rows are positional, so applying a row past this build's count grows the list to it,
+  // leaving the rows between empty, and the whole apply is one undo step.
+  it("grows the list to hold a compare row past this build's count", async () => {
+    const { builds, buildEditor } = await freshStores();
+    const other = builds.build.value!;
+    other.listRows["misc.misc"] = 3;
+    other.choices["misc.misc#3"] = "ItemA";
+
+    builds.createBuild();
+    const mine = builds.build.value!;
+    mine.compare.id = other.id;
+    mine.listRows["misc.misc"] = 1;
+    buildEditor.applyFromCompare("misc.misc#3");
+
+    expect(mine.listRows["misc.misc"]).toBe(3);
+    expect(mine.choices["misc.misc#3"]).toBe("ItemA");
+    expect(mine.choices["misc.misc#2"]).toBeUndefined();
+
+    buildEditor.undo();
+    const undone = builds.build.value!;
+    expect(undone.listRows["misc.misc"]).toBe(1);
+    expect(undone.choices["misc.misc#3"]).toBeUndefined();
+  });
+
+  it("never shrinks the list when applying a row it already holds", async () => {
+    const { builds, buildEditor } = await freshStores();
+    const other = builds.build.value!;
+    other.choices["misc.misc#1"] = "ItemA";
+
+    builds.createBuild();
+    const mine = builds.build.value!;
+    mine.compare.id = other.id;
+    mine.listRows["misc.misc"] = 3;
+    buildEditor.applyFromCompare("misc.misc#1");
+
+    expect(mine.listRows["misc.misc"]).toBe(3);
+  });
+
   it("clears every field when the compare build's slot is empty", async () => {
     const { builds, buildEditor } = await freshStores();
     const other = builds.build.value!;

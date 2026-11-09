@@ -1,15 +1,21 @@
 <script setup lang="ts">
-// A slot this build hides but the compare build fills. The build holds nothing here and cannot,
-// so the row is read-only: it only says what the compare build has, highlighted like any
-// differing row. Like TextRow, it carries no data-cursor-key, so the arrow-key cursor and Tab
-// skip it.
+// A row the compare build fills and this build has none of: a slot it hides, or a list row past
+// its own count. It says what the compare build has, highlighted like any differing row. A
+// hidden slot's row is read-only and, like TextRow, carries no data-cursor-key, so the arrow-key
+// cursor skips it. An extra list row can be applied, which adds the row here, so it is a cursor
+// row with Enter as apply.
+import { useTemplateRef } from "vue";
 import NestGuide from "./NestGuide.vue";
+import BaseLink from "../ui/BaseLink.vue";
+import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { toneStyle } from "../../lib/item-quality";
 import type { Slot } from "../../types";
 import type { NestPosition } from "../../lib/slot-parent";
+import type { CompareOnlyReason } from "../../lib/slot-availability";
 
-defineProps<{
+const props = defineProps<{
   slotDef: Slot;
+  reason: CompareOnlyReason;
   compareName: string;
   otherChoiceLabel: string;
   otherChoiceQuality?: string | null;
@@ -17,7 +23,18 @@ defineProps<{
   noBorder?: boolean;
   /** See `BuildSlot`'s prop of the same name. */
   nest?: NestPosition;
+  /** Arrow keys on an extra row's cursor anchor, same contract every other row has. */
+  onArrow: (dir: 1 | -1, bySection: boolean) => void;
 }>();
+
+const emit = defineEmits<{ apply: [] }>();
+
+const anchor = useTemplateRef("anchor");
+
+useCursorRowKeys(anchor, {
+  onArrow: (dir, bySection) => props.onArrow(dir, bySection),
+  onEnter: () => emit("apply"),
+});
 </script>
 
 <template>
@@ -28,9 +45,13 @@ defineProps<{
         ? 'border-b-0'
         : 'border-b border-line/45 last:border-b-0',
       highlightDiff && 'is-diff bg-diff/20',
+      reason === 'extraRow' &&
+        'focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent',
     ]"
     :data-diff="highlightDiff || undefined"
     :data-testid="'compare-only:' + slotDef.id"
+    :data-reason="reason"
+    :data-cursor-key="reason === 'extraRow' ? 'slot:' + slotDef.id : undefined"
   >
     <NestGuide v-if="nest" :nest="nest" />
     <span
@@ -42,12 +63,33 @@ defineProps<{
       class="min-w-0 [grid-column:2/-1] py-0.5 max-md:[grid-column:1/-1]"
       :class="nest ? 'pl-6 max-md:pl-8.5' : 'max-md:pl-2.5'"
     >
-      <p class="italic text-muted">Not available in this build</p>
+      <span
+        v-if="reason === 'extraRow'"
+        ref="anchor"
+        tabindex="-1"
+        data-cursor-anchor
+        class="sr-only"
+      />
+      <p class="italic text-muted">
+        {{
+          reason === "extraRow"
+            ? "No such row in this build"
+            : "Not available in this build"
+        }}
+      </p>
       <p class="slot-diff-note mt-0.5 text-muted">
         {{ compareName }}:
         <span class="text-(--tone)" :style="toneStyle(otherChoiceQuality)">{{
           otherChoiceLabel
         }}</span>
+        <BaseLink
+          v-if="reason === 'extraRow'"
+          class="ml-0.5"
+          data-testid="compare-only-apply"
+          @click.stop="emit('apply')"
+        >
+          apply
+        </BaseLink>
       </p>
     </div>
   </div>
