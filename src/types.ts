@@ -10,6 +10,7 @@
 // `as const` literal, so `StatKey` is just `string` with a documentation-only name.
 
 import type rawSchema from "../data/schema.json";
+import type { TreeStep } from "./lib/tree-rows";
 
 export type StatDef = (typeof rawSchema)["stats"][number];
 export type StatKey = string;
@@ -977,15 +978,14 @@ export interface BuildFolder {
   items: string[];
 }
 
-/** A build offered as a picker choice, outside the sidebar that shows the grouping. `folder`
- * is the folder path joined with " / ", which keeps two same-named builds in different
- * folders apart; absent for a build sitting at the top level. `BuildComboBox.vue` renders
- * these in sidebar order, which is what lets it draw one heading per folder rather than
- * repeating the path on every row. */
+/** A build offered as a picker choice, outside the sidebar that shows the grouping. `path`,
+ * the folders holding it outermost first, is what keeps two same-named builds in different
+ * folders apart; absent for a build sitting at the top level. Listed in sidebar order, which
+ * is what lets every such surface draw the folder tree (lib/tree-rows.ts). */
 export interface BuildOption {
   value: string;
   label: string;
-  folder?: string;
+  path?: TreeStep[];
 }
 
 /** A bonus offered as a picker choice: its id as the value, its name as the label.

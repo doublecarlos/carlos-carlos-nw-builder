@@ -93,6 +93,14 @@ export function downloadedAt(id: string): number | null {
   return _builds.value.get(id)?.downloaded?.at ?? null;
 }
 
+/** The folders holding a build as tree steps, or undefined at the top level. */
+function folderSteps(id: string) {
+  const steps = folders
+    .ancestorsOf(id)
+    .map((folder) => ({ key: folder.id, label: folder.name }));
+  return steps.length ? steps : undefined;
+}
+
 /** Builds as picker options, each tagged with the folder path holding it. Every surface listing
  *  builds outside the sidebar goes through this, so the grouping that tells two same-named
  *  builds apart travels with them. `list` is expected in sidebar order, which `builds` already
@@ -101,7 +109,7 @@ export function toOptions(list: Build[]): BuildOption[] {
   return list.map((b) => ({
     value: b.id,
     label: b.name,
-    folder: folders.pathOf(b.id),
+    path: folderSteps(b.id),
   }));
 }
 

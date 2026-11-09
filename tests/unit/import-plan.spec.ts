@@ -11,6 +11,7 @@ import {
   type ParsedFile,
 } from "../../src/lib/import-plan";
 import * as storage from "../../src/storage/storage";
+import { pathLabel } from "../../src/lib/tree-rows";
 import type { Build, Layer } from "../../src/types";
 
 const parsed = (over: Partial<ParsedFile> = {}): ParsedFile => ({
@@ -71,7 +72,7 @@ describe("buildPlan", () => {
       ],
     });
 
-    expect(result.builds[0].folderPath).toBe("Alts");
+    expect(pathLabel(result.builds[0].path)).toBe("Alts");
   });
 });
 
@@ -259,7 +260,7 @@ describe("resolveImport", () => {
         { id: "f_2", name: "Tanks", collapsed: false, items: [inside.id] },
       ],
     });
-    expect(target.builds[0].folderPath).toBe("PvP / Tanks");
+    expect(pathLabel(target.builds[0].path)).toBe("PvP / Tanks");
 
     const result = resolve(target);
 

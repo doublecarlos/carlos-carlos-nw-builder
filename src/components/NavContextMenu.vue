@@ -12,6 +12,7 @@ import { ArrowLeft } from "@lucide/vue";
 import BaseMenu from "./ui/BaseMenu.vue";
 import BaseMenuItem from "./ui/BaseMenuItem.vue";
 import type { NavMenuItem } from "../lib/nav-menu";
+import { treePadding } from "../lib/tree-rows";
 
 const props = withDefaults(
   defineProps<{
@@ -53,9 +54,8 @@ function onItem(item: NavMenuItem, event: MouseEvent) {
   else emit("action", item.action, event.shiftKey);
 }
 
-/** Indents a hierarchy's entries past the menu's own padding. */
-const indentStyle = (item: NavMenuItem) =>
-  item.indent ? { paddingInlineStart: `${0.5 + item.indent * 0.75}rem` } : {};
+/** Indents a hierarchy's entries past the menu item's own padding. */
+const indentStyle = (item: NavMenuItem) => treePadding(item.indent ?? 0, 0.5);
 
 // v-if-gated by the parent, so it mounts fresh each time a menu opens. Open it right away:
 // BaseMenu's own ref is available as soon as this component mounts.

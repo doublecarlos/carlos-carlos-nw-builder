@@ -2,7 +2,8 @@
 // A section header's actions in one labeled menu: apply or save presets, copy the section from
 // another build, reset it. Picking which preset to overwrite or which build to copy from opens
 // a second list in the same menu, with Back, rather than squeezing a picker into it. The build
-// list is grouped by folder like the sidebar, since names are only unique within a folder.
+// list draws the sidebar's folder tree (lib/tree-rows.ts), since names are only unique within
+// a folder.
 //
 // Applying, copying and resetting act at once, each one undo step on the build. Overwriting a
 // preset lands on that layer's undo stack instead (see `layers.updatePreset`), which posts an
@@ -12,7 +13,6 @@ import {
   ArrowLeft,
   Copy,
   EllipsisVertical,
-  Folder,
   LayoutTemplate,
   Plus,
   RotateCcw,
@@ -21,6 +21,8 @@ import {
 import BaseMenu from "../ui/BaseMenu.vue";
 import BaseMenuItem from "../ui/BaseMenuItem.vue";
 import IconButton from "../ui/IconButton.vue";
+import FolderHeading from "./FolderHeading.vue";
+import { treePadding, treeRows } from "../../lib/tree-rows";
 import type { BuildOption, SectionPreset } from "../../types";
 
 const props = defineProps<{
@@ -51,15 +53,9 @@ function show(next: View) {
   void nextTick(() => menu.value?.focusFirst());
 }
 
-/** Each build, with the folder heading it starts, if any. */
+/** The builds with their folder headings, as the sidebar nests them. */
 const buildRows = computed(() =>
-  props.otherBuilds.map((build, index) => ({
-    build,
-    heading:
-      build.folder && build.folder !== props.otherBuilds[index - 1]?.folder
-        ? build.folder
-        : null,
-  })),
+  treeRows(props.otherBuilds, (build) => build.path),
 );
 
 /** Closes first, so an undo notice the action posts is not left behind the menu. */
@@ -158,20 +154,21 @@ const triggerClass = `section-actions-${props.sectionId}`;
         >
       </template>
       <template v-else>
-        <template v-for="row in buildRows" :key="row.build.value">
+        <template v-for="(row, index) in buildRows" :key="index">
           <div
-            v-if="row.heading"
-            class="flex items-center gap-1.5 px-2 py-1 text-muted"
+            v-if="row.kind === 'heading'"
+            class="px-2 py-1"
             data-testid="section-actions-folder"
           >
-            <Folder class="size-[14px]" />{{ row.heading }}
+            <FolderHeading :name="row.step.label" :depth="row.depth" />
           </div>
           <BaseMenuItem
-            :class="row.build.folder && 'pl-6'"
+            v-else
             :icon="Copy"
-            :data-testid="`section-actions-copy-${row.build.value}`"
-            @click="run(() => emit('copy', row.build.value))"
-            >{{ row.build.label }}</BaseMenuItem
+            :style="treePadding(row.depth, 0.5)"
+            :data-testid="`section-actions-copy-${row.item.value}`"
+            @click="run(() => emit('copy', row.item.value))"
+            >{{ row.item.label }}</BaseMenuItem
           >
         </template>
       </template>

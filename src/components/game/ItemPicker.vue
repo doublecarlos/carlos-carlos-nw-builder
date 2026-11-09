@@ -227,11 +227,12 @@ function searchTextFor(db: Db | null, item: Item) {
  *  query matches against. */
 const options = computed(() => {
   const db = props.db;
+  // Insignia headings are told apart by their label, so it doubles as the key.
   const optionFor = (item: Item, group?: string) => ({
     value: item.id,
     label: item.name,
     search: searchTextFor(db, item),
-    group,
+    group: group ? [{ key: group, label: group }] : undefined,
   });
   const items = visibleItems.value;
   if (!props.groups) return items.map((item) => optionFor(item));

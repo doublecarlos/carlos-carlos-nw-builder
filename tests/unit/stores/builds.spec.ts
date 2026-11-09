@@ -1,6 +1,7 @@
 // Tests for stores/builds.ts: create/duplicate/delete/reorder, trash integration,
 // bootstrap from empty, and persistence.
 import { describe, expect, it, vi } from "vitest";
+import { pathLabel } from "../../../src/lib/tree-rows";
 
 async function freshStores() {
   vi.resetModules();
@@ -199,8 +200,10 @@ describe("builds store", () => {
     builds.createBuild();
     const options = builds.otherBuilds.value;
 
-    expect(options.find((o) => o.value === filedId)?.folder).toBe("Alts");
-    expect(options.find((o) => o.value === topLevelId)?.folder).toBeUndefined();
+    expect(pathLabel(options.find((o) => o.value === filedId)?.path)).toBe(
+      "Alts",
+    );
+    expect(options.find((o) => o.value === topLevelId)?.path).toBeUndefined();
   });
 
   it("otherBuilds lists in sidebar order, so a folder's builds stay together", async () => {
@@ -217,13 +220,13 @@ describe("builds store", () => {
     folders.placeRow(secondId, folderId);
 
     builds.createBuild();
-    const listed = builds.otherBuilds.value.map((o) => o.folder);
+    const listed = builds.otherBuilds.value.map((o) => pathLabel(o.path));
     const filed = builds.otherBuilds.value.map((o) => o.value);
 
     expect(filed.indexOf(secondId)).toBe(filed.indexOf(firstId) + 1);
     expect(listed.filter((f) => f === "Alts")).toHaveLength(2);
     expect(
-      builds.otherBuilds.value.find((o) => o.value === thirdId)?.folder,
+      builds.otherBuilds.value.find((o) => o.value === thirdId)?.path,
     ).toBeUndefined();
   });
 });
@@ -301,7 +304,9 @@ describe("build options in nested folders", () => {
     builds.createBuild();
 
     expect(
-      builds.otherBuilds.value.find((o) => o.value === filedId)?.folder,
+      pathLabel(
+        builds.otherBuilds.value.find((o) => o.value === filedId)?.path,
+      ),
     ).toBe("PvP / Tanks");
   });
 });

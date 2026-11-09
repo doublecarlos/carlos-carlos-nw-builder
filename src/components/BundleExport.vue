@@ -12,7 +12,9 @@ import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 import { matchesQuery } from "../lib/text-filter";
 import { downloadJson } from "../lib/download";
-import { Download, Folder } from "@lucide/vue";
+import { Download } from "@lucide/vue";
+import FolderHeading from "./game/FolderHeading.vue";
+import { treeIndent, treeRows } from "../lib/tree-rows";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import BaseModal from "./ui/BaseModal.vue";
@@ -28,21 +30,17 @@ const selectedBuildIds = ref<Set<string>>(new Set());
 const selectedLayerIds = ref<Set<string>>(new Set());
 const autoTickedLayerIds = ref<Set<string>>(new Set());
 
-// The build column keeps the sidebar's order with a heading wherever the folder path
-// changes, the way the build pickers do, so what a folder holds is visible while picking.
-// Filtering matches build names only, and a folder with no match drops out.
-const filteredBuilds = computed(() => {
-  const kept = builds
-    .toOptions(builds.builds.value)
-    .filter((option) => matchesQuery(option.label, buildFilter.value));
-  return kept.map((option, index) => ({
-    option,
-    heading:
-      option.folder && option.folder !== kept[index - 1]?.folder
-        ? option.folder
-        : null,
-  }));
-});
+// The build column draws the sidebar's folder tree, the way the build pickers do
+// (lib/tree-rows.ts), so what a folder holds is visible while picking. Filtering matches
+// build names only, and a folder with no match drops out.
+const buildRows = computed(() =>
+  treeRows(
+    builds
+      .toOptions(builds.builds.value)
+      .filter((option) => matchesQuery(option.label, buildFilter.value)),
+    (option) => option.path,
+  ),
+);
 
 // All layers, filtered by name.
 const filteredLayers = computed(() =>
@@ -185,26 +183,26 @@ function selectAllLayers() {
           data-testid="bundle-build-filter"
         />
         <div class="max-h-48 space-y-1 overflow-y-auto">
-          <template v-for="row in filteredBuilds" :key="row.option.value">
+          <template v-for="(row, index) in buildRows" :key="index">
             <p
-              v-if="row.heading"
-              class="flex items-center gap-1.5 pt-1 text-sm text-muted"
+              v-if="row.kind === 'heading'"
+              class="pt-1 text-sm"
               data-testid="bundle-folder-label"
             >
-              <Folder class="size-[14px] flex-none" />
-              {{ row.heading }}
+              <FolderHeading :name="row.step.label" :depth="row.depth" />
             </p>
             <label
+              v-else
               class="flex cursor-pointer items-center gap-2"
-              :class="row.option.folder && 'pl-4'"
+              :style="treeIndent(row.depth)"
             >
               <input
                 type="checkbox"
-                :checked="selectedBuildIds.has(row.option.value)"
+                :checked="selectedBuildIds.has(row.item.value)"
                 data-testid="bundle-build-checkbox"
-                @change="toggleBuild(row.option.value)"
+                @change="toggleBuild(row.item.value)"
               />
-              {{ row.option.label }}
+              {{ row.item.label }}
             </label>
           </template>
         </div>

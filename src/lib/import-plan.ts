@@ -3,6 +3,7 @@
 // survive -- replacing what is here, or making way for fresh ones -- happens here.
 import { newId } from "../storage/storage";
 import { repairFolderTree } from "./folder-tree";
+import type { TreeStep } from "./tree-rows";
 import type { Build, BuildFolder, Layer } from "../types";
 
 /** What to do with an entry whose id the workspace already uses. */
@@ -19,8 +20,8 @@ export interface ImportEntry {
 
 export interface ImportBuildEntry extends ImportEntry {
   build: Build;
-  /** The folder path the build was grouped under in the file, joined with " / ". */
-  folderPath?: string;
+  /** The folders the build was grouped under in the file, outermost first. */
+  path?: TreeStep[];
 }
 
 export interface ImportLayerEntry extends ImportEntry {
@@ -89,7 +90,7 @@ export function buildPlan(
       ...(buildNames.has(build.id)
         ? { conflictName: buildNames.get(build.id) }
         : {}),
-      ...(pathOf.has(build.id) ? { folderPath: pathOf.get(build.id) } : {}),
+      ...(pathOf.has(build.id) ? { path: pathOf.get(build.id) } : {}),
     })),
     layers: parsed.layers.map((layer) => ({
       sourceId: layer.id,
@@ -103,19 +104,19 @@ export function buildPlan(
 }
 
 /** Each foldered id's folder path, for a tree `repairFolderTree` already settled. */
-function folderPaths(folders: BuildFolder[]): Map<string, string> {
+function folderPaths(folders: BuildFolder[]): Map<string, TreeStep[]> {
   const byId = new Map(folders.map((f) => [f.id, f]));
   const nested = new Set(folders.flatMap((f) => f.items));
-  const paths = new Map<string, string>();
-  const walk = (folder: BuildFolder, path: string) => {
+  const paths = new Map<string, TreeStep[]>();
+  const walk = (folder: BuildFolder, outer: TreeStep[]) => {
+    const path = [...outer, { key: folder.id, label: folder.name }];
     for (const id of folder.items) {
       const child = byId.get(id);
-      if (child) walk(child, `${path} / ${child.name}`);
+      if (child) walk(child, path);
       else paths.set(id, path);
     }
   };
-  for (const folder of folders)
-    if (!nested.has(folder.id)) walk(folder, folder.name);
+  for (const folder of folders) if (!nested.has(folder.id)) walk(folder, []);
   return paths;
 }
 

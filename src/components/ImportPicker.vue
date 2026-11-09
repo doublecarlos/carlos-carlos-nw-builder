@@ -3,10 +3,12 @@
 // Opens ready to take everything, with the Import button focused: Enter is the whole happy
 // path, however much is in the file.
 import { computed, onMounted, reactive, useTemplateRef } from "vue";
-import { Check, Folder } from "@lucide/vue";
+import { Check } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseModal from "./ui/BaseModal.vue";
 import ImportPickerRow from "./ImportPickerRow.vue";
+import FolderHeading from "./game/FolderHeading.vue";
+import { treeIndent, treeRows } from "../lib/tree-rows";
 import * as importFile from "../stores/importFile";
 import {
   acceptAll,
@@ -48,15 +50,13 @@ const summary = computed(() =>
     .join(" and "),
 );
 
-/** A folder label appears only where the grouping changes, so the file's order is kept. */
+/** The file's builds in its own order, with a folder heading wherever the path enters a
+ *  folder the previous build was not in (lib/tree-rows.ts). */
 const buildRows = computed(() =>
-  props.plan.builds.map((entry, index) => ({
-    entry,
-    index,
-    folderStart:
-      !!entry.folderPath &&
-      entry.folderPath !== props.plan.builds[index - 1]?.folderPath,
-  })),
+  treeRows(
+    props.plan.builds.map((entry, index) => ({ entry, index })),
+    (row) => row.entry.path,
+  ),
 );
 
 function setAllSelected(selected: boolean) {
@@ -153,22 +153,22 @@ function runImport() {
     <div class="flex-1 overflow-y-auto px-4 py-3">
       <section v-if="plan.builds.length">
         <h3 class="mb-1 text-sm font-medium text-muted">Builds</h3>
-        <template v-for="row in buildRows" :key="row.index">
+        <template v-for="(row, position) in buildRows" :key="position">
           <p
-            v-if="row.folderStart"
-            class="flex items-center gap-1.5 pt-1 text-sm text-muted"
+            v-if="row.kind === 'heading'"
+            class="pt-1 text-sm"
             data-testid="import-folder-label"
           >
-            <Folder class="size-[14px] flex-none" />
-            {{ row.entry.folderPath }}
+            <FolderHeading :name="row.step.label" :depth="row.depth" />
           </p>
           <ImportPickerRow
-            v-model:selected="decisions.builds[row.index].selected"
-            v-model:resolution="decisions.builds[row.index].resolution"
+            v-else
+            v-model:selected="decisions.builds[row.item.index].selected"
+            v-model:resolution="decisions.builds[row.item.index].resolution"
             kind="build"
-            :class="row.entry.folderPath && 'pl-4'"
-            :name="row.entry.name"
-            :conflict-name="row.entry.conflictName"
+            :style="treeIndent(row.depth)"
+            :name="row.item.entry.name"
+            :conflict-name="row.item.entry.conflictName"
           />
         </template>
       </section>
