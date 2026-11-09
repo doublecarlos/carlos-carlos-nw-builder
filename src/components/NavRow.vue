@@ -19,6 +19,7 @@ import {
   dragSource,
   type DragHandleProps,
 } from "../composables/useDragAndDrop";
+import type { NavMenuItem } from "../lib/nav-menu";
 
 const props = defineProps<{
   id: string;
@@ -28,13 +29,7 @@ const props = defineProps<{
   renaming: boolean;
   renameText: string;
   menuOpen: boolean;
-  menuItems: {
-    action: string;
-    label: string;
-    icon?: Component;
-    danger?: boolean;
-    disabled?: boolean;
-  }[];
+  menuItems: NavMenuItem[];
   /** The kebab's bounding rect (placement) and element (focus-restore), for NavContextMenu. */
   menuOrigin: { anchor: DOMRect; trigger: HTMLElement } | null;
   handleProps: DragHandleProps;
@@ -44,7 +39,7 @@ const props = defineProps<{
   collapsed?: boolean;
   /** Display-only leading icon, rendered inside the name button. */
   icon?: Component;
-  /** Trailing count rendered inside the name button (a folder's build count). */
+  /** Trailing count rendered inside the name button (the builds anywhere in a folder). */
   count?: number;
 }>();
 

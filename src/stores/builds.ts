@@ -20,7 +20,7 @@ import type { NavStepOutcome } from "./navHistory";
 import * as trash from "./trash";
 import * as selection from "./selection";
 import * as folders from "./folders";
-import type { BuildPlacement } from "./folders";
+import type { RowPlacement } from "./folders";
 import { buildOrder } from "./meta";
 import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
 import { db as engineDb } from "./resolved";
@@ -35,7 +35,6 @@ import {
   pruneUnavailableSlots,
 } from "../lib/slot-availability";
 import type { Build, BuildNavEntry, BuildOption, TrashEntry } from "../types";
-import { stepGap } from "../composables/useDragAndDrop";
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -52,24 +51,18 @@ export const builds = computed(() =>
     .filter(Boolean),
 );
 
-/** The sidebar tree: top-level builds and folders in order, each folder with its builds. */
-export const navEntries = computed<BuildNavEntry[]>(() =>
-  folders.entries.value.flatMap<BuildNavEntry>((entry) => {
-    if (entry.kind === "folder") {
-      return [
-        {
-          kind: "folder" as const,
-          folder: entry.folder,
-          builds: entry.folder.builds
-            .map((id) => _builds.value.get(id)!)
-            .filter(Boolean),
-        },
-      ];
-    }
-    const b = _builds.value.get(entry.id);
-    return b ? [{ kind: "build" as const, build: b }] : [];
-  }),
-);
+/** The sidebar tree: the rows of each container in order, each folder with its own. */
+export const navEntries = computed<BuildNavEntry[]>(() => {
+  const toEntries = (ids: string[]): BuildNavEntry[] =>
+    ids.flatMap<BuildNavEntry>((id) => {
+      const folder = folders.byId(id);
+      if (folder)
+        return [{ kind: "folder", folder, entries: toEntries(folder.items) }];
+      const b = _builds.value.get(id);
+      return b ? [{ kind: "build", build: b }] : [];
+    });
+  return toEntries(folders.itemsOf(null));
+});
 
 /** The selected build, else the first one. Null only when there are no builds. */
 export const build = computed<Build | null>(() => {
@@ -100,7 +93,7 @@ export function downloadedAt(id: string): number | null {
   return _builds.value.get(id)?.downloaded?.at ?? null;
 }
 
-/** Builds as picker options, each tagged with the folder holding it. Every surface listing
+/** Builds as picker options, each tagged with the folder path holding it. Every surface listing
  *  builds outside the sidebar goes through this, so the grouping that tells two same-named
  *  builds apart travels with them. `list` is expected in sidebar order, which `builds` already
  *  is -- that is what puts each folder's builds together for the picker to head them. */
@@ -108,7 +101,7 @@ export function toOptions(list: Build[]): BuildOption[] {
   return list.map((b) => ({
     value: b.id,
     label: b.name,
-    folder: folders.folderOf(b.id)?.name,
+    folder: folders.pathOf(b.id),
   }));
 }
 
@@ -188,16 +181,16 @@ watch(engineDb, () => {
 });
 
 /** Puts a build into the pool at `placement`. */
-function addBuild(b: Build, placement: BuildPlacement) {
+function addBuild(b: Build, placement: RowPlacement) {
   _builds.value.set(b.id, b);
-  folders.putBuild(b.id, placement);
+  folders.putRow(b.id, placement);
   markDirty(b.id);
 }
 
 /** Moves a build to the trash. Returns the placement it had, or null when there is no such
  *  build. Selection moves on to the first build when the trashed one was selected, or is
  *  cleared when none is left. */
-function trashBuild(id: string): BuildPlacement | null {
+function trashBuild(id: string): RowPlacement | null {
   const b = _builds.value.get(id);
   const placement = folders.placementOf(id);
   if (!b || !placement) return null;
@@ -224,7 +217,7 @@ function trashBuild(id: string): BuildPlacement | null {
 }
 
 /** Takes a build back out of the trash to `placement`. False when nothing is left to restore. */
-function restoreBuild(id: string, placement: BuildPlacement): boolean {
+function restoreBuild(id: string, placement: RowPlacement): boolean {
   const item = trash.takeById("build", id);
   if (!item) return false;
   addBuild(item, placement);
@@ -239,7 +232,7 @@ function trashStep(id: string): NavStepOutcome {
   return { focusId: sel?.kind === "build" ? sel.id : null };
 }
 
-function restoreStep(id: string, placement: BuildPlacement): NavStepOutcome {
+function restoreStep(id: string, placement: RowPlacement): NavStepOutcome {
   if (!restoreBuild(id, placement)) return false;
   selection.selectBuild(id);
   return { focusId: id };
@@ -296,28 +289,34 @@ export function deleteBuild(id: string) {
   });
 }
 
-/** Deletes a folder and every build in it as one step: the builds go to the trash, and the
- *  folder itself goes the way `folders.deleteFolder` takes it. Undo recreates the folder
- *  and puts back whichever of its builds the trash still holds. */
+/** Deletes a folder, its subfolders and every build inside as one step: the builds go to
+ *  the trash and the folder records go with them. Undo recreates the folders and puts back
+ *  whichever of the builds the trash still holds, each where it was. */
 export function deleteFolderWithBuilds(id: string) {
   const folder = folders.byId(id);
   if (!folder) return;
-  const ids = [...folder.builds];
-  for (const buildId of ids) trashBuild(buildId);
-  const removed = folders.removeFolder(id)!;
-  showNotice(`Deleted folder “${folder.name}” and its builds`);
+  const name = folder.name;
+  const remove = () => {
+    const placements = folders.buildsWithin(id).map((buildId) => ({
+      buildId,
+      placement: folders.placementOf(buildId)!,
+    }));
+    for (const { buildId } of placements) trashBuild(buildId);
+    return { tree: folders.removeFolderTree(id)!, placements };
+  };
+  let removed = remove();
+  showNotice(`Deleted folder “${name}” and its builds`);
   navHistory.record({
-    label: `delete folder "${folder.name}"`,
+    label: `delete folder "${name}"`,
     undo: () => {
-      folders.addFolder(removed.folder, removed.index);
-      for (const buildId of ids)
-        restoreBuild(buildId, { folderId: id, index: Number.MAX_SAFE_INTEGER });
+      folders.addFolderTree(removed.tree);
+      for (const { buildId, placement } of removed.placements)
+        restoreBuild(buildId, placement);
       return { focusId: id };
     },
     redo: () => {
       if (!folders.byId(id)) return false;
-      for (const buildId of ids) trashBuild(buildId);
-      folders.removeFolder(id);
+      removed = remove();
       return { focusId: null };
     },
   });
@@ -342,30 +341,6 @@ export function showLandingIfEmptied() {
   if (layers.layers.value.length > 0) return;
   if (trash.trashed.value.length > 0) return;
   landing.show();
-}
-
-/** Moves a build to `toIndex` inside `folderId` (the top level when null, the default).
- *  `toIndex` is relative to the target list as it stands now, before `id` is removed --
- *  callers (the delta-based `moveBuild` below, and drag-and-drop's drop-index math) both
- *  naturally produce indexes in those terms. See `folders.placeBuild`, which records the
- *  step for both of these. */
-export function moveBuildTo(
-  id: string,
-  toIndex: number,
-  folderId: string | null = null,
-) {
-  folders.placeBuild(id, folderId, toIndex);
-}
-
-/** Nudges a build one step up/down, staying inside its own folder (or the top level). */
-export function moveBuild(id: string, delta: number) {
-  const at = folders.rowPosition(id);
-  if (!at) return;
-  folders.placeBuild(
-    id,
-    folders.folderOf(id)?.id ?? null,
-    stepGap(at.index, delta),
-  );
 }
 
 export function revertToDownloaded(id: string) {

@@ -12,7 +12,6 @@ import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 import { matchesQuery } from "../lib/text-filter";
 import { downloadJson } from "../lib/download";
-import type { BuildNavEntry } from "../types";
 import { Download, Folder } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseInput from "./ui/BaseInput.vue";
@@ -29,18 +28,21 @@ const selectedBuildIds = ref<Set<string>>(new Set());
 const selectedLayerIds = ref<Set<string>>(new Set());
 const autoTickedLayerIds = ref<Set<string>>(new Set());
 
-// The build column mirrors the sidebar's own grouping, so what a folder holds is visible
-// while picking. Filtering matches build names only, and a folder with no match drops out.
-const filteredEntries = computed(() =>
-  builds.navEntries.value.flatMap<BuildNavEntry>((entry) => {
-    if (entry.kind === "build")
-      return matchesQuery(entry.build.name, buildFilter.value) ? [entry] : [];
-    const kept = entry.builds.filter((b) =>
-      matchesQuery(b.name, buildFilter.value),
-    );
-    return kept.length ? [{ ...entry, builds: kept }] : [];
-  }),
-);
+// The build column keeps the sidebar's order with a heading wherever the folder path
+// changes, the way the build pickers do, so what a folder holds is visible while picking.
+// Filtering matches build names only, and a folder with no match drops out.
+const filteredBuilds = computed(() => {
+  const kept = builds
+    .toOptions(builds.builds.value)
+    .filter((option) => matchesQuery(option.label, buildFilter.value));
+  return kept.map((option, index) => ({
+    option,
+    heading:
+      option.folder && option.folder !== kept[index - 1]?.folder
+        ? option.folder
+        : null,
+  }));
+});
 
 // All layers, filtered by name.
 const filteredLayers = computed(() =>
@@ -131,14 +133,16 @@ function exportBundle() {
   }
 
   // Only the grouping the picked builds actually came in: each folder travels with the
-  // members that made it into the bundle, and one that contributed nothing is left out.
+  // members that made it into the bundle, and one that holds none of them is left out.
   const selectedIds = new Set(selectedBuilds.map((b) => b.id));
-  const selectedFolders = folders.orderedFolders.value
-    .map((f) => ({
-      ...f,
-      builds: f.builds.filter((id) => selectedIds.has(id)),
-    }))
-    .filter((f) => f.builds.length > 0);
+  const holdsSelected = (id: string) =>
+    folders.byId(id)
+      ? folders.buildsWithin(id).some((b) => selectedIds.has(b))
+      : selectedIds.has(id);
+  const selectedFolders = folders.orderedFolders.value.flatMap((f) => {
+    const items = f.items.filter(holdsSelected);
+    return items.length ? [{ ...f, items }] : [];
+  });
 
   const json = storage.toBundleJson({
     builds: selectedBuilds,
@@ -181,44 +185,27 @@ function selectAllLayers() {
           data-testid="bundle-build-filter"
         />
         <div class="max-h-48 space-y-1 overflow-y-auto">
-          <template
-            v-for="entry in filteredEntries"
-            :key="entry.kind === 'build' ? entry.build.id : entry.folder.id"
-          >
+          <template v-for="row in filteredBuilds" :key="row.option.value">
+            <p
+              v-if="row.heading"
+              class="flex items-center gap-1.5 pt-1 text-sm text-muted"
+              data-testid="bundle-folder-label"
+            >
+              <Folder class="size-[14px] flex-none" />
+              {{ row.heading }}
+            </p>
             <label
-              v-if="entry.kind === 'build'"
               class="flex cursor-pointer items-center gap-2"
+              :class="row.option.folder && 'pl-4'"
             >
               <input
                 type="checkbox"
-                :checked="selectedBuildIds.has(entry.build.id)"
+                :checked="selectedBuildIds.has(row.option.value)"
                 data-testid="bundle-build-checkbox"
-                @change="toggleBuild(entry.build.id)"
+                @change="toggleBuild(row.option.value)"
               />
-              {{ entry.build.name }}
+              {{ row.option.label }}
             </label>
-            <template v-else>
-              <p
-                class="flex items-center gap-1.5 pt-1 text-sm text-muted"
-                data-testid="bundle-folder-label"
-              >
-                <Folder class="size-[14px] flex-none" />
-                {{ entry.folder.name }}
-              </p>
-              <label
-                v-for="b in entry.builds"
-                :key="b.id"
-                class="flex cursor-pointer items-center gap-2 pl-4"
-              >
-                <input
-                  type="checkbox"
-                  :checked="selectedBuildIds.has(b.id)"
-                  data-testid="bundle-build-checkbox"
-                  @change="toggleBuild(b.id)"
-                />
-                {{ b.name }}
-              </label>
-            </template>
           </template>
         </div>
         <button

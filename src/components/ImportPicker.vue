@@ -54,8 +54,8 @@ const buildRows = computed(() =>
     entry,
     index,
     folderStart:
-      !!entry.folderName &&
-      entry.folderName !== props.plan.builds[index - 1]?.folderName,
+      !!entry.folderPath &&
+      entry.folderPath !== props.plan.builds[index - 1]?.folderPath,
   })),
 );
 
@@ -160,13 +160,13 @@ function runImport() {
             data-testid="import-folder-label"
           >
             <Folder class="size-[14px] flex-none" />
-            {{ row.entry.folderName }}
+            {{ row.entry.folderPath }}
           </p>
           <ImportPickerRow
             v-model:selected="decisions.builds[row.index].selected"
             v-model:resolution="decisions.builds[row.index].resolution"
             kind="build"
-            :class="row.entry.folderName && 'pl-4'"
+            :class="row.entry.folderPath && 'pl-4'"
             :name="row.entry.name"
             :conflict-name="row.entry.conflictName"
           />

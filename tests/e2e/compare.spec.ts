@@ -25,7 +25,7 @@ import {
   addFolder,
   buildRow,
   folderRow,
-  openRowMenu,
+  moveViaMenu,
   renameViaSidebar,
 } from "./support/nav";
 import { TEST_HEAD } from "./support/testHead";
@@ -284,8 +284,7 @@ test.describe("folder names in the build pickers", () => {
     await addBuild(page);
     await addFolder(page);
     await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
-    const menu = await openRowMenu(buildRow(page, "Build 1"));
-    await menu.getByRole("button", { name: "Move to “Alts”" }).click();
+    await moveViaMenu(buildRow(page, "Build 1"), "Alts");
     await expect(buildRow(page, "Build 1")).toBeVisible();
   }
 

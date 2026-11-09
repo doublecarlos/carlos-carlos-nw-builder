@@ -18,7 +18,7 @@ import {
   buildRow,
   folderRow,
   layerRow,
-  openRowMenu,
+  moveViaMenu,
   renameViaSidebar,
   navName,
 } from "./support/nav";
@@ -322,8 +322,7 @@ test.describe("choosing a destination", () => {
     await addBuild(page);
     await addFolder(page);
     await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
-    const menu = await openRowMenu(buildRow(page, "Build 1"));
-    await menu.getByRole("button", { name: "Move to “Alts”" }).click();
+    await moveViaMenu(buildRow(page, "Build 1"), "Alts");
 
     await openPalette(page, "Build");
 

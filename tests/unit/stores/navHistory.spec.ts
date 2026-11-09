@@ -2,6 +2,7 @@
 // create/duplicate/delete/move/rename/enable on builds, layers and folders is one nav step
 // whose undo and redo put the sidebar back exactly as it was.
 import { describe, expect, it, vi } from "vitest";
+import type { BuildNavEntry } from "../../../src/types";
 
 async function freshStores() {
   vi.resetModules();
@@ -43,13 +44,15 @@ type Stores = Awaited<ReturnType<typeof freshStores>>;
 
 const names = (list: { name: string }[]) => list.map((b) => b.name);
 
-/** The sidebar as a list of names, folders spelled `Name[a, b]`. */
+/** The sidebar as a list of names, folders spelled `Name[a, b]` at any depth. */
 function tree({ builds }: Stores) {
-  return builds.navEntries.value.map((entry) =>
-    entry.kind === "folder"
-      ? `${entry.folder.name}[${names(entry.builds).join(", ")}]`
-      : entry.build.name,
-  );
+  const render = (entries: BuildNavEntry[]): string[] =>
+    entries.map((entry) =>
+      entry.kind === "folder"
+        ? `${entry.folder.name}[${render(entry.entries).join(", ")}]`
+        : entry.build.name,
+    );
+  return render(builds.navEntries.value);
 }
 
 function trashedIds({ trash }: Stores) {
@@ -161,7 +164,7 @@ describe("nav history stack", () => {
       id: "f-import",
       name: "In",
       collapsed: false,
-      builds: [],
+      items: [],
     });
     expect(navHistory.undoLabel.value).toBe('create layer "L"');
     navHistory.undo();
@@ -286,10 +289,10 @@ describe("nav history: builds", () => {
 
   it("move up/down: undo and redo swap the rows back and forth", async () => {
     const s = await freshStores();
-    const { builds, navHistory } = s;
+    const { builds, folders, navHistory } = s;
     builds.createBuild();
     const id = builds.build.value!.id;
-    builds.moveBuild(id, -1);
+    folders.moveRow(id, -1);
     expect(tree(s)).toEqual(["Build 2", "Build 1"]);
     expect(navHistory.undoLabel.value).toBe("move build");
 
@@ -308,7 +311,7 @@ describe("nav history: builds", () => {
     const folderId = folders.createFolder("Alts");
     expect(tree(s)).toEqual(["Build 1", "Build 2", "Build 3", "Alts[]"]);
 
-    builds.moveBuildTo(id, 0, folderId);
+    folders.placeRow(id, folderId, 0);
     expect(tree(s)).toEqual(["Build 1", "Build 3", "Alts[Build 2]"]);
 
     navHistory.undo();
@@ -326,7 +329,7 @@ describe("nav history: builds", () => {
     const folderId = folders.createFolder("Alts");
     const before = navHistory.undoLabel.value;
 
-    folders.placeBuild(id, folderId);
+    folders.placeRow(id, folderId);
     expect(tree(s)).toEqual(["Build 1", "Alts[Build 2]"]);
     expect(navHistory.undoLabel.value).toBe("move build");
 
@@ -337,9 +340,9 @@ describe("nav history: builds", () => {
 
   it("a move that changes nothing records nothing", async () => {
     const s = await freshStores();
-    const { builds, navHistory } = s;
+    const { builds, folders, navHistory } = s;
     const id = builds.build.value!.id;
-    builds.moveBuild(id, -1);
+    folders.moveRow(id, -1);
     expect(navHistory.canUndo.value).toBe(false);
   });
 
@@ -367,7 +370,7 @@ describe("nav history: builds", () => {
     const folderId = folders.createFolder("Alts");
     builds.createBuild(folderId);
     builds.createBuild(folderId);
-    const ids = folders.byId(folderId)!.builds.slice();
+    const ids = folders.byId(folderId)!.items.slice();
     const before = navHistory.undoLabel.value;
 
     builds.deleteFolderWithBuilds(folderId);
@@ -383,6 +386,29 @@ describe("nav history: builds", () => {
     navHistory.redo();
     expect(tree(s)).toEqual(["Build 1"]);
     expect(trashedIds(s).sort()).toEqual(ids.slice().sort());
+  });
+
+  // Undo rebuilds the subtree exactly: subfolders, and each build at its own spot among them.
+  it("delete folder with its builds: subfolders go too, and undo puts the tree back", async () => {
+    const s = await freshStores();
+    const { builds, folders, navHistory } = s;
+    const outer = folders.createFolder("Outer");
+    builds.createBuild(outer); // Build 2
+    const inner = folders.createFolder("Inner", false, outer);
+    builds.createBuild(inner); // Build 3
+    builds.createBuild(outer); // Build 4
+    const shape = ["Build 1", "Outer[Build 2, Inner[Build 3], Build 4]"];
+    expect(tree(s)).toEqual(shape);
+
+    builds.deleteFolderWithBuilds(outer);
+    expect(tree(s)).toEqual(["Build 1"]);
+    expect(folders.byId(inner)).toBeUndefined();
+
+    navHistory.undo();
+    expect(tree(s)).toEqual(shape);
+
+    navHistory.redo();
+    expect(tree(s)).toEqual(["Build 1"]);
   });
 
   it("delete folder with its builds: undo puts back whatever the trash still holds", async () => {
@@ -592,7 +618,7 @@ describe("nav history: folders", () => {
     const id = folders.createFolder("Alts");
     expect(tree(s)).toEqual(["Build 1", "Build 2", "Alts[]"]);
 
-    folders.moveFolder(id, -1);
+    folders.moveRow(id, -1);
     expect(tree(s)).toEqual(["Build 1", "Alts[]", "Build 2"]);
     expect(navHistory.undoLabel.value).toBe("move folder");
     expect(navHistory.undo()).toEqual({ focusId: id });
@@ -600,7 +626,7 @@ describe("nav history: folders", () => {
     navHistory.redo();
     expect(tree(s)).toEqual(["Build 1", "Alts[]", "Build 2"]);
 
-    folders.moveFolderTo(id, 0);
+    folders.placeRow(id, null, 0);
     expect(tree(s)).toEqual(["Alts[]", "Build 1", "Build 2"]);
     navHistory.undo();
     expect(tree(s)).toEqual(["Build 1", "Alts[]", "Build 2"]);

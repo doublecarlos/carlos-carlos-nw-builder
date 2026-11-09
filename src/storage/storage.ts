@@ -16,6 +16,7 @@ import * as idb from "./idb";
 import { APP_COMMIT, APP_NAME, HOMEPAGE_URL } from "../lib/app-info";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
+import { readFolder, repairFolderTree } from "../lib/folder-tree";
 import { storedListRows } from "../lib/item-picker-list";
 import { migrateOccurrenceInputs } from "./migrate-occurrences";
 import { migratePresetSettings, migrateSettings } from "./migrate-values";
@@ -593,57 +594,13 @@ export function normalizeLayer(raw: unknown): Layer {
 
 // --- IDB persistence ---------------------------------------------------------------------
 
-/** Reads back the stored folder set, keeping only members that still exist and refusing to
- *  let two folders claim the same build (last writer of a duplicate loses). */
-function normalizeFolders(raw: unknown, buildIds: Set<string>): BuildFolder[] {
-  if (!Array.isArray(raw)) return [];
-  const claimed = new Set<string>();
-  const folders: BuildFolder[] = [];
-  for (const entry of raw) {
-    if (!isPlain(entry) || typeof entry.id !== "string" || !entry.id) continue;
-    const members = (Array.isArray(entry.builds) ? entry.builds : []).filter(
-      (id: unknown): id is string =>
-        typeof id === "string" && buildIds.has(id) && !claimed.has(id),
-    );
-    for (const id of members) claimed.add(id);
-    folders.push({
-      id: entry.id,
-      name:
-        typeof entry.name === "string" && entry.name.trim()
-          ? entry.name
-          : "Folder",
-      collapsed: entry.collapsed === true,
-      builds: members,
-    });
-  }
-  return folders;
-}
-
-/** The top-level row order: stored entries that still name a live folder or an unfoldered
- *  build, then whatever exists but went unlisted. Pre-folder data is a plain list of build
- *  ids, which passes through unchanged. */
-function repairBuildOrder(
-  raw: unknown,
-  buildIds: Set<string>,
-  folders: BuildFolder[],
-): string[] {
-  const folderIds = new Set(folders.map((f) => f.id));
-  const foldered = new Set(folders.flatMap((f) => f.builds));
-  const seen = new Set<string>();
-  const order = (Array.isArray(raw) ? (raw as unknown[]) : []).filter(
-    (id: unknown): id is string => {
-      if (typeof id !== "string" || seen.has(id)) return false;
-      if (!folderIds.has(id) && (!buildIds.has(id) || foldered.has(id)))
-        return false;
-      seen.add(id);
-      return true;
-    },
-  );
-  for (const f of folders) if (!seen.has(f.id)) order.push(f.id);
-  for (const id of buildIds) {
-    if (!seen.has(id) && !foldered.has(id)) order.push(id);
-  }
-  return order;
+/** Stored or bundled folder records, read field by field. What they claim is left for
+ *  `repairFolderTree` (or the import plan) to settle. */
+function readFolders(raw: unknown): BuildFolder[] {
+  return (Array.isArray(raw) ? raw : []).flatMap((entry: unknown) => {
+    const folder = readFolder(entry, () => newId("f"));
+    return folder ? [folder] : [];
+  });
 }
 
 /** Load every record from every IDB store, repairing `meta` against what actually exists. */
@@ -703,11 +660,15 @@ export async function loadAll(): Promise<{
   // Repair meta: drop dangling ids, append unlisted ones.
   const rawMetaObj =
     rawMeta && isPlain(rawMeta) ? (rawMeta as Record<string, unknown>) : null;
-  const folders = normalizeFolders(rawMetaObj?.folders, buildIds);
+  const tree = repairFolderTree(
+    readFolders(rawMetaObj?.folders),
+    rawMetaObj?.buildOrder,
+    buildIds,
+  );
   const meta: AppMeta = rawMetaObj
     ? {
-        buildOrder: repairBuildOrder(rawMetaObj.buildOrder, buildIds, folders),
-        folders,
+        buildOrder: tree.buildOrder,
+        folders: tree.folders,
         layerOrder: Array.isArray(rawMetaObj.layerOrder)
           ? (rawMetaObj.layerOrder as string[]).filter((id: string) =>
               layerIds.has(id),
@@ -835,8 +796,8 @@ export function toBuildJson(build: Build, db?: Db): string {
 export const toLayerJson = (layer: Layer) => toJson(wrap("layer", layer));
 
 /** A combined bundle of builds + layers for export. `folders` carries the sidebar grouping
- *  of the exported builds only -- a folder appears with the members that made it into the
- *  bundle, and one whose builds were all left out does not travel at all. */
+ *  of the exported builds only: a folder appears with the members that made it into the
+ *  bundle, subfolders included, and one holding none of the exported builds does not travel. */
 export interface Bundle {
   builds: Build[];
   layers: Layer[];
@@ -912,18 +873,7 @@ export function parseBundleJson(text: string): {
   const builds = (bundle.builds ?? []).map((b: unknown) => normalize(b));
   const layers = (bundle.layers ?? []).map((l: unknown) => normalizeLayer(l));
 
-  const folders = (Array.isArray(bundle.folders) ? bundle.folders : [])
-    .filter(isPlain)
-    .map((raw) => ({
-      id: typeof raw.id === "string" && raw.id ? raw.id : newId("f"),
-      name:
-        typeof raw.name === "string" && raw.name.trim() ? raw.name : "Folder",
-      collapsed: raw.collapsed === true,
-      builds: (Array.isArray(raw.builds)
-        ? (raw.builds as unknown[])
-        : []
-      ).filter((id): id is string => typeof id === "string"),
-    }));
+  const folders = readFolders(bundle.folders);
 
   return { bundle: { builds, layers, folders }, catalogStale };
 }

@@ -74,7 +74,7 @@ export function useGoToEntries() {
         label: build.name,
         // Same disambiguation the build pickers show: two builds can share a name across
         // folders, and the palette lists them with nothing else to tell them apart.
-        detail: folders.folderOf(build.id)?.name,
+        detail: folders.pathOf(build.id),
       });
     }
     for (const layer of layers.layers.value) {
