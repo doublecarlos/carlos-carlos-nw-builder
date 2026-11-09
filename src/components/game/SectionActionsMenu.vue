@@ -3,7 +3,8 @@
 // another build, reset it. Picking which preset to overwrite or which build to copy from opens
 // a second list in the same menu, with Back, rather than squeezing a picker into it. The build
 // list draws the sidebar's folder tree (lib/tree-rows.ts), since names are only unique within
-// a folder.
+// a folder. Copying into other builds picks several at once, so it opens a dialog instead
+// (CopyToBuildsDialog.vue).
 //
 // Applying, copying and resetting act at once, each one undo step on the build. Overwriting a
 // preset lands on that layer's undo stack instead (see `layers.updatePreset`), which posts an
@@ -12,6 +13,7 @@ import { computed, nextTick, ref, useTemplateRef } from "vue";
 import {
   ArrowLeft,
   Copy,
+  CopyPlus,
   EllipsisVertical,
   LayoutTemplate,
   Plus,
@@ -21,6 +23,7 @@ import {
 import BaseMenu from "../ui/BaseMenu.vue";
 import BaseMenuItem from "../ui/BaseMenuItem.vue";
 import IconButton from "../ui/IconButton.vue";
+import CopyToBuildsDialog from "./CopyToBuildsDialog.vue";
 import FolderHeading from "./FolderHeading.vue";
 import { treePadding, treeRows } from "../../lib/tree-rows";
 import type { BuildOption, SectionPreset } from "../../types";
@@ -37,6 +40,7 @@ const emit = defineEmits<{
   "create-preset": [];
   "update-preset": [preset: SectionPreset];
   copy: [fromId: string];
+  "copy-to": [toIds: string[]];
   clear: [];
 }>();
 
@@ -63,6 +67,8 @@ function run(action: () => void) {
   menu.value?.close();
   action();
 }
+
+const copyToOpen = ref(false);
 
 const triggerClass = `section-actions-${props.sectionId}`;
 </script>
@@ -122,6 +128,13 @@ const triggerClass = `section-actions-${props.sectionId}`;
         >Copy from another build…</BaseMenuItem
       >
       <BaseMenuItem
+        v-if="otherBuilds.length"
+        :icon="CopyPlus"
+        data-testid="section-actions-copy-to"
+        @click="run(() => (copyToOpen = true))"
+        >Copy to other builds…</BaseMenuItem
+      >
+      <BaseMenuItem
         :icon="RotateCcw"
         :data-testid="`clear-section-${sectionId}`"
         @click="run(() => emit('clear'))"
@@ -174,4 +187,12 @@ const triggerClass = `section-actions-${props.sectionId}`;
       </template>
     </template>
   </BaseMenu>
+  <CopyToBuildsDialog
+    v-if="copyToOpen"
+    :section-id="sectionId"
+    :label="label"
+    :targets="otherBuilds"
+    @copy="(toIds) => emit('copy-to', toIds)"
+    @close="copyToOpen = false"
+  />
 </template>

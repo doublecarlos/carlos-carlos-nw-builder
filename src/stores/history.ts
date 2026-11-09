@@ -211,12 +211,14 @@ export function snapshot(
 /**
  * Undo on the given item's stack. Returns the JSON to restore, or null if nothing to undo.
  * `kind` and `id` identify the stack; `current` is the current state (saved to the future
- * stack for redo). Also selects the item if it is not already selected (decision 47).
+ * stack for redo). Also selects the item if it is not already selected (decision 47), unless
+ * `select` is false: an undo spanning several items restores each where it is.
  */
 export function undo(
   kind: "build" | "layer",
   id: string,
   current: unknown,
+  { select = true }: { select?: boolean } = {},
 ): string | null {
   const sk = keyFor(kind, id);
   const h = _histories.value.get(sk);
@@ -227,7 +229,7 @@ export function undo(
   h.lastKey = null;
   changed(sk);
 
-  selectForKey(sk);
+  if (select) selectForKey(sk);
   return entry.json;
 }
 

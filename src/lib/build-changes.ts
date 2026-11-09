@@ -1,9 +1,9 @@
-// Which build editor rows an undo or redo changed, so the editor can show them. Read straight
-// off the two builds: a row's pick, its own settings, inline repetitions, list row count,
+// Which build editor rows an undo or redo changed, so the editor can show them, and whether
+// two builds already agree on a whole section. Read straight off the two builds: a row's pick, its own settings, inline repetitions, list row count,
 // on/off switch, a build parameter's value, and the settings of the bonuses its pick carries.
 import { deepEqual } from "./deep-equal";
 import { getPath } from "./build-path";
-import { expandSlots } from "./item-picker-list";
+import { expandSlots, parseRowSlotId } from "./item-picker-list";
 import type { Build, Db, Slot } from "../types";
 
 /** What one row shows of a build, for telling two builds apart row by row. */
@@ -38,4 +38,20 @@ export function changedSlots(db: Db, before: Build, after: Build): string[] {
       );
     })
     .map((slot) => slot.id);
+}
+
+/** Whether `a` and `b` hold the same values in every row of one section, so copying that
+ *  section from one into the other would change nothing. */
+export function sameSection(
+  db: Db,
+  a: Build,
+  b: Build,
+  sectionId: string,
+): boolean {
+  const inSection = (slotId: string) =>
+    db.slotById.get(parseRowSlotId(slotId)?.listId ?? slotId)?.section ===
+    sectionId;
+  return ![...changedSlots(db, a, b), ...changedSlots(db, b, a)].some(
+    inSection,
+  );
 }

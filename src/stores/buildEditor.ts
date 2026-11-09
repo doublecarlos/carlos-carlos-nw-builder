@@ -1,6 +1,7 @@
-// Every mutation that writes the active build's *content* goes through here. Each one snapshots
-// before mutating, since the history store owns the undo stack, and ends with
-// `builds.finishEdit`, which empties any slot the edit made unavailable.
+// Every mutation that writes the active build's *content* goes through here, plus copying a
+// section from it into other builds. Each one snapshots before mutating, since the history
+// store owns the undo stack, and ends with `builds.finishEdit` (`finishBulkEdit` for several
+// builds), which empties any slot the edit made unavailable.
 import { computed, shallowRef, toRaw, watch } from "vue";
 import * as storage from "../storage/storage";
 import * as builds from "./builds";
@@ -455,6 +456,9 @@ export function resetAll() {
   builds.finishEdit(b.id, `Reset “${b.name}”`);
 }
 
+const copyLabel = (sectionIds: string[], source: Build) =>
+  `copy ${sectionIds.length} section(s) from "${source.name}"`;
+
 export function copySection(fromId: string, sectionIds: string[]) {
   const source = builds.builds.value.find((item) => item.id === fromId);
   if (!source) return;
@@ -462,13 +466,45 @@ export function copySection(fromId: string, sectionIds: string[]) {
   const b = builds.build.value;
   if (!b) return;
 
-  history.snapshot(
-    "build",
-    b.id,
-    null,
-    `copy ${sectionIds.length} section(s) from "${source.name}"`,
-    b,
+  history.snapshot("build", b.id, null, copyLabel(sectionIds, source), b);
+  copySectionInto(b, source, sectionIds);
+  builds.finishEdit(b.id);
+}
+
+/** Copies the active build's sections into each of `targetIds`. Each target gets its own undo
+ *  step, and one notice takes back all of them. `label` names the copied section. */
+export function copySectionTo(
+  targetIds: string[],
+  sectionIds: string[],
+  label: string,
+) {
+  const source = builds.build.value;
+  if (!source) return;
+  const targets = targetIds
+    .filter((id) => id !== source.id)
+    .flatMap((id) => builds.get(id) ?? []);
+  if (!targets.length) return;
+
+  for (const target of targets) {
+    history.snapshot(
+      "build",
+      target.id,
+      null,
+      copyLabel(sectionIds, source),
+      target,
+    );
+    copySectionInto(target, source, sectionIds);
+  }
+  const count =
+    targets.length === 1 ? `“${targets[0].name}”` : `${targets.length} builds`;
+  builds.finishBulkEdit(
+    targets.map((target) => target.id),
+    `Copied “${label}” to ${count}`,
   );
+}
+
+/** Overwrites `sectionIds` in `b` with `source`'s, per slot type. */
+function copySectionInto(b: Build, source: Build, sectionIds: string[]) {
   const wanted = new Set(sectionIds);
   // Row counts first: the walk below is over the *source's* rows, so this build has to be as
   // long as it before any of them can be copied across. Existing rows are cleared so a longer
@@ -497,7 +533,6 @@ export function copySection(fromId: string, sectionIds: string[]) {
     if (slot.type !== "item_picker") continue;
     copySlotData(b, source, slot.id);
   }
-  builds.finishEdit(b.id);
 }
 
 /** Resets one slot to its default from `fresh`, per type like `copySection`. `fresh` is passed
