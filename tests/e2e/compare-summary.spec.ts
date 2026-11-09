@@ -108,3 +108,21 @@ test("only the damage, healing and EHP cases carry a delta", async ({
     await expect(row.getByTestId("stat-delta")).toHaveCount(0);
   }
 });
+
+test("opening one row's case menu closes another's", async ({ page }) => {
+  await openBuilder(page);
+  const menus = page.getByTestId("summary-case-menu").filter({ visible: true });
+
+  await summaryRow(page, "damage").getByTestId("summary-case").click();
+  await expect(menus).toHaveCount(1);
+  await summaryRow(page, "ehp").getByTestId("summary-case").click();
+
+  // One menu at a time, and it is the one just opened.
+  await expect(menus).toHaveCount(1);
+  await expect(
+    summaryRow(page, "ehp").getByTestId("summary-case"),
+  ).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    summaryRow(page, "damage").getByTestId("summary-case"),
+  ).toHaveAttribute("aria-expanded", "false");
+});

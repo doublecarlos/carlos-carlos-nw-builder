@@ -4,7 +4,7 @@
 // that content. The stat panel summary's case pickers are the call site.
 //
 // Built on BaseMenu; the current option carries a check and `aria-current`.
-import { computed, useTemplateRef } from "vue";
+import { computed, useId, useTemplateRef } from "vue";
 import { Check, ChevronDown } from "@lucide/vue";
 import BaseMenu from "./BaseMenu.vue";
 import BaseMenuItem from "./BaseMenuItem.vue";
@@ -24,6 +24,10 @@ const current = computed(
 
 const menu = useTemplateRef<InstanceType<typeof BaseMenu>>("menu");
 
+// The click-outside check skips only this menu's own trigger, so clicking a sibling's trigger
+// closes this one as the sibling opens.
+const triggerId = useId();
+
 function choose(value: string) {
   model.value = value;
   menu.value?.close();
@@ -38,13 +42,14 @@ function choose(value: string) {
       align="left"
       :label="label"
       panel-class="flex flex-col p-1"
-      :ignore="['.choice-menu-btn']"
+      :ignore="[`[data-choice-menu='${triggerId}']`]"
       :panel-testid="testid ? `${testid}-menu` : undefined"
     >
       <template #trigger="{ toggle, attrs }">
         <button
           type="button"
-          class="choice-menu-btn inline-flex min-w-0 cursor-pointer items-center gap-0.5 rounded-sm text-muted transition-colors hover:text-text"
+          :data-choice-menu="triggerId"
+          class="inline-flex min-w-0 cursor-pointer items-center gap-0.5 rounded-sm text-muted transition-colors hover:text-text"
           :aria-label="`${label}: ${current?.label ?? ''}`"
           :data-testid="testid"
           v-bind="attrs"
