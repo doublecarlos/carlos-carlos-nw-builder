@@ -129,7 +129,7 @@ const comparing = computed(() => props.compareDerived != null);
             {{ row.other }}
           </td>
           <td
-            class="whitespace-nowrap px-1 py-0.5 text-right tabular-nums"
+            class="whitespace-nowrap px-1 py-0.5 text-right font-semibold tabular-nums"
             :class="TREND_TONE[row.trend]"
             :data-trend="row.trend"
             data-testid="summary-delta"

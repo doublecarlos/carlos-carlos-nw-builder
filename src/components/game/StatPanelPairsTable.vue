@@ -60,7 +60,7 @@ defineProps<{
               <span>{{ row.label }}</span>
               <span
                 v-if="row.delta"
-                class="ml-auto pl-2 tabular-nums"
+                class="ml-auto pl-2 font-semibold tabular-nums"
                 :class="TREND_TONE[row.delta.trend]"
                 :data-trend="row.delta.trend"
                 data-testid="stat-delta"
