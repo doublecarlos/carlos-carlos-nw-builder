@@ -36,6 +36,7 @@ import {
   type StatsMode,
 } from "./lib/shell-layout";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
+import { useBackToClose } from "./composables/useBackToClose";
 import { undoScope, useUndoScope } from "./composables/useUndoScope";
 import { useUndoRedoKeys } from "./composables/useUndoRedoKeys";
 import { useRevealFocusedField } from "./composables/useRevealFocusedField";
@@ -121,6 +122,12 @@ const PANE_OPTIONS: { value: PhonePane; label: string; testid: string }[] = [
   { value: "editor", label: "Editor", testid: "pane-editor" },
   { value: "stats", label: "Stats", testid: "pane-stats" },
 ];
+
+// A jump into the other pane is one Back undoes, while one pane shows at a time.
+useBackToClose(
+  () => layout.value.paneSwitch && shell.paneBack.value !== null,
+  () => shell.paneBack.value?.(),
+);
 
 // The drawer is a way to pick something: once a pick lands, get out of the way of it. A pick
 // a dirty draft vetoes lands nothing, so the drawer stays open on the choice still to make.
@@ -344,11 +351,12 @@ syncRoute({ push: false });
       <SegmentedControl
         v-if="layout.paneSwitch"
         v-show="!(typing && viewport.coarsePointer.value)"
-        v-model="shell.phonePane.value"
+        :model-value="shell.phonePane.value"
         :options="PANE_OPTIONS"
         fill
         class="flex-none border-t border-line bg-surface pt-2 pr-[max(0.5rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))]"
         data-testid="pane-switch"
+        @update:model-value="(pane: PhonePane) => shell.showPane(pane)"
       />
     </template>
 

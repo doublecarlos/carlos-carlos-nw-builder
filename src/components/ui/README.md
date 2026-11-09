@@ -25,6 +25,7 @@ ordinary one.
 | BaseTooltip                               | Mouse-hover/keyboard-focus tooltip, never on tap; `tappable` for an info-only trigger                                                                          |
 | ClearableInput                            | A text filter field with an in-field clear button, wrapping BaseInput                                                                                          |
 | CheckMenu                                 | Menu of checkbox options that stays open as they are toggled; built on BaseMenu                                                                                |
+| ChoiceMenu                                | Pick one of a few options from a quiet text trigger, for a secondary setting beside its content; built on BaseMenu                                             |
 | CodeBlock                                 | Read-only, resizable JSON preview                                                                                                                              |
 | CodeSnippet                               | Simple code snippet component                                                                                                                                  |
 | ComboBox / ComboBoxMenu / ComboBoxMenuRow | Typeable single-select over a small fixed option list, replacing `<select>`; `#detail` adds per-row info on the phone screen                                   |

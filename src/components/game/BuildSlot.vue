@@ -269,9 +269,11 @@ useCursorRowKeys(anchor, {
           @change="onToggle"
         />
       </BaseTooltip>
+      <!-- `compact-tap`: a finger-sized button would stand the label line taller than the
+           row's other lines and the nest guide's elbow. -->
       <IconButton
         v-if="showInfo && coarsePointer"
-        class="shrink-0"
+        class="compact-tap shrink-0"
         :title="`Show the item in ${labelOverride || slotDef.label}`"
         :data-testid="'slot-info:' + slotDef.id"
         @click.stop="onInfo"

@@ -234,6 +234,24 @@
   flex-wrap: wrap;
 }
 
+/* A small button inside a line of text, such as a row's info icon. On a coarse pointer it keeps
+ * its drawn size instead of the finger-sized minimum below, which would stand the whole line that
+ * tall, and an invisible area centered on it keeps the tap target finger-sized. */
+@utility compact-tap {
+  @media (pointer: coarse) {
+    position: relative;
+    flex: none;
+    min-height: 0;
+    min-width: 0;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: calc((100% - var(--spacing-tap)) / 2);
+    }
+  }
+}
+
 @layer base {
   html {
     font-size: 14px;

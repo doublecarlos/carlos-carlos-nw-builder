@@ -158,3 +158,70 @@ test("a stat's source card opens on tap and fits the screen", async ({
   expect(box.x + box.width).toBeLessThanOrEqual(MIN_SUPPORTED_WIDTH);
   await expectNoHorizontalScroll(page);
 });
+
+for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
+  test(`a compared row's Other line is level with its compare values at ${width}px`, async ({
+    page,
+  }) => {
+    // The label cell's line and the value cells' lines read as one row of the compare build,
+    // even where the label wraps or the info button is finger-sized.
+    await openComparedBuild(page);
+    await showStats(page, width);
+    await expect(page.getByTestId("compare-line").first()).toBeVisible();
+
+    const spreads = await statColumn(page)
+      .locator("tr[data-stat-row]")
+      .evaluateAll((rows) =>
+        rows.flatMap((row) => {
+          const tops = [
+            ...row.querySelectorAll('[data-testid="compare-line"]'),
+          ].map((line) => line.getBoundingClientRect().top);
+          if (tops.length < 2 || tops.every((top) => top === 0)) return [];
+          return [
+            {
+              row: (row as HTMLElement).dataset.statRow,
+              spread: Math.max(...tops) - Math.min(...tops),
+            },
+          ];
+        }),
+      );
+    expect(spreads.length).toBeGreaterThan(0);
+    for (const { row, spread } of spreads)
+      expect(spread, `row ${row}`).toBeLessThanOrEqual(1);
+  });
+}
+
+test("a stat row with an info button is no taller than one without", async ({
+  page,
+}) => {
+  // The info button's finger-sized tap target must not stand every row that tall.
+  await openBuilder(page);
+  await showStats(page, MIN_SUPPORTED_WIDTH);
+  const height = (key: string) =>
+    statColumn(page)
+      .locator(`tr[data-stat-row="${key}"]`)
+      .evaluate((row) => row.getBoundingClientRect().height);
+
+  // Both lead rows of the item level tile; only item level has the button. The icon's own
+  // padding may add a pixel or two; a tap-sized button adds about twenty.
+  expect(
+    Math.abs((await height("itemLevel")) - (await height("hp"))),
+  ).toBeLessThan(4);
+});
+
+test("a tap just beside the info icon still lands on it", async ({ page }) => {
+  // The icon is drawn small, but its tap target stays finger-sized.
+  await openBuilder(page);
+  await showStats(page, MIN_SUPPORTED_WIDTH);
+  const button = statInfoButton(page, "power");
+  const box = (await button.boundingBox())!;
+  const hit = await page.evaluate(
+    ({ x, y }) =>
+      document
+        .elementFromPoint(x, y)
+        ?.closest('[data-testid="stat-info"]')
+        ?.getAttribute("data-stat-key") ?? null,
+    { x: box.x + box.width + 8, y: box.y + box.height / 2 },
+  );
+  expect(hit).toBe("power");
+});

@@ -497,6 +497,8 @@ export interface UiState {
   /** Whether the item form offers every field group rather than the ones the item's filter
    * is authored with. A view preference, not per item; see stores/itemFormFields.ts. */
   showAllItemFields: boolean;
+  /** The stat panel summary's chosen case, by derived table; see stores/summaryCases.ts. */
+  summaryCases: Record<string, string>;
 }
 
 export function loadUiState(): Partial<UiState> {
@@ -507,6 +509,7 @@ export function loadUiState(): Partial<UiState> {
           expanded: booleans(stored.expanded),
           collapsed: booleans(stored.collapsed),
           railWidths: numbers(stored.railWidths),
+          summaryCases: strings(stored.summaryCases),
           ...(typeof stored.showAllItemFields === "boolean"
             ? { showAllItemFields: stored.showAllItemFields }
             : {}),
@@ -520,10 +523,10 @@ export function loadUiState(): Partial<UiState> {
 /**
  * Merges `state` onto whatever is already stored rather than replacing it.
  *
- * These fields have independent owners -- BuildEditor writes `expanded`, stores/rails.ts
- * writes `collapsed` and `railWidths`, stores/itemFormFields.ts writes `showAllItemFields` --
- * and each knows only its own. Writing the whole object would mean whichever saved last
- * silently erased the other's preference.
+ * These fields have independent owners, and each knows only its own: BuildEditor writes
+ * `expanded`, stores/rails.ts writes `collapsed` and `railWidths`, stores/itemFormFields.ts
+ * writes `showAllItemFields` and stores/summaryCases.ts writes `summaryCases`. Writing the
+ * whole object would mean whichever saved last silently erased the other's preference.
  */
 export function saveUiState(state: Partial<UiState>) {
   try {

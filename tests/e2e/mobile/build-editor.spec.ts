@@ -2,7 +2,14 @@
 // live in an overflow menu, and the item card opens from a button instead of on hover. Fit at
 // phone widths is checked in layout-sweep.spec.ts.
 import { test, expect, type Page } from "@playwright/test";
-import { chooseItem, openBuilder, pickerInput, slotRow } from "../support/app";
+import {
+  chooseItem,
+  ensureSectionExpanded,
+  openBuilder,
+  pickerInput,
+  slotRow,
+} from "../support/app";
+import { importTestCatalog } from "../support/testCatalog";
 import { TEST_HEAD, importTestHead } from "../support/testHead";
 
 const HEAD_ITEM = TEST_HEAD.name;
@@ -92,4 +99,81 @@ test("tapping a row does not open the hover card", async ({ page }) => {
   // Past the hover card's opening delay.
   await page.clock.fastForward(1000);
   await expect(page.getByTestId("item-card")).toHaveCount(0);
+});
+
+test.describe("a picked row's info button", () => {
+  const MAINHAND = "test-tap-mainhand";
+  const MOD = "test-tap-mod";
+
+  /** An artifact mainhand with its nested mod picked, so both rows carry an info button. */
+  async function openPickedNestedRow(page: Page) {
+    await openBuilder(page);
+    await importTestCatalog(page, {
+      items: [
+        {
+          id: MAINHAND,
+          name: "Test Tap Mainhand",
+          filter: "gear_weapon_mainhand",
+          tags: ["artifact:mainhand"],
+        },
+        { id: MOD, name: "Test Tap Mod", filter: "modification_mainhand" },
+      ],
+      choices: { "gear.mainhand": MAINHAND, "gear.mainhandMod": MOD },
+    });
+    await ensureSectionExpanded(page, "gear");
+    await expect(
+      slotRow(page, "gear.mainhandMod").getByTestId(
+        "slot-info:gear.mainhandMod",
+      ),
+    ).toBeVisible();
+  }
+
+  /** The line a row's label sits on, which the info button shares. */
+  const labelLine = (page: Page, slotId: string) =>
+    slotRow(page, slotId).locator(".slot-label").locator("..");
+
+  test("does not stand the label line taller than an empty row's", async ({
+    page,
+  }) => {
+    // A finger-sized button would make every picked row taller than its neighbors.
+    await openPickedNestedRow(page);
+    const picked = (await labelLine(page, "gear.mainhand").boundingBox())!;
+    const empty = (await labelLine(page, "gear.head").boundingBox())!;
+    expect(Math.abs(picked.height - empty.height)).toBeLessThan(4);
+  });
+
+  test("leaves a nested row's label level with its guide's elbow", async ({
+    page,
+  }) => {
+    const row = slotRow(page, "gear.mainhandMod");
+    await openPickedNestedRow(page);
+    const label = (await row.locator(".slot-label").boundingBox())!;
+    const elbow = (await row.getByTestId("nest-elbow").boundingBox())!;
+    expect(
+      Math.abs(label.y + label.height / 2 - (elbow.y + elbow.height / 2)),
+    ).toBeLessThanOrEqual(2);
+  });
+
+  test("keeps a finger-sized tap target around the icon", async ({ page }) => {
+    await openPickedNestedRow(page);
+    const button = slotRow(page, "gear.mainhand").getByTestId(
+      "slot-info:gear.mainhand",
+    );
+    // Hit-testing only sees what is on screen, and a row scrolled in under
+    // `content-visibility: auto` joins it once the next frame renders.
+    await button.scrollIntoViewIfNeeded();
+    const box = (await button.boundingBox())!;
+    await expect
+      .poll(() =>
+        page.evaluate(
+          ({ x, y }) =>
+            document
+              .elementFromPoint(x, y)
+              ?.closest('[data-testid^="slot-info:"]')
+              ?.getAttribute("data-testid") ?? null,
+          { x: box.x - 8, y: box.y + box.height / 2 },
+        ),
+      )
+      .toBe("slot-info:gear.mainhand");
+  });
 });
