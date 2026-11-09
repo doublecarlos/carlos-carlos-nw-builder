@@ -1094,7 +1094,7 @@ describe("build folders", () => {
     await storage.putMeta({
       buildOrder: ["f_1", loose.id],
       folders: [
-        { id: "f_1", name: "Alts", collapsed: true, builds: [inside.id] },
+        { id: "f_1", name: "Alts", collapsed: true, items: [inside.id] },
       ],
       layerOrder: [],
       lastSelection: null,
@@ -1103,7 +1103,7 @@ describe("build folders", () => {
     const { meta } = await storage.loadAll();
     expect(meta.buildOrder).toEqual(["f_1", loose.id]);
     expect(meta.folders).toEqual([
-      { id: "f_1", name: "Alts", collapsed: true, builds: [inside.id] },
+      { id: "f_1", name: "Alts", collapsed: true, items: [inside.id] },
     ]);
   });
 
@@ -1117,7 +1117,7 @@ describe("build folders", () => {
           id: "f_1",
           name: "Alts",
           collapsed: false,
-          builds: ["gone", build.id],
+          items: ["gone", build.id],
         },
       ],
       layerOrder: [],
@@ -1125,7 +1125,7 @@ describe("build folders", () => {
     });
 
     const { meta } = await storage.loadAll();
-    expect(meta.folders[0].builds).toEqual([build.id]);
+    expect(meta.folders[0].items).toEqual([build.id]);
   });
 
   it("loadAll refuses to let two folders claim the same build", async () => {
@@ -1134,18 +1134,54 @@ describe("build folders", () => {
     await storage.putMeta({
       buildOrder: ["f_1", "f_2"],
       folders: [
-        { id: "f_1", name: "One", collapsed: false, builds: [build.id] },
-        { id: "f_2", name: "Two", collapsed: false, builds: [build.id] },
+        { id: "f_1", name: "One", collapsed: false, items: [build.id] },
+        { id: "f_2", name: "Two", collapsed: false, items: [build.id] },
       ],
       layerOrder: [],
       lastSelection: null,
     });
 
     const { meta } = await storage.loadAll();
-    expect(meta.folders[0].builds).toEqual([build.id]);
-    expect(meta.folders[1].builds).toEqual([]);
+    expect(meta.folders[0].items).toEqual([build.id]);
+    expect(meta.folders[1].items).toEqual([]);
     // Still not re-appended to the top level - it already has a home.
     expect(meta.buildOrder).toEqual(["f_1", "f_2"]);
+  });
+
+  it("loadAll keeps a nested folder inside its parent, out of the top level", async () => {
+    const build = storage.defaultBuild("Deep");
+    await storage.putBuild(build);
+    await storage.putMeta({
+      buildOrder: ["f_1"],
+      folders: [
+        { id: "f_1", name: "Outer", collapsed: false, items: ["f_2"] },
+        { id: "f_2", name: "Inner", collapsed: false, items: [build.id] },
+      ],
+      layerOrder: [],
+      lastSelection: null,
+    });
+
+    const { meta } = await storage.loadAll();
+    expect(meta.buildOrder).toEqual(["f_1"]);
+    expect(meta.folders.map((f) => f.items)).toEqual([["f_2"], [build.id]]);
+  });
+
+  // Folders stored before nesting existed name their contents `builds`.
+  it("loadAll reads a one-level folder stored with `builds`", async () => {
+    const build = storage.defaultBuild("Legacy");
+    await storage.putBuild(build);
+    await storage.putMeta({
+      buildOrder: ["f_1"],
+      folders: [
+        { id: "f_1", name: "Alts", collapsed: false, builds: [build.id] },
+      ],
+      layerOrder: [],
+      lastSelection: null,
+    } as unknown as AppMeta);
+
+    const { meta } = await storage.loadAll();
+    expect(meta.folders[0].items).toEqual([build.id]);
+    expect(meta.buildOrder).toEqual(["f_1"]);
   });
 
   it("meta written before folders existed still loads, as loose builds", async () => {
@@ -1169,7 +1205,7 @@ describe("build folders", () => {
       builds: [inside, loose],
       layers: [],
       folders: [
-        { id: "f_1", name: "Alts", collapsed: true, builds: [inside.id] },
+        { id: "f_1", name: "Alts", collapsed: true, items: [inside.id] },
       ],
     });
 
@@ -1178,7 +1214,7 @@ describe("build folders", () => {
     expect(bundle.folders).toHaveLength(1);
     expect(bundle.folders![0].name).toBe("Alts");
     expect(bundle.folders![0].collapsed).toBe(true);
-    expect(bundle.folders![0].builds).toEqual([inside.id]);
+    expect(bundle.folders![0].items).toEqual([inside.id]);
   });
 
   it("a bundle without folders parses to none", () => {

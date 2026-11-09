@@ -1,6 +1,6 @@
-// End-to-end coverage for grouping builds into folders in the sidebar: one level
-// deep, drag-and-drop in and out, the keyboard/menu equivalents, and what a bundle export
-// carries with it.
+// End-to-end coverage for grouping builds into folders in the sidebar: nesting,
+// drag-and-drop in and out, the keyboard/menu equivalents, and what a bundle export carries
+// with it.
 import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import {
@@ -10,6 +10,7 @@ import {
   buildRowNesting,
   folderRow,
   filterBuilds,
+  moveViaMenu,
   openRowMenu,
   renameViaSidebar,
   navName,
@@ -53,7 +54,7 @@ test("dragging a build onto a folder puts it inside, and it survives a reload", 
 
   await expect
     .poll(async () =>
-      (await storedMeta(page))?.folders.map((f) => f.builds.length),
+      (await storedMeta(page))?.folders.map((f) => f.items.length),
     )
     .toEqual([1]);
   await page.reload();
@@ -146,12 +147,10 @@ test("the build menu moves a build into a folder and back out", async ({
   await addFolder(page);
   await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
 
-  let menu = await openRowMenu(buildRow(page, "Build 1"));
-  await menu.getByRole("button", { name: "Move to “Alts”" }).click();
+  await moveViaMenu(buildRow(page, "Build 1"), "Alts");
   await expect(buildRowNesting(page, "Build 1")).toHaveAttribute("data-nested");
 
-  menu = await openRowMenu(buildRow(page, "Build 1"));
-  await menu.getByRole("button", { name: "Move to top level" }).click();
+  await moveViaMenu(buildRow(page, "Build 1"), "Top level");
   await expect(buildRowNesting(page, "Build 1")).not.toHaveAttribute(
     "data-nested",
   );
@@ -259,14 +258,14 @@ test("a bundle export carries the folders of the builds it exports", async ({
   const bundle = JSON.parse(text) as {
     data: {
       builds: { id: string; name: string }[];
-      folders: { name: string; builds: string[] }[];
+      folders: { name: string; items: string[] }[];
     };
   };
 
   expect(bundle.data.builds.map((b) => b.name)).toEqual(["Build 2"]);
   expect(bundle.data.folders).toHaveLength(1);
   expect(bundle.data.folders[0].name).toBe("Alts");
-  expect(bundle.data.folders[0].builds).toEqual([bundle.data.builds[0].id]);
+  expect(bundle.data.folders[0].items).toEqual([bundle.data.builds[0].id]);
 });
 
 test("clicking a folder row expands and collapses it", async ({ page }) => {
@@ -331,4 +330,54 @@ test("a build stays in its folder when dropped below its last row but still at t
   const rows = page.locator(".nav-row--build");
   await expect(rows.nth(0)).toContainText("Build 2");
   await expect(rows.nth(1)).toContainText("Build 1");
+});
+
+test("a folder dragged onto another folder nests inside it", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addFolder(page);
+  await addFolder(page);
+  await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Folder 2"));
+
+  await dropIntoFolder(
+    folderRow(page, "Folder 2"),
+    folderRow(page, "Folder 1"),
+  );
+
+  await expect(folderRow(page, "Folder 2")).toHaveAttribute("data-nested");
+  // A folder counts the builds anywhere inside it, subfolders included.
+  await expect(folderRow(page, "Folder 1")).toContainText("1");
+});
+
+// The submenu keeps the tree's shape: where the row already is stays listed but disabled,
+// and a folder never offers itself or its own subfolders as a destination.
+test("Move to lists the folder tree, without a folder's own subtree", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addFolder(page);
+  await renameViaSidebar(page, folderRow(page, "Folder 1"), "Outer");
+  const outerMenu = await openRowMenu(folderRow(page, "Outer"));
+  await outerMenu.getByRole("button", { name: "New folder here" }).click();
+  await expect(folderRow(page, "Folder 2")).toHaveAttribute("data-nested");
+  await addFolder(page); // Folder 3, somewhere for Outer to go
+
+  const menu = await openRowMenu(folderRow(page, "Outer"));
+  await menu.getByRole("button", { name: "Move to…" }).click();
+  await expect(menu.getByRole("button", { name: "Top level" })).toBeDisabled();
+  await expect(menu.getByRole("button", { name: "Folder 3" })).toBeEnabled();
+  await expect(menu.getByRole("button", { name: "Folder 2" })).toHaveCount(0);
+  await menu.getByRole("button", { name: "Back" }).click();
+  await expect(menu.getByRole("button", { name: "Move to…" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await moveViaMenu(buildRow(page, "Build 1"), "Folder 2");
+  await expect(buildRowNesting(page, "Build 1")).toHaveAttribute("data-nested");
+  const buildMenu = await openRowMenu(buildRow(page, "Build 1"));
+  await buildMenu.getByRole("button", { name: "Move to…" }).click();
+  await expect(
+    buildMenu.getByRole("button", { name: "Folder 2" }),
+  ).toBeDisabled();
+  await expect(buildMenu.getByRole("button", { name: "Outer" })).toBeEnabled();
 });

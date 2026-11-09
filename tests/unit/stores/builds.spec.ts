@@ -1,6 +1,7 @@
 // Tests for stores/builds.ts: create/duplicate/delete/reorder, trash integration,
 // bootstrap from empty, and persistence.
 import { describe, expect, it, vi } from "vitest";
+import { pathLabel } from "../../../src/lib/tree-rows";
 
 async function freshStores() {
   vi.resetModules();
@@ -126,35 +127,35 @@ describe("builds store", () => {
     expect(landing.showing.value).toBe(false);
   });
 
-  it("moveBuild reorders within bounds", async () => {
-    const { builds } = await freshStores();
+  it("moveRow reorders within bounds", async () => {
+    const { builds, folders } = await freshStores();
     builds.createBuild();
     const id = builds.build.value!.id;
-    builds.moveBuild(id, -1);
+    folders.moveRow(id, -1);
     const idx = builds.builds.value.findIndex((b) => b.id === id);
     expect(idx).toBeGreaterThanOrEqual(0);
   });
 
-  it("moveBuild swaps with the neighbour in both directions", async () => {
-    const { builds } = await freshStores();
+  it("moveRow swaps with the neighbour in both directions", async () => {
+    const { builds, folders } = await freshStores();
     builds.createBuild();
     builds.createBuild();
     const names = builds.builds.value.map((b) => b.name);
     const firstId = builds.builds.value[0].id;
 
-    await builds.moveBuild(firstId, 1);
+    await folders.moveRow(firstId, 1);
     expect(builds.builds.value.map((b) => b.name)).toEqual([
       names[1],
       names[0],
       names[2],
     ]);
 
-    await builds.moveBuild(firstId, -1);
+    await folders.moveRow(firstId, -1);
     expect(builds.builds.value.map((b) => b.name)).toEqual(names);
   });
 
-  it("moveBuildTo drops a build at an arbitrary index, not just a neighbour swap", async () => {
-    const { builds } = await freshStores();
+  it("placeRow drops a build at an arbitrary index, not just a neighbour swap", async () => {
+    const { builds, folders } = await freshStores();
     // Starts with one build ("Build 1"); add three more.
     builds.createBuild();
     builds.createBuild();
@@ -163,16 +164,16 @@ describe("builds store", () => {
     const firstId = builds.builds.value[0].id;
 
     // Drag the first build to land right after the third.
-    await builds.moveBuildTo(firstId, 3);
+    await folders.placeRow(firstId, null, 3);
     const reordered = builds.builds.value.map((b) => b.name);
     expect(reordered).toEqual([names[1], names[2], names[0], names[3]]);
   });
 
-  it("moveBuildTo clamps to the list bounds", async () => {
-    const { builds } = await freshStores();
+  it("placeRow clamps to the list bounds", async () => {
+    const { builds, folders } = await freshStores();
     builds.createBuild();
     const firstId = builds.builds.value[0].id;
-    await builds.moveBuildTo(firstId, 999);
+    await folders.placeRow(firstId, null, 999);
     expect(builds.builds.value[builds.builds.value.length - 1].id).toBe(
       firstId,
     );
@@ -193,14 +194,16 @@ describe("builds store", () => {
     builds.createBuild();
     const filedId = builds.build.value!.id;
     const folderId = folders.createFolder("Alts");
-    folders.placeBuild(filedId, folderId);
+    folders.placeRow(filedId, folderId);
 
     // The active build is left out, so pick a third one to look from.
     builds.createBuild();
     const options = builds.otherBuilds.value;
 
-    expect(options.find((o) => o.value === filedId)?.folder).toBe("Alts");
-    expect(options.find((o) => o.value === topLevelId)?.folder).toBeUndefined();
+    expect(pathLabel(options.find((o) => o.value === filedId)?.path)).toBe(
+      "Alts",
+    );
+    expect(options.find((o) => o.value === topLevelId)?.path).toBeUndefined();
   });
 
   it("otherBuilds lists in sidebar order, so a folder's builds stay together", async () => {
@@ -213,17 +216,17 @@ describe("builds store", () => {
     const folderId = folders.createFolder("Alts");
     // The two filed builds start out either side of the third, so only the sidebar's own
     // ordering can bring them back together -- which is what lets the picker head them once.
-    folders.placeBuild(firstId, folderId);
-    folders.placeBuild(secondId, folderId);
+    folders.placeRow(firstId, folderId);
+    folders.placeRow(secondId, folderId);
 
     builds.createBuild();
-    const listed = builds.otherBuilds.value.map((o) => o.folder);
+    const listed = builds.otherBuilds.value.map((o) => pathLabel(o.path));
     const filed = builds.otherBuilds.value.map((o) => o.value);
 
     expect(filed.indexOf(secondId)).toBe(filed.indexOf(firstId) + 1);
     expect(listed.filter((f) => f === "Alts")).toHaveLength(2);
     expect(
-      builds.otherBuilds.value.find((o) => o.value === thirdId)?.folder,
+      builds.otherBuilds.value.find((o) => o.value === thirdId)?.path,
     ).toBeUndefined();
   });
 });
@@ -287,5 +290,23 @@ describe("builds.upsertImported", () => {
 
     expect(meta.buildOrder.value).toContain(incoming.id);
     expect(builds.builds.value.map((b) => b.name)).toContain("Incoming");
+  });
+});
+
+describe("build options in nested folders", () => {
+  // Pickers outside the sidebar spell the whole path, so same-named folders stay apart.
+  it("name the full folder path", async () => {
+    const { builds, folders } = await freshStores();
+    const outer = folders.createFolder("PvP");
+    const inner = folders.createFolder("Tanks", false, outer);
+    builds.createBuild(inner);
+    const filedId = builds.build.value!.id;
+    builds.createBuild();
+
+    expect(
+      pathLabel(
+        builds.otherBuilds.value.find((o) => o.value === filedId)?.path,
+      ),
+    ).toBe("PvP / Tanks");
   });
 });

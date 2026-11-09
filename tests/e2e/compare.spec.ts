@@ -25,6 +25,7 @@ import {
   addFolder,
   buildRow,
   folderRow,
+  moveViaMenu,
   openRowMenu,
   renameViaSidebar,
 } from "./support/nav";
@@ -284,8 +285,7 @@ test.describe("folder names in the build pickers", () => {
     await addBuild(page);
     await addFolder(page);
     await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
-    const menu = await openRowMenu(buildRow(page, "Build 1"));
-    await menu.getByRole("button", { name: "Move to “Alts”" }).click();
+    await moveViaMenu(buildRow(page, "Build 1"), "Alts");
     await expect(buildRow(page, "Build 1")).toBeVisible();
   }
 
@@ -461,5 +461,56 @@ test.describe("a bonus's dynamic stat in compare", () => {
     await row.getByRole("button", { name: "apply" }).click();
     await expect(row.getByTestId("slot-dynamic:defense")).toHaveValue("120");
     await expect(row).not.toHaveAttribute("data-diff");
+  });
+});
+
+test.describe("nested folders in the build picker", () => {
+  /** Build 1 two folders deep ("Outer" holding "Inner"), Builds 2 and 3 at the top level,
+   *  with Build 3 active. */
+  async function nestedBuild(page: Page) {
+    await openBuilder(page);
+    await addBuild(page);
+    await addBuild(page);
+    await addFolder(page);
+    await renameViaSidebar(page, folderRow(page, "Folder 1"), "Outer");
+    const menu = await openRowMenu(folderRow(page, "Outer"));
+    await menu.getByRole("button", { name: "New folder here" }).click();
+    await renameViaSidebar(page, folderRow(page, "Folder 2"), "Inner");
+    await moveViaMenu(buildRow(page, "Build 1"), "Inner");
+    await buildRow(page, "Build 3").click();
+  }
+
+  // The list draws the sidebar's tree: one heading per folder level, outermost first.
+  test("heads each folder level the build sits under", async ({ page }) => {
+    await nestedBuild(page);
+    const combo = page.locator(".compare-select");
+
+    await pickerInput(combo).click();
+
+    await expect(pickerMenu(combo).getByTestId("picker-group")).toHaveText([
+      "Outer",
+      "Inner",
+    ]);
+  });
+
+  // Closed, a foldered build shows its path over its name, in the same box height a
+  // top-level build gets, and the box's value still spells out the whole path.
+  test("shows the path over the name, at one box height", async ({ page }) => {
+    await nestedBuild(page);
+    const combo = page.locator(".compare-select");
+
+    await chooseCombo(combo, "Build 2");
+    const topLevel = await pickerInput(combo).boundingBox();
+    await expect(combo.getByTestId("picker-closed-path")).toHaveCount(0);
+
+    await chooseCombo(combo, "Build 1");
+    await expect(combo.getByTestId("picker-closed-path")).toHaveText(
+      "Outer / Inner",
+    );
+    await expect(combo.getByTestId("picker-closed")).toContainText("Build 1");
+    await expect(pickerInput(combo)).toHaveValue("Outer / Inner · Build 1");
+    expect((await pickerInput(combo).boundingBox())?.height).toBe(
+      topLevel?.height,
+    );
   });
 });

@@ -1,22 +1,23 @@
-// Build folders: the one-level-deep grouping under the sidebar's Builds heading.
+// Build folders: the nested grouping under the sidebar's Builds heading.
 //
 // Two pieces of `AppMeta` describe the whole tree, and this module is their only writer:
 // `buildOrder` is the top-level row order (build ids and folder ids interleaved) and
-// `folders` is the folder set, each carrying its own ordered `builds`. A build id lives in
-// exactly one of those places, never both -- `storage.loadAll` repairs anything that says
-// otherwise on load, so every reader here can assume it.
+// `folders` is the folder set, each carrying its own ordered `items` of the same mix. An id
+// lives in exactly one of those lists, folders never contain themselves, and nesting stops at
+// `MAX_FOLDER_DEPTH`. `storage.loadAll` repairs anything that says otherwise on load (see
+// lib/folder-tree.ts), so every reader here can assume it.
 //
-// Placement is one primitive, `placeBuild`, that every caller funnels through (drag-and-drop,
-// the Move to menu, Ctrl+↑/↓, delete cleanup). Splitting it into move-in / move-out / reorder
-// would triple the index bookkeeping for no gain: they are all "take this build out of
-// wherever it is and splice it in at (container, index)".
+// Placement is one primitive, `place`, that builds and folders both funnel through
+// (drag-and-drop, the Move to menu, Ctrl+↑/↓): "take this row out of wherever it is and splice
+// it in at (container, index)". `canPlace` is the one rule on where a row may go.
 //
-// The user-facing mutations (`placeBuild`, `createFolder`, `renameFolder`, `deleteFolder`,
-// `moveFolderTo`) each record one step on the nav undo stack. The primitives they and their
-// undo closures share (`putBuild`, `addFolder`, `removeFolder`) record nothing, which is also
-// what import goes through.
+// The user-facing mutations (`placeRow`, `moveRow`, `createFolder`, `renameFolder`,
+// `deleteFolder`) each record one step on the nav undo stack. The primitives they and their
+// undo closures share (`putRow`, `addFolder`, `removeFolder`, the tree pair) record nothing,
+// which is also what import and `builds.ts` go through.
 import { computed } from "vue";
 import { reorderIndex, stepGap } from "../composables/useDragAndDrop";
+import { MAX_FOLDER_DEPTH } from "../lib/folder-tree";
 import { newId } from "../storage/storage";
 import { buildOrder, folders, persistMeta } from "./meta";
 import * as navHistory from "./navHistory";
@@ -25,129 +26,273 @@ import { showNotice } from "./notice";
 import * as selection from "./selection";
 import type { BuildFolder } from "../types";
 
-export { folders };
+export { folders, MAX_FOLDER_DEPTH };
 
-/** Top-level rows in order, resolved from `buildOrder`'s interleaved ids. */
-export const entries = computed<
-  ({ kind: "build"; id: string } | { kind: "folder"; folder: BuildFolder })[]
->(() =>
-  buildOrder.value.map((id) => {
-    const folder = byId(id);
-    return folder
-      ? ({ kind: "folder", folder } as const)
-      : ({ kind: "build", id } as const);
-  }),
-);
+const PATH_SEPARATOR = " / ";
 
-/** Every build id in sidebar order -- top-level rows in order, each folder expanded in
- *  place. The flat build list the rest of the app reads is built from this. */
-export const orderedBuildIds = computed(() =>
-  entries.value.flatMap((entry) =>
-    entry.kind === "folder" ? [...entry.folder.builds] : [entry.id],
-  ),
-);
-
-/** Folders in sidebar order, for menus that list them as move targets. */
-export const orderedFolders = computed(() =>
-  entries.value.flatMap((entry) =>
-    entry.kind === "folder" ? [entry.folder] : [],
-  ),
-);
+// --- reads ------------------------------------------------------------------------------
 
 export function byId(id: string): BuildFolder | undefined {
   return folders.value.find((f) => f.id === id);
 }
 
-/** The folder holding `buildId`, or undefined when it sits at the top level. */
-export function folderOf(buildId: string): BuildFolder | undefined {
-  return folders.value.find((f) => f.builds.includes(buildId));
+/** The ids directly inside `parentId`, or the top-level rows when null. */
+export function itemsOf(parentId: string | null): string[] {
+  if (parentId === null) return buildOrder.value;
+  return byId(parentId)?.items ?? [];
 }
 
-/** The id list a nav row lives in: a folder's `builds`, or the top-level `buildOrder`. */
-function containerOf(id: string): string[] {
-  return folderOf(id)?.builds ?? buildOrder.value;
+const parents = computed(() => {
+  const map = new Map<string, BuildFolder>();
+  for (const folder of folders.value)
+    for (const id of folder.items) map.set(id, folder);
+  return map;
+});
+
+/** The folder directly holding a build or folder, or undefined at the top level. */
+export function parentOf(id: string): BuildFolder | undefined {
+  return parents.value.get(id);
 }
 
-/** Where a nav row (build or folder) sits within its own list, for Move up/down affordances
- *  and the Ctrl+↑/↓ shortcut. Both stay inside the row's current container: a build at the
- *  top of a folder does not pop out of it, since the Move to menu is the explicit -- and
- *  keyboard-reachable -- way to change containers. */
+/** The folders from the top level down to the one holding `id`. */
+export function ancestorsOf(id: string): BuildFolder[] {
+  const out: BuildFolder[] = [];
+  for (let at = parentOf(id); at; at = parentOf(at.id)) out.unshift(at);
+  return out;
+}
+
+/** The folder names leading to `id`, for surfaces that list builds outside the sidebar.
+ *  Undefined for a row at the top level. */
+export function pathOf(id: string): string | undefined {
+  const names = ancestorsOf(id).map((f) => f.name);
+  return names.length ? names.join(PATH_SEPARATOR) : undefined;
+}
+
+/** How deep a folder sits: 1 at the top level. */
+export function depthOf(folderId: string): number {
+  return ancestorsOf(folderId).length + 1;
+}
+
+/** How many folder levels a folder spans, counting itself. */
+function heightOf(folderId: string): number {
+  const folder = byId(folderId);
+  if (!folder) return 0;
+  let below = 0;
+  for (const id of folder.items)
+    if (byId(id)) below = Math.max(below, heightOf(id));
+  return below + 1;
+}
+
+/** True when `id` is `ancestorId` itself or sits anywhere inside it. */
+export function isWithin(id: string, ancestorId: string): boolean {
+  if (id === ancestorId) return true;
+  return ancestorsOf(id).some((f) => f.id === ancestorId);
+}
+
+/** Whether a row may move into `parentId` (the top level when null). A build may go into
+ *  any folder. A folder may not go into itself or its own subfolders, and may not take its
+ *  subtree past `MAX_FOLDER_DEPTH`. */
+export function canPlace(id: string, parentId: string | null): boolean {
+  if (parentId === null) return true;
+  if (!byId(parentId)) return false;
+  if (!byId(id)) return true;
+  return (
+    !isWithin(parentId, id) &&
+    depthOf(parentId) + heightOf(id) <= MAX_FOLDER_DEPTH
+  );
+}
+
+/** Whether a new folder fits inside `parentId`. */
+export function canNestIn(parentId: string): boolean {
+  return !!byId(parentId) && depthOf(parentId) < MAX_FOLDER_DEPTH;
+}
+
+/** The build ids anywhere inside `folderId`, in sidebar order. */
+export function buildsWithin(folderId: string): string[] {
+  return (byId(folderId)?.items ?? []).flatMap((id) =>
+    byId(id) ? buildsWithin(id) : [id],
+  );
+}
+
+/** Every build id in sidebar order, each folder expanded in place. The flat build list the
+ *  rest of the app reads is built from this. */
+export const orderedBuildIds = computed(() =>
+  buildOrder.value.flatMap((id) => (byId(id) ? buildsWithin(id) : [id])),
+);
+
+/** Every folder in sidebar order with its depth, for menus that list them as targets. */
+export const folderTree = computed(() => {
+  const out: { folder: BuildFolder; depth: number }[] = [];
+  const walk = (list: string[], depth: number) => {
+    for (const id of list) {
+      const folder = byId(id);
+      if (!folder) continue;
+      out.push({ folder, depth });
+      walk(folder.items, depth + 1);
+    }
+  };
+  walk(buildOrder.value, 1);
+  return out;
+});
+
+/** Folders in sidebar order. */
+export const orderedFolders = computed(() =>
+  folderTree.value.map((entry) => entry.folder),
+);
+
+/** Where a row sits within its own list, for the Ctrl+↑/↓ shortcut. A nudge stays inside
+ *  the row's current container: the Move to menu is the keyboard way to change containers. */
 export function rowPosition(
   id: string,
 ): { index: number; length: number } | null {
-  const list = byId(id) ? buildOrder.value : containerOf(id);
+  const list = itemsOf(parentOf(id)?.id ?? null);
   const index = list.indexOf(id);
   return index === -1 ? null : { index, length: list.length };
 }
 
-/** A build's absolute spot in the tree: the folder holding it (null at the top level) and
- *  its index in that container. What a nav undo step captures to put a build back. */
-export interface BuildPlacement {
+/** A row's absolute spot in the tree: the folder holding it (null at the top level) and its
+ *  index in that container. What a nav undo step captures to put a row back. */
+export interface RowPlacement {
   folderId: string | null;
   index: number;
 }
 
-export function placementOf(buildId: string): BuildPlacement | null {
-  const at = rowPosition(buildId);
-  return at
-    ? { folderId: folderOf(buildId)?.id ?? null, index: at.index }
-    : null;
+export function placementOf(id: string): RowPlacement | null {
+  const at = rowPosition(id);
+  return at ? { folderId: parentOf(id)?.id ?? null, index: at.index } : null;
 }
 
-/** A folder's own row and contents, captured before it is removed so undo can put it back. */
+/** A folder's own record and spot, captured before it is removed so undo can put it back. */
 export interface RemovedFolder {
   folder: BuildFolder;
-  index: number;
+  placement: RowPlacement;
 }
 
-// --- mutations --------------------------------------------------------------------------
+/** A whole folder subtree, records outermost first, captured for undo. */
+export interface RemovedTree {
+  folders: BuildFolder[];
+  placement: RowPlacement;
+}
 
-/** Takes `buildId` out of wherever it is and inserts it at `placement`, an absolute index in
- *  the target container. A folder that no longer exists falls back to the end of the top
- *  level, so a restored build is never left out of the tree. Records nothing: this is what
- *  undo steps, create and duplicate place with. */
-export function putBuild(buildId: string, placement: BuildPlacement) {
-  detach(buildId);
+// --- primitives (record nothing) ----------------------------------------------------------
+
+/** Takes `id` out of wherever it is and inserts it at `placement`, an absolute index in the
+ *  target container. A folder that no longer exists falls back to the end of the top level,
+ *  so a restored row is never left out of the tree. What undo steps, create and duplicate
+ *  place with. */
+export function putRow(id: string, placement: RowPlacement) {
+  detach(id);
+  insert(id, placement);
+  persistMeta();
+}
+
+function insert(id: string, placement: RowPlacement) {
   const target = placement.folderId === null ? null : byId(placement.folderId);
-  const list = target ? target.builds : buildOrder.value;
+  const list = target ? target.items : buildOrder.value;
   const index =
     target || placement.folderId === null ? placement.index : list.length;
-  list.splice(Math.max(0, Math.min(list.length, index)), 0, buildId);
-  persistMeta();
+  list.splice(Math.max(0, Math.min(list.length, index)), 0, id);
 }
 
-/** Inserts a folder as a top-level row at `index`, claiming every build listed in
- *  `folder.builds` from wherever it currently sits. Records nothing: import builds folders
- *  with it, and undo steps put deleted folders back with it. */
+/** Inserts a folder at `placement`, claiming every id listed in `folder.items` from wherever
+ *  it currently sits. Undo steps put deleted folders back with it. */
 export function addFolder(
   folder: BuildFolder,
-  index = buildOrder.value.length,
+  placement: RowPlacement = { folderId: null, index: buildOrder.value.length },
 ) {
-  for (const buildId of folder.builds) detach(buildId);
+  for (const id of folder.items) detach(id);
   folders.value = [...folders.value, folder];
-  buildOrder.value.splice(
-    Math.max(0, Math.min(buildOrder.value.length, index)),
-    0,
-    folder.id,
-  );
+  insert(folder.id, placement);
   persistMeta();
 }
 
-/** Removes the folder but never its contents: the builds it held take its place at the top
- *  level, so removing a folder is only ever about the grouping. Returns what was removed, for
- *  `addFolder` to put back. Records nothing. */
+/** Adds a set of folders that only reference builds and each other, as import produces.
+ *  Those no other folder in the set holds become rows at the end of the top level. */
+export function addFolders(list: BuildFolder[]) {
+  for (const folder of list) for (const id of folder.items) detach(id);
+  folders.value = [...folders.value, ...list];
+  const nested = new Set(list.flatMap((f) => f.items));
+  for (const folder of list)
+    if (!nested.has(folder.id)) buildOrder.value.push(folder.id);
+  persistMeta();
+}
+
+/** Removes the folder but never its contents: whatever it held takes its place in its
+ *  parent, so removing a folder is only ever about the grouping. Returns what was removed,
+ *  for `addFolder` to put back. */
 export function removeFolder(id: string): RemovedFolder | null {
   const folder = byId(id);
-  if (!folder) return null;
-  const index = buildOrder.value.indexOf(id);
-  if (index !== -1) buildOrder.value.splice(index, 1, ...folder.builds);
+  const placement = placementOf(id);
+  if (!folder || !placement) return null;
+  itemsOf(placement.folderId).splice(placement.index, 1, ...folder.items);
   folders.value = folders.value.filter((f) => f.id !== id);
   persistMeta();
-  return { folder: { ...folder, builds: [...folder.builds] }, index };
+  return { folder: { ...folder, items: [...folder.items] }, placement };
 }
 
-function addFolderStep(folder: BuildFolder, index: number): NavStepOutcome {
-  addFolder(folder, index);
+/** Removes a folder together with every subfolder inside it. Whatever builds are still
+ *  inside go with the records, so callers trash those first. */
+export function removeFolderTree(id: string): RemovedTree | null {
+  const placement = placementOf(id);
+  if (!byId(id) || !placement) return null;
+  const removed = orderedFolders.value.filter((f) => isWithin(f.id, id));
+  const ids = new Set(removed.map((f) => f.id));
+  itemsOf(placement.folderId).splice(placement.index, 1);
+  folders.value = folders.value.filter((f) => !ids.has(f.id));
+  persistMeta();
+  return {
+    folders: removed.map((f) => ({ ...f, items: [...f.items] })),
+    placement,
+  };
+}
+
+/** Puts back what `removeFolderTree` took. */
+export function addFolderTree(tree: RemovedTree) {
+  const [root] = tree.folders;
+  if (!root) return;
+  folders.value = [...folders.value, ...tree.folders];
+  insert(root.id, tree.placement);
+  persistMeta();
+}
+
+/** Appends a freshly created/imported build to the top level. */
+export function appendBuild(buildId: string) {
+  buildOrder.value.push(buildId);
+  persistMeta();
+}
+
+/** The spot right behind an existing row, inside whatever container that one lives in, so a
+ *  duplicate lands next to its original. The top level's end when the anchor is gone. */
+export function placementAfter(anchorId: string): RowPlacement {
+  const at = placementOf(anchorId);
+  return at
+    ? { folderId: at.folderId, index: at.index + 1 }
+    : { folderId: null, index: buildOrder.value.length };
+}
+
+/** Forgets a build entirely, called when it is deleted, so no folder keeps a dangling id. */
+export function removeBuild(buildId: string) {
+  detach(buildId);
+  persistMeta();
+}
+
+function detach(id: string) {
+  const folder = parentOf(id);
+  if (folder) {
+    folder.items = folder.items.filter((item) => item !== id);
+    return;
+  }
+  const at = buildOrder.value.indexOf(id);
+  if (at !== -1) buildOrder.value.splice(at, 1);
+}
+
+// --- recorded mutations -------------------------------------------------------------------
+
+function addFolderStep(
+  folder: BuildFolder,
+  placement: RowPlacement,
+): NavStepOutcome {
+  addFolder(folder, placement);
   return { focusId: folder.id };
 }
 
@@ -155,17 +300,22 @@ function removeFolderStep(id: string): NavStepOutcome {
   return removeFolder(id) ? { focusId: null } : false;
 }
 
+/** A new empty folder at the end of `parentId` (the top level when null). A parent already
+ *  at the depth limit takes no more folders, so the new one lands at the top level. */
 export function createFolder(
   name = `Folder ${folders.value.length + 1}`,
   collapsed = false,
+  parentId: string | null = null,
 ): string {
-  const folder: BuildFolder = { id: newId("f"), name, collapsed, builds: [] };
-  const index = buildOrder.value.length;
-  addFolder(folder, index);
+  const folder: BuildFolder = { id: newId("f"), name, collapsed, items: [] };
+  const parent = parentId !== null && canNestIn(parentId) ? parentId : null;
+  const placement = { folderId: parent, index: itemsOf(parent).length };
+  expand(parent);
+  addFolder(folder, placement);
   navHistory.record({
     label: `create folder "${name}"`,
     undo: () => removeFolderStep(folder.id),
-    redo: () => addFolderStep({ ...folder, builds: [] }, index),
+    redo: () => addFolderStep({ ...folder, items: [] }, placement),
   });
   return folder.id;
 }
@@ -194,17 +344,19 @@ export function renameFolder(id: string, name: string) {
 /** Deletes the grouping only, see `removeFolder`. Deleting the builds along with it is
  *  `builds.deleteFolderWithBuilds`, since the trash is that store's business. */
 export function deleteFolder(id: string) {
+  const parent = parentOf(id);
   const removed = removeFolder(id);
   if (!removed) return;
-  const { folder, index } = removed;
+  const { folder, placement } = removed;
+  const where = parent ? `into “${parent.name}”` : "to the top level";
   showNotice(
-    folder.builds.length
-      ? `Deleted folder “${folder.name}” - its builds moved to the top level`
+    folder.items.length
+      ? `Deleted folder “${folder.name}” - its contents moved ${where}`
       : `Deleted folder “${folder.name}”`,
   );
   navHistory.record({
     label: `delete folder "${folder.name}"`,
-    undo: () => addFolderStep(folder, index),
+    undo: () => addFolderStep(folder, placement),
     redo: () => removeFolderStep(id),
   });
 }
@@ -221,80 +373,54 @@ export function toggleCollapsed(id: string) {
   if (folder) setCollapsed(id, !folder.collapsed);
 }
 
-/** Puts a folder row at an absolute index among the top-level rows. */
-function setFolderIndex(id: string, index: number): NavStepOutcome {
-  const from = buildOrder.value.indexOf(id);
-  if (from === -1) return false;
-  buildOrder.value.splice(from, 1);
-  buildOrder.value.splice(
-    Math.max(0, Math.min(buildOrder.value.length, index)),
-    0,
-    id,
-  );
-  persistMeta();
-  return { focusId: id };
-}
-
-/** Moves a folder among the top-level rows. `toIndex` is relative to `buildOrder` as it
- *  stands now, before the folder is spliced out -- the same convention `placeBuild` uses. */
-export function moveFolderTo(id: string, toIndex: number) {
-  if (!byId(id)) return;
-  const from = buildOrder.value.indexOf(id);
-  if (from === -1) return;
-  const insertAt = reorderIndex(
-    from,
-    Math.max(0, Math.min(buildOrder.value.length, toIndex)),
-  );
-  if (insertAt === from) return;
-  setFolderIndex(id, insertAt);
-  navHistory.record({
-    label: "move folder",
-    undo: () => setFolderIndex(id, from),
-    redo: () => setFolderIndex(id, insertAt),
-  });
-}
-
-/** Nudges a folder one step up/down among the top-level rows. */
-export function moveFolder(id: string, delta: number) {
-  const at = rowPosition(id);
-  if (!at) return;
-  moveFolderTo(id, stepGap(at.index, delta));
+/** Opens a folder and every folder around it, so a row just moved in is never apparently
+ *  swallowed. Leaves the write to the caller. */
+function expand(folderId: string | null) {
+  if (folderId === null) return;
+  for (const folder of [...ancestorsOf(folderId), byId(folderId)])
+    if (folder) folder.collapsed = false;
 }
 
 /**
- * Puts `buildId` at `index` inside `folderId` (or at the top level when null), taking it out
- * of whatever container currently holds it.
+ * Puts a build or folder at `index` inside `folderId` (or at the top level when null),
+ * taking it out of whatever container currently holds it. A move `canPlace` refuses does
+ * nothing.
  *
- * `index` is relative to the target container as it stands now, before the build is removed
- * from wherever it was -- which is what both drag-and-drop's drop-index math and the
- * delta-based `moveBuild` naturally produce. Only a move *within* one container needs the
+ * `index` is relative to the target container as it stands now, before the row is removed
+ * from wherever it was, which is what both drag-and-drop's drop-index math and the
+ * delta-based `moveRow` naturally produce. Only a move *within* one container needs the
  * removal compensated for (`reorderIndex`); a move between containers splices into a list the
- * build was never in. A drop into a collapsed folder expands it, so the build is never
- * apparently swallowed.
+ * row was never in.
  */
-export function placeBuild(
-  buildId: string,
+export function placeRow(
+  id: string,
   folderId: string | null,
   index = Number.MAX_SAFE_INTEGER,
 ) {
-  const before = placementOf(buildId);
-  if (!before || !place(buildId, folderId, index)) return;
-  const after = placementOf(buildId)!;
+  const before = placementOf(id);
+  if (!before || !place(id, folderId, index)) return;
+  const after = placementOf(id)!;
   navHistory.record({
-    label: "move build",
-    undo: () => putBuildStep(buildId, before),
-    redo: () => putBuildStep(buildId, after),
+    label: byId(id) ? "move folder" : "move build",
+    undo: () => putRowStep(id, before),
+    redo: () => putRowStep(id, after),
   });
 }
 
-/** `placeBuild` without the recording. True when the build actually moved. */
-function place(buildId: string, folderId: string | null, index: number) {
-  const target = folderId === null ? null : byId(folderId);
-  if (folderId !== null && !target) return false;
-  const from = folderOf(buildId);
-  if ((from?.id ?? null) === (target?.id ?? null)) {
-    const list = target ? target.builds : buildOrder.value;
-    const at = list.indexOf(buildId);
+/** Nudges a row one step up/down inside its own container. */
+export function moveRow(id: string, delta: number) {
+  const at = rowPosition(id);
+  if (!at) return;
+  placeRow(id, parentOf(id)?.id ?? null, stepGap(at.index, delta));
+}
+
+/** `placeRow` without the recording. True when the row actually moved. */
+function place(id: string, folderId: string | null, index: number) {
+  if (!canPlace(id, folderId)) return false;
+  const list = itemsOf(folderId);
+  const from = parentOf(id)?.id ?? null;
+  if (from === folderId) {
+    const at = list.indexOf(id);
     if (at === -1) return false;
     const insertAt = reorderIndex(
       at,
@@ -302,56 +428,21 @@ function place(buildId: string, folderId: string | null, index: number) {
     );
     if (insertAt === at) return false;
     list.splice(at, 1);
-    list.splice(insertAt, 0, buildId);
+    list.splice(insertAt, 0, id);
   } else {
-    detach(buildId);
-    const list = target ? target.builds : buildOrder.value;
-    list.splice(Math.max(0, Math.min(list.length, index)), 0, buildId);
-    if (target?.collapsed) target.collapsed = false;
+    detach(id);
+    list.splice(Math.max(0, Math.min(list.length, index)), 0, id);
+    expand(folderId);
   }
   persistMeta();
   return true;
 }
 
-function putBuildStep(
-  buildId: string,
-  placement: BuildPlacement,
-): NavStepOutcome {
-  if (!placementOf(buildId)) return false;
-  putBuild(buildId, placement);
-  selection.selectBuild(buildId);
-  return { focusId: buildId };
-}
-
-/** Appends a freshly created/imported build to the top level. */
-export function appendBuild(buildId: string) {
-  buildOrder.value.push(buildId);
-  persistMeta();
-}
-
-/** The spot right behind an existing build, inside whatever container that one lives in, so
- *  a duplicate lands next to its original. The top level's end when the anchor is gone. */
-export function placementAfter(anchorBuildId: string): BuildPlacement {
-  const at = placementOf(anchorBuildId);
-  return at
-    ? { folderId: at.folderId, index: at.index + 1 }
-    : { folderId: null, index: buildOrder.value.length };
-}
-
-/** Forgets a build entirely -- called when it is deleted, so no folder keeps a dangling id. */
-export function removeBuild(buildId: string) {
-  detach(buildId);
-  persistMeta();
-}
-
-function detach(buildId: string) {
-  const folder = folderOf(buildId);
-  if (folder) {
-    folder.builds = folder.builds.filter((id) => id !== buildId);
-    return;
-  }
-  const at = buildOrder.value.indexOf(buildId);
-  if (at !== -1) buildOrder.value.splice(at, 1);
+function putRowStep(id: string, placement: RowPlacement): NavStepOutcome {
+  if (!placementOf(id)) return false;
+  putRow(id, placement);
+  if (!byId(id)) selection.selectBuild(id);
+  return { focusId: id };
 }
 
 // --- bootstrap --------------------------------------------------------------------------

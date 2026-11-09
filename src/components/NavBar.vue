@@ -7,8 +7,10 @@ import { useEventListener } from "@vueuse/core";
 import {
   Copy,
   Download,
+  Folder,
   FolderInput,
   FolderOutput,
+  FolderPlus,
   Pencil,
   Plus,
   RotateCcw,
@@ -26,6 +28,7 @@ import * as buildEditor from "../stores/buildEditor";
 import * as trash from "../stores/trash";
 import * as confirm from "../stores/confirm";
 import { coarsePointer } from "../stores/viewport";
+import type { NavMenuItem } from "../lib/nav-menu";
 import type { TrashEntry } from "../types";
 
 const root = useTemplateRef("root");
@@ -146,7 +149,7 @@ async function confirmDeleteBuild(id: string, skip: boolean) {
 async function confirmDeleteFolder(id: string, skip: boolean) {
   const folder = folders.byId(id);
   if (!folder) return false;
-  const count = folder.builds.length;
+  const count = folders.buildsWithin(id).length;
   const { ok, checked } = await confirm.askUnless(skip, {
     title: "Delete folder",
     message: `Delete folder “${folder.name}”?`,
@@ -247,37 +250,30 @@ function resetBuild(id: string) {
   buildEditor.resetAll();
   closeMenu();
 }
-/** The reorder shortcut on any Builds-section row: a folder moves among the top-level rows,
- *  a build moves inside whichever container it is already in. */
-function moveRowUp(id: string) {
-  if (rowType(id) === "folder") folders.moveFolder(id, -1);
-  else builds.moveBuild(id, -1);
+/** The reorder shortcut on any Builds-section row: it moves inside whichever container the
+ *  row is already in. */
+function moveRow(id: string, delta: number) {
+  folders.moveRow(id, delta);
   focusRow(id);
 }
-function moveRowDown(id: string) {
-  if (rowType(id) === "folder") folders.moveFolder(id, 1);
-  else builds.moveBuild(id, 1);
-  focusRow(id);
-}
-function reorderBuild(id: string, toIndex: number, folderId: string | null) {
-  builds.moveBuildTo(id, toIndex, folderId);
-  focusRow(id);
-}
-function reorderFolder(id: string, toIndex: number) {
-  folders.moveFolderTo(id, toIndex);
+/** A drop, or a Move to pick: puts a build or folder at `toIndex` of `folderId` (the end when
+ *  left out), or of the top level when null. */
+function placeRow(id: string, folderId: string | null, toIndex?: number) {
+  folders.placeRow(id, folderId, toIndex);
+  closeMenu();
   focusRow(id);
 }
 
 // --- folder actions -------------------------------------------------------------------
 
-function moveBuildToFolder(id: string, folderId: string | null) {
-  folders.placeBuild(id, folderId);
-  closeMenu();
-  focusRow(id);
-}
 function newBuildInFolder(id: string) {
   builds.createBuild(id);
   closeMenu();
+}
+function newFolderInFolder(id: string) {
+  const created = folders.createFolder(undefined, false, id);
+  closeMenu();
+  focusRow(created);
 }
 function revertBuild(id: string) {
   builds.revertToDownloaded(id);
@@ -353,30 +349,40 @@ function purgeTrash(entry: TrashEntry) {
 
 // --- menu items computed --------------------------------------------------------------
 
-/** "Move to …" rows, one per folder this build is not already in, plus a way back out to
- *  the top level. The flat list keeps the menu component free of submenus and is the
- *  keyboard-reachable counterpart to dragging a row onto a folder. */
-const moveToItems = (id: string) => {
-  const current = folders.folderOf(id);
-  return [
-    ...(current
-      ? [
-          {
-            action: "move-to:",
-            label: "Move to top level",
-            icon: FolderOutput,
-          },
-        ]
-      : []),
-    ...folders.orderedFolders.value
-      .filter((f) => f.id !== current?.id)
-      .map((f) => ({
-        action: `move-to:${f.id}`,
-        label: `Move to “${f.name}”`,
-        icon: FolderInput,
+/** One "Move to…" entry opening the folder tree, the keyboard-reachable counterpart to
+ *  dragging a row. A folder is left out of its own list along with everything inside it, and
+ *  a spot the row is already in, or that would nest past the depth limit, is shown disabled
+ *  so the tree keeps its shape. Absent when there is nowhere else to go. */
+function moveToItems(id: string): NavMenuItem[] {
+  const current = folders.parentOf(id)?.id ?? null;
+  const isFolder = rowType(id) === "folder";
+  const targets: NavMenuItem[] = [
+    {
+      action: "move-to:",
+      label: "Top level",
+      icon: FolderOutput,
+      disabled: current === null,
+    },
+    ...folders.folderTree.value
+      .filter(({ folder }) => !isFolder || !folders.isWithin(folder.id, id))
+      .map(({ folder, depth }) => ({
+        action: `move-to:${folder.id}`,
+        label: folder.name,
+        icon: Folder,
+        indent: depth - 1,
+        disabled: folder.id === current || !folders.canPlace(id, folder.id),
       })),
   ];
-};
+  if (targets.every((target) => target.disabled)) return [];
+  return [
+    {
+      action: "move-to",
+      label: "Move to…",
+      icon: FolderInput,
+      submenu: { title: "Move to", items: targets },
+    },
+  ];
+}
 
 /** The F2 hint only means something with a keyboard to hand. */
 const renameItem = () => ({
@@ -400,16 +406,20 @@ const buildMenuItems = (id: string) => [
   { action: "delete", label: "Delete…", danger: true, icon: Trash },
 ];
 
-const folderMenuItems = () => [
+const folderMenuItems = (id: string) => [
   renameItem(),
   { action: "new-build", label: "New build here", icon: Plus },
+  ...(folders.canNestIn(id)
+    ? [{ action: "new-folder", label: "New folder here", icon: FolderPlus }]
+    : []),
+  ...moveToItems(id),
   { action: "delete", label: "Delete folder…", danger: true, icon: Trash },
 ];
 
 /** The Builds section renders one menu for whichever row is open, build or folder. */
 function navMenuItems() {
   const open = openMenu.value;
-  if (open?.type === "folder") return folderMenuItems();
+  if (open?.type === "folder") return folderMenuItems(open.id);
   if (open?.type === "build") return buildMenuItems(open.id);
   return [];
 }
@@ -448,12 +458,19 @@ function onNavMenuAction(action: string, id: string, skip: boolean) {
 /** Dispatchers close the menu first, or the modal opens in front of a menu still on the row. */
 function onFolderMenuAction(action: string, id: string, skip: boolean) {
   closeMenu();
+  if (action.startsWith("move-to:")) {
+    placeRow(id, action.slice("move-to:".length) || null);
+    return;
+  }
   switch (action) {
     case "rename":
       startRename("folder", id, folders.byId(id)?.name ?? "");
       break;
     case "new-build":
       newBuildInFolder(id);
+      break;
+    case "new-folder":
+      newFolderInFolder(id);
       break;
     case "delete":
       confirmDeleteFolder(id, skip);
@@ -464,7 +481,7 @@ function onFolderMenuAction(action: string, id: string, skip: boolean) {
 function onBuildMenuAction(action: string, id: string, skip: boolean) {
   closeMenu();
   if (action.startsWith("move-to:")) {
-    moveBuildToFolder(id, action.slice("move-to:".length) || null);
+    placeRow(id, action.slice("move-to:".length) || null);
     return;
   }
   switch (action) {
@@ -560,6 +577,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       "
       :menu-items="navMenuItems()"
       :menu-origin="menuOrigin"
+      :can-place="folders.canPlace"
       @update:filter="(v) => (buildFilter = v)"
       @select="(id) => selection.pickBuild(id)"
       @rename-start="
@@ -573,11 +591,10 @@ useEventListener(document, "scroll", onScrollCapture, {
       @menu-open="(id, ev) => openMenuFor(rowType(id), id, ev)"
       @menu-action="(a, id, skip) => onNavMenuAction(a, id, skip)"
       @menu-close="closeMenu"
-      @move-up="(id) => moveRowUp(id)"
-      @move-down="(id) => moveRowDown(id)"
-      @reorder="(id, toIndex, folderId) => reorderBuild(id, toIndex, folderId)"
-      @reorder-folder="(id, toIndex) => reorderFolder(id, toIndex)"
-      @move-into-folder="(id, folderId) => moveBuildToFolder(id, folderId)"
+      @move-up="(id) => moveRow(id, -1)"
+      @move-down="(id) => moveRow(id, 1)"
+      @place="(id, folderId, toIndex) => placeRow(id, folderId, toIndex)"
+      @move-into="(id, folderId) => placeRow(id, folderId)"
       @folder-toggle="(id) => folders.toggleCollapsed(id)"
       @delete-request="(id, skip) => onDeleteRequest(rowType(id), id, skip)"
       @create="builds.createBuild()"

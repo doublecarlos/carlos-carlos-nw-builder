@@ -11,6 +11,7 @@ import {
   type ParsedFile,
 } from "../../src/lib/import-plan";
 import * as storage from "../../src/storage/storage";
+import { pathLabel } from "../../src/lib/tree-rows";
 import type { Build, Layer } from "../../src/types";
 
 const parsed = (over: Partial<ParsedFile> = {}): ParsedFile => ({
@@ -67,11 +68,11 @@ describe("buildPlan", () => {
     const result = plan({
       builds: [build],
       folders: [
-        { id: "f_1", name: "Alts", collapsed: false, builds: [build.id] },
+        { id: "f_1", name: "Alts", collapsed: false, items: [build.id] },
       ],
     });
 
-    expect(result.builds[0].folderName).toBe("Alts");
+    expect(pathLabel(result.builds[0].path)).toBe("Alts");
   });
 });
 
@@ -232,7 +233,7 @@ describe("resolveImport", () => {
     const target = plan({
       builds: [inside],
       folders: [
-        { id: "f_1", name: "Alts", collapsed: true, builds: [inside.id] },
+        { id: "f_1", name: "Alts", collapsed: true, items: [inside.id] },
       ],
     });
 
@@ -240,11 +241,33 @@ describe("resolveImport", () => {
 
     expect(result.folders).toEqual([
       {
+        // A folder is only ever the grouping, so it always arrives under a fresh id.
+        id: expect.not.stringMatching(/^f_1$/),
         name: "Alts",
         collapsed: true,
-        builds: [result.builds[0].build.id],
+        items: [result.builds[0].build.id],
       },
     ]);
+  });
+
+  // A subfolder travels inside its parent, and a parent holding only a subfolder still counts.
+  it("rebuilds a nested tree, keeping a parent whose only content is a subfolder", () => {
+    const inside = storage.defaultBuild("Deep");
+    const target = plan({
+      builds: [inside],
+      folders: [
+        { id: "f_1", name: "PvP", collapsed: false, items: ["f_2"] },
+        { id: "f_2", name: "Tanks", collapsed: false, items: [inside.id] },
+      ],
+    });
+    expect(pathLabel(target.builds[0].path)).toBe("PvP / Tanks");
+
+    const result = resolve(target);
+
+    const [outer, inner] = result.folders;
+    expect(outer.name).toBe("PvP");
+    expect(outer.items).toEqual([inner.id]);
+    expect(inner.items).toEqual([result.builds[0].build.id]);
   });
 
   it("drops a folder left with no members", () => {
@@ -252,7 +275,7 @@ describe("resolveImport", () => {
     const target = plan({
       builds: [build],
       folders: [
-        { id: "f_1", name: "Alts", collapsed: false, builds: [build.id] },
+        { id: "f_1", name: "Alts", collapsed: false, items: [build.id] },
       ],
     });
 
@@ -270,7 +293,7 @@ describe("resolveImport", () => {
       {
         builds: [incoming],
         folders: [
-          { id: "f_1", name: "Alts", collapsed: false, builds: [incoming.id] },
+          { id: "f_1", name: "Alts", collapsed: false, items: [incoming.id] },
         ],
       },
       { builds: [mine], layers: [] },

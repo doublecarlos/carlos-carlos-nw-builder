@@ -2,6 +2,8 @@
 // a file's builds and layers under the ids it was written with; deciding which of those ids
 // survive -- replacing what is here, or making way for fresh ones -- happens here.
 import { newId } from "../storage/storage";
+import { repairFolderTree } from "./folder-tree";
+import type { TreeStep } from "./tree-rows";
 import type { Build, BuildFolder, Layer } from "../types";
 
 /** What to do with an entry whose id the workspace already uses. */
@@ -18,7 +20,8 @@ export interface ImportEntry {
 
 export interface ImportBuildEntry extends ImportEntry {
   build: Build;
-  folderName?: string;
+  /** The folders the build was grouped under in the file, outermost first. */
+  path?: TreeStep[];
 }
 
 export interface ImportLayerEntry extends ImportEntry {
@@ -29,7 +32,7 @@ export interface ImportPlan {
   fileName: string;
   builds: ImportBuildEntry[];
   layers: ImportLayerEntry[];
-  /** Membership by source build id. */
+  /** The file's folder tree by source ids, repaired the way stored folders are on load. */
   folders: BuildFolder[];
   catalogStale: boolean;
 }
@@ -49,8 +52,9 @@ export interface ImportDecisions {
 export interface ResolvedImport {
   builds: { build: Build; replacing: boolean }[];
   layers: { layer: Layer; replacing: boolean }[];
-  /** Membership in final ids. Holds new builds only -- a replacing one keeps its place. */
-  folders: { name: string; collapsed: boolean; builds: string[] }[];
+  /** Folders under fresh ids, holding final build ids and each other. Holds new builds only,
+   *  since a replacing one keeps its place, and a folder left with none is dropped. */
+  folders: BuildFolder[];
 }
 
 export interface ParsedFile {
@@ -68,11 +72,12 @@ export function buildPlan(
 ): ImportPlan {
   const buildNames = new Map(existing.builds.map((b) => [b.id, b.name]));
   const layerNames = new Map(existing.layers.map((l) => [l.id, l.name]));
-  const folders = parsed.folders ?? [];
-  const folderOf = new Map<string, string>();
-  for (const folder of folders) {
-    for (const id of folder.builds) folderOf.set(id, folder.name);
-  }
+  const { folders } = repairFolderTree(
+    parsed.folders ?? [],
+    [],
+    new Set(parsed.builds.map((b) => b.id)),
+  );
+  const pathOf = folderPaths(folders);
 
   return {
     fileName: parsed.fileName,
@@ -85,7 +90,7 @@ export function buildPlan(
       ...(buildNames.has(build.id)
         ? { conflictName: buildNames.get(build.id) }
         : {}),
-      ...(folderOf.has(build.id) ? { folderName: folderOf.get(build.id) } : {}),
+      ...(pathOf.has(build.id) ? { path: pathOf.get(build.id) } : {}),
     })),
     layers: parsed.layers.map((layer) => ({
       sourceId: layer.id,
@@ -96,6 +101,23 @@ export function buildPlan(
         : {}),
     })),
   };
+}
+
+/** Each foldered id's folder path, for a tree `repairFolderTree` already settled. */
+function folderPaths(folders: BuildFolder[]): Map<string, TreeStep[]> {
+  const byId = new Map(folders.map((f) => [f.id, f]));
+  const nested = new Set(folders.flatMap((f) => f.items));
+  const paths = new Map<string, TreeStep[]>();
+  const walk = (folder: BuildFolder, outer: TreeStep[]) => {
+    const path = [...outer, { key: folder.id, label: folder.name }];
+    for (const id of folder.items) {
+      const child = byId.get(id);
+      if (child) walk(child, path);
+      else paths.set(id, path);
+    }
+  };
+  for (const folder of folders) if (!nested.has(folder.id)) walk(folder, []);
+  return paths;
 }
 
 /** Everything the file offers, ticked, and never destructive: replacing is always a choice
@@ -233,15 +255,31 @@ export function resolveImport(
   const newBuildIds = new Set(
     builds.filter((b) => !b.replacing).map((b) => b.build.id),
   );
-  const folders = plan.folders
-    .map((folder) => ({
-      name: folder.name,
-      collapsed: folder.collapsed,
-      builds: folder.builds
-        .map((sourceId) => idMap.get(sourceId))
-        .filter((id): id is string => !!id && newBuildIds.has(id)),
-    }))
-    .filter((folder) => folder.builds.length > 0);
+  // A folder travels when anything new lands inside it, under a fresh id: a folder is only
+  // ever the grouping, so there is nothing here for it to replace.
+  const byId = new Map(plan.folders.map((f) => [f.id, f]));
+  const kept = new Map<string, BuildFolder>();
+  const keep = (folder: BuildFolder): BuildFolder | null => {
+    const items = folder.items.flatMap((id) => {
+      const child = byId.get(id);
+      if (child) {
+        const copy = keep(child);
+        return copy ? [copy.id] : [];
+      }
+      const finalId = idMap.get(id);
+      return finalId && newBuildIds.has(finalId) ? [finalId] : [];
+    });
+    if (!items.length) return null;
+    const copy = { ...folder, id: newId("f"), items };
+    kept.set(folder.id, copy);
+    return copy;
+  };
+  const nested = new Set(plan.folders.flatMap((f) => f.items));
+  for (const folder of plan.folders) if (!nested.has(folder.id)) keep(folder);
+  const folders = plan.folders.flatMap((f) => {
+    const copy = kept.get(f.id);
+    return copy ? [copy] : [];
+  });
 
   return { builds: resolvedBuilds, layers, folders };
 }

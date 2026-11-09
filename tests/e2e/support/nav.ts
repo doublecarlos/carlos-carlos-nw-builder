@@ -50,6 +50,14 @@ export async function openRowMenu(row: Locator): Promise<Locator> {
   return menu;
 }
 
+/** Moves a row through its menu's "Move to…" list: `target` is a folder name, or
+ *  "Top level". */
+export async function moveViaMenu(row: Locator, target: string) {
+  const menu = await openRowMenu(row);
+  await menu.getByRole("button", { name: "Move to…" }).click();
+  await menu.getByRole("button", { name: target, exact: true }).click();
+}
+
 /** The shared confirmation dialog every delete raises. */
 export function confirmDialog(page: Page): Locator {
   return page.getByTestId("confirm-dialog");

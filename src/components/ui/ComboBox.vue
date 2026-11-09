@@ -1,15 +1,17 @@
 <script lang="ts">
+import type { TreeStep } from "../../lib/tree-rows";
+
 export interface ComboBoxOption {
   value: string;
   label: string;
   search?: string;
-  /** Heading this option sits under. A heading row is drawn wherever the group changes from
-   *  one listed option to the next, so options must arrive already grouped -- which lets a
-   *  caller keep its own order (BuildComboBox lists builds in sidebar order, folders and
-   *  ungrouped builds interleaved exactly as the sidebar draws them). Matched by the query
-   *  like `search` is, so typing a group's name narrows the list to it. One option may be
-   *  listed under several headings. */
-  group?: string;
+  /** Headings this option sits under, outermost first. A heading row is drawn wherever the
+   *  path enters one the previous listed option was not under (lib/tree-rows.ts), so options
+   *  must arrive already in order, which lets a caller keep its own (BuildComboBox lists
+   *  builds in sidebar order, drawing the folder tree). Matched by the query like `search`
+   *  is, so typing a heading's name narrows the list to it. One option may be listed under
+   *  several headings. */
+  group?: readonly TreeStep[];
 }
 
 /** What a template ref on this component can call. Spelled out rather than derived with
@@ -53,6 +55,7 @@ import { onKeyStroke } from "@vueuse/core";
 import { blurToRowAnchor, rowAnchorOf } from "../../lib/row-cursor";
 import { holdBack } from "../../lib/back-to-close";
 import { filterAndRank } from "../../lib/text-filter";
+import { pathLabel, treeIndent, treeRows } from "../../lib/tree-rows";
 import { createPointerMoveFilter } from "../../lib/pointer-moved";
 import { isPhone } from "../../stores/viewport";
 import { useFormFieldControl } from "../../composables/useFormField";
@@ -71,7 +74,7 @@ const props = withDefaults(
      *  a query may match on besides the visible label -- ItemPicker fills it with an item's
      *  stats and bonuses so "severity" finds gear that never spells it in the name. Matched
      *  against, never displayed. Generic over the option type so a caller's own extra fields
-     *  (BuildComboBox's folder name) reach the `option` slot with their types intact. */
+     *  (BuildComboBox's folder path) reach the `option` slot with their types intact. */
     options: T[];
     placeholder?: string;
     /** Red border while the current choice fails validation. */
@@ -82,8 +85,11 @@ const props = withDefaults(
      *  first screenful, so rendering everything for every keystroke is wasted work. */
     maxRows?: number;
     /** Override the closed-box display when the model value doesn't match any option
-     *  (e.g. the equipped item was removed from the catalog). */
+     *  (e.g. the equipped item was removed from the catalog). With a `#closed` slot it is
+     *  still the box's value, read by assistive tech and the tooltip. */
     closedDisplay?: string;
+    /** Extra classes for the box itself, such as the height a `#closed` slot needs. */
+    inputClass?: string;
     /** Forwarded to ComboBoxMenu*/
     menuClass?: string;
     /** Add title properties to input and/or selection rows */
@@ -111,6 +117,7 @@ const props = withDefaults(
     showEmptyOption: false,
     maxRows: 60,
     closedDisplay: "",
+    inputClass: "",
     menuClass: "w-(--anchor-width)",
     titleInput: true,
     titleRows: true,
@@ -126,8 +133,12 @@ const props = withDefaults(
 const { id: controlId, describedBy } = useFormFieldControl(() => props.inputId);
 
 defineSlots<{
-  option?(props: { option: T; highlighted: boolean }): unknown;
-  group?(props: { label: string }): unknown;
+  /** `depth` is how many headings the option sits under. */
+  option?(props: { option: T; highlighted: boolean; depth: number }): unknown;
+  group?(props: { label: string; depth: number }): unknown;
+  /** Drawn over the box while the chosen option is showing, in place of its one line of
+   *  text. Gone while the user types. */
+  closed?(props: { option: T }): unknown;
   empty?(): unknown;
   "no-match"?(): unknown;
   more?(props: { count: number }): unknown;
@@ -211,7 +222,7 @@ const filtered = computed(() => {
   return filterAndRank(
     props.options,
     query.value,
-    (option) => [option.label, option.search ?? "", option.group ?? ""],
+    (option) => [option.label, option.search ?? "", pathLabel(option.group)],
     (option) => option.value,
   ).slice(0, props.maxRows);
 });
@@ -228,32 +239,35 @@ const showEmpty = computed(() => props.showEmptyOption && !query.value.trim());
 
 type Row<O> =
   | { kind: "empty" }
-  | { kind: "group"; label: string }
-  | { kind: "option"; option: O };
+  | { kind: "group"; label: string; depth: number }
+  | { kind: "option"; option: O; depth: number };
 
 /**
  * Every row the menu draws, in order, `highlight`'s index space and the DOM's alike -- so the
  * id under `aria-activedescendant` and the row wearing `data-highlighted` can never drift
  * apart, whatever mix of choosable and heading rows the list ends up with.
  *
- * A heading is emitted wherever the group changes between consecutive listed options, so one
- * whose options all filtered out never appears, and a group the caller lists twice (a folder
- * with an ungrouped build between it and the next) gets a heading each time -- both of which
- * fall out of the caller's own ordering rather than needing to be reasoned about here.
+ * Headings come from the listed options' paths (lib/tree-rows.ts), so one whose options all
+ * filtered out never appears, and a heading the caller's order leaves and re-enters gets drawn
+ * each time. Both fall out of the caller's own ordering rather than needing to be reasoned
+ * about here.
  */
 const rows = computed<Row<T>[]>(() => {
   const out: Row<T>[] = [];
   if (showEmpty.value) out.push({ kind: "empty" });
-  let group: string | undefined;
-  for (const option of filtered.value) {
-    if (option.group !== group) {
-      group = option.group;
-      if (group) out.push({ kind: "group", label: group });
-    }
-    out.push({ kind: "option", option });
-  }
+  for (const row of treeRows(filtered.value, (option) => option.group))
+    out.push(
+      row.kind === "heading"
+        ? { kind: "group", label: row.step.label, depth: row.depth }
+        : { kind: "option", option: row.item, depth: row.depth },
+    );
   return out;
 });
+
+/** The chosen option, while the box is showing it rather than a query. */
+const closedOption = computed(() =>
+  open.value && !screen.value ? null : selected.value,
+);
 
 /** Where in `rows` the keyboard cursor is allowed to land -- headings are passed over rather
  *  than stopped on, so arrowing down a grouped list never rests somewhere Enter does nothing. */
@@ -555,6 +569,8 @@ for (const target of keyTargets) {
             : 'border-line',
         tone && 'text-(--tone)',
         placeholderClass,
+        inputClass,
+        $slots.closed && closedOption && 'text-transparent',
       ]"
       :data-filled="model ? '' : undefined"
       :style="tone ? { '--tone': tone } : undefined"
@@ -581,6 +597,16 @@ for (const target of keyTargets) {
       @input="onInput"
       @blur="onBlur"
     />
+    <!-- Over the box's own text, which goes transparent but stays its value. -->
+    <div
+      v-if="$slots.closed && closedOption"
+      class="pointer-events-none absolute inset-y-0 left-0 right-6 flex min-w-0 flex-col justify-center pl-1.5"
+      :class="tone && 'text-(--tone)'"
+      :style="tone ? { '--tone': tone } : undefined"
+      data-testid="picker-closed"
+    >
+      <slot name="closed" :option="closedOption" />
+    </div>
     <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
          this text input is actually a fixed-choice dropdown. -->
     <span
@@ -635,10 +661,12 @@ for (const target of keyTargets) {
           presentational
           testid="picker-group"
         >
-          <slot name="group" :label="row.label">
-            <span class="text-xs font-semibold uppercase text-muted">{{
-              row.label
-            }}</span>
+          <slot name="group" :label="row.label" :depth="row.depth">
+            <span
+              class="text-xs font-semibold uppercase text-muted"
+              :style="treeIndent(row.depth)"
+              >{{ row.label }}</span
+            >
           </slot>
         </ComboBoxMenuRow>
 
@@ -672,8 +700,13 @@ for (const target of keyTargets) {
                 name="option"
                 :option="row.option"
                 :highlighted="highlight === index"
+                :depth="row.depth"
               />
-              <div v-else class="flex items-baseline gap-1.5">
+              <div
+                v-else
+                class="flex items-baseline gap-1.5"
+                :style="treeIndent(row.depth)"
+              >
                 <span
                   class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
                   >{{ row.option.label }}</span
