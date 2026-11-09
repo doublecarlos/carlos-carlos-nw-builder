@@ -2,7 +2,7 @@
 // bonus setting counts on the rows whose pick carries the bonus, and rows that kept their
 // state are left out.
 import { describe, it, expect } from "vitest";
-import { changedSlots } from "../../src/lib/build-changes";
+import { changedSlots, sameSection } from "../../src/lib/build-changes";
 import { picker, testBuild, testDb, testSchema } from "./engine-fixtures";
 import type { Bonus, BuildParameterSlot, Item } from "../../src/types";
 
@@ -60,5 +60,29 @@ describe("changedSlots", () => {
       bonusValues: { proc: { input: { stacks: 2 } } },
     });
     expect(changedSlots(db, before, after)).toEqual(["gear.ring1"]);
+  });
+});
+
+// The copy-to-builds dialog marks builds this says already match, and won't copy into them.
+describe("sameSection", () => {
+  it("looks only at the given section", () => {
+    const a = testBuild({
+      choices: { "gear.ring1": "ring" },
+      context: { duration: 60 },
+    });
+    const b = testBuild({
+      choices: { "gear.ring1": "ring" },
+      context: { duration: 90 },
+    });
+    expect(sameSection(db, a, b, "gear")).toBe(true);
+    expect(sameSection(db, a, b, "options")).toBe(false);
+  });
+
+  // A pick only the other build has must count both ways round.
+  it("tells apart a build holding more than the other", () => {
+    const empty = testBuild({});
+    const filled = testBuild({ choices: { "gear.ring2": "plain" } });
+    expect(sameSection(db, empty, filled, "gear")).toBe(false);
+    expect(sameSection(db, filled, empty, "gear")).toBe(false);
   });
 });

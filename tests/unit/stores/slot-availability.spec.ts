@@ -153,6 +153,14 @@ const MUTATIONS: Record<string, (stores: Stores) => void> = {
     const other = addCompareBuild(stores);
     stores.buildEditor.copySection(other.id, ["options"]);
   },
+  // The stale build is the copy's target here, so it is selected again for the checks.
+  copySectionTo: (stores) => {
+    const target = stores.active();
+    const other = addCompareBuild(stores);
+    stores.builds.replaceActive(other);
+    stores.buildEditor.copySectionTo([target.id], ["options"], "Options");
+    stores.builds.replaceActive(target);
+  },
   clearSection: ({ buildEditor }) =>
     buildEditor.clearSection("options", "Options"),
   applyPreset: (stores) =>

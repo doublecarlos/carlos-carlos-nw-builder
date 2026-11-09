@@ -40,6 +40,7 @@ const props = defineProps<{
 defineEmits<{
   toggle: [];
   copy: [fromId: string];
+  "copy-to": [toIds: string[]];
   "apply-preset": [preset: SectionPreset];
   "create-preset": [];
   "update-preset": [preset: SectionPreset];
@@ -153,6 +154,7 @@ const bodyStyle = computed(() => ({
         @create-preset="$emit('create-preset')"
         @update-preset="(preset) => $emit('update-preset', preset)"
         @copy="(fromId) => $emit('copy', fromId)"
+        @copy-to="(toIds) => $emit('copy-to', toIds)"
         @clear="$emit('clear')"
       />
     </div>

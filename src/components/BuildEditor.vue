@@ -966,6 +966,8 @@ const sectionHandlers = useKeyedCache((sectionId: string) => {
   return {
     toggle: () => toggle(sectionId),
     copy: (fromId: string) => buildEditor.copySection(fromId, [sectionId]),
+    copyTo: (toIds: string[]) =>
+      buildEditor.copySectionTo(toIds, [sectionId], label()),
     createPreset: () => onCreatePreset(sectionId, label()),
     clear: () => buildEditor.clearSection(sectionId, label()),
   };
@@ -1509,6 +1511,7 @@ watch(
           :presets="section.presets"
           @toggle="sectionHandlers(section.id).toggle"
           @copy="sectionHandlers(section.id).copy"
+          @copy-to="sectionHandlers(section.id).copyTo"
           @apply-preset="(preset) => buildEditor.applyPreset(preset)"
           @create-preset="sectionHandlers(section.id).createPreset"
           @update-preset="onUpdatePreset"

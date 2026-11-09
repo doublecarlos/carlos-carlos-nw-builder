@@ -168,6 +168,35 @@ export function finishEdit(id: string, done = "") {
   if (text) showUndoNotice(text, () => undoFor(id));
 }
 
+/**
+ * `finishEdit` for one edit made to several builds, which need not include the selected one.
+ * Each is pruned and saved, and one notice offers an undo that takes back every build without
+ * moving the selection.
+ */
+export function finishBulkEdit(ids: string[], done: string) {
+  for (const id of ids) {
+    const b = _builds.value.get(id);
+    if (!b) continue;
+    pruneStored(b);
+    markDirty(id);
+  }
+  showUndoNotice(done, () => {
+    for (const id of ids) undoInPlace(id);
+  });
+}
+
+/** Undo on one build's own stack, restoring it where it is rather than selecting it. */
+function undoInPlace(id: string) {
+  const b = _builds.value.get(id);
+  if (!b) return;
+  const json = history.undo("build", id, b, { select: false });
+  if (json == null) return;
+  const restored = storage.normalize(JSON.parse(json));
+  pruneStored(restored);
+  _builds.value.set(id, restored);
+  markDirty(id);
+}
+
 /** Empties every stored build's unavailable slots, for a catalog change or a load. Not
  *  undoable: the catalog, not an edit, is what hid them. */
 export function pruneAll() {

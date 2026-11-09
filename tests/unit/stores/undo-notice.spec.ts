@@ -21,6 +21,7 @@ async function freshStores() {
   const notice = await import("../../../src/stores/notice");
   const layerEditor = await import("../../../src/stores/layerEditor");
   const selection = await import("../../../src/stores/selection");
+  const resolved = await import("../../../src/stores/resolved");
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
@@ -35,6 +36,7 @@ async function freshStores() {
     notice,
     layerEditor,
     selection,
+    resolved,
   };
 }
 
@@ -157,5 +159,40 @@ describe("undo notices", () => {
       "options.role": "dps",
     });
     expect(notice.noticeAction.value).toBeNull();
+  });
+
+  // Copying a section into several builds is one action, so one Undo must take it back from
+  // all of them, and leave the user on the build they copied from.
+  it("copying a section to other builds offers one undo for all of them", async () => {
+    const { builds, buildEditor, notice, resolved, selection } =
+      await freshStores();
+    const slot = resolved.db.value.slots.find(
+      (candidate) => candidate.type === "item_picker",
+    )!;
+    const storage = await import("../../../src/storage/storage");
+    const first = storage.defaultBuild("Target 1");
+    const second = storage.defaultBuild("Target 2");
+    first.choices[slot.id] = "Before";
+    builds.replaceActive(first);
+    builds.replaceActive(second);
+    const source = storage.defaultBuild("Source");
+    builds.replaceActive(source);
+    buildEditor.setChoice(slot.id, "Copied");
+
+    buildEditor.copySectionTo([first.id, second.id], [slot.section], "Gear");
+
+    expect(builds.get(first.id)!.choices[slot.id]).toBe("Copied");
+    expect(builds.get(second.id)!.choices[slot.id]).toBe("Copied");
+    expect(notice.notice.value).toContain("2 builds");
+
+    notice.noticeAction.value!.run();
+
+    expect(builds.get(first.id)!.choices[slot.id]).toBe("Before");
+    expect(builds.get(second.id)!.choices[slot.id]).toBeUndefined();
+    expect(builds.get(source.id)!.choices[slot.id]).toBe("Copied");
+    expect(selection.selection.value).toEqual({
+      kind: "build",
+      id: source.id,
+    });
   });
 });

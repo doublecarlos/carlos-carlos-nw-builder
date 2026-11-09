@@ -10,6 +10,9 @@ withDefaults(
   defineProps<{
     disabled?: boolean;
     inline?: boolean;
+    /** Draws the box as part-ticked (and announces it as mixed), for a box standing for a
+     *  group whose members are only partly ticked. A click still emits plain `true`/`false`. */
+    indeterminate?: boolean;
     value?: string;
     /** The checkbox's own DOM id. The wrapping `<label>` below already associates the two, so
      *  this exists for an *additional* label an ancestor writes -- BuildSlot's row label, which
@@ -19,6 +22,7 @@ withDefaults(
   {
     disabled: false,
     inline: false,
+    indeterminate: false,
     value: "",
     inputId: undefined,
   },
@@ -40,6 +44,7 @@ const model = defineModel<boolean | string[]>({ required: true });
       type="checkbox"
       :value="value"
       :disabled="disabled"
+      :indeterminate="indeterminate"
     />
     <span><slot /></span>
   </label>

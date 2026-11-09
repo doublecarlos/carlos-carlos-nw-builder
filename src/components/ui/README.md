@@ -11,7 +11,7 @@ ordinary one.
 | BaseBadge                                 | Status/count chip (added/edited/removed/unsaved) on a row or list                                                                                              |
 | BaseButton                                | The shared button look; `title` adds a tooltip, `shape="icon"` squares it                                                                                      |
 | BaseCard / BaseCardHeader / BaseCardBody  | Popover/hover-card shell: frame, sticky header, scrolling body                                                                                                 |
-| BaseCheckbox                              | A checkbox and its label as one clickable unit, `v-model` only                                                                                                 |
+| BaseCheckbox                              | A checkbox and its label as one clickable unit, `v-model` only; `indeterminate` for a part-ticked group                                                        |
 | BaseDrawer                                | An in-flow panel worked alongside its surroundings; use BaseModal for open-use-leave                                                                           |
 | BaseInput                                 | The ordinary text/number/search field                                                                                                                          |
 | BaseLink                                  | An action link inline in running text, on the text baseline; `plain` writes it as text                                                                         |
