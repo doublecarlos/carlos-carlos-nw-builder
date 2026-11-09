@@ -474,7 +474,7 @@ const {
             :data-stat-row="row.key"
           >
             <td
-              class="border border-line px-1 py-0.5 align-top"
+              class="border border-line px-1 py-0.5 align-bottom"
               :class="row.sepAfter && 'border-b-2 border-b-text/50'"
             >
               <div class="flex items-center">
@@ -489,7 +489,7 @@ const {
               />
             </td>
             <td
-              class="border border-line px-1 py-0.5 text-right align-top tabular-nums gap-0.5"
+              class="border border-line px-1 py-0.5 text-right align-bottom tabular-nums gap-0.5"
               :class="[
                 row.rating.primaryCls,
                 row.sepAfter && 'border-b-2 border-b-text/50',
@@ -505,7 +505,7 @@ const {
               />
             </td>
             <td
-              class="border border-line px-1 py-0.5 text-right align-top tabular-nums"
+              class="border border-line px-1 py-0.5 text-right align-bottom tabular-nums"
               :class="[
                 row.percent.primaryCls,
                 row.sepAfter && 'border-b-2 border-b-text/50',
@@ -520,22 +520,36 @@ const {
               />
             </td>
             <td
-              class="border border-line px-1 py-0.5 text-right align-top tabular-nums text-muted"
+              class="border border-line px-1 py-0.5 text-right align-bottom tabular-nums text-muted"
               :class="[
                 row.percent.overCls,
                 row.sepAfter && 'border-b-2 border-b-text/50',
               ]"
             >
               {{ signedPct(row.percent.over) }}
+              <!-- Keeps this column level with the compared ones beside it. -->
+              <span
+                v-if="row.compare"
+                class="block border-t border-transparent leading-tight"
+                aria-hidden="true"
+                >&nbsp;</span
+              >
             </td>
             <td
-              class="border border-line px-1 py-0.5 text-right align-top tabular-nums text-muted"
+              class="border border-line px-1 py-0.5 text-right align-bottom tabular-nums text-muted"
               :class="[
                 row.rating.overCls,
                 row.sepAfter && 'border-b-2 border-b-text/50',
               ]"
             >
               {{ signedInt(row.rating.over) }}
+              <!-- Keeps this column level with the compared ones beside it. -->
+              <span
+                v-if="row.compare"
+                class="block border-t border-transparent leading-tight"
+                aria-hidden="true"
+                >&nbsp;</span
+              >
             </td>
           </tr>
         </tbody>

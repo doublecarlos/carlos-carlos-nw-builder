@@ -3,6 +3,10 @@
 // pins it. Talks to the panel's one card through the trigger useStatSourcePopover provides.
 //
 // No tooltip of its own: the card it opens already says what the button is for.
+//
+// On a coarse pointer it opts out of the finger-sized minimum, which would stand every stat row
+// a tap target tall and push the row's compare line below its neighbors'. An invisible area
+// centered on it keeps the tap target that size instead.
 import { inject } from "vue";
 import { CircleAlert } from "@lucide/vue";
 import IconButton from "../ui/IconButton.vue";
@@ -16,6 +20,7 @@ const trigger = inject(STAT_SOURCE_TRIGGER);
 <template>
   <IconButton
     v-if="trigger"
+    class="relative flex-none pointer-coarse:min-h-0 pointer-coarse:min-w-0 pointer-coarse:after:absolute pointer-coarse:after:inset-[calc((100%-var(--spacing-tap))/2)]"
     title=""
     :label="`Show sources for ${label}`"
     :data-stat-key="statKey"

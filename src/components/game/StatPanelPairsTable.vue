@@ -46,7 +46,10 @@ defineProps<{
           :class="row.lead && 'font-semibold'"
           :data-stat-row="row.key"
         >
-          <td class="px-1 py-0.5 align-top" :class="row.muted && 'text-muted'">
+          <td
+            class="px-1 py-0.5 align-bottom"
+            :class="row.muted && 'text-muted'"
+          >
             <div class="flex items-center gap-0.5">
               <StatInfoButton
                 v-if="row.infoKey"
@@ -73,7 +76,7 @@ defineProps<{
             />
           </td>
           <td
-            class="px-1 py-0.5 text-right align-top tabular-nums"
+            class="px-1 py-0.5 text-right align-bottom tabular-nums"
             :class="row.muted && 'text-muted'"
             data-testid="stat-value"
           >
