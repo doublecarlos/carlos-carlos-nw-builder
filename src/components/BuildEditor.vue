@@ -1005,9 +1005,14 @@ function onCardGoToSlot(slotId: string) {
   goTo.requestJump({ slotId });
 }
 
+/** On a phone the inspector is in the other pane, so Back from there jumps to the card's row. */
 function onCardInspect(bonusId: string) {
+  const slotId = cardTarget.value?.slotId;
   closeUnpinnedCards();
-  details.inspectBonus(bonusId);
+  details.inspectBonus(
+    bonusId,
+    slotId ? () => goTo.requestJump({ slotId }) : undefined,
+  );
 }
 
 /** Same dismissal: the filter rewrites the list under the card, likely dropping its own row. */

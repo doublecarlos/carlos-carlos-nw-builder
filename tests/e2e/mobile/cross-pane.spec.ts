@@ -65,9 +65,9 @@ test("a stat source on the stats pane jumps back to its editor row", async ({
   await expectLandedOn(page, "gear.head");
 });
 
-test("inspecting a bonus from the editor shows the stats pane, and its source jumps back", async ({
-  page,
-}) => {
+/** Inspects a formula bonus from its ring's item card on the editor pane, with the editor
+ *  scrolled away from the ring's row first. */
+async function inspectRingBonus(page: Page) {
   await openBuilder(page);
   await importText(
     page,
@@ -108,6 +108,12 @@ test("inspecting a bonus from the editor shows the stats pane, and its source ju
     .getByTestId("item-card-sheet")
     .getByTestId("item-card-inspect")
     .click();
+}
+
+test("inspecting a bonus from the editor shows the stats pane, and its source jumps back", async ({
+  page,
+}) => {
+  await inspectRingBonus(page);
 
   await expect(editorPane(page)).toBeHidden();
   await expect(page.getByTestId("pane-stats")).toHaveAttribute(
@@ -119,4 +125,31 @@ test("inspecting a bonus from the editor shows the stats pane, and its source ju
 
   await entry.getByTestId("bonus-source-link").first().click();
   await expectLandedOn(page, "gear.ring1");
+});
+
+test("Back from an inspected bonus returns to the row it was inspected from", async ({
+  page,
+}) => {
+  // The inspector is in the other pane, so Back undoes the jump rather than leaving the build.
+  await inspectRingBonus(page);
+  await expect(page.getByTestId(`bonus-entry-${BONUS_ID}`)).toBeInViewport();
+
+  await page.goBack();
+  await expectLandedOn(page, "gear.ring1");
+});
+
+test("switching panes by hand drops the way back", async ({ page }) => {
+  // Once the user moves on from the jump, Back is theirs again rather than a stale return.
+  const heldBack = () =>
+    page.evaluate(() => {
+      const state: unknown = history.state;
+      return Boolean(
+        state && typeof state === "object" && "backToClose" in state,
+      );
+    });
+  await inspectRingBonus(page);
+  await expect.poll(heldBack).toBe(true);
+
+  await page.getByTestId("pane-editor").click();
+  await expect.poll(heldBack).toBe(false);
 });

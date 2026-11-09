@@ -18,10 +18,11 @@ const _inspect = ref<string | null>(null);
 export const inspectRequest = readonly(_inspect);
 
 /** Shows `bonusId` in the inspector, opening the details column if it is collapsed or bringing
- *  the stats pane up on a phone. */
-export function inspectBonus(bonusId: string) {
+ *  the stats pane up on a phone. `back` is what Back does from there on a phone; see
+ *  `shell.showPane`. */
+export function inspectBonus(bonusId: string, back?: () => void) {
   _tab.value = "bonuses";
-  shell.showPane("stats");
+  shell.showPane("stats", back);
   if (rails.isCollapsed(rails.RAILS.details)) rails.toggle(rails.RAILS.details);
   _inspect.value = bonusId;
 }
