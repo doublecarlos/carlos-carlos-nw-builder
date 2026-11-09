@@ -33,3 +33,20 @@ export function statCardPin(page: Page): Locator {
 export function statCardSourceGroups(page: Page): Locator {
   return statCard(page).locator('[data-testid="stat-card-rows"]');
 }
+
+/** Picks the case a compare summary row (`damage`, `healing`, `ehp`) shows, from its menu. */
+export async function chooseSummaryCase(
+  page: Page,
+  source: string,
+  label: string,
+) {
+  await page
+    .locator(`[data-summary-row="${source}"]`)
+    .getByTestId("summary-case")
+    .click();
+  await page
+    .getByTestId("summary-case-menu")
+    .filter({ visible: true })
+    .getByRole("button", { name: label, exact: true })
+    .click();
+}

@@ -5,10 +5,8 @@
 // stat to the schema makes it appear here with no edit. Overcapped values are colored; the
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
 // over the cap, negative is spare headroom), colored independently since they cap separately.
-import { ref, computed } from "vue";
-import ComboBox from "./ui/ComboBox.vue";
-import BuildComboBox from "./game/BuildComboBox.vue";
-import BaseCheckbox from "./ui/BaseCheckbox.vue";
+import { computed } from "vue";
+import CompareSummary from "./game/CompareSummary.vue";
 import BaseLink from "./ui/BaseLink.vue";
 import StatInfoButton from "./game/StatInfoButton.vue";
 import StatPanelSourceCard from "./game/StatPanelSourceCard.vue";
@@ -21,6 +19,8 @@ import { useStatSourcePopover } from "../composables/useStatSourcePopover";
 import { anyPickerOpen } from "../composables/useOpenPickers";
 import { NW_SCHEMA } from "../data/data";
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../lib/format";
+import { delta } from "../lib/compare-delta";
+import { DERIVED_TABLES, type DerivedTable } from "../lib/derived-tables";
 import * as compare from "../stores/compare";
 import * as engine from "../stores/resolved";
 import type { Build, EngineError, ResolvedBuild } from "../types";
@@ -56,57 +56,6 @@ const SEPARATOR_AFTER = new Set(["severity", "deflect_sev"]);
 // that exists only to match the threshold the game's own UI uses, for familiarity.
 const RATING_OVER_WARN = 1000;
 
-const damageRows: [string, string][] = [
-  ["Average", "average"],
-  ["Crit / no deflect", "critNoDeflect"],
-  ["Crit / deflect", "critDeflect"],
-  ["No crit / no deflect", "noCritNoDeflect"],
-  ["No crit / deflect", "noCritDeflect"],
-];
-const healingRows: [string, string][] = [
-  ["Average", "average"],
-  ["Crit", "crit"],
-  ["No crit", "noCrit"],
-];
-// The enemy's crit against the player's deflect: the same four cases as damage.
-const ehpRows = damageRows;
-
-// One of `derived`'s three sub-tables (baseDamage/effectiveMagPhys live at the top level
-// instead, hence `extra` rather than folding them into `rows`).
-type ExtraSummaryRow = {
-  key: "baseDamage" | "effectiveMagPhys";
-  label: string;
-  format: "int" | "pct";
-};
-interface SummaryGroup {
-  source: "damage" | "healing" | "ehp";
-  label: string;
-  rows: [string, string][];
-  extra?: ExtraSummaryRow[];
-}
-
-// The summary widget's picker spans all three `derived` tables below, not just damage --
-// `source` says which one, and doubles as the row key's namespace since 'average' repeats
-// across all three.
-const SUMMARY_GROUPS: SummaryGroup[] = [
-  {
-    source: "damage",
-    label: "Damage",
-    rows: damageRows,
-    extra: [
-      { key: "baseDamage", label: "Base damage", format: "int" },
-      {
-        key: "effectiveMagPhys",
-        label: "Effective magical/physical",
-        format: "pct",
-      },
-    ],
-  },
-  { source: "healing", label: "Healing", rows: healingRows },
-  { source: "ehp", label: "EHP", rows: ehpRows },
-];
-const [damageGroup, healingGroup, ehpGroup] = SUMMARY_GROUPS;
-
 // Only ever mounted when `engine.resolved.value.ok` -- the throw documents
 // that invariant instead of a defensive fallback for a state that can't happen.
 const result = computed(() => {
@@ -114,9 +63,7 @@ const result = computed(() => {
   if (!r.ok) throw new Error("StatPanel requires a resolved build");
   return r.result;
 });
-// The sheet-style compare row under the picker: another build's own `derived`, resolved
-// against the same db. `null` means "not comparing" and the widget collapses back to a
-// single centered value.
+// The compare build, resolved against the same db. `null` means "not comparing".
 const compareResult = computed(() =>
   engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null,
 );
@@ -133,8 +80,6 @@ const statLines = computed(
 const compareName = computed(() => compare.compareBuild.value?.name ?? "");
 const compareStages = computed(() => compareResult.value?.stages ?? null);
 const compareDerived = computed(() => compareResult.value?.derived ?? null);
-
-const summaryCalcKey = ref("damage:average");
 
 const stages = computed(() => result.value.stages);
 const derived = computed(() => result.value.derived);
@@ -153,68 +98,6 @@ const slotLabel = (slotId: string) =>
   engine.db.value.slotFor(slotId)?.label ?? slotId;
 const errorLabel = (error: EngineError) =>
   error.label ?? slotLabel(error.slotId);
-
-/** Options for the summary widget's calculation picker, across all three `derived`
- * tables below (damage, healing, EHP) -- value is `source:key` so `summaryValue` can
- * look the row straight back up. */
-const summaryOptions = SUMMARY_GROUPS.flatMap(({ source, label, rows }) =>
-  rows.map(([rowLabel, key]) => ({
-    value: `${source}:${key}`,
-    label: `${label} · ${rowLabel}`,
-  })),
-);
-
-// `derived`'s top-level fields are heterogeneous (itemLevel: number, damage: DamageOutputs,
-// ...), so a dynamic `source` key (from the summary picker's `source:key` value) can't be
-// looked up without a cast -- each of the three sub-tables it can name is number-valued
-// throughout, hence `Record<string, number>` rather than `unknown`.
-const summaryValue = computed(() => {
-  const [source, key] = summaryCalcKey.value.split(":");
-  return (
-    (derived.value as unknown as Record<string, Record<string, number>>)[
-      source
-    ]?.[key] ?? 0
-  );
-});
-
-const compareSummaryValue = computed(() => {
-  if (!compareResult.value) return null;
-  const [source, key] = summaryCalcKey.value.split(":");
-  return (
-    (
-      compareResult.value.derived as unknown as Record<
-        string,
-        Record<string, number>
-      >
-    )[source]?.[key] ?? 0
-  );
-});
-
-/** `value` relative to `base`, signed: positive means `value` is the bigger of the two.
- * `null` when there's nothing to compare against (no compare build) or `base` is zero
- * (nothing to be a percentage of). */
-function relativePct(base: number | null, value: number | null) {
-  if (base == null || value == null || Math.abs(base) < 1e-9) return null;
-  return (value - base) / Math.abs(base);
-}
-
-/** Sheet-style: each row's percentage reads relative to the *other* row, not a shared
- * baseline -- "this build" is +9% over the compare build, and read the other way round
- * the compare build is some different, smaller magnitude under this one. */
-const thisVsOtherPct = computed(() =>
-  relativePct(compareSummaryValue.value, summaryValue.value),
-);
-const otherVsThisPct = computed(() =>
-  relativePct(summaryValue.value, compareSummaryValue.value),
-);
-
-/** Green ahead of the compare build, red behind it, plain exactly even -- only "this
- * build"'s own row reads this; the compare row is informational, not judged. */
-const summaryRowCls = computed(() => {
-  const pctVal = thisVsOtherPct.value;
-  if (pctVal == null || Math.abs(pctVal) < 1e-9) return "";
-  return pctVal > 0 ? "text-ok font-semibold" : "text-danger font-semibold";
-});
 
 const int = (value: unknown) => fmtInt(value);
 const pct = (value: unknown) => fmtPct(value);
@@ -366,18 +249,23 @@ const ilHpRows = computed(() => [
   },
 ]);
 
-// One row per group's own [label, key] sub-table, plus its fixed top-level extras: the shape
-// damage, healing and ehp all share, built once rather than three times.
-function summaryTableRows(group: SummaryGroup) {
+// One row per table's own [label, key] cases, plus its fixed top-level extras: the shape
+// damage, healing and ehp all share, built once rather than three times. Only the cases carry
+// a delta: they are the outcomes worth judging a build by, where a delta on every stat is noise.
+function derivedTableRows(group: DerivedTable) {
   const table = derived.value[group.source];
   const compareTable = compareDerived.value?.[group.source];
-  const base = group.rows.map(([label, key]) => ({
-    key,
-    label,
-    value: int(table[key]),
-    compare: intCompare(table[key], compareTable?.[key]),
-    lead: key === "average",
-  }));
+  const base = group.rows.map(([label, key]) => {
+    const compare = intCompare(table[key], compareTable?.[key]);
+    return {
+      key,
+      label,
+      value: int(table[key]),
+      compare,
+      delta: compare ? delta(table[key], compareTable?.[key]) : null,
+      lead: key === "average",
+    };
+  });
   const extras = (group.extra ?? []).map((extra) => {
     const format = extra.format === "int" ? int : pct;
     const mine = derived.value[extra.key];
@@ -393,14 +281,10 @@ function summaryTableRows(group: SummaryGroup) {
   return [...base, ...extras];
 }
 
-const damageTableRows = computed(() => summaryTableRows(damageGroup));
-const healingTableRows = computed(() => summaryTableRows(healingGroup));
-const ehpTableRows = computed(() => summaryTableRows(ehpGroup));
-
-function fmtPctSigned(value: number | null) {
-  if (value == null || Math.abs(value) < 1e-9) return "-";
-  return (value > 0 ? "+" : "") + pct(value);
-}
+const [damageTable, healingTable, ehpTable] = DERIVED_TABLES;
+const damageTableRows = computed(() => derivedTableRows(damageTable));
+const healingTableRows = computed(() => derivedTableRows(healingTable));
+const ehpTableRows = computed(() => derivedTableRows(ehpTable));
 
 /** Signed display for a merged overcap/headroom cell: `-` exactly on the cap, otherwise
  * an explicit `+`/`-` since these columns have no other cue for direction. */
@@ -540,90 +424,12 @@ const {
       </ul>
     </div>
 
-    <!-- Comparison table -->
-    <div class="flex flex-col gap-1 rounded-md bg-surface-2 px-2.5 py-2">
-      <ComboBox
-        v-model="summaryCalcKey"
-        class="w-full"
-        data-testid="summary-calc"
-        :options="summaryOptions"
-      />
-
-      <table class="mt-0.5 w-full border-collapse border border-line">
-        <tbody>
-          <tr class="border border-line">
-            <td class="px-1 py-0.5">This build</td>
-            <td
-              class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums w-40"
-              :class="summaryRowCls"
-              data-testid="summary-value"
-            >
-              {{ int(summaryValue) }}
-            </td>
-            <td
-              class="px-1 py-0.5 text-right tabular-nums w-20"
-              :class="summaryRowCls"
-            >
-              {{ fmtPctSigned(thisVsOtherPct) }}
-            </td>
-          </tr>
-          <tr class="border border-line">
-            <td class="px-1 py-0.5">
-              <BuildComboBox
-                class="compare-select"
-                :model-value="build.compare.id"
-                :options="compare.compareOptions.value"
-                @update:model-value="compare.setCompareBuild"
-              />
-            </td>
-            <td
-              class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums"
-            >
-              {{ compareResult ? int(compareSummaryValue) : "-" }}
-            </td>
-            <td class="px-1 py-0.5 text-right tabular-nums text-muted">
-              {{ compareResult ? fmtPctSigned(otherVsThisPct) : "-" }}
-            </td>
-          </tr>
-          <tr class="border border-line">
-            <td colspan="3" class="px-1 py-0.5">
-              <BaseCheckbox
-                :model-value="build.compare.highlight"
-                :disabled="!compareResult"
-                @update:model-value="
-                  (v) => compare.setCompareFlag('highlight', v as boolean)
-                "
-                >Highlight changes</BaseCheckbox
-              >
-            </td>
-          </tr>
-          <tr class="border border-line">
-            <td colspan="3" class="px-1 py-0.5">
-              <BaseCheckbox
-                :model-value="build.compare.onlyDiff"
-                :disabled="!compareResult"
-                @update:model-value="
-                  (v) => compare.setCompareFlag('onlyDiff', v as boolean)
-                "
-                >Only show changes</BaseCheckbox
-              >
-            </td>
-          </tr>
-          <tr class="border border-line">
-            <td colspan="3" class="px-1 py-0.5">
-              <BaseCheckbox
-                :model-value="build.compare.statLines"
-                :disabled="!compareResult"
-                @update:model-value="
-                  (v) => compare.setCompareFlag('statLines', v as boolean)
-                "
-                >Compare stats</BaseCheckbox
-              >
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <CompareSummary
+      :build="build"
+      :derived="derived"
+      :compare-derived="compareDerived"
+      :compare-name="compareName"
+    />
 
     <StatPanelPairsTable
       class="my-4"
@@ -677,7 +483,7 @@ const {
               </div>
               <CompareLine
                 v-if="row.compare"
-                :text="`↳ ${compareName}`"
+                text="↳ Other"
                 :title="compareName"
                 fit-right
               />

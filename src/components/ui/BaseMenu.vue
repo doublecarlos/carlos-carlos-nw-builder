@@ -144,7 +144,7 @@ function onPanelKeydown(event: KeyboardEvent) {
 const triggerAttrs = computed(() => ({
   // "group" is not a valid aria-haspopup value. A `role="group"` panel (CheckMenu, say) is
   // left without it rather than claiming an invalid one.
-  "aria-haspopup": props.role === "menu" ? "menu" : undefined,
+  "aria-haspopup": props.role === "menu" ? ("menu" as const) : undefined,
   "aria-expanded": isOpen.value,
   onKeydown: onTriggerKeydown,
 }));

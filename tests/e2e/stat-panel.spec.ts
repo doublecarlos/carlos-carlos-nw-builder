@@ -1,19 +1,14 @@
 // End-to-end coverage for StatPanel.vue's stat source popover (StatPanelSourceCard.vue): which
 // items/bonuses/pipeline stages fed a given stat's number, one stat at a time.
 import { test, expect, type Page } from "@playwright/test";
-import {
-  openBuilder,
-  chooseItem,
-  chooseCombo,
-  cursorRow,
-  slotRow,
-} from "./support/app";
+import { openBuilder, chooseItem, cursorRow, slotRow } from "./support/app";
 import {
   statInfoButton,
   statCard,
   statCardClose,
   statCardPin,
   statCardSourceGroups,
+  chooseSummaryCase,
 } from "./support/stats";
 import { importTestCatalog } from "./support/testCatalog";
 
@@ -352,11 +347,9 @@ test.describe("effective hit points", () => {
     const row = page.locator(
       '[data-stat-table="ehp"] [data-stat-row="noCritDeflect"] [data-testid="stat-value"]',
     );
-    await chooseCombo(
-      page.getByTestId("summary-calc"),
-      "EHP · No crit / deflect",
-    );
-    await expect(page.getByTestId("summary-value")).toHaveText(
+    const summary = page.locator('[data-summary-row="ehp"]');
+    await chooseSummaryCase(page, "ehp", "No crit / deflect");
+    await expect(summary.getByTestId("summary-value")).toHaveText(
       (await row.textContent())!.trim(),
     );
   });
