@@ -57,9 +57,10 @@ test("a differing stat stacks the compare build's own value under this build's",
   expect(await ownValue(page, "hp")).not.toBe(firstBuildHp);
 });
 
-test("the compare line is labeled with the compare build's name", async ({
+test('the compare line reads "Other", with the compare build\'s name on hover', async ({
   page,
 }) => {
+  // A fixed short label keeps long build names from crowding the stat labels.
   await openBuilder(page);
   await chooseClass(page, "warlock");
 
@@ -67,9 +68,11 @@ test("the compare line is labeled with the compare build's name", async ({
   await chooseCombo(comparePicker(page), "Build 1");
   await compareToggle(page).check();
 
-  await expect(
-    statRow(page, "hp").locator('[data-testid="compare-line"]').first(),
-  ).toHaveText("↳ Build 1");
+  const label = statRow(page, "hp")
+    .locator('[data-testid="compare-line"]')
+    .first();
+  await expect(label).toHaveText("↳ Other");
+  await expect(label).toHaveAttribute("title", "Build 1");
 });
 
 test("stats the two builds agree on grow no compare line at all", async ({
