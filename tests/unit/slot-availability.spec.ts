@@ -495,7 +495,7 @@ describe("slotsWithCompare", () => {
       "gear.charms#2",
       "gear.mirror",
     ]);
-    expect([...result.compareOnly]).toEqual([
+    expect([...result.compareOnly.keys()]).toEqual([
       "gear.mod",
       "gear.socket",
       "gear.charms#1",
@@ -508,6 +508,43 @@ describe("slotsWithCompare", () => {
     delete compare.choices["gear.socket"];
     delete compare.choices["gear.charms#2"];
     const result = slotsWithCompare(slots, plain, hidden, compare);
-    expect([...result.compareOnly]).toEqual(["gear.mod", "gear.charms#1"]);
+    expect([...result.compareOnly.keys()]).toEqual([
+      "gear.mod",
+      "gear.charms#1",
+    ]);
+  });
+
+  // A shown list where the compare build has more rows: its filled extras need rows of their
+  // own, after this build's rows and before the "Add" row, or they never read as a change.
+  it("adds the compare build's filled rows past a shown list's own count", () => {
+    const build = filledBuild({
+      choices: { "gear.weapon": "relic", "gear.charms#1": "charm" },
+      listRows: { "gear.charms": 1 },
+    });
+    const compare = filledBuild({
+      choices: {
+        "gear.weapon": "relic",
+        "gear.charms#1": "charm",
+        "gear.charms#3": "charm",
+      },
+      listRows: { "gear.charms": 3 },
+    });
+    const result = slotsWithCompare(slots, build, new Set(), compare);
+    expect(ids(result)).toEqual([
+      "gear.weapon",
+      "gear.mod",
+      "gear.socket",
+      "gear.charms#1",
+      "gear.charms#3",
+      "gear.charms",
+      "gear.mirror",
+    ]);
+    expect([...result.compareOnly]).toEqual([["gear.charms#3", "extraRow"]]);
+  });
+
+  it("tells a hidden slot's row apart from an extra list row", () => {
+    const result = slotsWithCompare(slots, plain, hidden, filledBuild());
+    expect(result.compareOnly.get("gear.mod")).toBe("unavailable");
+    expect(result.compareOnly.get("gear.charms#1")).toBe("unavailable");
   });
 });

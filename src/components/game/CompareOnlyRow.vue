@@ -1,15 +1,17 @@
 <script setup lang="ts">
-// A slot this build hides but the compare build fills. The build holds nothing here and cannot,
-// so the row is read-only: it only says what the compare build has, highlighted like any
-// differing row. Like TextRow, it carries no data-cursor-key, so the arrow-key cursor and Tab
+// A row the compare build fills and this build has none of: a slot it hides, or a list row past
+// its own count. The row is read-only: it only says what the compare build has, highlighted like
+// any differing row. Like TextRow, it carries no data-cursor-key, so the arrow-key cursor and Tab
 // skip it.
 import NestGuide from "./NestGuide.vue";
 import { toneStyle } from "../../lib/item-quality";
 import type { Slot } from "../../types";
 import type { NestPosition } from "../../lib/slot-parent";
+import type { CompareOnlyReason } from "../../lib/slot-availability";
 
 defineProps<{
   slotDef: Slot;
+  reason: CompareOnlyReason;
   compareName: string;
   otherChoiceLabel: string;
   otherChoiceQuality?: string | null;
@@ -31,6 +33,7 @@ defineProps<{
     ]"
     :data-diff="highlightDiff || undefined"
     :data-testid="'compare-only:' + slotDef.id"
+    :data-reason="reason"
   >
     <NestGuide v-if="nest" :nest="nest" />
     <span
@@ -42,7 +45,13 @@ defineProps<{
       class="min-w-0 [grid-column:2/-1] py-0.5 max-md:[grid-column:1/-1]"
       :class="nest ? 'pl-6 max-md:pl-8.5' : 'max-md:pl-2.5'"
     >
-      <p class="italic text-muted">Not available in this build</p>
+      <p class="italic text-muted">
+        {{
+          reason === "extraRow"
+            ? "No such row in this build"
+            : "Not available in this build"
+        }}
+      </p>
       <p class="slot-diff-note mt-0.5 text-muted">
         {{ compareName }}:
         <span class="text-(--tone)" :style="toneStyle(otherChoiceQuality)">{{

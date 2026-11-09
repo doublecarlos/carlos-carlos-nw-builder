@@ -9,6 +9,7 @@ import {
   chooseItem,
   addListRows,
   listAddButton,
+  chooseCombo,
 } from "./support/app";
 import { shippedSlotLabel } from "./support/shippedData";
 import { storedBuilds } from "./support/storage";
@@ -101,4 +102,54 @@ test("a hand-authored item_picker row has no remove button", async ({
   await expect(
     slotRow(page, "gear.head").getByTestId(/^list-remove:/),
   ).toHaveCount(0);
+});
+
+test.describe("comparing against a build with more rows", () => {
+  /** A one-row build compared against the two-row first build. */
+  async function compareWithLongerList(page: Page) {
+    await openWithMiscItem(page);
+    await addListRows(page, LIST, 2);
+    await chooseItem(page, row(1), MISC_ITEM.name);
+    await chooseItem(page, row(2), MISC_ITEM.name);
+
+    await page.getByTestId("nav-add-build").click();
+    await addListRows(page, LIST, 1);
+    await chooseItem(page, row(1), MISC_ITEM.name);
+    await chooseCombo(page.locator(".compare-select"), BUILD);
+  }
+
+  const extraRow = (page: Page) => page.getByTestId(`compare-only:${row(2)}`);
+
+  // The row only the compare build has is a change; without its own row it would read as
+  // "no difference".
+  test("highlighting changes shows the compare build's extra row", async ({
+    page,
+  }) => {
+    await compareWithLongerList(page);
+    await expect(extraRow(page)).toHaveCount(0);
+
+    await page.getByRole("checkbox", { name: "Highlight changes" }).check();
+    await expect(extraRow(page)).toHaveAttribute("data-diff");
+    await expect(extraRow(page)).toHaveAttribute("data-reason", "extraRow");
+    await expect(extraRow(page)).toContainText(`${BUILD}: ${MISC_ITEM.name}`);
+    await expect(extraRow(page).locator("input")).toHaveCount(0);
+  });
+
+  test("only showing changes keeps the extra row", async ({ page }) => {
+    await compareWithLongerList(page);
+    await page.getByRole("checkbox", { name: "Only show changes" }).check();
+
+    await expect(extraRow(page)).toBeVisible();
+    await expect(slotRow(page, row(1))).toBeHidden();
+  });
+
+  // Adding the row in this build turns the read-only row into an ordinary, editable one.
+  test("adding the row replaces the read-only one", async ({ page }) => {
+    await compareWithLongerList(page);
+    await page.getByRole("checkbox", { name: "Highlight changes" }).check();
+    await listAddButton(page, LIST).click();
+
+    await expect(extraRow(page)).toHaveCount(0);
+    await expect(pickerInput(slotRow(page, row(2)))).toHaveValue("");
+  });
 });

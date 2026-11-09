@@ -508,8 +508,8 @@ function rowDiffers(slotDef: Slot) {
   return rowHasDiff(slotDef.id);
 }
 
-/** Whether the editor is looking at differences, which is when a slot this build hides gets a
- *  read-only row for what the compare build holds there. */
+/** Whether the editor is looking at differences, which is when a slot this build hides, or a
+ *  list row past its own count, gets a read-only row for what the compare build holds there. */
 const showsCompareRows = computed(
   () => !!compareBuild.value && (highlightDiff.value || onlyDiff.value),
 );
@@ -1543,6 +1543,7 @@ watch(
               v-else-if="compareOnly.has(slotDef.id)"
               :hidden="!shown"
               :slot-def="slotDef"
+              :reason="compareOnly.get(slotDef.id) ?? 'unavailable'"
               :compare-name="compareBuild?.name ?? ''"
               :other-choice-label="
                 rowDataFor(slotDef.id).diff?.otherChoiceLabel ?? ''
