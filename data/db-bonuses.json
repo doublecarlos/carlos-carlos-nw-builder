@@ -765,6 +765,22 @@
     ]
   },
   {
+    "id": "celestial-lion-il-bug",
+    "name": "Celestial Lion IL Bug",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "item": "celestial-lion-s-presence"
+          }
+        },
+        "stats": {
+          "il": 900
+        }
+      }
+    ]
+  },
+  {
     "id": "cha-lua-accuracy-severity",
     "name": "Cha Lua",
     "grants": [

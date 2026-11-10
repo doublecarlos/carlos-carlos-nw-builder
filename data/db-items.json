@@ -163,6 +163,7 @@
       "Enchantment_Standard_F_V2_R6_Account",
       "Enchantment_Standard_F_R6_Account"
     ],
+    "longDescription": "From campaign store: Menzoberranzan.",
     "tags": ["gem:aquamarine"]
   },
   {
@@ -178,6 +179,7 @@
       "Enchantment_Standard_F_V2_R6_Account",
       "Enchantment_Standard_F_R6_Account"
     ],
+    "longDescription": "From campaign store: Menzoberranzan.",
     "tags": ["gem:aquamarine"]
   },
   {
@@ -193,6 +195,7 @@
       "Enchantment_Standard_N_V2_R6_Account",
       "Enchantment_Standard_N_R6_Account"
     ],
+    "longDescription": "From campaign store: Adventures in Wildspace.",
     "tags": ["gem:bloodstone"]
   },
   {
@@ -208,6 +211,7 @@
       "Enchantment_Standard_N_V2_R6_Account",
       "Enchantment_Standard_N_R6_Account"
     ],
+    "longDescription": "From campaign store: Adventures in Wildspace.",
     "tags": ["gem:bloodstone"]
   },
   {
@@ -223,6 +227,7 @@
       "Enchantment_Standard_J_V2_R6_Account",
       "Enchantment_Standard_J_R6_Account"
     ],
+    "longDescription": "From campaign store: Demonweb Pits.",
     "tags": ["gem:diamond"]
   },
   {
@@ -238,6 +243,7 @@
       "Enchantment_Standard_J_V2_R6_Account",
       "Enchantment_Standard_J_R6_Account"
     ],
+    "longDescription": "From campaign store: Demonweb Pits.",
     "tags": ["gem:diamond"]
   },
   {
@@ -252,7 +258,8 @@
     "gameIds": [
       "Enchantment_Standard_O_V2_R6_Account",
       "Enchantment_Standard_O_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Adventures in Wildspace."
   },
   {
     "id": "2-kyanite-strike-severity",
@@ -266,7 +273,8 @@
     "gameIds": [
       "Enchantment_Standard_O_V2_R6_Account",
       "Enchantment_Standard_O_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Adventures in Wildspace."
   },
   {
     "id": "2-moonstone-defense-awareness",
@@ -280,7 +288,8 @@
     "gameIds": [
       "Enchantment_Standard_L_V2_R6_Account",
       "Enchantment_Standard_L_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Light of Xaryxis."
   },
   {
     "id": "2-moonstone-power-ca",
@@ -294,7 +303,8 @@
     "gameIds": [
       "Enchantment_Standard_L_V2_R6_Account",
       "Enchantment_Standard_L_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Light of Xaryxis."
   },
   {
     "id": "2-onyx-ca-severity",
@@ -308,7 +318,8 @@
     "gameIds": [
       "Enchantment_Standard_M_V2_R6_Account",
       "Enchantment_Standard_M_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Light of Xaryxis."
   },
   {
     "id": "2-onyx-crit-avoid-deflect-severity",
@@ -322,7 +333,8 @@
     "gameIds": [
       "Enchantment_Standard_M_V2_R6_Account",
       "Enchantment_Standard_M_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Light of Xaryxis."
   },
   {
     "id": "2-opal-awareness-deflect",
@@ -337,6 +349,7 @@
       "Enchantment_Standard_K_V2_R6_Account",
       "Enchantment_Standard_K_R6_Account"
     ],
+    "longDescription": "From campaign store: Demonweb Pits.",
     "tags": ["gem:opal"]
   },
   {
@@ -352,6 +365,7 @@
       "Enchantment_Standard_K_V2_R6_Account",
       "Enchantment_Standard_K_R6_Account"
     ],
+    "longDescription": "From campaign store: Demonweb Pits.",
     "tags": ["gem:opal"]
   },
   {
@@ -366,7 +380,8 @@
     "gameIds": [
       "Enchantment_Standard_I_V2_R6_Account",
       "Enchantment_Standard_I_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Demonweb Pits."
   },
   {
     "id": "2-peridot-defense-deflect-severity",
@@ -380,7 +395,8 @@
     "gameIds": [
       "Enchantment_Standard_I_V2_R6_Account",
       "Enchantment_Standard_I_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Demonweb Pits."
   },
   {
     "id": "2-ruby-defense-deflect",
@@ -395,6 +411,7 @@
       "Enchantment_Standard_H_V2_R6_Account",
       "Enchantment_Standard_H_R6_Account"
     ],
+    "longDescription": "From campaign store: Menzoberranzan.",
     "tags": ["gem:ruby"]
   },
   {
@@ -410,6 +427,7 @@
       "Enchantment_Standard_H_V2_R6_Account",
       "Enchantment_Standard_H_R6_Account"
     ],
+    "longDescription": "From campaign store: Menzoberranzan.",
     "tags": ["gem:ruby"]
   },
   {
@@ -424,7 +442,8 @@
     "gameIds": [
       "Enchantment_Standard_G_V2_R6_Account",
       "Enchantment_Standard_G_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Menzoberranzan."
   },
   {
     "id": "2-sapphire-ca-strike",
@@ -438,7 +457,8 @@
     "gameIds": [
       "Enchantment_Standard_G_V2_R6_Account",
       "Enchantment_Standard_G_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Menzoberranzan."
   },
   {
     "id": "3-ammolite-defense-awareness-crit-avoid",
@@ -454,6 +474,7 @@
       "Enchantment_Standard_P_V2_R6_Account",
       "Enchantment_Standard_P_R6_Account"
     ],
+    "longDescription": "From campaign store: Mountain of Flame.",
     "tags": ["gem:ammolite"]
   },
   {
@@ -470,6 +491,7 @@
       "Enchantment_Standard_P_V2_R6_Account",
       "Enchantment_Standard_P_R6_Account"
     ],
+    "longDescription": "From campaign store: Mountain of Flame.",
     "tags": ["gem:ammolite"]
   },
   {
@@ -485,7 +507,8 @@
     "gameIds": [
       "Enchantment_Standard_S_V2_R6_Account",
       "Enchantment_Standard_S_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Return to Pirate's Skyhold."
   },
   {
     "id": "3-bismuth-defense-awareness-deflect",
@@ -500,7 +523,8 @@
     "gameIds": [
       "Enchantment_Standard_S_V2_R6_Account",
       "Enchantment_Standard_S_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Return to Pirate's Skyhold."
   },
   {
     "id": "3-bone-filligree-acc-ca-strike",
@@ -515,7 +539,8 @@
     "gameIds": [
       "Enchantment_Standard_U_V2_R6_Account",
       "Enchantment_Standard_U_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Red Harvest."
   },
   {
     "id": "3-bone-filligree-awareness-deflect-deflect-severity",
@@ -530,7 +555,8 @@
     "gameIds": [
       "Enchantment_Standard_U_V2_R6_Account",
       "Enchantment_Standard_U_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Red Harvest."
   },
   {
     "id": "3-fire-agate-awareness-crit-avoid-deflect",
@@ -546,6 +572,7 @@
       "Enchantment_Standard_Q_V2_R6_Account",
       "Enchantment_Standard_Q_R6_Account"
     ],
+    "longDescription": "From campaign store: Mountain of Flame.",
     "tags": ["gem:fire_agate"]
   },
   {
@@ -562,6 +589,7 @@
       "Enchantment_Standard_Q_V2_R6_Account",
       "Enchantment_Standard_Q_R6_Account"
     ],
+    "longDescription": "From campaign store: Mountain of Flame.",
     "tags": ["gem:fire_agate"]
   },
   {
@@ -577,7 +605,8 @@
     "gameIds": [
       "Enchantment_Standard_R_V2_R6_Account",
       "Enchantment_Standard_R_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Return to Pirate's Skyhold."
   },
   {
     "id": "3-mother-of-pearl-awareness-crit-avoid-deflect-severity",
@@ -592,7 +621,8 @@
     "gameIds": [
       "Enchantment_Standard_R_V2_R6_Account",
       "Enchantment_Standard_R_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: Return to Pirate's Skyhold."
   },
   {
     "id": "3-netherite-defense-deflect-deflect-severity",
@@ -607,7 +637,8 @@
     "gameIds": [
       "Enchantment_Standard_V_V2_R6_Account",
       "Enchantment_Standard_V_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: The Soul Collector."
   },
   {
     "id": "3-netherite-power-acc-ca",
@@ -622,7 +653,8 @@
     "gameIds": [
       "Enchantment_Standard_V_V2_R6_Account",
       "Enchantment_Standard_V_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: The Soul Collector."
   },
   {
     "id": "3-obsidian-crit-avoid-deflect-deflect-severity",
@@ -637,7 +669,8 @@
     "gameIds": [
       "Enchantment_Standard_X_V2_R6_Account",
       "Enchantment_Standard_X_R6_Account"
-    ]
+    ],
+    "longDescription": "From zone vendor: Kaldrfisk (The Biting Cold)."
   },
   {
     "id": "3-obsidian-forte-control-bonus-incoming-healing",
@@ -652,7 +685,8 @@
     "gameIds": [
       "Enchantment_Standard_X_V2_R6_Account",
       "Enchantment_Standard_X_R6_Account"
-    ]
+    ],
+    "longDescription": "From zone vendor: Kaldrfisk (The Biting Cold)."
   },
   {
     "id": "3-obsidian-power-acc-severity",
@@ -667,7 +701,8 @@
     "gameIds": [
       "Enchantment_Standard_X_V2_R6_Account",
       "Enchantment_Standard_X_R6_Account"
-    ]
+    ],
+    "longDescription": "From zone vendor: Kaldrfisk (The Biting Cold)."
   },
   {
     "id": "3-rubellite-tourmaline-defense-crit-avoid-deflect-severity",
@@ -683,6 +718,7 @@
       "Enchantment_Standard_T_V2_R6_Account",
       "Enchantment_Standard_T_R6_Account"
     ],
+    "longDescription": "From campaign store: Red Harvest.",
     "tags": ["gem:rubellite_tourmaline"]
   },
   {
@@ -699,6 +735,7 @@
       "Enchantment_Standard_T_V2_R6_Account",
       "Enchantment_Standard_T_R6_Account"
     ],
+    "longDescription": "From campaign store: Red Harvest.",
     "tags": ["gem:rubellite_tourmaline"]
   },
   {
@@ -714,7 +751,8 @@
     "gameIds": [
       "Enchantment_Standard_W_V2_R6_Account",
       "Enchantment_Standard_W_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: The Soul Collector."
   },
   {
     "id": "3-skullite-power-accuracy-strike",
@@ -729,7 +767,8 @@
     "gameIds": [
       "Enchantment_Standard_W_V2_R6_Account",
       "Enchantment_Standard_W_R6_Account"
-    ]
+    ],
+    "longDescription": "From campaign store: The Soul Collector."
   },
   {
     "id": "3-sugilite-ca-strike-severity",
@@ -744,7 +783,8 @@
     "gameIds": [
       "Enchantment_Standard_Y_V2_R6_Account",
       "Enchantment_Standard_Y_R6_Account"
-    ]
+    ],
+    "longDescription": "From zone vendor: Kaldrfisk (The Biting Cold)."
   },
   {
     "id": "3-sugilite-control-bonus-control-resist-outgoing-healing",
@@ -759,7 +799,8 @@
     "gameIds": [
       "Enchantment_Standard_Y_V2_R6_Account",
       "Enchantment_Standard_Y_R6_Account"
-    ]
+    ],
+    "longDescription": "From zone vendor: Kaldrfisk (The Biting Cold)."
   },
   {
     "id": "3-sugilite-defense-awareness-deflect-severity",
@@ -774,7 +815,8 @@
     "gameIds": [
       "Enchantment_Standard_Y_V2_R6_Account",
       "Enchantment_Standard_Y_R6_Account"
-    ]
+    ],
+    "longDescription": "From zone vendor: Kaldrfisk (The Biting Cold)."
   },
   {
     "id": "a-due",
@@ -2281,6 +2323,12 @@
     "shortDescription": "Max Mana +10%",
     "longDescription": "Max Mana +10%",
     "bonuses": ["celestial-fluid-aurora-s-power"]
+  },
+  {
+    "id": "celestial-lion-il-bug",
+    "name": "Celestial Lion IL Bug",
+    "filter": "misc",
+    "bonuses": ["celestial-lion-il-bug"]
   },
   {
     "id": "celestial-lion-s-presence",
@@ -9845,6 +9893,17 @@
         "preferred": "regal"
       }
     ]
+  },
+  {
+    "id": "staldorf-s-presence",
+    "name": "Staldorf's Presence",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "ca_p": 0.09,
+    "combined_rating": 900,
+    "longDescription": "Staldorf's companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
   },
   {
     "id": "strike-m32-900-to-5400",
