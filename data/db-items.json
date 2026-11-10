@@ -28,12 +28,40 @@
     "tags": ["gem:amethyst"]
   },
   {
+    "id": "1-amethyst-control-bonus",
+    "name": "Celestial Amethyst",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_bonus": 2700,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_E_V2_R6_Account",
+      "Enchantment_Standard_E_R6_Account"
+    ],
+    "tags": ["gem:amethyst"]
+  },
+  {
     "id": "1-citrine-acc",
     "name": "Celestial Citrine",
     "filter": "enchantment_offense",
     "quality": "celestial",
     "il": 1800,
     "acc": 2700,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_C_V2_R6_Account",
+      "Enchantment_Standard_C_R6_Account"
+    ],
+    "tags": ["gem:citrine"]
+  },
+  {
+    "id": "1-citrine-control-resist",
+    "name": "Celestial Citrine",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_resist": 2700,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_C_V2_R6_Account",
@@ -62,6 +90,20 @@
     "quality": "celestial",
     "il": 1800,
     "deflect_sev": 2700,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_A_V2_R6_Account",
+      "Enchantment_Standard_A_R6_Account"
+    ],
+    "tags": ["gem:cobalt"]
+  },
+  {
+    "id": "1-cobalt-incoming-healing",
+    "name": "Celestial Cobalt",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "inc_healing": 2700,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_A_V2_R6_Account",
@@ -151,6 +193,20 @@
     "tags": ["gem:jade"]
   },
   {
+    "id": "1-jade-outgoing-healing",
+    "name": "Celestial Jade",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "out_healing": 2700,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_D_V2_R6_Account",
+      "Enchantment_Standard_D_R6_Account"
+    ],
+    "tags": ["gem:jade"]
+  },
+  {
     "id": "2-aquamarine-accuracy-severity",
     "name": "Celestial Aquamarine",
     "filter": "enchantment_offense",
@@ -158,6 +214,22 @@
     "il": 1800,
     "acc": 1485,
     "severity": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_F_V2_R6_Account",
+      "Enchantment_Standard_F_R6_Account"
+    ],
+    "longDescription": "From campaign store: Menzoberranzan.",
+    "tags": ["gem:aquamarine"]
+  },
+  {
+    "id": "2-aquamarine-control-bonus-outgoing-healing",
+    "name": "Celestial Aquamarine",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_bonus": 1485,
+    "out_healing": 1485,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_F_V2_R6_Account",
@@ -199,6 +271,22 @@
     "tags": ["gem:bloodstone"]
   },
   {
+    "id": "2-bloodstone-incoming-healing-outgoing-healing",
+    "name": "Celestial Bloodstone",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "inc_healing": 1485,
+    "out_healing": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_N_V2_R6_Account",
+      "Enchantment_Standard_N_R6_Account"
+    ],
+    "longDescription": "From campaign store: Adventures in Wildspace.",
+    "tags": ["gem:bloodstone"]
+  },
+  {
     "id": "2-bloodstone-power-ca",
     "name": "Celestial Bloodstone",
     "filter": "enchantment_offense",
@@ -222,6 +310,22 @@
     "il": 1800,
     "ca": 1485,
     "severity": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_J_V2_R6_Account",
+      "Enchantment_Standard_J_R6_Account"
+    ],
+    "longDescription": "From campaign store: Demonweb Pits.",
+    "tags": ["gem:diamond"]
+  },
+  {
+    "id": "2-diamond-control-bonus-incoming-healing",
+    "name": "Celestial Diamond",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_bonus": 1485,
+    "inc_healing": 1485,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_J_V2_R6_Account",
@@ -262,6 +366,21 @@
     "longDescription": "From campaign store: Adventures in Wildspace."
   },
   {
+    "id": "2-kyanite-control-bonus-control-resist",
+    "name": "Celestial Kyanite",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_bonus": 1485,
+    "control_resist": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_O_V2_R6_Account",
+      "Enchantment_Standard_O_R6_Account"
+    ],
+    "longDescription": "From campaign store: Adventures in Wildspace."
+  },
+  {
     "id": "2-kyanite-strike-severity",
     "name": "Celestial Kyanite",
     "filter": "enchantment_offense",
@@ -275,6 +394,21 @@
       "Enchantment_Standard_O_R6_Account"
     ],
     "longDescription": "From campaign store: Adventures in Wildspace."
+  },
+  {
+    "id": "2-moonstone-control-resist-outgoing-healing",
+    "name": "Celestial Moonstone",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_resist": 1485,
+    "out_healing": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_L_V2_R6_Account",
+      "Enchantment_Standard_L_R6_Account"
+    ],
+    "longDescription": "From campaign store: Light of Xaryxis."
   },
   {
     "id": "2-moonstone-defense-awareness",
@@ -337,6 +471,21 @@
     "longDescription": "From campaign store: Light of Xaryxis."
   },
   {
+    "id": "2-onyx-forte-control-bonus",
+    "name": "Celestial Onyx",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1485,
+    "control_bonus": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_M_V2_R6_Account",
+      "Enchantment_Standard_M_R6_Account"
+    ],
+    "longDescription": "From campaign store: Light of Xaryxis."
+  },
+  {
     "id": "2-opal-awareness-deflect",
     "name": "Celestial Opal",
     "filter": "enchantment_defense",
@@ -344,6 +493,22 @@
     "il": 1800,
     "awareness": 1485,
     "deflect": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_K_V2_R6_Account",
+      "Enchantment_Standard_K_R6_Account"
+    ],
+    "longDescription": "From campaign store: Demonweb Pits.",
+    "tags": ["gem:opal"]
+  },
+  {
+    "id": "2-opal-forte-outgoing-healing",
+    "name": "Celestial Opal",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1485,
+    "out_healing": 1485,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_K_V2_R6_Account",
@@ -384,6 +549,21 @@
     "longDescription": "From campaign store: Demonweb Pits."
   },
   {
+    "id": "2-peridot-control-resist-incoming-healing",
+    "name": "Celestial Peridot",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_resist": 1485,
+    "inc_healing": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_I_V2_R6_Account",
+      "Enchantment_Standard_I_R6_Account"
+    ],
+    "longDescription": "From campaign store: Demonweb Pits."
+  },
+  {
     "id": "2-peridot-defense-deflect-severity",
     "name": "Celestial Peridot",
     "filter": "enchantment_defense",
@@ -406,6 +586,22 @@
     "il": 1800,
     "defense": 1485,
     "deflect": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_H_V2_R6_Account",
+      "Enchantment_Standard_H_R6_Account"
+    ],
+    "longDescription": "From campaign store: Menzoberranzan.",
+    "tags": ["gem:ruby"]
+  },
+  {
+    "id": "2-ruby-forte-incoming-healing",
+    "name": "Celestial Ruby",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1485,
+    "inc_healing": 1485,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_H_V2_R6_Account",
@@ -461,6 +657,38 @@
     "longDescription": "From campaign store: Menzoberranzan."
   },
   {
+    "id": "2-sapphire-forte-control-resist",
+    "name": "Celestial Sapphire",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1485,
+    "control_resist": 1485,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_G_V2_R6_Account",
+      "Enchantment_Standard_G_R6_Account"
+    ],
+    "longDescription": "From campaign store: Menzoberranzan."
+  },
+  {
+    "id": "3-ammolite-control-bonus-control-resist-incoming-healing",
+    "name": "Celestial Ammolite",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_bonus": 1080,
+    "control_resist": 1080,
+    "inc_healing": 1080,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_P_V2_R6_Account",
+      "Enchantment_Standard_P_R6_Account"
+    ],
+    "longDescription": "From campaign store: Mountain of Flame.",
+    "tags": ["gem:ammolite"]
+  },
+  {
     "id": "3-ammolite-defense-awareness-crit-avoid",
     "name": "Celestial Ammolite",
     "filter": "enchantment_defense",
@@ -503,6 +731,22 @@
     "acc": 1080,
     "ca": 1080,
     "severity": 1080,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_S_V2_R6_Account",
+      "Enchantment_Standard_S_R6_Account"
+    ],
+    "longDescription": "From campaign store: Return to Pirate's Skyhold."
+  },
+  {
+    "id": "3-bismuth-control-bonus-incoming-healing-outgoing-healing",
+    "name": "Celestial Bismuth",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_bonus": 1080,
+    "inc_healing": 1080,
+    "out_healing": 1080,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_S_V2_R6_Account",
@@ -559,6 +803,22 @@
     "longDescription": "From campaign store: Red Harvest."
   },
   {
+    "id": "3-bone-filligree-control-resist-incoming-healing-outgoing-healing",
+    "name": "Celestial Bone Filligree",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_resist": 1080,
+    "inc_healing": 1080,
+    "out_healing": 1080,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_U_V2_R6_Account",
+      "Enchantment_Standard_U_R6_Account"
+    ],
+    "longDescription": "From campaign store: Red Harvest."
+  },
+  {
     "id": "3-fire-agate-awareness-crit-avoid-deflect",
     "name": "Celestial Fire Agate",
     "filter": "enchantment_defense",
@@ -567,6 +827,23 @@
     "awareness": 1080,
     "crit_avoid": 1080,
     "deflect": 1080,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_Q_V2_R6_Account",
+      "Enchantment_Standard_Q_R6_Account"
+    ],
+    "longDescription": "From campaign store: Mountain of Flame.",
+    "tags": ["gem:fire_agate"]
+  },
+  {
+    "id": "3-fire-agate-forte-incoming-healing-outgoing-healing",
+    "name": "Celestial Fire Agate",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1080,
+    "inc_healing": 1080,
+    "out_healing": 1080,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_Q_V2_R6_Account",
@@ -625,6 +902,22 @@
     "longDescription": "From campaign store: Return to Pirate's Skyhold."
   },
   {
+    "id": "3-mother-of-pearl-forte-control-bonus-outgoing-healing",
+    "name": "Celestial Mother of Pearl",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1080,
+    "control_bonus": 1080,
+    "out_healing": 1080,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_R_V2_R6_Account",
+      "Enchantment_Standard_R_R6_Account"
+    ],
+    "longDescription": "From campaign store: Return to Pirate's Skyhold."
+  },
+  {
     "id": "3-netherite-defense-deflect-deflect-severity",
     "name": "Celestial Netherite",
     "filter": "enchantment_defense",
@@ -633,6 +926,22 @@
     "defense": 1080,
     "deflect": 1080,
     "deflect_sev": 1080,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_V_V2_R6_Account",
+      "Enchantment_Standard_V_R6_Account"
+    ],
+    "longDescription": "From campaign store: The Soul Collector."
+  },
+  {
+    "id": "3-netherite-forte-control-resist-outgoing-healing",
+    "name": "Celestial Netherite",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1080,
+    "control_resist": 1080,
+    "out_healing": 1080,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_V_V2_R6_Account",
@@ -722,6 +1031,23 @@
     "tags": ["gem:rubellite_tourmaline"]
   },
   {
+    "id": "3-rubellite-tourmaline-forte-control-bonus-control-resist",
+    "name": "Celestial Rubellite Tourmaline",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1080,
+    "control_bonus": 1080,
+    "control_resist": 1080,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_T_V2_R6_Account",
+      "Enchantment_Standard_T_R6_Account"
+    ],
+    "longDescription": "From campaign store: Red Harvest.",
+    "tags": ["gem:rubellite_tourmaline"]
+  },
+  {
     "id": "3-rubellite-tourmaline-power-ca-severity",
     "name": "Celestial Rubellite Tourmaline",
     "filter": "enchantment_offense",
@@ -747,6 +1073,22 @@
     "defense": 1080,
     "crit_avoid": 1080,
     "deflect": 1080,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_W_V2_R6_Account",
+      "Enchantment_Standard_W_R6_Account"
+    ],
+    "longDescription": "From campaign store: The Soul Collector."
+  },
+  {
+    "id": "3-skullite-forte-control-resist-incoming-healing",
+    "name": "Celestial Skullite",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 1080,
+    "control_resist": 1080,
+    "inc_healing": 1080,
     "combined_rating": 1620,
     "gameIds": [
       "Enchantment_Standard_W_V2_R6_Account",
