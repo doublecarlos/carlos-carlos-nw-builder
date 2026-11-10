@@ -66,7 +66,8 @@
     "gameIds": [
       "Enchantment_Standard_A_V2_R6_Account",
       "Enchantment_Standard_A_R6_Account"
-    ]
+    ],
+    "tags": ["gem:cobalt"]
   },
   {
     "id": "1-cobalt-severity",
@@ -79,7 +80,8 @@
     "gameIds": [
       "Enchantment_Standard_A_V2_R6_Account",
       "Enchantment_Standard_A_R6_Account"
-    ]
+    ],
+    "tags": ["gem:cobalt"]
   },
   {
     "id": "1-garnet-defense",
@@ -220,7 +222,8 @@
     "gameIds": [
       "Enchantment_Standard_J_V2_R6_Account",
       "Enchantment_Standard_J_R6_Account"
-    ]
+    ],
+    "tags": ["gem:diamond"]
   },
   {
     "id": "2-diamond-defense-crit-avoid",
@@ -234,7 +237,8 @@
     "gameIds": [
       "Enchantment_Standard_J_V2_R6_Account",
       "Enchantment_Standard_J_R6_Account"
-    ]
+    ],
+    "tags": ["gem:diamond"]
   },
   {
     "id": "2-kyanite-awareness-crit-avoid",
@@ -332,7 +336,8 @@
     "gameIds": [
       "Enchantment_Standard_K_V2_R6_Account",
       "Enchantment_Standard_K_R6_Account"
-    ]
+    ],
+    "tags": ["gem:opal"]
   },
   {
     "id": "2-opal-power-strike",
@@ -346,7 +351,8 @@
     "gameIds": [
       "Enchantment_Standard_K_V2_R6_Account",
       "Enchantment_Standard_K_R6_Account"
-    ]
+    ],
+    "tags": ["gem:opal"]
   },
   {
     "id": "2-peridot-acc-strike",
@@ -388,7 +394,8 @@
     "gameIds": [
       "Enchantment_Standard_H_V2_R6_Account",
       "Enchantment_Standard_H_R6_Account"
-    ]
+    ],
+    "tags": ["gem:ruby"]
   },
   {
     "id": "2-ruby-power-accuracy",
@@ -402,7 +409,8 @@
     "gameIds": [
       "Enchantment_Standard_H_V2_R6_Account",
       "Enchantment_Standard_H_R6_Account"
-    ]
+    ],
+    "tags": ["gem:ruby"]
   },
   {
     "id": "2-sapphire-awareness-deflect-severity",
@@ -445,7 +453,8 @@
     "gameIds": [
       "Enchantment_Standard_P_V2_R6_Account",
       "Enchantment_Standard_P_R6_Account"
-    ]
+    ],
+    "tags": ["gem:ammolite"]
   },
   {
     "id": "3-ammolite-power-ca-strike",
@@ -460,7 +469,8 @@
     "gameIds": [
       "Enchantment_Standard_P_V2_R6_Account",
       "Enchantment_Standard_P_R6_Account"
-    ]
+    ],
+    "tags": ["gem:ammolite"]
   },
   {
     "id": "3-bismuth-acc-ca-severity",
@@ -615,6 +625,51 @@
     ]
   },
   {
+    "id": "3-obsidian-crit-avoid-deflect-deflect-severity",
+    "name": "Celestial Obsidian",
+    "filter": "enchantment_defense",
+    "quality": "celestial",
+    "il": 1800,
+    "crit_avoid": 1188,
+    "deflect": 1620,
+    "deflect_sev": 1620,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_X_V2_R6_Account",
+      "Enchantment_Standard_X_R6_Account"
+    ]
+  },
+  {
+    "id": "3-obsidian-forte-control-bonus-incoming-healing",
+    "name": "Celestial Obsidian",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "forte": 972,
+    "control_bonus": 1080,
+    "inc_healing": 1296,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_X_V2_R6_Account",
+      "Enchantment_Standard_X_R6_Account"
+    ]
+  },
+  {
+    "id": "3-obsidian-power-acc-severity",
+    "name": "Celestial Obsidian",
+    "filter": "enchantment_offense",
+    "quality": "celestial",
+    "il": 1800,
+    "power": 756,
+    "acc": 1404,
+    "severity": 1296,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_X_V2_R6_Account",
+      "Enchantment_Standard_X_R6_Account"
+    ]
+  },
+  {
     "id": "3-rubellite-tourmaline-defense-crit-avoid-deflect-severity",
     "name": "Celestial Rubellite Tourmaline",
     "filter": "enchantment_defense",
@@ -627,7 +682,8 @@
     "gameIds": [
       "Enchantment_Standard_T_V2_R6_Account",
       "Enchantment_Standard_T_R6_Account"
-    ]
+    ],
+    "tags": ["gem:rubellite_tourmaline"]
   },
   {
     "id": "3-rubellite-tourmaline-power-ca-severity",
@@ -642,7 +698,8 @@
     "gameIds": [
       "Enchantment_Standard_T_V2_R6_Account",
       "Enchantment_Standard_T_R6_Account"
-    ]
+    ],
+    "tags": ["gem:rubellite_tourmaline"]
   },
   {
     "id": "3-skullite-defense-crit-avoid-deflect",
@@ -672,6 +729,51 @@
     "gameIds": [
       "Enchantment_Standard_W_V2_R6_Account",
       "Enchantment_Standard_W_R6_Account"
+    ]
+  },
+  {
+    "id": "3-sugilite-ca-strike-severity",
+    "name": "Celestial Sugilite",
+    "filter": "enchantment_offense",
+    "quality": "celestial",
+    "il": 1800,
+    "ca": 864,
+    "strike": 1296,
+    "severity": 1296,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_Y_V2_R6_Account",
+      "Enchantment_Standard_Y_R6_Account"
+    ]
+  },
+  {
+    "id": "3-sugilite-control-bonus-control-resist-outgoing-healing",
+    "name": "Celestial Sugilite",
+    "filter": "enchantment_utility",
+    "quality": "celestial",
+    "il": 1800,
+    "control_bonus": 1080,
+    "control_resist": 1080,
+    "out_healing": 864,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_Y_V2_R6_Account",
+      "Enchantment_Standard_Y_R6_Account"
+    ]
+  },
+  {
+    "id": "3-sugilite-defense-awareness-deflect-severity",
+    "name": "Celestial Sugilite",
+    "filter": "enchantment_defense",
+    "quality": "celestial",
+    "il": 1800,
+    "defense": 756,
+    "awareness": 864,
+    "deflect_sev": 1620,
+    "combined_rating": 1620,
+    "gameIds": [
+      "Enchantment_Standard_Y_V2_R6_Account",
+      "Enchantment_Standard_Y_R6_Account"
     ]
   },
   {
@@ -2053,7 +2155,7 @@
     "preferredVariant": "brutality-illuminated-pref",
     "gameIds": [
       "Insignia_Illuminated_Power_Recovery_R6",
-      "Insignia_llluminated_Power_Recovery_Account_R6"
+      "Insignia_Illuminated_Power_Recovery_Account_R6"
     ]
   },
   {
@@ -4884,6 +4986,54 @@
     "bonuses": ["m32-critical-spiker"]
   },
   {
+    "id": "m32-dirgeblade-celestial",
+    "name": "M32 Dirgeblade (Celestial)",
+    "filter": "gear_weapon_mainhand",
+    "quality": "celestial",
+    "il": 5250,
+    "acc": 3412,
+    "strike": 3150,
+    "out_healing": 2100,
+    "base_damage_flat": 200,
+    "combined_rating": 4725,
+    "gameIds": ["Primary_M32_Bard_All_R6"],
+    "allowedClass": ["bard"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
+    "bonuses": ["m32-bard-s-impending-doom-celestial"]
+  },
+  {
+    "id": "m32-dirgeblade-legendary",
+    "name": "M32 Dirgeblade (Legendary)",
+    "filter": "gear_weapon_mainhand",
+    "quality": "legendary",
+    "il": 4450,
+    "acc": 2892,
+    "strike": 2670,
+    "out_healing": 1780,
+    "base_damage_flat": 50,
+    "combined_rating": 4005,
+    "gameIds": ["Primary_M32_Bard_All_R4"],
+    "allowedClass": ["bard"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
+    "bonuses": ["m32-bard-s-impending-doom-legendary"]
+  },
+  {
+    "id": "m32-dirgeblade-mythic",
+    "name": "M32 Dirgeblade (Mythic)",
+    "filter": "gear_weapon_mainhand",
+    "quality": "mythic",
+    "il": 4800,
+    "acc": 3120,
+    "strike": 2880,
+    "out_healing": 1920,
+    "base_damage_flat": 100,
+    "combined_rating": 4320,
+    "gameIds": ["Primary_M32_Bard_All_R5"],
+    "allowedClass": ["bard"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
+    "bonuses": ["m32-bard-s-impending-doom-mythic"]
+  },
+  {
     "id": "m32-doomcleaver-celestial",
     "name": "M32 Doomcleaver (Celestial)",
     "filter": "gear_weapon_mainhand",
@@ -4897,10 +5047,83 @@
     "gameIds": ["Primary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
     "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
-    "bonuses": [
-      "m32-doomcleaver-celestial",
-      "m32-knot-of-the-bloodhound-celestial"
-    ]
+    "bonuses": ["m32-barbarian-s-impending-doom-celestial"]
+  },
+  {
+    "id": "m32-doomcleaver-legendary",
+    "name": "M32 Doomcleaver (Legendary)",
+    "filter": "gear_weapon_mainhand",
+    "quality": "legendary",
+    "il": 4450,
+    "strike": 2670,
+    "severity": 2670,
+    "deflect": 3337,
+    "base_damage_flat": 50,
+    "combined_rating": 4005,
+    "gameIds": ["Primary_M32_Barbarian_All_R4"],
+    "allowedClass": ["barbarian"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
+    "bonuses": ["m32-barbarian-s-impending-doom-legendary"]
+  },
+  {
+    "id": "m32-doomcleaver-mythic",
+    "name": "M32 Doomcleaver (Mythic)",
+    "filter": "gear_weapon_mainhand",
+    "quality": "mythic",
+    "il": 4800,
+    "strike": 2880,
+    "severity": 2880,
+    "deflect": 3600,
+    "base_damage_flat": 100,
+    "combined_rating": 4320,
+    "gameIds": ["Primary_M32_Barbarian_All_R5"],
+    "allowedClass": ["barbarian"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
+    "bonuses": ["m32-barbarian-s-impending-doom-mythic"]
+  },
+  {
+    "id": "m32-knot-of-the-bloodbound-celestial",
+    "name": "M32 Knot of the Bloodbound (Celestial)",
+    "filter": "gear_weapon_offhand",
+    "quality": "celestial",
+    "il": 5250,
+    "ca": 2100,
+    "strike": 3150,
+    "defense": 1837,
+    "combined_rating": 4725,
+    "gameIds": ["Secondary_M32_Barbarian_All_R6"],
+    "allowedClass": ["barbarian"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
+    "bonuses": ["m32-barbarian-s-impending-doom-celestial"]
+  },
+  {
+    "id": "m32-knot-of-the-bloodbound-legendary",
+    "name": "M32 Knot of the Bloodbound (Legendary)",
+    "filter": "gear_weapon_offhand",
+    "quality": "legendary",
+    "il": 4450,
+    "ca": 2670,
+    "strike": 4005,
+    "combined_rating": 4005,
+    "gameIds": ["Secondary_M32_Barbarian_All_R4"],
+    "allowedClass": ["barbarian"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
+    "bonuses": ["m32-barbarian-s-impending-doom-legendary"]
+  },
+  {
+    "id": "m32-knot-of-the-bloodbound-mythic",
+    "name": "M32 Knot of the Bloodbound (Mythic)",
+    "filter": "gear_weapon_offhand",
+    "quality": "mythic",
+    "il": 4800,
+    "ca": 1920,
+    "strike": 2880,
+    "defense": 1680,
+    "combined_rating": 4320,
+    "gameIds": ["Secondary_M32_Barbarian_All_R5"],
+    "allowedClass": ["barbarian"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
+    "bonuses": ["m32-barbarian-s-impending-doom-mythic"]
   },
   {
     "id": "m32-knot-of-the-bloodhound-celestial",
@@ -4912,13 +5135,8 @@
     "strike": 3150,
     "defense": 1837,
     "combined_rating": 4725,
-    "gameIds": ["Secondary_M32_Barbarian_All_R6"],
-    "allowedClass": ["barbarian"],
-    "tags": ["artifact:offhand", "artifact:m32-offhand"],
-    "bonuses": [
-      "m32-doomcleaver-celestial",
-      "m32-knot-of-the-bloodhound-celestial"
-    ]
+    "hideFromPicker": true,
+    "replacedBy": "m32-knot-of-the-bloodbound-celestial"
   },
   {
     "id": "m32-omen-of-doom-celestial",
@@ -5037,6 +5255,65 @@
     "bonuses": ["m32-cleric-s-impending-doom-celestial"]
   },
   {
+    "id": "m32-sigil-of-the-abyss-mythic",
+    "name": "M32 Sigil of the Abyss (Mythic)",
+    "filter": "gear_weapon_offhand",
+    "quality": "mythic",
+    "il": 4800,
+    "acc": 3120,
+    "strike": 2880,
+    "forte": 2160,
+    "combined_rating": 4320,
+    "gameIds": ["Secondary_M32_Cleric_All_R5"],
+    "allowedClass": ["cleric"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
+    "bonuses": ["m32-cleric-s-impending-doom-mythic"]
+  },
+  {
+    "id": "m32-strings-of-the-forsaken-celestial",
+    "name": "M32 Strings of the Forsaken (Celestial)",
+    "filter": "gear_weapon_offhand",
+    "quality": "celestial",
+    "il": 5250,
+    "power": 1837,
+    "severity": 3150,
+    "forte": 2362,
+    "combined_rating": 4725,
+    "gameIds": ["Secondary_M32_Bard_All_R6"],
+    "allowedClass": ["bard"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
+    "bonuses": ["m32-bard-s-impending-doom-celestial"]
+  },
+  {
+    "id": "m32-strings-of-the-forsaken-legendary",
+    "name": "M32 Strings of the Forsaken (Legendary)",
+    "filter": "gear_weapon_offhand",
+    "quality": "legendary",
+    "il": 4450,
+    "severity": 4005,
+    "forte": 3004,
+    "combined_rating": 4005,
+    "gameIds": ["Secondary_M32_Bard_All_R4"],
+    "allowedClass": ["bard"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
+    "bonuses": ["m32-bard-s-impending-doom-legendary"]
+  },
+  {
+    "id": "m32-strings-of-the-forsaken-mythic",
+    "name": "M32 Strings of the Forsaken (Mythic)",
+    "filter": "gear_weapon_offhand",
+    "quality": "mythic",
+    "il": 4800,
+    "power": 1680,
+    "severity": 2880,
+    "forte": 2160,
+    "combined_rating": 4320,
+    "gameIds": ["Secondary_M32_Bard_All_R5"],
+    "allowedClass": ["bard"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
+    "bonuses": ["m32-bard-s-impending-doom-mythic"]
+  },
+  {
     "id": "m32-warden-of-the-last-rite-celestial",
     "name": "M32 Warden of the Last Rite (Celestial)",
     "filter": "gear_weapon_mainhand",
@@ -5144,6 +5421,32 @@
     "bonuses": ["m33-5-evolving-form"]
   },
   {
+    "id": "m33-coldsilver-band-of-faith",
+    "name": "M33 Coldsilver Band of Faith",
+    "filter": "gear_ring",
+    "quality": "mythic",
+    "il": 5700,
+    "power": 5985,
+    "strike": 10260,
+    "recharge": 0.015,
+    "combined_rating": 4560,
+    "gameIds": ["Ring_M33_Heavyheal_R5"],
+    "bonuses": ["m33-deity-s-gift"]
+  },
+  {
+    "id": "m33-coldsilver-circlet-of-protection",
+    "name": "M33 Coldsilver Circlet of Protection",
+    "filter": "gear_ring",
+    "quality": "mythic",
+    "il": 5700,
+    "defense": 5985,
+    "deflect": 12825,
+    "stamina_regen": 0.015,
+    "combined_rating": 4560,
+    "gameIds": ["Ring_M33_Heavytank_2_R5"],
+    "bonuses": ["m33-manticore-s-mane-bite"]
+  },
+  {
     "id": "m33-coldsilver-coil-of-wrath",
     "name": "M33 Coldsilver Coil of Wrath",
     "filter": "gear_ring",
@@ -5155,6 +5458,32 @@
     "combined_rating": 4560,
     "gameIds": ["Ring_M33_Heavydps_R5"],
     "bonuses": ["m33-accumulating-precision"]
+  },
+  {
+    "id": "m33-coldsilver-halo-of-mending",
+    "name": "M33 Coldsilver Halo of Mending",
+    "filter": "gear_ring",
+    "quality": "mythic",
+    "il": 5700,
+    "severity": 10260,
+    "forte": 7695,
+    "ap_gain": 0.015,
+    "combined_rating": 4560,
+    "gameIds": ["Ring_M33_Mediumheal_R5"],
+    "bonuses": ["m33-circular-healing"]
+  },
+  {
+    "id": "m33-coldsilver-hoop-of-tenacity",
+    "name": "M33 Coldsilver Hoop of Tenacity",
+    "filter": "gear_ring",
+    "quality": "mythic",
+    "il": 5700,
+    "awareness": 6840,
+    "crit_avoid": 9405,
+    "recharge": 0.015,
+    "combined_rating": 4560,
+    "gameIds": ["Ring_M33_Heavytank_R5"],
+    "bonuses": ["m33-charging-bull"]
   },
   {
     "id": "m33-coldsilver-loop-of-the-arcane",
@@ -5357,6 +5686,40 @@
     "gameIds": ["Companion_Equipment_M33_Alldps_Stat_1"]
   },
   {
+    "id": "m33-frostsilver-band-of-faith",
+    "name": "M33 Frostsilver Band of Faith",
+    "filter": "gear_ring",
+    "quality": "celestial",
+    "il": 6000,
+    "power": 6300,
+    "strike": 10800,
+    "recharge": 0.015,
+    "combined_rating": 4800,
+    "gameIds": ["Ring_M33_Heavyheal_R6"],
+    "bonuses": [
+      "m33-frostsilver-band-of-faith-severity",
+      "m33-frostsilver-band-of-faith-strike",
+      "m33-deity-s-gift-celestial"
+    ]
+  },
+  {
+    "id": "m33-frostsilver-circlet-of-protection",
+    "name": "M33 Frostsilver Circlet of Protection",
+    "filter": "gear_ring",
+    "quality": "celestial",
+    "il": 6000,
+    "defense": 6300,
+    "deflect": 13500,
+    "stamina_regen": 0.015,
+    "combined_rating": 4800,
+    "gameIds": ["Ring_M33_Heavytank_2_R6"],
+    "bonuses": [
+      "m33-frostsilver-circlet-of-protection-awareness",
+      "m33-frostsilver-circlet-of-protection-forte",
+      "m33-manticore-s-mane-bite-celestial"
+    ]
+  },
+  {
     "id": "m33-frostsilver-coil-of-wrath",
     "name": "M33 Frostsilver Coil of Wrath",
     "filter": "gear_ring",
@@ -5371,6 +5734,40 @@
       "m33-frostsilver-coil-of-wrath-accuracy",
       "m33-frostsilver-coil-of-wrath-ca",
       "m33-accumulating-precision-celestial"
+    ]
+  },
+  {
+    "id": "m33-frostsilver-halo-of-mending",
+    "name": "M33 Frostsilver Halo of Mending",
+    "filter": "gear_ring",
+    "quality": "celestial",
+    "il": 6000,
+    "severity": 10800,
+    "forte": 8100,
+    "ap_gain": 0.015,
+    "combined_rating": 4800,
+    "gameIds": ["Ring_M33_Mediumheal_R6"],
+    "bonuses": [
+      "m33-frostsilver-halo-of-mending-strike",
+      "m33-frostsilver-halo-of-mending-power",
+      "m33-circular-healing-celestial"
+    ]
+  },
+  {
+    "id": "m33-frostsilver-hoop-of-tenacity",
+    "name": "M33 Frostsilver Hoop of Tenacity",
+    "filter": "gear_ring",
+    "quality": "celestial",
+    "il": 6000,
+    "awareness": 7200,
+    "crit_avoid": 9900,
+    "recharge": 0.015,
+    "combined_rating": 4800,
+    "gameIds": ["Ring_M33_Heavytank_R6"],
+    "bonuses": [
+      "m33-frostsilver-hoop-of-tenacity-defense",
+      "m33-frostsilver-hoop-of-tenacity-critical-avoidance",
+      "m33-charging-bull-celestial"
     ]
   },
   {
@@ -5469,10 +5866,8 @@
     "strike": 2880,
     "forte": 2160,
     "combined_rating": 4320,
-    "gameIds": ["Secondary_M32_Cleric_All_R5"],
-    "allowedClass": ["cleric"],
-    "tags": ["artifact:offhand", "artifact:m32-offhand"],
-    "bonuses": ["m32-cleric-s-impending-doom-mythic"]
+    "hideFromPicker": true,
+    "replacedBy": "m32-sigil-of-the-abyss-mythic"
   },
   {
     "id": "m33-true-ice-icon-of-the-companion-forte-ogh",
@@ -5520,6 +5915,58 @@
     "gameIds": ["Companion_Equipment_M33_Alldps_Stat_1_R5"]
   },
   {
+    "id": "m33-wintermarked-bulwark-cuirass",
+    "name": "M33 Wintermarked Bulwark Cuirass",
+    "filter": "gear_armor",
+    "quality": "mythic",
+    "il": 5700,
+    "awareness": 3420,
+    "crit_avoid": 4703,
+    "combined_rating": 5130,
+    "gameIds": ["Body_M33_Heavytank_S-tier", "Body_M33_Heavytank_S-tier_Boe"],
+    "allowedClass": ["barbarian", "fighter", "paladin"],
+    "bonuses": ["m33-reactive-defense"]
+  },
+  {
+    "id": "m33-wintermarked-bulwark-greaves",
+    "name": "M33 Wintermarked Bulwark Greaves",
+    "filter": "gear_boots",
+    "quality": "mythic",
+    "il": 5700,
+    "defense": 2992,
+    "crit_avoid": 4703,
+    "combined_rating": 5130,
+    "gameIds": ["Feet_M33_Heavytank_S-tier", "Feet_M33_Heavytank_S-tier_Boe"],
+    "allowedClass": ["barbarian", "fighter", "paladin"],
+    "bonuses": ["m33-survivor-s-critical-resilience"]
+  },
+  {
+    "id": "m33-wintermarked-bulwark-helm",
+    "name": "M33 Wintermarked Bulwark Helm",
+    "filter": "gear_head",
+    "quality": "mythic",
+    "il": 5700,
+    "awareness": 3420,
+    "crit_avoid": 4703,
+    "combined_rating": 5130,
+    "gameIds": ["Head_M33_Heavytank_S-tier", "Head_M33_Heavytank_S-tier_Boe"],
+    "allowedClass": ["barbarian", "fighter", "paladin"],
+    "bonuses": ["m33-battle-acumen"]
+  },
+  {
+    "id": "m33-wintermarked-bulwark-vambraces",
+    "name": "M33 Wintermarked Bulwark Vambraces",
+    "filter": "gear_arms",
+    "quality": "mythic",
+    "il": 5700,
+    "defense": 2992,
+    "crit_avoid": 4703,
+    "combined_rating": 5130,
+    "gameIds": ["Arms_M33_Heavytank_S-tier", "Arms_M33_Heavytank_S-tier_Boe"],
+    "allowedClass": ["barbarian", "fighter", "paladin"],
+    "bonuses": ["m33-reprisal-reflex"]
+  },
+  {
     "id": "m33-wintermarked-frostlute",
     "name": "M33 Wintermarked Frostlute",
     "filter": "gear_weapon_offhand",
@@ -5561,6 +6008,45 @@
     "bonuses": ["m33-tactical-daily-greater"]
   },
   {
+    "id": "m33-wintermarked-lifeward-cuirass",
+    "name": "M33 Wintermarked Lifeward Cuirass",
+    "filter": "gear_armor",
+    "quality": "mythic",
+    "il": 5700,
+    "power": 2992,
+    "severity": 5130,
+    "combined_rating": 5130,
+    "gameIds": ["Body_M33_Heavyheal_S-tier", "Body_M33_Heavyheal_S-tier_Boe"],
+    "allowedClass": ["cleric", "paladin"],
+    "bonuses": ["m33-unbroken-strength"]
+  },
+  {
+    "id": "m33-wintermarked-lifeward-greaves",
+    "name": "M33 Wintermarked Lifeward Greaves",
+    "filter": "gear_boots",
+    "quality": "mythic",
+    "il": 5700,
+    "severity": 5130,
+    "forte": 3848,
+    "combined_rating": 5130,
+    "gameIds": ["Feet_M33_Heavyheal_S-tier", "Feet_M33_Heavyheal_S-tier_Boe"],
+    "allowedClass": ["cleric", "paladin"],
+    "bonuses": ["m33-shared-vitality"]
+  },
+  {
+    "id": "m33-wintermarked-lifeward-helm",
+    "name": "M33 Wintermarked Lifeward Helm",
+    "filter": "gear_head",
+    "quality": "mythic",
+    "il": 5700,
+    "severity": 5130,
+    "out_healing": 3420,
+    "combined_rating": 5130,
+    "gameIds": ["Head_M33_Heavyheal_S-tier", "Head_M33_Heavyheal_S-tier_Boe"],
+    "allowedClass": ["cleric", "paladin"],
+    "bonuses": ["m33-renewed-spirit"]
+  },
+  {
     "id": "m33-wintermarked-lifeward-vambraces",
     "name": "M33 Wintermarked Lifeward Vambraces",
     "filter": "gear_arms",
@@ -5586,6 +6072,112 @@
     "gameIds": ["Feet_M33_Mediumdps_S-tier", "Feet_M33_Mediumdps_S-tier_Boe"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-critical-breaker"]
+  },
+  {
+    "id": "m33-wintermarked-mender-barbute",
+    "name": "M33 Wintermarked Mender Barbute",
+    "filter": "gear_head",
+    "quality": "mythic",
+    "il": 5700,
+    "strike": 5130,
+    "severity": 5130,
+    "combined_rating": 5130,
+    "gameIds": ["Head_M33_Mediumheal_S-tier", "Head_M33_Mediumheal_S-tier_Boe"],
+    "allowedClass": ["bard", "warlock"],
+    "bonuses": ["m33-survivor-s-instinct"]
+  },
+  {
+    "id": "m33-wintermarked-mender-s-bracers",
+    "name": "M33 Wintermarked Mender's Bracers",
+    "filter": "gear_arms",
+    "quality": "mythic",
+    "il": 5700,
+    "forte_p": 0.045,
+    "power": 2992,
+    "strike": 5130,
+    "combined_rating": 5130,
+    "gameIds": ["Arms_M33_Mediumheal_S-tier", "Arms_M33_Mediumheal_S-tier_Boe"],
+    "shortDescription": "Max Performance/Soulweave +20%",
+    "allowedClass": ["bard", "warlock"]
+  },
+  {
+    "id": "m33-wintermarked-mender-s-breastplate",
+    "name": "M33 Wintermarked Mender's Breastplate",
+    "filter": "gear_armor",
+    "quality": "mythic",
+    "il": 5700,
+    "strike": 5130,
+    "out_healing": 3420,
+    "combined_rating": 5130,
+    "gameIds": ["Body_M33_Mediumheal_S-tier", "Body_M33_Mediumheal_S-tier_Boe"],
+    "allowedClass": ["bard", "warlock"],
+    "bonuses": ["m33-guardian-s-impact"]
+  },
+  {
+    "id": "m33-wintermarked-pilgrim-poleyns",
+    "name": "M33 Wintermarked Pilgrim Poleyns",
+    "filter": "gear_boots",
+    "quality": "mythic",
+    "il": 5700,
+    "severity": 5130,
+    "out_healing": 3420,
+    "combined_rating": 5130,
+    "gameIds": ["Feet_M33_Mediumheal_S-tier", "Feet_M33_Mediumheal_S-tier_Boe"],
+    "allowedClass": ["bard", "warlock"],
+    "bonuses": ["m33-harmonizing-radiance"]
+  },
+  {
+    "id": "m33-wintermarked-ravager-cuirass",
+    "name": "M33 Wintermarked Ravager Cuirass",
+    "filter": "gear_armor",
+    "quality": "mythic",
+    "il": 5700,
+    "strike": 5130,
+    "forte": 3848,
+    "combined_rating": 5130,
+    "gameIds": ["Body_M33_Heavydps_S-tier", "Body_M33_Heavydps_S-tier_Boe"],
+    "allowedClass": ["barbarian", "fighter"],
+    "bonuses": ["m33-ruthless-advantage-mythic"]
+  },
+  {
+    "id": "m33-wintermarked-ravager-greaves",
+    "name": "M33 Wintermarked Ravager Greaves",
+    "filter": "gear_boots",
+    "quality": "mythic",
+    "il": 5700,
+    "acc": 3705,
+    "ca": 2280,
+    "forte": 2565,
+    "combined_rating": 5130,
+    "gameIds": ["Feet_M33_Heavydps_S-tier", "Feet_M33_Heavydps_S-tier_Boe"],
+    "allowedClass": ["barbarian", "fighter"],
+    "bonuses": ["m33-overwhelming-strike"]
+  },
+  {
+    "id": "m33-wintermarked-ravager-helm",
+    "name": "M33 Wintermarked Ravager Helm",
+    "filter": "gear_head",
+    "quality": "mythic",
+    "il": 5700,
+    "ca": 3420,
+    "severity": 5130,
+    "combined_rating": 5130,
+    "gameIds": ["Head_M33_Heavydps_S-tier", "Head_M33_Heavydps_S-tier_Boe"],
+    "allowedClass": ["barbarian", "fighter"],
+    "bonuses": ["m33-balanced-vitality"]
+  },
+  {
+    "id": "m33-wintermarked-ravager-vambraces",
+    "name": "M33 Wintermarked Ravager Vambraces",
+    "filter": "gear_arms",
+    "quality": "mythic",
+    "il": 5700,
+    "strike": 5130,
+    "forte": 3848,
+    "combined_rating": 5130,
+    "gameIds": ["Arms_M33_Heavydps_S-tier", "Arms_M33_Heavydps_S-tier_Boe"],
+    "allowedClass": ["barbarian", "fighter"],
+    "bonuses": ["m33-consuming-rage"]
   },
   {
     "id": "m33-wintermarked-rimecrook",
@@ -5635,6 +6227,20 @@
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
+    "id": "m33-wintermarked-skirmisher-barbute",
+    "name": "M33 Wintermarked Skirmisher Barbute",
+    "filter": "gear_head",
+    "quality": "mythic",
+    "il": 5700,
+    "acc": 3705,
+    "ca": 2280,
+    "forte": 2565,
+    "combined_rating": 5130,
+    "gameIds": ["Head_M33_Mediumdps_S-tier", "Head_M33_Mediumdps_S-tier_Boe"],
+    "allowedClass": ["bard", "cleric", "ranger", "rogue"],
+    "bonuses": ["m33-steady-precision"]
+  },
+  {
     "id": "m33-wintermarked-skirmisher-bracers",
     "name": "M33 Wintermarked Skirmisher Bracers",
     "filter": "gear_arms",
@@ -5646,6 +6252,20 @@
     "gameIds": ["Arms_M33_Mediumdps_S-tier", "Arms_M33_Mediumdps_S-tier_Boe"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-relentless-reserves"]
+  },
+  {
+    "id": "m33-wintermarked-skirmisher-s-breastplate",
+    "name": "M33 Wintermarked Skirmisher's Breastplate",
+    "filter": "gear_armor",
+    "quality": "mythic",
+    "il": 5700,
+    "acc": 3705,
+    "ca": 2280,
+    "forte": 2565,
+    "combined_rating": 5130,
+    "gameIds": ["Body_M33_Mediumdps_S-tier", "Body_M33_Mediumdps_S-tier_Boe"],
+    "allowedClass": ["bard", "cleric", "ranger", "rogue"],
+    "bonuses": ["m33-combatant-s-advantage"]
   },
   {
     "id": "m33-wintermarked-swiftguards",
@@ -7837,6 +8457,20 @@
     "filter": "class_feat",
     "longDescription": "Increases stamina regeneration.",
     "allowedClass": ["fighter"]
+  },
+  {
+    "id": "shifting-shards",
+    "name": "Celestial Shifting Shards",
+    "filter": "combat_enchant_offense",
+    "quality": "celestial",
+    "il": 3500,
+    "power_p": 0.055,
+    "outgoing_damage": 0.15,
+    "gameIds": [
+      "Enchantment_Combat_P_V2_R6_Account",
+      "Enchantment_Combat_P_R6_Account"
+    ],
+    "bonuses": ["shifting-shards"]
   },
   {
     "id": "slayer-overload",
