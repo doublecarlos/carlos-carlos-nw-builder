@@ -701,6 +701,12 @@
     "name": "Cautious Devotion",
     "grants": [
       {
+        "when": {
+          "param": {
+            "key": "health",
+            "exactly": 1
+          }
+        },
         "stats": {
           "out_healing_p": 0.05,
           "forte": 2500
@@ -2261,6 +2267,330 @@
     ]
   },
   {
+    "id": "m32-barbarian-s-impending-doom-celestial",
+    "name": "M32 Barbarian's Impending Doom (Celestial)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "power_p": 0.06,
+          "sev_p": 0.075
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.05
+            }
+          },
+          {
+            "when": {
+              "role": "tank"
+            },
+            "stats": {
+              "incoming_damage": -0.05
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m32-barbarian-s-impending-doom-legendary",
+    "name": "M32 Barbarian's Impending Doom (Legendary)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "power_p": 0.05,
+          "sev_p": 0.037
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.04
+            }
+          },
+          {
+            "when": {
+              "role": "tank"
+            },
+            "stats": {
+              "incoming_damage": -0.04
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m32-barbarian-s-impending-doom-mythic",
+    "name": "M32 Barbarian's Impending Doom (Mythic)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "power_p": 0.05,
+          "sev_p": 0.037
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.045
+            }
+          },
+          {
+            "when": {
+              "role": "tank"
+            },
+            "stats": {
+              "incoming_damage": -0.045
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m32-bard-s-impending-doom-celestial",
+    "name": "M32 Bard's Impending Doom (Celestial)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "power_p": 0.06,
+          "strike_p": 0.075
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.05
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "out_healing_p": 0.05
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m32-bard-s-impending-doom-legendary",
+    "name": "M32 Bard's Impending Doom (Legendary)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "power_p": 0.05,
+          "strike_p": 0.037
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.04
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "out_healing_p": 0.04
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m32-bard-s-impending-doom-mythic",
+    "name": "M32 Bard's Impending Doom (Mythic)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "power_p": 0.05,
+          "strike_p": 0.037
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.045
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "out_healing_p": 0.045
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "m32-bracers-of-the-infernal-tempest-strike",
     "name": "M32 Bracers of the Infernal Tempest",
     "grants": [
@@ -2293,6 +2623,13 @@
   {
     "id": "m32-cleric-s-impending-doom-celestial",
     "name": "M32 Cleric's Impending Doom (Celestial)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
@@ -2307,23 +2644,46 @@
       },
       {
         "when": {
-          "duration": {
-            "atLeast": 30
-          },
           "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
           "bonusOccurrences": {
             "atLeast": 2
           }
         },
-        "stats": {
-          "outgoing_damage": 0.05
-        }
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.05
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "power_p": 0.06
+            }
+          }
+        ]
       }
     ]
   },
   {
     "id": "m32-cleric-s-impending-doom-legendary",
     "name": "M32 Cleric's Impending Doom (Legendary)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
@@ -2338,23 +2698,46 @@
       },
       {
         "when": {
-          "duration": {
-            "atLeast": 30
-          },
           "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
           "bonusOccurrences": {
             "atLeast": 2
           }
         },
-        "stats": {
-          "outgoing_damage": 0.04
-        }
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.04
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "power_p": 0.04
+            }
+          }
+        ]
       }
     ]
   },
   {
     "id": "m32-cleric-s-impending-doom-mythic",
     "name": "M32 Cleric's Impending Doom (Mythic)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
@@ -2369,17 +2752,33 @@
       },
       {
         "when": {
-          "duration": {
-            "atLeast": 30
-          },
           "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
           "bonusOccurrences": {
             "atLeast": 2
           }
         },
-        "stats": {
-          "outgoing_damage": 0.045
-        }
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.045
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "power_p": 0.05
+            }
+          }
+        ]
       }
     ]
   },
@@ -2450,28 +2849,15 @@
     ]
   },
   {
-    "id": "m32-doomcleaver-celestial",
-    "name": "M32 Doomcleaver (Celestial)",
-    "grants": [
-      {
-        "when": {
-          "duration": {
-            "atLeast": 30
-          },
-          "toggle": "combat",
-          "bonusOccurrences": {
-            "atLeast": 2
-          }
-        },
-        "stats": {
-          "outgoing_damage": 0.05
-        }
-      }
-    ]
-  },
-  {
     "id": "m32-impending-doom-celestial",
-    "name": "M32 Impending Doom (Celestial)",
+    "name": "M32 Warlock's Impending Doom (Celestial)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
@@ -2486,40 +2872,46 @@
       },
       {
         "when": {
-          "duration": {
-            "atLeast": 30
-          },
           "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
           "bonusOccurrences": {
             "atLeast": 2
           }
         },
-        "stats": {
-          "outgoing_damage": 0.05
-        }
-      }
-    ]
-  },
-  {
-    "id": "m32-knot-of-the-bloodhound-celestial",
-    "name": "M32 Knot of the Bloodhound (Celestial)",
-    "grants": [
-      {
-        "when": {
-          "bonusOccurrences": {
-            "atLeast": 2
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.05
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "out_healing_p": 0.05
+            }
           }
-        },
-        "stats": {
-          "power_p": 0.06,
-          "sev_p": 0.075
-        }
+        ]
       }
     ]
   },
   {
     "id": "m32-omen-of-doom-legendary",
-    "name": "M32 Omen of Doom (Legendary)",
+    "name": "M32 Warlock's Impending Doom (Legendary)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
@@ -2534,23 +2926,46 @@
       },
       {
         "when": {
-          "duration": {
-            "atLeast": 30
-          },
           "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
           "bonusOccurrences": {
             "atLeast": 2
           }
         },
-        "stats": {
-          "outgoing_damage": 0.04
-        }
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.04
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "out_healing_p": 0.04
+            }
+          }
+        ]
       }
     ]
   },
   {
     "id": "m32-omen-of-doom-mythic",
-    "name": "M32 Omen of Doom (Mythic)",
+    "name": "M32 Warlock's Impending Doom (Mythic)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Unleashed proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
@@ -2565,17 +2980,33 @@
       },
       {
         "when": {
-          "duration": {
-            "atLeast": 30
-          },
           "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          },
           "bonusOccurrences": {
             "atLeast": 2
           }
         },
-        "stats": {
-          "outgoing_damage": 0.045
-        }
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.045
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "out_healing_p": 0.045
+            }
+          }
+        ]
       }
     ]
   },
@@ -2645,6 +3076,52 @@
         },
         "scale": {
           "formula": "intervals(duration, 5, 6)"
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-balanced-vitality",
+    "name": "M33 Balanced Vitality",
+    "grants": [
+      {
+        "when": {
+          "param": {
+            "key": "health",
+            "atLeast": 0.6
+          }
+        },
+        "stats": {
+          "ca_p": 0.07
+        }
+      },
+      {
+        "when": {
+          "param": {
+            "key": "health",
+            "below": 0.6
+          }
+        },
+        "stats": {
+          "strike_p": 0.06
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-battle-acumen",
+    "name": "M33 Battle Acumen",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "awareness_p": 0.004,
+          "crit_avoid_p": 0.005
+        },
+        "scale": {
+          "formula": "intervals(duration, 5, 10)"
         }
       }
     ]
@@ -2745,6 +3222,30 @@
     ]
   },
   {
+    "id": "m33-charging-bull",
+    "name": "M33 Charging Bull",
+    "grants": [
+      {
+        "stats": {
+          "forte_p": 0.035
+        },
+        "longDescription": "When you have been running for 1 seconds you\ngenerate threat around you every second as long as\nyou continue running."
+      }
+    ]
+  },
+  {
+    "id": "m33-charging-bull-celestial",
+    "name": "M33 Charging Bull (Celestial)",
+    "grants": [
+      {
+        "stats": {
+          "forte_p": 0.05
+        },
+        "longDescription": "When you have been running for 1 seconds you\ngenerate threat around you every second as long as\nyou continue running."
+      }
+    ]
+  },
+  {
     "id": "m33-chilling-flow-mythic",
     "name": "M33 Chilling Flow (Mythic)",
     "grants": [
@@ -2787,6 +3288,74 @@
         "scale": {
           "formula": "intervals(duration, 3, 10)"
         }
+      }
+    ]
+  },
+  {
+    "id": "m33-circular-healing",
+    "name": "M33 Circular Healing",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "out_healing_p": 0.06
+        },
+        "longDescription": "Whenever you are healed in combat, gain 6%\nOutgoing Healing for 10 seconds. (15 second\ncooldown)"
+      }
+    ]
+  },
+  {
+    "id": "m33-circular-healing-celestial",
+    "name": "M33 Circular Healing (Celestial)",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "out_healing_p": 0.08
+        },
+        "longDescription": "Whenever you are healed in combat, gain 8%\nOutgoing Healing for 10 seconds."
+      }
+    ]
+  },
+  {
+    "id": "m33-combatant-s-advantage",
+    "name": "M33 Combatant's Advantage",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "ca_p": 0.008
+        },
+        "scale": {
+          "formula": "intervals(duration, 5, 10)"
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-consuming-rage",
+    "name": "M33 Consuming Rage",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "enemies": {
+            "atLeast": 3
+          }
+        },
+        "stats": {
+          "sev_p": 0.018
+        },
+        "scale": {
+          "formula": "intervals(duration, 2, 5)"
+        },
+        "longDescription": "When in combat with 3 or more enemies, your Critical\nSeverity is increased by 1.8% every 2 seconds.\nEvery 2 seconds you are in combat with 1 or fewer\nenemies, lose 1 stack. Max 5 stacks."
       }
     ]
   },
@@ -2907,6 +3476,34 @@
     ]
   },
   {
+    "id": "m33-deity-s-gift",
+    "name": "M33 Deity's Gift",
+    "grants": [
+      {
+        "stats": {
+          "power_p": 0.065
+        },
+        "scale": {
+          "formula": "param(\"health\")"
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-deity-s-gift-celestial",
+    "name": "M33 Deity's Gift (Celestial)",
+    "grants": [
+      {
+        "stats": {
+          "power_p": 0.085
+        },
+        "scale": {
+          "formula": "param(\"health\")"
+        }
+      }
+    ]
+  },
+  {
     "id": "m33-eagle-s-mastery-lesser",
     "name": "M33 Eagle's Mastery (Lesser)",
     "grants": [
@@ -2987,6 +3584,70 @@
     ]
   },
   {
+    "id": "m33-frostsilver-band-of-faith-severity",
+    "name": "M33 Frostsilver Band of Faith (Severity)",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "tag": "gem:cobalt"
+          }
+        },
+        "stats": {
+          "sev_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-frostsilver-band-of-faith-strike",
+    "name": "M33 Frostsilver Band of Faith (Strike)",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "tag": "gem:opal"
+          }
+        },
+        "stats": {
+          "strike_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-frostsilver-circlet-of-protection-awareness",
+    "name": "M33 Frostsilver Circlet of Protection (Awareness)",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "tag": "gem:amethyst"
+          }
+        },
+        "stats": {
+          "awareness_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-frostsilver-circlet-of-protection-forte",
+    "name": "M33 Frostsilver Circlet of Protection (Forte)",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "tag": "gem:rubellite_tourmaline"
+          }
+        },
+        "stats": {
+          "forte_p": 0.03
+        }
+      }
+    ]
+  },
+  {
     "id": "m33-frostsilver-coil-of-wrath-accuracy",
     "name": "M33 Frostsilver Coil of Wrath (Accuracy)",
     "grants": [
@@ -3014,6 +3675,70 @@
         },
         "stats": {
           "ca_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-frostsilver-halo-of-mending-power",
+    "name": "M33 Frostsilver Halo of Mending (Power)",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "tag": "gem:ammolite"
+          }
+        },
+        "stats": {
+          "power_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-frostsilver-halo-of-mending-strike",
+    "name": "M33 Frostsilver Halo of Mending (Strike)",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "tag": "gem:jade"
+          }
+        },
+        "stats": {
+          "strike_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-frostsilver-hoop-of-tenacity-critical-avoidance",
+    "name": "M33 Frostsilver Hoop of Tenacity (Critical Avoidance)",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "tag": "gem:diamond"
+          }
+        },
+        "stats": {
+          "crit_avoid_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-frostsilver-hoop-of-tenacity-defense",
+    "name": "M33 Frostsilver Hoop of Tenacity (Defense)",
+    "grants": [
+      {
+        "when": {
+          "equipped": {
+            "tag": "gem:ruby"
+          }
+        },
+        "stats": {
+          "defense_p": 0.03
         }
       }
     ]
@@ -3111,6 +3836,80 @@
     ]
   },
   {
+    "id": "m33-guardian-s-impact",
+    "name": "M33 Guardian's Impact",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "defense_p": 0.013,
+          "crit_avoid_p": 0.02
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        },
+        "longDescription": "When you damage or heal your targets for more than\n15% of your Maximum Hit Points in a single action,\nyou and your 2 closest allies within 25' gain +1.3%\nDefense and +2% Critical Avoidance for 8 seconds (10\nsecond cooldown)"
+      }
+    ]
+  },
+  {
+    "id": "m33-harmonizing-radiance",
+    "name": "M33 Harmonizing Radiance",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "power_p": 0.01,
+          "strike_p": 0.015
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        },
+        "longDescription": "When you use an encounter power, you have a 30%\nchance to pulse Harmonizing Light, granting yourself\nand the two closest friendly players within 20' +1%\nPower and +1.5% Critical Strike for 6 seconds.\nRe-applying the effect will refresh it's duration."
+      }
+    ]
+  },
+  {
     "id": "m33-maiden-s-advantage-celestial",
     "name": "M33 Maiden's Advantage (Celestial)",
     "grants": [
@@ -3129,6 +3928,104 @@
         "stats": {
           "power_p": 0.0325
         }
+      }
+    ]
+  },
+  {
+    "id": "m33-manticore-s-mane-bite",
+    "name": "M33 Manticore's Mane Bite",
+    "grants": [
+      {
+        "stats": {
+          "defense_p": 0.03
+        },
+        "longDescription": "When you use a Daily power, the next enemy that\nattacks you takes damage equal to 50% of your max\nhealth (30 second cooldown). In PvP this damage is\nreduced to 10% of your max health."
+      }
+    ]
+  },
+  {
+    "id": "m33-manticore-s-mane-bite-celestial",
+    "name": "M33 Manticore's Mane Bite (Celestial)",
+    "grants": [
+      {
+        "stats": {
+          "defense_p": 0.045
+        },
+        "longDescription": "When you use a Daily power, the next enemy that\nattacks you takes damage equal to 50% of your max\nhealth (30 second cooldown). In PvP this damage is\nreduced to 10% of your max health."
+      }
+    ]
+  },
+  {
+    "id": "m33-overwhelming-strike",
+    "name": "M33 Overwhelming Strike",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "strike_p": 0.075,
+          "movement": 0.035
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        },
+        "longDescription": "When you damage your target for more than 15% of\nyour Maximum Hit Points in a single blow, you gain\n+7.5% Critical Strike and +3.5% Movement Speed for\n6 seconds. (16 second cooldown)"
+      }
+    ]
+  },
+  {
+    "id": "m33-reactive-defense",
+    "name": "M33 Reactive Defense",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "deflect_sev_p": 0.11,
+          "forte_p": 0.07
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        },
+        "longDescription": "Whenever you are struck by Combat Advantage\ndamage, you have a 20% chance to increase your\nDeflect Severity by 11% and Forte by 7% for 8\nseconds. (15 second cooldown)"
       }
     ]
   },
@@ -3185,6 +4082,53 @@
     ]
   },
   {
+    "id": "m33-renewed-spirit",
+    "name": "M33 Renewed Spirit",
+    "grants": [
+      {
+        "stats": {
+          "mana_regen": 0.25
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-reprisal-reflex",
+    "name": "M33 Reprisal Reflex",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "awareness_p": 0.075
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        },
+        "longDescription": "On Critical Strike against you, reflect 10% of your\nMaximum Hit Points as damage and gain +7.5%\nAwareness for 10 seconds. (20 second cooldown)"
+      }
+    ]
+  },
+  {
     "id": "m33-runefrost-swift-armguards",
     "name": "M33 Runefrost Swift Armguards",
     "grants": [
@@ -3210,6 +4154,76 @@
         "stats": {
           "acc_p": 0.06,
           "ca_p": 0.06
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-ruthless-advantage-mythic",
+    "name": "M33 Ruthless Advantage (Mythic)",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "acc_p": 0.065,
+          "ca_p": 0.065
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-shared-vitality",
+    "name": "M33 Shared Vitality",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "strike_p": 0.03,
+          "sev_p": 0.035
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        },
+        "longDescription": "Healing an ally has a 40% chance to grant you and\nyour nearest ally +3% Critical Strike and +3.5%\nCritical Severity for 10 seconds."
+      }
+    ]
+  },
+  {
+    "id": "m33-steady-precision",
+    "name": "M33 Steady Precision",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "acc_p": 0.01,
+          "recharge": 0.003
+        },
+        "scale": {
+          "formula": "intervals(duration, 8, 7)"
         }
       }
     ]
@@ -3261,6 +4275,21 @@
     ]
   },
   {
+    "id": "m33-survivor-s-critical-resilience",
+    "name": "M33 Survivor's Critical Resilience",
+    "grants": [
+      {
+        "stats": {
+          "awareness_p": 0.045,
+          "deflect_p": 0.04
+        },
+        "scale": {
+          "formula": "param(\"health\")"
+        }
+      }
+    ]
+  },
+  {
     "id": "m33-survivor-s-gift-celestial",
     "name": "M33 Survivor's Gift (Celestial)",
     "grants": [
@@ -3268,6 +4297,34 @@
         "stats": {
           "power_p": 0.02,
           "out_healing_p": 0.07
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-survivor-s-instinct",
+    "name": "M33 Survivor's Instinct",
+    "grants": [
+      {
+        "when": {
+          "param": {
+            "key": "health",
+            "atLeast": 0.9
+          }
+        },
+        "stats": {
+          "out_healing_p": 0.09
+        }
+      },
+      {
+        "when": {
+          "param": {
+            "key": "health",
+            "below": 0.5
+          }
+        },
+        "stats": {
+          "movement": 0.2
         }
       }
     ]
@@ -3293,6 +4350,29 @@
           "ca_p": 0.05
         },
         "longDescription": "When you deal damage with a Daily power, your next\nencounter power within 20 seconds will deal 20%\nmore damage. (30 second cooldown)"
+      }
+    ]
+  },
+  {
+    "id": "m33-unbroken-strength",
+    "name": "M33 Unbroken Strength",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "param": {
+            "key": "health",
+            "exactly": 1
+          }
+        },
+        "stats": {
+          "power_p": 0.0055,
+          "sev_p": 0.0035
+        },
+        "scale": {
+          "formula": "intervals(duration, 1, 10)"
+        },
+        "longDescription": "For each second you are at maximum health, gain\n+0.55% Power and +0.35% Critical Severity. Each\nsecond at less than maximum health, start losing\nstacks increasingly faster. Max 10 stacks."
       }
     ]
   },
@@ -5136,6 +6216,52 @@
         },
         "stats": {
           "defense": 1500
+        }
+      }
+    ]
+  },
+  {
+    "id": "shifting-shards",
+    "name": "Shifting Shards",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Combat Advantage stacks",
+        "min": 0,
+        "max": 10,
+        "default": 10
+      },
+      "melee": {
+        "type": "boolean",
+        "label": "In melee range",
+        "default": false
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "ca_p": 0.009
+        },
+        "scale": {
+          "formula": "$stacks"
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "enemies": {
+            "atLeast": 1
+          },
+          "input": {
+            "key": "melee",
+            "is": true
+          }
+        },
+        "stats": {
+          "defense_p": 0.06
         }
       }
     ]

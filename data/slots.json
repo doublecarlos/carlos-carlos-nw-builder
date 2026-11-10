@@ -258,6 +258,17 @@
           "default": true
         },
         {
+          "id": "options.health",
+          "label": "Current health",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "health",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 5
+        },
+        {
           "id": "options.enemies",
           "label": "Number of enemies",
           "type": "build_parameter",

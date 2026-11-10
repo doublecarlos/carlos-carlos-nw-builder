@@ -35,6 +35,9 @@ Note down these fields for each tooltip:
 - **Never omit `gameIds`.** Without dev info, build the id as `<Slot>_M<nn>_<Role>_<Tier>`: role from the class groups table, tier from sibling items of the same mod and rarity (M34: legendary `R4`, mythic `R5`, celestial `R6`). Flag derived ids in the report.
 - **Quality from the name color:** white `common`, green `uncommon`, blue `rare`, purple `epic`, orange `legendary`, cyan `mythic`, magenta `celestial`. OCR text doesn't carry the color, so read it from the image. If the color is unclear, use the rarity in the name or the `Def:` tier (M34: `R4` legendary, `R5` mythic, `R6` celestial), and say so in the report.
 - **Copy the `Def:` value exactly.** Never guess the tier suffix: it varies by mod and rarity (`S-tier` in M31, `R4`/`R5`/`R6` in M34).
+- **Paired ids for enchantments and insignia:** these always list two game ids, the tooltip's `Def:` value plus its sibling, even when only one is shown. Derive the missing one and flag it in the report.
+  - Enchantments and combat enchantments: V2 id first, `["Enchantment_Standard_X_V2_R6_Account", "Enchantment_Standard_X_R6_Account"]`.
+  - Insignia: Account id first, `["Insignia_Barbed_Armorpen_Account_R6", "Insignia_Barbed_Armorpen_R6"]`.
 - **Game ID clashes:** before adding a game ID, grep `data/` for it. If another item already uses it, stop and ask, because the id was probably mistyped.
 - **Ignore these parts:**
   - `Reinforced:` armor kits, which the player adds separately.
