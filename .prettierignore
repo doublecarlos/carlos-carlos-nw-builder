@@ -4,5 +4,6 @@ playwright-report
 .playwright
 .playwright-cli
 workspace
+.ignore
 venv
 package-lock.json
