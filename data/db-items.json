@@ -1198,6 +1198,33 @@
     "bonuses": ["paragon-exclusive"]
   },
   {
+    "id": "balance-crescent",
+    "name": "Celestial Crescent Insignia of Balance",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "crit_avoid": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "balance-crescent-pref",
+    "gameIds": [
+      "Insignia_Crescent_Balance_Critresist_Deflect_Account_R6",
+      "Insignia_Crescent_Balance_Critresist_Deflect_R6"
+    ]
+  },
+  {
+    "id": "balance-crescent-pref",
+    "name": "Celestial Crescent Insignia of Balance (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "crit_avoid": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
+  },
+  {
     "id": "ballad-colla-voce",
     "name": "Ballad Colla Voce",
     "filter": "feat3",
@@ -2757,6 +2784,87 @@
     "tags": ["companion_power:utility"]
   },
   {
+    "id": "courage-crescent",
+    "name": "Celestial Crescent Insignia of Courage",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "defense": 1125,
+    "crit_avoid": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "courage-crescent-pref",
+    "gameIds": [
+      "Insignia_Crescent_Defense_Account_R6",
+      "Insignia_Crescent_Defense_R6"
+    ]
+  },
+  {
+    "id": "courage-crescent-pref",
+    "name": "Celestial Crescent Insignia of Courage (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "defense": 1350,
+    "crit_avoid": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
+  },
+  {
+    "id": "courage-enlightened",
+    "name": "Celestial Enlightened Insignia of Courage",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "defense": 1125,
+    "crit_avoid": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "courage-enlightened-pref",
+    "gameIds": [
+      "Insignia_Enlightened_Defense_Account_R6",
+      "Insignia_Enlightened_Defense_R6"
+    ]
+  },
+  {
+    "id": "courage-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Courage (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "defense": 1350,
+    "crit_avoid": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
+  },
+  {
+    "id": "courage-regal",
+    "name": "Celestial Regal Insignia of Courage",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "defense": 1125,
+    "crit_avoid": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "courage-regal-pref",
+    "gameIds": [
+      "Insignia_Regal_Defense_Account_R6",
+      "Insignia_Regal_Defense_R6"
+    ]
+  },
+  {
+    "id": "courage-regal-pref",
+    "name": "Celestial Regal Insignia of Courage (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "defense": 1350,
+    "crit_avoid": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
+  },
+  {
     "id": "creeping-death",
     "name": "Creeping Death",
     "filter": "feat4",
@@ -3174,6 +3282,87 @@
     "bonuses": ["etrien"]
   },
   {
+    "id": "evasion-barbed",
+    "name": "Celestial Barbed Insignia of Evasion",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "awareness": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "evasion-barbed-pref",
+    "gameIds": [
+      "Insignia_Barbed_Deflect_Account_R6",
+      "Insignia_Barbed_Deflect_R6"
+    ]
+  },
+  {
+    "id": "evasion-barbed-pref",
+    "name": "Celestial Barbed Insignia of Evasion (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "awareness": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
+  },
+  {
+    "id": "evasion-crescent",
+    "name": "Celestial Crescent Insignia of Evasion",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "awareness": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "evasion-crescent-pref",
+    "gameIds": [
+      "Insignia_Crescent_Deflect_Account_R6",
+      "Insignia_Crescent_Deflect_R6"
+    ]
+  },
+  {
+    "id": "evasion-crescent-pref",
+    "name": "Celestial Crescent Insignia of Evasion (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "awareness": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
+  },
+  {
+    "id": "evasion-regal",
+    "name": "Celestial Regal Insignia of Evasion",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "awareness": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "evasion-regal-pref",
+    "gameIds": [
+      "Insignia_Regal_Deflect_Account_R6",
+      "Insignia_Regal_Deflect_R6"
+    ]
+  },
+  {
+    "id": "evasion-regal-pref",
+    "name": "Celestial Regal Insignia of Evasion (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "awareness": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
+  },
+  {
     "id": "evocation",
     "name": "Evocation",
     "filter": "class_feat",
@@ -3537,6 +3726,108 @@
     ]
   },
   {
+    "id": "gond-barbed",
+    "name": "Celestial Barbed Insignia of Gond",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "ca": 1125,
+    "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "gond-barbed-pref",
+    "gameIds": ["Insignia_Barbed_Gond_Account_R6", "Insignia_Barbed_Gond_R6"]
+  },
+  {
+    "id": "gond-barbed-pref",
+    "name": "Celestial Barbed Insignia of Gond (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "ca": 1350,
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
+  },
+  {
+    "id": "gond-enlightened",
+    "name": "Celestial Enlightened Insignia of Gond",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "ca": 1125,
+    "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "gond-enlightened-pref",
+    "gameIds": [
+      "Insignia_Enlightened_Gond_Account_R6",
+      "Insignia_Enlightened_Gond_R6"
+    ]
+  },
+  {
+    "id": "gond-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Gond (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "ca": 1350,
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
+  },
+  {
+    "id": "gond-illuminated",
+    "name": "Celestial Illuminated Insignia of Gond",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "ca": 1125,
+    "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "illuminated",
+    "preferredVariant": "gond-illuminated-pref",
+    "gameIds": [
+      "Insignia_Illuminated_Gond_Account_R6",
+      "Insignia_Illuminated_Gond_R6"
+    ]
+  },
+  {
+    "id": "gond-illuminated-pref",
+    "name": "Celestial Illuminated Insignia of Gond (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "ca": 1350,
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "illuminated"
+  },
+  {
+    "id": "gond-regal",
+    "name": "Celestial Regal Insignia of Gond",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "ca": 1125,
+    "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "gond-regal-pref",
+    "gameIds": ["Insignia_Regal_Gond_Account_R6", "Insignia_Regal_Gond_R6"]
+  },
+  {
+    "id": "gond-regal-pref",
+    "name": "Celestial Regal Insignia of Gond (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "ca": 1350,
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
+  },
+  {
     "id": "grace-ring",
     "name": "Grace Ring",
     "filter": "group_buff",
@@ -3638,6 +3929,141 @@
     "longDescription": "Whenever you activate an Encounter Power, all foes\nwithin 20' of you have 1 stack of Chill applied to\nthem.",
     "allowedClass": ["wizard"],
     "tags": ["exclusive:thaumaturge"]
+  },
+  {
+    "id": "initiative-barbed",
+    "name": "Celestial Barbed Insignia of Initiative",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "strike": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "initiative-barbed-pref",
+    "gameIds": [
+      "Insignia_Barbed_Crit_Deflect_Account_R6",
+      "Insignia_Barbed_Crit_Deflect_R6"
+    ]
+  },
+  {
+    "id": "initiative-barbed-pref",
+    "name": "Celestial Barbed Insignia of Initiative (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "strike": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
+  },
+  {
+    "id": "initiative-crescent",
+    "name": "Celestial Crescent Insignia of Initiative",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "strike": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "initiative-crescent-pref",
+    "gameIds": [
+      "Insignia_Crescent_Crit_Deflect_Account_R6",
+      "Insignia_Crescent_Crit_Deflect_R6"
+    ]
+  },
+  {
+    "id": "initiative-crescent-pref",
+    "name": "Celestial Crescent Insignia of Initiative (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "strike": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
+  },
+  {
+    "id": "initiative-enlightened",
+    "name": "Celestial Enlightened Insignia of Initiative",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "strike": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "initiative-enlightened-pref",
+    "gameIds": [
+      "Insignia_Enlightened_Crit_Deflect_Account_R6",
+      "Insignia_Enlightened_Crit_Deflect_R6"
+    ]
+  },
+  {
+    "id": "initiative-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Initiative (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "strike": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
+  },
+  {
+    "id": "initiative-illuminated",
+    "name": "Celestial Illuminated Insignia of Initiative",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "strike": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "illuminated",
+    "preferredVariant": "initiative-illuminated-pref",
+    "gameIds": [
+      "Insignia_Illuminated_Crit_Deflect_Account_R6",
+      "Insignia_Illuminated_Crit_Deflect_R6"
+    ]
+  },
+  {
+    "id": "initiative-illuminated-pref",
+    "name": "Celestial Illuminated Insignia of Initiative (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "strike": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "illuminated"
+  },
+  {
+    "id": "initiative-regal",
+    "name": "Celestial Regal Insignia of Initiative",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "strike": 1125,
+    "deflect": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "initiative-regal-pref",
+    "gameIds": [
+      "Insignia_Regal_Crit_Deflect_Account_R6",
+      "Insignia_Regal_Crit_Deflect_R6"
+    ]
+  },
+  {
+    "id": "initiative-regal-pref",
+    "name": "Celestial Regal Insignia of Initiative (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "strike": 1350,
+    "deflect": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
   },
   {
     "id": "inner-balance",
@@ -7260,6 +7686,87 @@
     "bonuses": ["masterwork-sets"]
   },
   {
+    "id": "mastery-barbed",
+    "name": "Celestial Barbed Insignia of Mastery",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "acc": 1125,
+    "control_bonus": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "mastery-barbed-pref",
+    "gameIds": [
+      "Insignia_Barbed_Recovery_Account_R6",
+      "Insignia_Barbed_Recovery_R6"
+    ]
+  },
+  {
+    "id": "mastery-barbed-pref",
+    "name": "Celestial Barbed Insignia of Mastery (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "acc": 1350,
+    "control_bonus": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
+  },
+  {
+    "id": "mastery-enlightened",
+    "name": "Celestial Enlightened Insignia of Mastery",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "acc": 1125,
+    "control_bonus": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "mastery-enlightened-pref",
+    "gameIds": [
+      "Insignia_Enlightened_Recovery_Account_R6",
+      "Insignia_Enlightened_Recovery_R6"
+    ]
+  },
+  {
+    "id": "mastery-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Mastery (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "acc": 1350,
+    "control_bonus": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
+  },
+  {
+    "id": "mastery-illuminated",
+    "name": "Celestial Illuminated Insignia of Mastery",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "acc": 1125,
+    "control_bonus": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "illuminated",
+    "preferredVariant": "mastery-illuminated-pref",
+    "gameIds": [
+      "Insignia_Illuminated_Recovery_Account_R6",
+      "Insignia_Illuminated_Recovery_R6"
+    ]
+  },
+  {
+    "id": "mastery-illuminated-pref",
+    "name": "Celestial Illuminated Insignia of Mastery (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "acc": 1350,
+    "control_bonus": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "illuminated"
+  },
+  {
     "id": "max-crit-strike-and-severity",
     "name": "Max Crit Strike And Severity",
     "filter": "gear_ring",
@@ -7879,6 +8386,93 @@
     "filter": "consumable_food",
     "quality": "common",
     "bonuses": ["prime-rib-power"]
+  },
+  {
+    "id": "prosperity-crescent",
+    "name": "Celestial Crescent Insignia of Prosperity",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "gold": 0.188,
+    "glory": 0.188,
+    "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "prosperity-crescent-pref",
+    "gameIds": [
+      "Insignia_Crescent_Hitpoints_Account_R6",
+      "Insignia_Crescent_Hitpoints_R6"
+    ]
+  },
+  {
+    "id": "prosperity-crescent-pref",
+    "name": "Celestial Crescent Insignia of Prosperity (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "gold": 0.2256,
+    "glory": 0.2256,
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
+  },
+  {
+    "id": "prosperity-enlightened",
+    "name": "Celestial Enlightened Insignia of Prosperity",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "gold": 0.188,
+    "glory": 0.188,
+    "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "prosperity-enlightened-pref",
+    "gameIds": [
+      "Insignia_Enlightened_Hitpoints_Account_R6",
+      "Insignia_Enlightened_Hitpoints_R6"
+    ]
+  },
+  {
+    "id": "prosperity-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Prosperity (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "gold": 0.2256,
+    "glory": 0.2256,
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
+  },
+  {
+    "id": "prosperity-regal",
+    "name": "Celestial Regal Insignia of Prosperity",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 750,
+    "gold": 0.188,
+    "glory": 0.188,
+    "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "prosperity-regal-pref",
+    "gameIds": [
+      "Insignia_Regal_Hitpoints_Account_R6",
+      "Insignia_Regal_Hitpoints_R6"
+    ]
+  },
+  {
+    "id": "prosperity-regal-pref",
+    "name": "Celestial Regal Insignia of Prosperity (Pref)",
+    "filter": "insignia",
+    "quality": "celestial",
+    "il": 900,
+    "gold": 0.2256,
+    "glory": 0.2256,
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
   },
   {
     "id": "protective-embrace",
