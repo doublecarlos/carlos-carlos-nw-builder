@@ -16,14 +16,14 @@ import {
 } from "./support/app";
 import { importTestCatalog } from "./support/testCatalog";
 
-/** A ring whose bonus needs an amethyst enchantment equipped somewhere; the shipped gems are
- *  the supply, and enchantment rows are the only ones that can hold one. */
+/** A ring whose bonus needs a test-only gem equipped somewhere. The gem is a utility
+ *  enchantment, so the utility slot is the one row that can supply it. */
 const RING_SLOT = "gear.ring1";
-const RING = "test-amethyst-ring";
-const BONUS_ID = "test-amethyst-bonus";
+const RING = "test-gem-ring";
+const BONUS_ID = "test-gem-bonus";
 const NEED_LOCATE = `bonus-need-locate-${BONUS_ID}-0`;
-const GEM_SLOT_KEY = /^slot:enchantments\./;
-const GEM_SLOT_COUNT = 8;
+const GEM_TAG = "test:gem";
+const GEM_SLOT_KEY = "slot:enchantments.utility";
 
 /** A master boon whose only bonus has a proc input defaulting to off. At 0 points the bonus is
  *  reachable for the hover card but not on the build; with a point spent it is carried, and
@@ -34,24 +34,30 @@ const BOON_NAME = "Test Proc Boon";
 const BOON_BONUS = "test-proc-boon-stats";
 const BOON_BONUS_NAME = "Test Proc Boon Stats";
 
-async function importAmethystRing(page: Page) {
+async function importGemRing(page: Page) {
   await importTestCatalog(page, {
     choices: { [RING_SLOT]: RING },
     items: [
       {
         id: RING,
-        name: "Test Amethyst Ring",
+        name: "Test Gem Ring",
         filter: "gear_ring",
         bonuses: [BONUS_ID],
+      },
+      {
+        id: "test-gem",
+        name: "Test Gem",
+        filter: "enchantment_utility",
+        tags: [GEM_TAG],
       },
     ],
     bonuses: [
       {
         id: BONUS_ID,
-        name: "Test Amethyst Bonus",
+        name: "Test Gem Bonus",
         grants: [
           {
-            when: { equipped: { tag: "gem:amethyst" } },
+            when: { equipped: { tag: GEM_TAG } },
             stats: { ca_p: 0.03 },
           },
         ],
@@ -139,13 +145,19 @@ async function openBonuses(page: Page) {
 
 async function openBonusesWithRing(page: Page) {
   await openBuilder(page);
-  await importAmethystRing(page);
+  await importGemRing(page);
   await openBonuses(page);
 }
 
 /** Rows the filter leaves on screen. The ones it drops stay mounted, hidden. */
 const slotRows = (page: Page) =>
   page.locator('[data-cursor-key^="slot:"]:visible');
+
+/** The filter keeps exactly the slot that can hold the test gem and hides every other row. */
+async function expectOnlyGemSlot(page: Page) {
+  await expect(slotRows(page)).toHaveCount(1);
+  await expect(slotRows(page)).toHaveAttribute("data-cursor-key", GEM_SLOT_KEY);
+}
 
 test("a bonus nothing on the build carries is not listed", async ({ page }) => {
   await openBuilder(page);
@@ -200,13 +212,9 @@ test("locating what an unmet condition needs narrows the list to slots offering 
 
   await page.getByTestId(NEED_LOCATE).click();
 
-  await expect(slotRows(page)).toHaveCount(GEM_SLOT_COUNT);
-  const keys = await slotRows(page).evaluateAll((rows) =>
-    rows.map((row) => row.getAttribute("data-cursor-key")),
-  );
-  for (const key of keys) expect(key).toMatch(GEM_SLOT_KEY);
+  await expectOnlyGemSlot(page);
   await expect(page.getByTestId("slot-filter-need")).toContainText(
-    'could supply 1× item tagged "gem:amethyst"',
+    `could supply 1× item tagged "${GEM_TAG}"`,
   );
 });
 
@@ -214,21 +222,21 @@ test("the hover card's crosshair applies the same filter and dismisses the card"
   page,
 }) => {
   await openBuilder(page);
-  await importAmethystRing(page);
+  await importGemRing(page);
   await hoverForCard(page, slotRow(page, RING_SLOT));
   const card = page.getByTestId("item-card");
   await expect(card).toBeVisible();
 
   await card
     .getByTestId("item-card-bonus-unmet")
-    .filter({ hasText: "gem:amethyst" })
+    .filter({ hasText: GEM_TAG })
     .getByTestId("item-card-need-locate")
     .click();
 
   await expect(card).toBeHidden();
-  await expect(slotRows(page)).toHaveCount(GEM_SLOT_COUNT);
+  await expectOnlyGemSlot(page);
   await expect(page.getByTestId("slot-filter-need")).toContainText(
-    'could supply 1× item tagged "gem:amethyst"',
+    `could supply 1× item tagged "${GEM_TAG}"`,
   );
 });
 
