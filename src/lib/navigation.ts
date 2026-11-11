@@ -67,11 +67,11 @@ export function createNavigation(host: NavigationHost, stack: CloseStack) {
     return `${host.location.pathname}${query ? `?${query}` : ""}${host.location.hash}`;
   };
 
+  // Stamps the entry the page loaded on, leaving its URL as it is.
   if (positionOf(host.history.state) === null) {
     host.history.replaceState(
       { ...stateRecord(host.history.state), [POSITION]: position },
       "",
-      hrefOf(route.value),
     );
   }
 

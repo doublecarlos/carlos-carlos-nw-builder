@@ -85,6 +85,12 @@ export function select(sel: Selection): boolean | Promise<boolean> {
   });
 }
 
+/** Lands a selection Back or Forward reached. The navigation guard has already asked about
+ *  any dirty draft. */
+export function land(sel: Selection) {
+  applySelection(sel);
+}
+
 export function selectBuild(id: string): boolean | Promise<boolean> {
   return select({ kind: "build", id });
 }

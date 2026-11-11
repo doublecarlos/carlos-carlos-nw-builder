@@ -189,9 +189,3 @@ export function holdBack(close: () => void): () => Promise<void> {
   if (!shared) throw new Error("holdBack needs a window");
   return shared.hold(close);
 }
-
-/** Runs `write`, a history push or replace, beneath any overlay markers. */
-export function beneathBack(write: () => void) {
-  if (shared) shared.beneath(write);
-  else write();
-}

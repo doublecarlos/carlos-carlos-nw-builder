@@ -27,8 +27,9 @@ const load = async (search: string, { dev = false } = {}) => {
   };
   win.history = {
     pushState: () => {},
-    replaceState: (_state: unknown, _title: string, url: string) => {
-      replaced.push(url);
+    // A replace without a URL leaves the address as it is.
+    replaceState: (_state: unknown, _title: string, url?: string) => {
+      if (url !== undefined) replaced.push(url);
     },
   };
   const mod = await import("../../../src/stores/maintainer");
