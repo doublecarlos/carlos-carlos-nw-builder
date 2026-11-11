@@ -1455,10 +1455,39 @@
   {
     "id": "gladiator-s-guile",
     "name": "Gladiator's Guile",
+    "inputs": {
+      "stamina": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "stamina",
+            "atLeast": 0.75
+          }
+        },
         "stats": {
-          "movement": 0.1,
+          "movement": 0.1
+        },
+        "scale": {
+          "formula": "geometric(min(occurrences(), 3), 0.5)"
+        }
+      },
+      {
+        "when": {
+          "input": {
+            "key": "stamina",
+            "atLeast": 0,
+            "below": 0.25
+          }
+        },
+        "stats": {
           "stamina_regen": 0.1
         },
         "scale": {

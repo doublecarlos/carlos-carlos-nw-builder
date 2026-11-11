@@ -3684,7 +3684,7 @@
   },
   {
     "id": "dummy-artifact-1200-il",
-    "name": "Dummy Artifact 1200 IL",
+    "name": "Generic Artifact 1200 IL",
     "filter": "artifact",
     "quality": "mythic",
     "il": 1200,
@@ -3692,7 +3692,7 @@
   },
   {
     "id": "dummy-artifact-1500-il",
-    "name": "Dummy Artifact 1500 IL",
+    "name": "Generic Artifact 1500 IL",
     "filter": "artifact",
     "quality": "mythic",
     "il": 1500,
@@ -3885,6 +3885,7 @@
     "name": "Executioner's Covenant",
     "filter": "insignia_bonus",
     "insigniaRecipe": ["crescent", "regal", "enlightened", "illuminated"],
+    "longDescription": "You lose 1500 of your Awareness, Critical Avoidance, Defense, and Deflect. You gain 1500 Accuracy, Combat Advantage, Critical Strike, and Critical Severity.",
     "bonuses": ["executioner-s-covenant"]
   },
   {
@@ -4026,6 +4027,7 @@
     "name": "Fleeting Haste",
     "filter": "insignia_bonus",
     "insigniaRecipe": ["crescent", "barbed", "barbed", "barbed"],
+    "longDescription": "When your Action Points are below 100%, you move 6.5% faster and 6.5% Recharge Speed.",
     "bonuses": ["fleeting-haste-2"]
   },
   {
@@ -4213,6 +4215,21 @@
     "bonuses": ["companion-il-fix"]
   },
   {
+    "id": "generic-companion-power",
+    "name": "Generic Companion Power",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "combined_rating": 900,
+    "longDescription": "No-stat companion power that fills any role slot.",
+    "maxCopies": 0,
+    "tags": [
+      "companion_power:defense",
+      "companion_power:offense",
+      "companion_power:utility"
+    ]
+  },
+  {
     "id": "generic-defense",
     "name": "Generic (Defense)",
     "filter": "enchantment_defense",
@@ -4226,6 +4243,7 @@
     "name": "Gladiator's Craftiness",
     "filter": "insignia_bonus",
     "insigniaRecipe": ["regal", "regal", "illuminated", "enlightened"],
+    "longDescription": "When your Stamina is above 75%, you move 12.5% faster. When your Stamina is below 25%, gain 12.5% Stamina Regeneration.",
     "bonuses": ["gladiator-s-craftiness-2"]
   },
   {
@@ -4233,6 +4251,7 @@
     "name": "Gladiator's Guile",
     "filter": "insignia_bonus",
     "insigniaRecipe": ["regal", "illuminated", "enlightened"],
+    "longDescription": "When your Stamina is above 75%, you move 10% faster. When your Stamina is below 25%, gain 10% Stamina Regeneration.",
     "bonuses": ["gladiator-s-guile"]
   },
   {
@@ -6173,6 +6192,63 @@
     "bonuses": ["m31-thayan-predator"]
   },
   {
+    "id": "m31-thayan-belt-of-the-companion",
+    "name": "M31 Thayan Belt of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2600,
+    "deflect": 2925,
+    "deflect_sev": 2925,
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Alltank_Stat_1"]
+  },
+  {
+    "id": "m31-thayan-girdle-of-the-companion",
+    "name": "M31 Thayan Girdle of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2600,
+    "defense": 1950,
+    "crit_avoid": 2145,
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Alltank_Stat_2"]
+  },
+  {
+    "id": "m31-thayan-grimoire-of-the-companion",
+    "name": "M31 Thayan Grimoire of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2600,
+    "acc": 1268,
+    "ca": 780,
+    "awareness": 780,
+    "control_resist": 975,
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Mixed_Stat_1"]
+  },
+  {
+    "id": "m31-thayan-icon-of-the-companion",
+    "name": "M31 Thayan Icon of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2600,
+    "control_resist": 1365,
+    "out_healing": 2028,
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Allheal_Stat_2"]
+  },
+  {
+    "id": "m31-thayan-necklace-of-the-companion",
+    "name": "M31 Thayan Necklace of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2600,
+    "inc_healing": 1638,
+    "out_healing": 2028,
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Allheal_Stat_1"]
+  },
+  {
     "id": "m31-thayan-ring-acc-sev",
     "name": "M31 Thayan Ring of the Companion",
     "filter": "companion_equip",
@@ -6205,6 +6281,19 @@
     "strike": 2340,
     "combined_rating": 2340,
     "gameIds": ["Companion_Equipment_M31_Alldps_Stat_1"]
+  },
+  {
+    "id": "m31-thayan-tome-of-the-companion",
+    "name": "M31 Thayan Tome of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2600,
+    "strike": 1170,
+    "crit_avoid": 1073,
+    "forte": 878,
+    "control_bonus": 975,
+    "combined_rating": 2340,
+    "gameIds": ["Companion_Equipment_M31_Mixed_Stat_2"]
   },
   {
     "id": "m31-threads-of-the-arch-thrall-power-strike-severity",
@@ -7029,6 +7118,63 @@
     "bonuses": ["m33-freezing-rage", "m33-corrupt-power"]
   },
   {
+    "id": "m33-frostforged-belt-of-the-companion",
+    "name": "M33 Frostforged Belt of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2850,
+    "awareness": 1710,
+    "crit_avoid": 2351,
+    "combined_rating": 2565,
+    "gameIds": ["Companion_Equipment_M33_Alltank_Stat_1"]
+  },
+  {
+    "id": "m33-frostforged-girdle-of-the-companion",
+    "name": "M33 Frostforged Girdle of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2850,
+    "defense": 1496,
+    "deflect": 3206,
+    "combined_rating": 2565,
+    "gameIds": ["Companion_Equipment_M33_Alltank_Stat_2"]
+  },
+  {
+    "id": "m33-frostforged-grimoire-of-the-companion",
+    "name": "M33 Frostforged Grimoire of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2850,
+    "ca": 855,
+    "strike": 1282,
+    "defense": 748,
+    "forte": 962,
+    "combined_rating": 2565,
+    "gameIds": ["Companion_Equipment_M33_Mixed_Stat_1"]
+  },
+  {
+    "id": "m33-frostforged-icon-of-the-companion",
+    "name": "M33 Frostforged Icon of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2850,
+    "forte": 1347,
+    "out_healing": 2223,
+    "combined_rating": 2565,
+    "gameIds": ["Companion_Equipment_M33_Allheal_Stat_2"]
+  },
+  {
+    "id": "m33-frostforged-necklace-of-the-companion",
+    "name": "M33 Frostforged Necklace of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2850,
+    "strike": 1796,
+    "out_healing": 2223,
+    "combined_rating": 2565,
+    "gameIds": ["Companion_Equipment_M33_Allheal_Stat_1"]
+  },
+  {
     "id": "m33-frostforged-ring-of-the-companion-strike-sev",
     "name": "M33 Frostforged Ring of the Companion",
     "filter": "companion_equip",
@@ -7061,6 +7207,19 @@
     "severity": 2565,
     "combined_rating": 2565,
     "gameIds": ["Companion_Equipment_M33_Alldps_Stat_1"]
+  },
+  {
+    "id": "m33-frostforged-tome-of-the-companion",
+    "name": "M33 Frostforged Tome of the Companion",
+    "filter": "companion_equip",
+    "quality": "legendary",
+    "il": 2850,
+    "acc": 1834,
+    "strike": 1693,
+    "deflect_sev": 2116,
+    "forte": 1270,
+    "combined_rating": 2565,
+    "gameIds": ["Companion_Equipment_M33_Mixed_Stat_2"]
   },
   {
     "id": "m33-frostsilver-band-of-faith",
@@ -7247,6 +7406,41 @@
     "replacedBy": "m32-sigil-of-the-abyss-mythic"
   },
   {
+    "id": "m33-true-ice-belt-of-the-companion",
+    "name": "M33 True Ice Belt of the Companion",
+    "filter": "companion_equip",
+    "quality": "mythic",
+    "il": 3000,
+    "awareness": 1800,
+    "crit_avoid": 2475,
+    "combined_rating": 2700,
+    "gameIds": ["Companion_Equipment_M33_Alltank_Stat_1_R5"]
+  },
+  {
+    "id": "m33-true-ice-girdle-of-the-companion",
+    "name": "M33 True Ice Girdle of the Companion",
+    "filter": "companion_equip",
+    "quality": "mythic",
+    "il": 3000,
+    "defense": 1575,
+    "deflect": 3375,
+    "combined_rating": 2700,
+    "gameIds": ["Companion_Equipment_M33_Alltank_Stat_2_R5"]
+  },
+  {
+    "id": "m33-true-ice-grimoire-of-the-companion",
+    "name": "M33 True Ice Grimoire of the Companion",
+    "filter": "companion_equip",
+    "quality": "mythic",
+    "il": 3000,
+    "ca": 900,
+    "strike": 1350,
+    "defense": 787,
+    "forte": 1012,
+    "combined_rating": 2700,
+    "gameIds": ["Companion_Equipment_M33_Mixed_Stat_1_R5"]
+  },
+  {
     "id": "m33-true-ice-icon-of-the-companion-forte-ogh",
     "name": "M33 True Ice Icon of the Companion",
     "filter": "companion_equip",
@@ -7256,6 +7450,17 @@
     "out_healing": 2340,
     "combined_rating": 2700,
     "gameIds": ["Companion_Equipment_M33_Allheal_Stat_2_R5"]
+  },
+  {
+    "id": "m33-true-ice-necklace-of-the-companion",
+    "name": "M33 True Ice Necklace of the Companion",
+    "filter": "companion_equip",
+    "quality": "mythic",
+    "il": 3000,
+    "strike": 1890,
+    "out_healing": 2340,
+    "combined_rating": 2700,
+    "gameIds": ["Companion_Equipment_M33_Allheal_Stat_1_R5"]
   },
   {
     "id": "m33-true-ice-ring-of-the-companion-strike-sev",
@@ -7290,6 +7495,19 @@
     "severity": 2700,
     "combined_rating": 2700,
     "gameIds": ["Companion_Equipment_M33_Alldps_Stat_1_R5"]
+  },
+  {
+    "id": "m33-true-ice-tome-of-the-companion",
+    "name": "M33 True Ice Tome of the Companion",
+    "filter": "companion_equip",
+    "quality": "mythic",
+    "il": 3000,
+    "acc": 1931,
+    "strike": 1782,
+    "deflect_sev": 2228,
+    "forte": 1336,
+    "combined_rating": 2700,
+    "gameIds": ["Companion_Equipment_M33_Mixed_Stat_2_R5"]
   },
   {
     "id": "m33-wintermarked-bulwark-cuirass",
@@ -8695,6 +8913,7 @@
     "name": "Mender's Covenant",
     "filter": "insignia_bonus",
     "insigniaRecipe": ["crescent", "barbed", "illuminated", "enlightened"],
+    "longDescription": "You lose 1500 of your Awareness, Critical Avoidance, Defense, and Deflect. You gain 1500 Critical Strike, Critical Severity, Outgoing Healing, and Power.",
     "bonuses": ["mender-s-covenant"]
   },
   {
@@ -11973,5 +12192,17 @@
     "longDescription": "Wulfgar companion power, a Companion of the Hall. Role: Offense.",
     "tags": ["companion_power:offense", "companion_of_the_hall:celestial"],
     "bonuses": ["wulfgar-s-wrecking"]
+  },
+  {
+    "id": "xeleth-s-blast-scepter",
+    "name": "Xeleth's Blast Scepter",
+    "filter": "artifact",
+    "quality": "mythic",
+    "il": 1500,
+    "power": 2250,
+    "strike": 1125,
+    "hit_points": 4500,
+    "combined_rating": 1200,
+    "gameIds": ["Artifact_M28_Dungeon_R5"]
   }
 ]
