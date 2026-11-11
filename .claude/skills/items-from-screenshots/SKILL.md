@@ -11,7 +11,8 @@ Turn each tooltip into one entry in `data/db-items.json` plus any bonuses it car
 
 - **Model as fully as possible.** Model every effect on the tooltip, including healer and tank lines, not just DPS ones.
 - **Damage is additive.** Never assume a damage bonus is multiplicative; that is rare in game, and the user will say so when it is. Use `outgoing_damage`, never `outgoing_damage_mult` or `base_damage_mult`, unless told otherwise.
-- **Only the version shown.** Add only the rarity and upgrade level in the screenshot. Don't invent other rarities or `+N` levels.
+- **Only the version shown.** Add only the rarity and upgrade level in the screenshot. Don't invent other rarities or `+N` levels. Companion powers are the exception: see "Companion powers" below.
+- **Check it isn't there already.** Grep `data/` for the name and the `Def:` id before adding. A tooltip the user sends may already be in the catalog; skip it and say so.
 - **Ask when unsure.** Ask about anything the tooltip doesn't settle, rather than guessing.
 
 ## 1. Read the tooltip
@@ -83,6 +84,8 @@ Ratings are plain numbers. Percents are fractions (`1.7%` → `0.017`). Full lis
 | Critical Severity                                                                   | `severity`                                         | `sev_p`                                                    |
 | Forte                                                                               | `forte`                                            | `forte_p`                                                  |
 | Defense / Awareness / Critical Avoidance / Deflect                                  | `defense` / `awareness` / `crit_avoid` / `deflect` | `defense_p` / `awareness_p` / `crit_avoid_p` / `deflect_p` |
+| Deflect Severity                                                                    | `deflect_sev`                                      | `deflect_sev_p`                                            |
+| Control Resistance                                                                  | `control_resist`                                   | `control_resist_p`                                         |
 | Damage (weapon)                                                                     | `base_damage_flat`                                 |                                                            |
 | Action Points Gain                                                                  |                                                    | `ap_gain`                                                  |
 | Recharge Speed                                                                      |                                                    | `recharge`                                                 |
@@ -91,7 +94,8 @@ Ratings are plain numbers. Percents are fractions (`1.7%` → `0.017`). Full lis
 | Physical / Magical damage                                                           |                                                    | `physical_damage_boost` / `magical_damage_boost`           |
 | Maximum Hit Points                                                                  |                                                    | `hit_points_p`; a loss uses `hit_points_mult`              |
 | Divinity / Soulweave / Performance Regeneration                                     |                                                    | `mana_regen`                                               |
-| Outgoing Healing                                                                    |                                                    | `out_healing_p`                                            |
+| Outgoing Healing (also "Outgoing Healing Bonus")                                    |                                                    | `out_healing_p`                                            |
+| Incoming Damage debuff on enemies                                                   |                                                    | `enemy_incoming_damage`                                    |
 | Overall Healing (also "Total Healing", "Overall Outgoing Healing", plain "Healing") |                                                    | `overall_healing`                                          |
 
 - **Percent stat lines:** a plain percent line on the item itself (`+1.7% Recharge Speed`, `+1.5% Action Point Gain`) goes directly on the item as `recharge: 0.017` or `ap_gain: 0.015`.
@@ -154,11 +158,24 @@ Pick the bonus shape:
 - **Combat gating:** add `"toggle": "combat"` when the effect says "in combat", or depends on something that happens in combat (when you hit, heal, are healed, take damage, are crit, etc.). A plain `Equip: +x%` with no such wording has no `when`.
 - **Stacking buffs:** model them at max stacks with the "Max N stacks" values. For example, Reckless Advantage is `ca_p: 0.08, crit_avoid_p: -0.08`.
 - **Build-up time:** if the stacks or charges build slowly, also gate on `"duration": { "atLeast": <seconds> }`, derived from how fast they build. See `m32-impending-doom-celestial`. How fast an effect stacks varies a lot, so ask the user when it's unclear.
-- **Chance-based procs:** add a boolean input plus an optional `effectiveness` percent input used as `scale` (see `m31-bloodletting-ascendant`). Drawbacks such as "decrease your Max HP by 20%" go in a separate grant without the scale.
-- **Role-split effects** (`DPS: ... / Heal: ...`): model every line with `variants` gated by `role` (`"dps"`, `"healer"`, `"tank"`). Grep `"role":` in `data/db-bonuses.json` for the shape.
+- **Chance-based procs:** add a boolean `active` input labeled `Proc`. Add an `effectiveness` percent input used as `scale` only when the user asks for one (see `m31-bloodletting-ascendant`). Drawbacks such as "decrease your Max HP by 20%" go in a separate grant without the scale.
+- **Role-split effects** (`DPS: ... / Heal: ...`, or per-line `(if Tank)` / `(if DPS)` / `(if Healer)`): model every line with `variants` gated by `role` (`"dps"`, `"healer"`, `"tank"`). Grep `"role":` in `data/db-bonuses.json` for the shape. A grant holds one payload, so lines that apply to every role go in a separate grant or on the item.
+- **Debuffs on enemies that someone else triggers:** a party-wide effect that procs on another role (an enemy debuff when the wearer is struck, which in practice means the tank) is a `group_buff` item with a `"toggle": "party"` grant, named after its source (`lysaera`, `tutor`). Keep only the wearer's own part on the item itself.
+- **Scaling with other equipped items:** give the related items a shared tag and scale the grant with a formula over `tagged("<tag>")`. Put the base value in `stats` so the formula carries only the rule: `companion_of_the_hall:celestial` uses `1 + 0.25 * (tagged("companion_of_the_hall:celestial") - 1)` for "+25% per other one equipped". Include the quality in the tag when the rule depends on it.
 - **Text-only effects:** put anything you can't model in the grant's `longDescription`, or the item's `shortDescription`.
 
 For other condition leaves (`enemies`, `equipped`, `param`, `input`, `formula`, `all`/`any`/`not`), read `ConditionWhen` in `src/types.ts`, and find a precedent with grep in `data/db-bonuses.json`.
+
+## Companion powers
+
+Tooltips with a `Pet_..._Player_Bonus` id and a role header (`Offense`, `Defense, Utility`). Copy an existing `companion_power` item.
+
+- **Always celestial.** The builder assumes celestial companions, so add every power as `quality: "celestial"`, `il: 900`, `combined_rating: 900`, whatever level the tooltip shows.
+- **Scale from the item level, not the rounded percents.** The percent budget is linear in item level: 0.01% per IL in total, split evenly across the stat lines. At IL 900 that is 9% for one stat, 4.5% each for two, 3% each for three. The tooltip rounds (`3.8%` at IL 750 is really 3.75%), so scaling the shown number gives the wrong value.
+- **Stats:** plain stat lines, `Equip:` or not, go directly on the item as percent keys. A bonus is only needed for conditions, procs, role splits or scaling.
+- **Tags:** one `companion_power:<role>` per role in the header. A role header lists the slots the power fits, so take it as shown.
+- **`longDescription`:** `"<Companion> companion power. Role: <roles>."`. Any further text, such as an effect the builder doesn't model, follows after a blank line (`\n\n`). The companion comes from `Companions to Upgrade`, without a possessive, roles as an alphabetical comma list (`Defense, Offense, Utility`, never `Any`). When several companions share a power, name them all (`Zariel and Soradiel`). When the tooltip has no `Companions to Upgrade` line, take the companion from the power name or the `Def:` id (`Pet_M28_Elaina_Sartell_Player_Bonus` is Captain Elaina Sartell) and flag it; ask when neither settles it.
+- **Name:** the tooltip name, plus the companion in parentheses when the name doesn't already point to it: `Spiteful Hex (Lysaera)`, `Divine Judgement (Zariel, Soradiel)`, but plain `Wolf's Instincts` and `Bruenor's Bulwark`. The picker search doesn't read `longDescription`, so this is what lets a player find a power by companion.
 
 ## Legacy patterns (don't copy)
 
