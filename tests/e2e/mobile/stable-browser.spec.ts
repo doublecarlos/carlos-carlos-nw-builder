@@ -2,6 +2,7 @@
 // instead of truncating, since the slot list is what the reference is read for.
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { ensureSectionExpanded, openBuilder } from "../support/app";
+import { center } from "../support/touch";
 import { expectNoHorizontalScroll } from "../support/viewport";
 
 /** Every insignia line in the browser that is clipped by its own box. */
@@ -55,4 +56,17 @@ test("the stable reference shows every insignia line in full", async ({
     row.getByTestId("stable-row-meta"),
     row.getByTestId("stable-apply"),
   );
+});
+
+// The toggle holds only the name line, so the line under it has to fold the card too.
+test("tapping a card's insignia line folds the card", async ({ page }) => {
+  const modal = await openStableBrowser(page);
+  const card = modal.getByTestId("stable-group-card").first();
+  const toggle = card.locator("[data-testid^='stable-card-toggle:']");
+
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  // A screen tap, since the toggle's stretched area covers the line by design.
+  const { x, y } = await center(card.getByTestId("stable-card-meta"));
+  await page.touchscreen.tap(x, y);
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
 });
