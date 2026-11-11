@@ -24,7 +24,8 @@ const BOUNDS = [
 <template>
   <RepeatableRows
     :rows="rows"
-    row-class="dynamic-stat-row flex md:flex-wrap items-center gap-1.5 mb-1"
+    row-class="dynamic-stat-row mb-1"
+    labeled-fields
     header-actions
     add-label="Add dynamic stat"
     remove-label="Remove dynamic stat"
@@ -46,7 +47,7 @@ const BOUNDS = [
     </template>
     <template #row="{ row }">
       <!-- Equal columns on a phone, so the bounds line up from row to row. -->
-      <div class="grid w-full grid-cols-3 gap-1.5 md:contents">
+      <div class="grid w-full grid-cols-3 gap-1.5 md:flex md:w-auto">
         <FormField
           v-for="field in BOUNDS"
           :key="field.key"

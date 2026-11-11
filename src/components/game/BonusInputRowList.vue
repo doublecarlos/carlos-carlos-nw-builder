@@ -42,7 +42,7 @@ const controlOptions = [
 <template>
   <RepeatableRows
     :rows="rows"
-    row-class="bonus-input-row flex md:flex-wrap items-start gap-1.5 mb-1"
+    row-class="bonus-input-row mb-1"
     labeled-fields
     header-actions
     add-label="Add input"
@@ -102,7 +102,7 @@ const controlOptions = [
         />
       </FormField>
       <template v-else>
-        <div class="grid w-full grid-cols-2 gap-1.5 md:contents">
+        <div class="grid w-full grid-cols-2 gap-1.5 md:flex md:w-auto">
           <FormField
             v-for="field in NUMBER_FIELDS"
             :key="field.key"

@@ -88,9 +88,10 @@ Wide, the form primitives keep the desktop layout their callers size: a field's 
   grows to fit its content, so as a content-sized flex item it collapses.
 - InputRow puts its description first and the control under it on a phone (`max-md:`), and
   its `#presets` on a line of their own below that.
-- RepeatableRows turns a row with a `#lead` into a card on a phone; from `md` up the
-  caller's `rowClass` lays the row out as before. `headerActions` puts the card's
-  Add/Remove pair on the lead's line, for a row of several fields or nested content.
+- RepeatableRows lays out a row with a `#lead` as one grid of named areas: one line from
+  `md` up and a card on a phone, with only the areas moving between them. `headerActions`
+  puts the card's Add/Remove pair on the lead's line, for a row of several fields or nested
+  content.
 - SegmentedControl wraps with plain CSS: a segment never wraps its label, and each wrapped
   line's segments grow to fill it, so the control stays a rectangle.
 - FormField provides the label association (`src/composables/useFormField.ts`). A new text

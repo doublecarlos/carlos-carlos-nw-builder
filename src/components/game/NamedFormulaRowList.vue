@@ -42,7 +42,7 @@ function rowIssues(row: NamedFormulaDraft): FormulaInputIssue[] {
 <template>
   <RepeatableRows
     :rows="rows"
-    row-class="bonus-formula-row flex md:flex-wrap items-start gap-1.5 mb-1"
+    row-class="bonus-formula-row mb-1"
     labeled-fields
     header-actions
     add-label="Add formula"

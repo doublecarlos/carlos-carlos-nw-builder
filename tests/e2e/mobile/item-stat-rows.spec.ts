@@ -47,7 +47,24 @@ async function cardLayout(row: Locator) {
   const rest = await box(row.getByTestId("repeatable-row-rest"));
   const actions = await box(row.getByTestId("repeatable-row-actions"));
   const leadBottom = lead.y + lead.height;
+  // The pair stays inside the card's own edges.
+  expect(actions.x).toBeGreaterThanOrEqual(card.x);
+  expect(actions.x + actions.width).toBeLessThanOrEqual(card.x + card.width);
+  expect(actions.y + actions.height).toBeLessThanOrEqual(card.y + card.height);
+  // Level with the input on its own line: the rest's below the lead, else the lead's.
+  const beside = await box(
+    row
+      .getByTestId(
+        actions.y >= leadBottom ? "repeatable-row-rest" : "repeatable-row-lead",
+      )
+      .locator("input")
+      .first(),
+  );
+  const bottomGap = Math.abs(
+    actions.y + actions.height - (beside.y + beside.height),
+  );
   return {
+    pairLevel: bottomGap <= 4,
     leadInset: lead.x > card.x,
     restBelowLead: rest.y >= leadBottom,
     actionsBelowLead: actions.y >= leadBottom,
@@ -56,6 +73,7 @@ async function cardLayout(row: Locator) {
 }
 
 const TWO_LINE_CARD = {
+  pairLevel: true,
   leadInset: true,
   restBelowLead: true,
   actionsBelowLead: true,
@@ -64,6 +82,7 @@ const TWO_LINE_CARD = {
 
 /** The pair on the picker's line, the fields below both. */
 const HEADER_CARD = {
+  pairLevel: true,
   leadInset: true,
   restBelowLead: true,
   actionsBelowLead: false,
