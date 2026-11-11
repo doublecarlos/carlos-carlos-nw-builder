@@ -3,7 +3,8 @@
 // notice, and the About/shortcut overlays.
 //
 // Below lg it stays one row: `headerLayout` moves whatever does not fit into an overflow menu,
-// the title shrinks to its mark on a phone, and a notice drops onto a row of its own.
+// the title shrinks to its mark on a phone, and a notice drops onto a row of its own. From lg up
+// a notice takes only the bar's spare width.
 import { computed, ref, useTemplateRef, type Component } from "vue";
 import ThemeToggle, { THEME_ICONS, THEME_LABELS } from "./ui/ThemeToggle.vue";
 import BaseButton from "./ui/BaseButton.vue";
@@ -169,10 +170,11 @@ async function onImportFile(event: Event) {
 </script>
 
 <template>
-  <!-- Wraps only below lg, and only to give a notice a row of its own. The padding clears a
-       phone's notch and rounded corners; the insets are zero everywhere else. -->
+  <!-- Wraps only below lg, and only to give a notice a row of its own. No label wraps, so a
+       crowded bar never grows taller. The padding clears a phone's notch and rounded corners;
+       the insets are zero everywhere else. -->
   <header
-    class="flex items-center gap-2.5 border-b border-line bg-surface pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-2 pl-[max(0.5rem,env(safe-area-inset-left))] max-lg:flow-wrap"
+    class="flex items-center gap-2.5 whitespace-nowrap border-b border-line bg-surface pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-2 pl-[max(0.5rem,env(safe-area-inset-left))] max-lg:flow-wrap"
     data-testid="app-header"
   >
     <!-- Below lg the nav lives in a drawer, and this is the way in. -->
@@ -295,11 +297,11 @@ async function onImportFile(event: Event) {
 
     <AutosaveIndicator />
 
-    <!-- Wide enough for the layer editor's longer confirmations (tooltip-fill, duplicate);
-         `:title` still covers anything past this width. Below lg the bar has no width to
-         spare, so the notice takes a full row of its own and wraps there instead. -->
+    <!-- From lg up this is the bar's spacer: the notice fills only the width left over and
+         truncates, so showing one never moves or squeezes another control. `:title` keeps the
+         full text. Below lg the notice takes a full row of its own and wraps there instead. -->
     <span
-      class="relative ml-auto flex items-center gap-1 max-lg:order-last max-lg:ml-0 max-lg:basis-full"
+      class="relative flex min-w-0 items-center gap-1 max-lg:order-last max-lg:basis-full lg:flex-1"
       :class="notice ? undefined : 'max-lg:hidden'"
       data-testid="header-notice"
     >
@@ -314,7 +316,7 @@ async function onImportFile(event: Event) {
         <BaseNotice
           v-if="notice"
           :key="notice"
-          class="inline-block min-w-0 lg:max-w-[32rem] lg:overflow-hidden lg:text-ellipsis lg:whitespace-nowrap"
+          class="inline-block min-w-0 max-lg:whitespace-normal lg:max-w-[32rem] lg:overflow-hidden lg:text-ellipsis"
           :title="notice"
           @dismiss="showNotice('')"
         >
@@ -323,13 +325,14 @@ async function onImportFile(event: Event) {
       </Transition>
       <BaseLink
         v-if="notice && noticeAction"
+        class="flex-none"
         data-testid="notice-action"
         @click="noticeAction.run()"
         >{{ noticeAction.label }}</BaseLink
       >
     </span>
 
-    <span class="flex-1"></span>
+    <span class="flex-1 lg:hidden"></span>
 
     <span
       v-if="inBar('shortcuts') || inBar('about')"
