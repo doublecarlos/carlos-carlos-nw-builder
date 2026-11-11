@@ -41,7 +41,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox
       - run: npx playwright test --shard=${{ matrix.shard }}/4 --workers=4
       - uses: actions/upload-artifact@v7
         if: failure()

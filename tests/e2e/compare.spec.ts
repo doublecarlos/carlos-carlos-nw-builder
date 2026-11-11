@@ -361,29 +361,33 @@ test.describe("folder names in the build pickers", () => {
     );
   });
 
-  test("a name too long for the field keeps the dropdown inside the panel", async ({
-    page,
-  }) => {
-    await buildInAFolder(page);
-    await renameViaSidebar(
-      page,
-      buildRow(page, "Build 1"),
-      "ST Jotunskar Hellbringer M33",
-    );
-    await buildRow(page, "Build 2").click();
-    const combo = page.locator(".compare-select");
-    await pickerInput(combo).click();
+  test(
+    "a name too long for the field keeps the dropdown inside the panel",
+    { tag: "@cross-browser" },
+    async ({ page }) => {
+      await buildInAFolder(page);
+      await renameViaSidebar(
+        page,
+        buildRow(page, "Build 1"),
+        "ST Jotunskar Hellbringer M33",
+      );
+      await buildRow(page, "Build 2").click();
+      const combo = page.locator(".compare-select");
+      await pickerInput(combo).click();
 
-    // The field is a narrow stat-panel table cell and the panel's scroller clips
-    // horizontally, so the menu grows rightward into the panel: growing leftward would put
-    // the rows' text outside the clip.
-    const menuBox = await pickerMenu(combo).boundingBox();
-    const panelBox = await page.getByTestId("stat-panel-column").boundingBox();
-    expect(menuBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
-    expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(
-      panelBox!.x + panelBox!.width,
-    );
-  });
+      // The field is a narrow stat-panel table cell and the panel's scroller clips
+      // horizontally, so the menu grows rightward into the panel: growing leftward would put
+      // the rows' text outside the clip.
+      const menuBox = await pickerMenu(combo).boundingBox();
+      const panelBox = await page
+        .getByTestId("stat-panel-column")
+        .boundingBox();
+      expect(menuBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
+      expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(
+        panelBox!.x + panelBox!.width,
+      );
+    },
+  );
 
   test("the section copy list groups by folder too", async ({ page }) => {
     await buildInAFolder(page);
@@ -495,22 +499,26 @@ test.describe("nested folders in the build picker", () => {
 
   // Closed, a foldered build shows its path over its name, in the same box height a
   // top-level build gets, and the box's value still spells out the whole path.
-  test("shows the path over the name, at one box height", async ({ page }) => {
-    await nestedBuild(page);
-    const combo = page.locator(".compare-select");
+  test(
+    "shows the path over the name, at one box height",
+    { tag: "@cross-browser" },
+    async ({ page }) => {
+      await nestedBuild(page);
+      const combo = page.locator(".compare-select");
 
-    await chooseCombo(combo, "Build 2");
-    const topLevel = await pickerInput(combo).boundingBox();
-    await expect(combo.getByTestId("picker-closed-path")).toHaveCount(0);
+      await chooseCombo(combo, "Build 2");
+      const topLevel = await pickerInput(combo).boundingBox();
+      await expect(combo.getByTestId("picker-closed-path")).toHaveCount(0);
 
-    await chooseCombo(combo, "Build 1");
-    await expect(combo.getByTestId("picker-closed-path")).toHaveText(
-      "Outer / Inner",
-    );
-    await expect(combo.getByTestId("picker-closed")).toContainText("Build 1");
-    await expect(pickerInput(combo)).toHaveValue("Outer / Inner · Build 1");
-    expect((await pickerInput(combo).boundingBox())?.height).toBe(
-      topLevel?.height,
-    );
-  });
+      await chooseCombo(combo, "Build 1");
+      await expect(combo.getByTestId("picker-closed-path")).toHaveText(
+        "Outer / Inner",
+      );
+      await expect(combo.getByTestId("picker-closed")).toContainText("Build 1");
+      await expect(pickerInput(combo)).toHaveValue("Outer / Inner · Build 1");
+      expect((await pickerInput(combo).boundingBox())?.height).toBe(
+        topLevel?.height,
+      );
+    },
+  );
 });

@@ -13,12 +13,16 @@ async function height(locator: Locator) {
   return box!.height;
 }
 
-test("a button is no taller than the field beside it", async ({ page }) => {
-  await openBuilder(page);
-  expect(await height(slotFilterClearButton(page))).toBeLessThanOrEqual(
-    (await height(slotFilterInput(page))) + 1,
-  );
-});
+test(
+  "a button is no taller than the field beside it",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await openBuilder(page);
+    expect(await height(slotFilterClearButton(page))).toBeLessThanOrEqual(
+      (await height(slotFilterInput(page))) + 1,
+    );
+  },
+);
 
 test("an icon-only button is as tall as a labeled one", async ({ page }) => {
   await openBuilder(page);

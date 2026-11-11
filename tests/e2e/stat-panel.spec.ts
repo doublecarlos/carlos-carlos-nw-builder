@@ -242,16 +242,18 @@ test.describe("stat source popover", () => {
     await expect(statCard(page)).toBeVisible();
   });
 
-  test("the card opens beside the panel, clear of the stat buttons", async ({
-    page,
-  }) => {
-    // The pointer's way from a button to its card must not cross other rows' buttons.
-    await openBuilder(page);
-    await statInfoButton(page, "power").hover();
-    const cardBox = await statCard(page).boundingBox();
-    const buttonBox = await statInfoButton(page, "power").boundingBox();
-    expect(cardBox!.x + cardBox!.width).toBeLessThan(buttonBox!.x);
-  });
+  test(
+    "the card opens beside the panel, clear of the stat buttons",
+    { tag: "@cross-browser" },
+    async ({ page }) => {
+      // The pointer's way from a button to its card must not cross other rows' buttons.
+      await openBuilder(page);
+      await statInfoButton(page, "power").hover();
+      const cardBox = await statCard(page).boundingBox();
+      const buttonBox = await statInfoButton(page, "power").boundingBox();
+      expect(cardBox!.x + cardBox!.width).toBeLessThan(buttonBox!.x);
+    },
+  );
 
   test("the close button closes the card", async ({ page }) => {
     await openBuilder(page);
@@ -355,20 +357,33 @@ test.describe("effective hit points", () => {
   });
 });
 
-test("rating labels stay on one line at the panel's default width", async ({
-  page,
-}) => {
-  // The default rail width is chosen so the longest label never wraps beside real numbers.
-  await openBuilder(page);
-  await importStatItems(page);
-  await chooseItem(page, "gear.head", HEAD_ITEM);
-  const labels = page.locator('[data-stat-row] [data-testid="stat-label"]');
-  // Rows of a section that is not on screen measure zero and say nothing about wrapping.
-  const heights = await labels.evaluateAll((spans) =>
-    spans
-      .map((span) => span.getBoundingClientRect().height)
-      .filter((height) => height > 0),
-  );
-  expect(heights.length).toBeGreaterThan(0);
-  expect(new Set(heights).size).toBe(1);
-});
+test(
+  "rating labels stay on one line at the panel's default width",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    // The default rail width is chosen so the longest label never wraps beside real numbers.
+    await openBuilder(page);
+    await importStatItems(page);
+    await chooseItem(page, "gear.head", HEAD_ITEM);
+    const labels = page.locator('[data-stat-row] [data-testid="stat-label"]');
+    // Rows of a section that is not on screen measure zero and say nothing about wrapping.
+    const heights = await labels.evaluateAll((spans) =>
+      spans
+        .map((span) => span.getBoundingClientRect().height)
+        .filter((height) => height > 0),
+    );
+    expect(heights.length).toBeGreaterThan(0);
+    expect(new Set(heights).size).toBe(1);
+    // Equal heights alone would also pass with every label wrapped alike.
+    const lineCounts = await labels.evaluateAll((spans) =>
+      spans
+        .filter((span) => span.getBoundingClientRect().height > 0)
+        .map((span) => {
+          const range = document.createRange();
+          range.selectNodeContents(span);
+          return new Set([...range.getClientRects()].map((r) => r.top)).size;
+        }),
+    );
+    expect(new Set(lineCounts)).toEqual(new Set([1]));
+  },
+);

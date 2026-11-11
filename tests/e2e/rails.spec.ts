@@ -69,22 +69,24 @@ test("a collapsed rail stays collapsed across a reload", async ({ page }) => {
   await expect(navToggle(page)).toHaveAttribute("aria-expanded", "false");
 });
 
-test("with both rails collapsed the page does not scroll sideways at 1024px", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1024, height: 800 });
-  await openBuilder(page);
+test(
+  "with both rails collapsed the page does not scroll sideways at 1024px",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await openBuilder(page);
 
-  await navToggle(page).click();
-  await statToggle(page).click();
+    await navToggle(page).click();
+    await statToggle(page).click();
 
-  // The reason the rails collapse at all: at 1100px the three columns already squeeze, and
-  // below it the whole page scrolled with the stat panel's last column cut off.
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
-});
+    // The reason the rails collapse at all: at 1100px the three columns already squeeze, and
+    // below it the whole page scrolled with the stat panel's last column cut off.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  },
+);
 
 test("the toggles are reachable and operable from the keyboard", async ({
   page,

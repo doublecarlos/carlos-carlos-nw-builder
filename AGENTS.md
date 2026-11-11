@@ -58,6 +58,10 @@ catalog data, rewording copy, an unrelated restyle), rewrite the test or skip it
   viewport", "not covered", "no sideways scroll" are fine. Exact widths, offsets, colors,
   borders, opacity or font weight aren't. Lint flags `toHaveCSS` and `getComputedStyle` in e2e
   specs; disable it per line only when the style is the behavior itself.
+- **Pair a relative layout check with an absolute one.** "Level with" or "centered on" passes
+  when both elements are equally broken, so add "below", "inside" or "not overlapping" beside it.
+- **Tag layout checks `@cross-browser`** (`{ tag: "@cross-browser" }`) so they also run in
+  Firefox. Grid, table and flex layout are where engines differ.
 - **Assert state through semantics,** not CSS classes: role, `aria-*`, `data-*`, values, text.
 - **Don't test trivial code,** like a ref holding a value or shapes TypeScript already enforces.
 - **No sleeps.** Wait on something observable, or control time with `page.clock` / fake timers.

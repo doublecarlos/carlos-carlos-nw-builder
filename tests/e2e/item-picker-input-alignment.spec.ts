@@ -79,32 +79,38 @@ async function importRing(page: Page) {
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 }
 
-test("a dynamic stat and a bonus input stepper render as input rows", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  await importRing(page);
+test(
+  "a dynamic stat and a bonus input stepper render as input rows",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await openBuilder(page);
+    await importRing(page);
 
-  const row = slotRow(page, RING_SLOT);
-  await expect(row.getByTestId("slot-dynamic:power")).toHaveValue("500");
-  await expect(
-    row.getByTestId(`bonus-input-${STEPPER_BONUS_ID}-stacks`),
-  ).toHaveValue("0");
+    const row = slotRow(page, RING_SLOT);
+    await expect(row.getByTestId("slot-dynamic:power")).toHaveValue("500");
+    await expect(
+      row.getByTestId(`bonus-input-${STEPPER_BONUS_ID}-stacks`),
+    ).toHaveValue("0");
 
-  // Bonus inputs render before dynamic stats, so the stepper row is first.
-  const rows = row.getByTestId("input-row");
-  await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0)).toContainText("Stacks");
-  await expect(rows.nth(1)).toContainText("Power Bonus");
-});
+    // Bonus inputs render before dynamic stats, so the stepper row is first.
+    const rows = row.getByTestId("input-row");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0)).toContainText("Stacks");
+    await expect(rows.nth(1)).toContainText("Power Bonus");
+  },
+);
 
-test("a dynamic stat's row shows its limits", async ({ page }) => {
-  await openBuilder(page);
-  await importRing(page);
+test(
+  "a dynamic stat's row shows its limits",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await openBuilder(page);
+    await importRing(page);
 
-  const dynamicRow = slotRow(page, RING_SLOT).getByTestId("input-row").nth(1);
-  await expect(dynamicRow).toContainText(/\(from 0 to 1,?000\)/);
-});
+    const dynamicRow = slotRow(page, RING_SLOT).getByTestId("input-row").nth(1);
+    await expect(dynamicRow).toContainText(/\(from 0 to 1,?000\)/);
+  },
+);
 
 test("a checkbox input keeps its label on one clickable row", async ({
   page,

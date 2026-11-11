@@ -33,27 +33,29 @@ test("the toggle stays disabled until a compare build is picked", async ({
   await expect(compareLines(page)).toHaveCount(0);
 });
 
-test("a differing stat stacks the compare build's own value under this build's", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  // A class carries stats of its own, so picking one here and leaving the second build
-  // classless is enough to move most of the panel apart.
-  await chooseClass(page, "warlock");
-  const firstBuildHp = await ownValue(page, "hp");
-  const firstBuildPower = await ownValue(page, "power");
+test(
+  "a differing stat stacks the compare build's own value under this build's",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await openBuilder(page);
+    // A class carries stats of its own, so picking one here and leaving the second build
+    // classless is enough to move most of the panel apart.
+    await chooseClass(page, "warlock");
+    const firstBuildHp = await ownValue(page, "hp");
+    const firstBuildPower = await ownValue(page, "power");
 
-  await page.getByTestId("nav-add-build").click();
-  await chooseCombo(comparePicker(page), "Build 1");
-  // Picking a compare build alone changes nothing in the panel -- the lines are opt-in.
-  await expect(compareLines(page)).toHaveCount(0);
+    await page.getByTestId("nav-add-build").click();
+    await chooseCombo(comparePicker(page), "Build 1");
+    // Picking a compare build alone changes nothing in the panel -- the lines are opt-in.
+    await expect(compareLines(page)).toHaveCount(0);
 
-  await compareToggle(page).check();
-  await expect(compareValue(page, "hp")).toHaveText(firstBuildHp);
-  await expect(compareValue(page, "power")).toHaveText(firstBuildPower);
-  // ...and the second build's own numbers are still the ones on the primary line.
-  expect(await ownValue(page, "hp")).not.toBe(firstBuildHp);
-});
+    await compareToggle(page).check();
+    await expect(compareValue(page, "hp")).toHaveText(firstBuildHp);
+    await expect(compareValue(page, "power")).toHaveText(firstBuildPower);
+    // ...and the second build's own numbers are still the ones on the primary line.
+    expect(await ownValue(page, "hp")).not.toBe(firstBuildHp);
+  },
+);
 
 test('the compare line reads "Other", with the compare build\'s name on hover', async ({
   page,
@@ -103,74 +105,86 @@ async function wrappedLabelOffset(page: Page, key: string) {
     const middle = (box: DOMRect) => box.top + box.height / 2;
     const labelBox = label.getBoundingClientRect();
     const valueBox = range.getBoundingClientRect();
+    const rowBox = row.getBoundingClientRect();
     return {
       labelHeight: labelBox.height,
       valueHeight: valueBox.height,
       offset: Math.abs(middle(labelBox) - middle(valueBox)),
+      inRow: valueBox.top >= rowBox.top && valueBox.bottom <= rowBox.bottom,
     };
   });
 }
 
 /** Wraps a row's label and asserts its value centers on it. */
 async function expectValueCentered(page: Page, key: string) {
-  const { labelHeight, valueHeight, offset } = await wrappedLabelOffset(
+  const { labelHeight, valueHeight, offset, inRow } = await wrappedLabelOffset(
     page,
     key,
   );
   expect(labelHeight, key).toBeGreaterThan(valueHeight * 2);
   expect(offset, key).toBeLessThanOrEqual(1);
+  // Centered on a label that collapsed with it would still pass the offset check.
+  expect(inRow, key).toBe(true);
 }
 
 // One row from the ratings table and one from a label / value table.
 const CENTERED_ROWS = ["power", "hp"];
 
-test("a wrapped label's value centers on it", async ({ page }) => {
-  // The value reads with the label beside it, as the info button does.
-  await openBuilder(page);
-  await chooseClass(page, "warlock");
-  for (const key of CENTERED_ROWS) {
-    await expect(statRow(page, key)).toBeVisible();
-    await expectValueCentered(page, key);
-  }
-});
+test(
+  "a wrapped label's value centers on it",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    // The value reads with the label beside it, as the info button does.
+    await openBuilder(page);
+    await chooseClass(page, "warlock");
+    for (const key of CENTERED_ROWS) {
+      await expect(statRow(page, key)).toBeVisible();
+      await expectValueCentered(page, key);
+    }
+  },
+);
 
-test("a wrapped label's value centers on it with stats compared", async ({
-  page,
-}) => {
-  // The value still centers on its label, while the compare line stays level with the
-  // label's Other line along the bottom.
-  await openBuilder(page);
-  await chooseClass(page, "warlock");
-  await page.getByTestId("nav-add-build").click();
-  await chooseCombo(comparePicker(page), "Build 1");
-  await compareToggle(page).check();
-  for (const key of CENTERED_ROWS) {
-    await expect(compareValue(page, key)).toBeVisible();
-    await expectValueCentered(page, key);
-    const tops = await statRow(page, key)
-      .getByTestId("compare-line")
-      .evaluateAll((lines) =>
-        lines.map((line) => line.getBoundingClientRect().top),
-      );
-    expect(tops.length, key).toBeGreaterThan(1);
-    expect(Math.max(...tops) - Math.min(...tops), key).toBeLessThanOrEqual(1);
-  }
-});
+test(
+  "a wrapped label's value centers on it with stats compared",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    // The value still centers on its label, while the compare line stays level with the
+    // label's Other line along the bottom.
+    await openBuilder(page);
+    await chooseClass(page, "warlock");
+    await page.getByTestId("nav-add-build").click();
+    await chooseCombo(comparePicker(page), "Build 1");
+    await compareToggle(page).check();
+    for (const key of CENTERED_ROWS) {
+      await expect(compareValue(page, key)).toBeVisible();
+      await expectValueCentered(page, key);
+      const tops = await statRow(page, key)
+        .getByTestId("compare-line")
+        .evaluateAll((lines) =>
+          lines.map((line) => line.getBoundingClientRect().top),
+        );
+      expect(tops.length, key).toBeGreaterThan(1);
+      expect(Math.max(...tops) - Math.min(...tops), key).toBeLessThanOrEqual(1);
+    }
+  },
+);
 
-test("a compare line sits below its stat's own value, not over it", async ({
-  page,
-}) => {
-  // The two builds' numbers must both stay readable.
-  await openBuilder(page);
-  await chooseClass(page, "warlock");
-  await page.getByTestId("nav-add-build").click();
-  await chooseCombo(comparePicker(page), "Build 1");
-  await compareToggle(page).check();
-  for (const key of CENTERED_ROWS) {
-    const value = await statRow(page, key)
-      .getByTestId("stat-value")
-      .boundingBox();
-    const line = await compareValue(page, key).boundingBox();
-    expect(line!.y, key).toBeGreaterThanOrEqual(value!.y + value!.height - 1);
-  }
-});
+test(
+  "a compare line sits below its stat's own value, not over it",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    // The two builds' numbers must both stay readable.
+    await openBuilder(page);
+    await chooseClass(page, "warlock");
+    await page.getByTestId("nav-add-build").click();
+    await chooseCombo(comparePicker(page), "Build 1");
+    await compareToggle(page).check();
+    for (const key of CENTERED_ROWS) {
+      const value = await statRow(page, key)
+        .getByTestId("stat-value")
+        .boundingBox();
+      const line = await compareValue(page, key).boundingBox();
+      expect(line!.y, key).toBeGreaterThanOrEqual(value!.y + value!.height - 1);
+    }
+  },
+);
