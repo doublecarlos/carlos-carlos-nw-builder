@@ -138,18 +138,16 @@ test("Back from an inspected bonus returns to the row it was inspected from", as
   await expectLandedOn(page, "gear.ring1");
 });
 
-test("switching panes by hand drops the way back", async ({ page }) => {
-  // Once the user moves on from the jump, Back is theirs again rather than a stale return.
-  const heldBack = () =>
-    page.evaluate(() => {
-      const state: unknown = history.state;
-      return Boolean(
-        state && typeof state === "object" && "backToClose" in state,
-      );
-    });
+test("switching panes by hand drops the way back to the row", async ({
+  page,
+}) => {
+  // Once the user moves on from the jump, Back steps through the panes they chose.
   await inspectRingBonus(page);
-  await expect.poll(heldBack).toBe(true);
-
   await page.getByTestId("pane-editor").click();
-  await expect.poll(heldBack).toBe(false);
+  await expect(editorPane(page)).toBeVisible();
+
+  await page.goBack();
+  await expect(statsPane(page)).toBeVisible();
+  await page.goBack();
+  await expect(editorPane(page)).toBeVisible();
 });

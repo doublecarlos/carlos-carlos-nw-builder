@@ -27,8 +27,9 @@ const load = async (search: string, { dev = false } = {}) => {
   };
   win.history = {
     pushState: () => {},
-    replaceState: (_state: unknown, _title: string, url: string) => {
-      replaced.push(url);
+    // A replace without a URL leaves the address as it is.
+    replaceState: (_state: unknown, _title: string, url?: string) => {
+      if (url !== undefined) replaced.push(url);
     },
   };
   const mod = await import("../../../src/stores/maintainer");
@@ -83,6 +84,8 @@ describe("maintainer mode", () => {
     const { mod, replaced } = await load("?maintainer=1");
 
     mod.initMaintainer();
+    // Navigation lands a task's writes once the task ends.
+    await Promise.resolve();
 
     expect(replaced.at(-1)).toBe("/");
   });
@@ -91,6 +94,8 @@ describe("maintainer mode", () => {
     const { mod, replaced } = await load("?build=abc&maintainer=1");
 
     mod.initMaintainer();
+    // Navigation lands a task's writes once the task ends.
+    await Promise.resolve();
 
     expect(replaced.at(-1)).toBe("/?build=abc");
   });

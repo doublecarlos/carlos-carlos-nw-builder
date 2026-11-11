@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   getState,
   newItemSeed,
+  openItem,
   openNewItem,
   seedNewItem,
   takeNewItemSeed,
@@ -14,7 +15,6 @@ vi.mock("../../../src/stores/selection", () => ({ selectLayer: vi.fn() }));
 vi.mock("../../../src/stores/layers", () => ({
   ensureTargetLayer: () => ({ id: "layer-target" }),
 }));
-vi.mock("../../../src/lib/router", () => ({ apply: vi.fn() }));
 
 describe("layerEditorUi store", () => {
   it("returns empty defaults for a layer never seen before", () => {
@@ -123,5 +123,21 @@ describe("openNewItem", () => {
     await openNewItem(seed);
 
     expect(takeNewItemSeed()).toBeNull();
+  });
+});
+
+describe("openItem", () => {
+  it("sets the layer's memory to the item's form before selecting the layer", () => {
+    // A mounting editor restores from this memory, so it has to be in place first.
+    vi.mocked(selection.selectLayer).mockImplementationOnce(() => {
+      expect(getState("layer-target")).toMatchObject({
+        section: "items",
+        item: "item-x",
+        view: "detail",
+      });
+      return true;
+    });
+    openItem("item-x");
+    expect(selection.selectLayer).toHaveBeenCalledWith("layer-target");
   });
 });

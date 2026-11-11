@@ -5,6 +5,7 @@
 import { computed, shallowRef } from "vue";
 import { defaultWindow, useEventListener } from "@vueuse/core";
 import * as confirm from "./confirm";
+import { navigation } from "../lib/navigation";
 
 export interface DraftGuard {
   /** Shown in the discard question, e.g. "item", "bonus". */
@@ -63,3 +64,6 @@ export async function confirmDiscard(): Promise<boolean> {
   });
   return ok;
 }
+
+// Back and Forward ask the same question before they land on another place.
+navigation.addGuard(() => (hasDirtyDraft() ? confirmDiscard : null));

@@ -31,6 +31,7 @@ import {
   useDropList,
 } from "../../composables/useDragAndDrop";
 import { useKeyedCache } from "../../composables/useKeyedCache";
+import { useListScroll } from "../../composables/useListScroll";
 import {
   buildOutline,
   filterOutline,
@@ -55,10 +56,21 @@ const props = defineProps<{
   selected: { kind: OutlineKind; key: string } | null;
   statusFilterOptions: { value: string; label: string }[];
   hasUnsavedDraft: (row: OutlineRow) => boolean;
+  /** Names this outline's remembered scroll position, per layer. */
+  scrollKey: string;
 }>();
 
+const scroller = useTemplateRef<HTMLElement>("scroller");
+const { focusCurrent } = useListScroll(
+  scroller,
+  () => props.scrollKey,
+  () => props.selected && `${props.selected.kind}:${props.selected.key}`,
+);
+
+defineExpose({ focusCurrent });
+
 const emit = defineEmits<{
-  select: [row: OutlineRow, options?: { push?: boolean }];
+  select: [row: OutlineRow, options?: { transient?: boolean }];
   /** The section to add to; absent for "New section". */
   create: [payload: { kind: OutlineKind; sectionId: string }];
   restore: [row: OutlineRow];
@@ -304,7 +316,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         ? 0
         : list.length - 1
       : Math.min(Math.max(idx + dir, 0), list.length - 1);
-  emit("select", list[next], { push: false });
+  emit("select", list[next], { transient: true });
 });
 </script>
 
@@ -359,7 +371,11 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
       </template>
     </LayerListHeader>
 
-    <div class="min-h-0 flex-1 overflow-y-auto" data-testid="slot-outline">
+    <div
+      ref="scroller"
+      class="min-h-0 flex-1 overflow-y-auto"
+      data-testid="slot-outline"
+    >
       <!-- On this wrapper, not the scroll container, so the insertion line ignores scroll. -->
       <div v-bind="sectionsDrop.listProps()" class="relative">
         <DropIndicator :pos="sectionsDrop.separatorStyle.value" />
@@ -380,6 +396,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
                 'ring-1 ring-accent',
             ]"
             :data-outline-key="`section:${view.group.section.key}`"
+            :aria-current="isSelected(view.group.section) ? 'true' : undefined"
             v-bind="
               view.sectionIndex >= 0
                 ? sectionsDrop.rowProps(view.sectionIndex, {
@@ -461,6 +478,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
                   'is-drag-source opacity-50',
               ]"
               :data-outline-key="`slot:${entry.row.key}`"
+              :aria-current="isSelected(entry.row) ? 'true' : undefined"
               v-bind="entry.draggable ? view.drop.rowProps(entry.index) : {}"
               @click="onRowClick(entry.row)"
             >
@@ -530,6 +548,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
               class="editor-row flex cursor-pointer items-center gap-1.5 border-b border-line/45 py-1 pl-8 pr-2 hover:bg-surface-2"
               :class="isSelected(row) && 'is-on bg-accent-soft'"
               :data-outline-key="`preset:${row.key}`"
+              :aria-current="isSelected(row) ? 'true' : undefined"
               @click="onRowClick(row)"
             >
               <span class="editor-row-name min-w-0 flex-1 truncate">{{

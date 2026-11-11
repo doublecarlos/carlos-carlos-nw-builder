@@ -5,8 +5,7 @@
 // screen, or the builder (nav, editor area with sticky header, stat panel). With no builds,
 // the landing content takes the place of the editor and stat panel. Which builder panes show
 // at each viewport size is `shellLayout`'s call.
-import { watch, computed } from "vue";
-import { useEventListener } from "@vueuse/core";
+import { watch, computed, onScopeDispose } from "vue";
 import NavBar from "./components/NavBar.vue";
 import AppHeader from "./components/AppHeader.vue";
 import LandingScreen from "./components/LandingScreen.vue";
@@ -15,7 +14,8 @@ import BuildDetails from "./components/BuildDetails.vue";
 import QuickOptionsBand from "./components/game/QuickOptionsBand.vue";
 import LayerEditor from "./components/LayerEditor.vue";
 import ConfirmDialog from "./components/ConfirmDialog.vue";
-import * as router from "./lib/router";
+import { navigation } from "./lib/navigation";
+import type { Route } from "./lib/route-model";
 import * as engine from "./stores/resolved";
 import * as details from "./stores/details";
 import * as selection from "./stores/selection";
@@ -36,7 +36,6 @@ import {
   type StatsMode,
 } from "./lib/shell-layout";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
-import { useBackToClose } from "./composables/useBackToClose";
 import { undoScope, useUndoScope } from "./composables/useUndoScope";
 import { useUndoRedoKeys } from "./composables/useUndoRedoKeys";
 import { useRevealFocusedField } from "./composables/useRevealFocusedField";
@@ -123,12 +122,6 @@ const PANE_OPTIONS: { value: PhonePane; label: string; testid: string }[] = [
   { value: "stats", label: "Stats", testid: "pane-stats" },
 ];
 
-// A jump into the other pane is one Back undoes, while one pane shows at a time.
-useBackToClose(
-  () => layout.value.paneSwitch && shell.paneBack.value !== null,
-  () => shell.paneBack.value?.(),
-);
-
 // The drawer is a way to pick something: once a pick lands, get out of the way of it. A pick
 // a dirty draft vetoes lands nothing, so the drawer stays open on the choice still to make.
 watch(selection.selection, () => shell.closeNavDrawer());
@@ -156,66 +149,83 @@ const stableParam = () =>
     ? stableBrowser.tab.value
     : null;
 
-const stableTabIn = (route: Record<string, string>) =>
+const stableTabIn = (route: Route) =>
   route.stable === "mount" || route.stable === "bonus" ? route.stable : null;
 
-function syncRoute({ push = true }: { push?: boolean } = {}) {
+function syncRoute({ transient = false }: { transient?: boolean } = {}) {
   const sel = selection.selection.value;
-  router.apply(
+  navigation.write(
     {
       build: sel?.kind === "build" ? sel.id : null,
       layer: sel?.kind === "layer" ? sel.id : null,
       tab: details.tab.value === "bonuses" ? "bonuses" : null,
       stable: stableParam(),
     },
-    { push },
+    { transient },
   );
 }
 
 /** A group-scoped browse writes no param, so leave one open rather than closing it. */
-function applyStableRoute(route: Record<string, string>) {
+function applyStableRoute(route: Route) {
   const tab = stableTabIn(route);
   if (tab) stableBrowser.openReference({ tab, query: "" });
   else if (stableBrowser.isOpen.value && stableBrowser.group.value === null)
     stableBrowser.close();
 }
 
-async function onPopState() {
-  const route = router.parse();
-  // A dirty draft can veto the change; the URL already moved, so put it back to what is
-  // still selected rather than leaving browser history and the editor out of step.
-  let ok = true;
-  if (route.build) {
-    ok = await selection.selectBuild(route.build);
-  } else if (route.layer) {
-    ok = await selection.selectLayer(route.layer);
-  } else {
-    // If no selection in route, pick the first build.
-    const first = builds.builds.value[0];
-    if (first) ok = await selection.selectBuild(first.id);
-  }
-  if (!ok) {
-    syncRoute({ push: false });
-    return;
-  }
+/** Back or Forward landed: its guard has already asked about any dirty draft. */
+function onTraverse(route: Route) {
+  const first = builds.builds.value[0];
+  if (route.build) selection.land({ kind: "build", id: route.build });
+  else if (route.layer) selection.land({ kind: "layer", id: route.layer });
+  else if (first) selection.land({ kind: "build", id: first.id });
   details.setTab(route.tab === "bonuses" ? "bonuses" : "stats");
   applyStableRoute(route);
 }
 
+/** Set while a gone selection is moved onto the build that shows. */
+let repairing = false;
+
+/** Whether the selection names a build or layer that is gone: deleted, or named by a stale
+ *  history entry or session. The editor then falls back to the first build. */
+const selectionGone = computed(() => {
+  const sel = selection.selection.value;
+  if (!sel || loading.value) return false;
+  if (sel.kind === "build") return !builds.get(sel.id);
+  return !selectedLayer.value;
+});
+
+// The nav highlights the selection, so it follows the editor's fallback. The repair replaces
+// the entry naming the gone place rather than adding one Back would land on again.
+watch(
+  selectionGone,
+  (gone) => {
+    if (!gone) return;
+    repairing = true;
+    const shown = activeBuild.value;
+    if (shown) selection.land({ kind: "build", id: shown.id });
+    else selection.clearSelection();
+  },
+  { immediate: true },
+);
+
 watch(
   () => selection.selection.value,
-  () => syncRoute(),
+  () => {
+    syncRoute({ transient: repairing });
+    repairing = false;
+  },
 );
-watch(details.tab, () => syncRoute({ push: false }));
+watch(details.tab, () => syncRoute());
 watch([stableBrowser.isOpen, stableBrowser.tab, stableBrowser.group], () =>
   syncRoute(),
 );
 
-useEventListener(window, "popstate", onPopState);
+onScopeDispose(navigation.onTraverse(onTraverse));
 
 // Read before the first write, or the sync below scrubs an incoming `?stable=`.
-applyStableRoute(router.parse());
-syncRoute({ push: false });
+applyStableRoute(navigation.route.value);
+syncRoute({ transient: true });
 </script>
 
 <template>

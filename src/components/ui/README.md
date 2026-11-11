@@ -46,7 +46,7 @@ ordinary one.
 | FormSectionDescription                    | Section description inside an editing form                                                                                                                     |
 | HistoryButtons                            | The undo/redo icon pair for one history; tooltips name the step each would apply                                                                               |
 | IconButton                                | Icon-only `BaseButton`; `title` is its tooltip and, unless `label` is given, its accessible name                                                               |
-| IdField                                   | Read-only display of a frozen, generator-assigned id                                                                                                           |
+| IdField                                   | Capped display of a frozen, generator-assigned id; a click copies it                                                                                           |
 | InputRow                                  | A typed control in a fixed leading column, its description after it (above it on a phone)                                                                      |
 | ListAddRow                                | The add row after a list of cards: "+", other ways of adding, and the empty note                                                                               |
 | ListCardHeader                            | A reorderable card's header: grip, fold, "Noun N", actions; wraps in whole groups                                                                              |

@@ -4,11 +4,11 @@
 // v-if/v-else), so its local refs are lost on unmount. LayerEditor.vue itself still owns the
 // URL (its own corner of the query string, cleared on unmount to keep a build's URL clean),
 // but a fresh mount needs *something* to fall back on once that URL is gone. Field names
-// mirror the router params so either can be the source. Only one of `slot`/`preset`/`sectionId`
+// mirror the route params so either can be the source. Only one of `slot`/`preset`/`sectionId`
 // is set at a time; `slotsGroup` is the Slots tab group last shown. `view` is the phone's
-// master-detail half, never in the URL; like the rest of this record it lasts the session.
+// master-detail half last shown, which the route itself decides while the editor is mounted;
+// like the rest of this record it lasts the session.
 import { reactive, readonly, shallowRef } from "vue";
-import * as router from "../lib/router";
 import * as layers from "./layers";
 import * as selection from "./selection";
 import type { Item, SectionPreset } from "../types";
@@ -94,8 +94,31 @@ export async function openNewItem(seed: Item) {
   const layer = layers.ensureTargetLayer();
   const selected = selection.selectLayer(layer.id);
   if (!(selected instanceof Promise ? await selected : selected)) return;
-  router.apply({ item: null });
   seedNewItem(seed);
+}
+
+/** The layer whose next mounting editor should show its open entry in the list. */
+let pendingReveal: string | null = null;
+
+/** Opens item `itemId` in the target layer's editor, showing it in the list. The layer's memory
+ *  is set first, since a mounting editor restores from it. */
+export function openItem(itemId: string) {
+  const layer = layers.ensureTargetLayer();
+  Object.assign(getState(layer.id), {
+    section: "items",
+    item: itemId,
+    slotsGroup: "",
+    view: "detail",
+  });
+  pendingReveal = layer.id;
+  selection.selectLayer(layer.id);
+}
+
+/** Whether `layerId`'s editor was opened by a jump to show, cleared as it is read. */
+export function takeReveal(layerId: string): boolean {
+  const asked = pendingReveal === layerId;
+  pendingReveal = null;
+  return asked;
 }
 
 // --- pending new-preset seed ---------------------------------------------------------------

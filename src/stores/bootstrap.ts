@@ -2,7 +2,7 @@
 // the loading flag, then unpacks any catalog still stored on a build. Called once by main.ts
 // before the app mounts.
 import * as storage from "../storage/storage";
-import * as router from "../lib/router";
+import { navigation } from "../lib/navigation";
 import * as builds from "./builds";
 import * as folders from "./folders";
 import * as history from "./history";
@@ -64,7 +64,7 @@ export async function hydrate() {
   history._init(data.history);
 
   // Determine initial selection: URL overrides meta, meta overrides first-build fallback.
-  const route = router.parse();
+  const route = navigation.route.value;
   if (route.build && buildsMap.has(route.build)) {
     selection._restoreFromRoute(route.build, undefined);
   } else if (route.layer && layersMap.has(route.layer)) {

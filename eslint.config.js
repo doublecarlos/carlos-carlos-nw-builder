@@ -141,6 +141,31 @@ export default defineConfigWithVueTs(
     },
   },
 
+  {
+    name: "app/navigation-owns-history",
+    files: ["src/**/*.{ts,vue}"],
+    ignores: ["src/lib/navigation.ts", "src/lib/back-to-close.ts"],
+    rules: {
+      // Places change through lib/navigation.ts and overlays hold Back through
+      // lib/back-to-close.ts; a history write or popstate listener anywhere else splits the
+      // stack they share.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "MemberExpression > Identifier.property[name=/^(pushState|replaceState)$/]",
+          message:
+            "Write the route through `navigation.write` (lib/navigation.ts). See AGENTS.md `# Navigation`.",
+        },
+        {
+          selector: "Literal[value='popstate']",
+          message:
+            "React to Back and Forward through `navigation.onTraverse` (lib/navigation.ts). See AGENTS.md `# Navigation`.",
+        },
+      ],
+    },
+  },
+
   // Must be last: turns off stylistic rules that Prettier already owns.
   skipFormatting,
 );
