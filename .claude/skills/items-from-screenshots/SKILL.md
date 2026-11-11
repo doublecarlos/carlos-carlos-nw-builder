@@ -33,6 +33,7 @@ Note down these fields for each tooltip:
 | Dev info `Def:` line                                                       | `gameIds: ["<Def value>"]`                                         |
 
 - **Mod number:** read it from the `Def:` id (`Head_M33_..._Sss-tier` means M33). If there's no dev info and the user hasn't named the mod, ask; don't infer it from item level.
+- **Artifacts take no mod prefix:** name `filter: "artifact"` items as shown (`Marilith Mask`, not `M26 Marilith Mask`), even when the `Def:` id carries a mod. Their neck and waist set pieces are gear and keep the prefix.
 - **Never omit `gameIds`.** Without dev info, build the id as `<Slot>_M<nn>_<Role>_<Tier>`: role from the class groups table, tier from sibling items of the same mod and rarity (M34: legendary `R4`, mythic `R5`, celestial `R6`). Flag derived ids in the report.
 - **Quality from the name color:** white `common`, green `uncommon`, blue `rare`, purple `epic`, orange `legendary`, cyan `mythic`, magenta `celestial`. OCR text doesn't carry the color, so read it from the image. If the color is unclear, use the rarity in the name or the `Def:` tier (M34: `R4` legendary, `R5` mythic, `R6` celestial), and say so in the report.
 - **Copy the `Def:` value exactly.** Never guess the tier suffix: it varies by mod and rarity (`S-tier` in M31, `R4`/`R5`/`R6` in M34).

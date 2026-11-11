@@ -1379,6 +1379,18 @@
     "bonuses": ["apocalipse-set"]
   },
   {
+    "id": "apocalypse-dagger",
+    "name": "Apocalypse Dagger",
+    "filter": "artifact",
+    "quality": "mythic",
+    "il": 600,
+    "power": 450,
+    "deflect": 450,
+    "forte": 450,
+    "combined_rating": 510,
+    "gameIds": ["Artifact_Apocalypsedagger_R5"]
+  },
+  {
     "id": "arcane-presence",
     "name": "Arcane Presence",
     "filter": "class_feat",
@@ -1612,6 +1624,20 @@
     "gameIds": ["Pet_Barbarianshaman_Player_Bonus"],
     "longDescription": "Barbarian Shaman companion power. Role: Offense, Utility.",
     "tags": ["companion_power:offense", "companion_power:utility"]
+  },
+  {
+    "id": "bard-s-finesse-encore-the-virtuoso",
+    "name": "Bard's Finesse (Encore the Virtuoso)",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "power_p": 0.03,
+    "sev_p": 0.03,
+    "out_healing_p": 0.03,
+    "combined_rating": 900,
+    "gameIds": ["Pet_M33_5_Kenku_Bard_Bonus"],
+    "longDescription": "Encore the Virtuoso companion power. Role: Defense, Utility.",
+    "tags": ["companion_power:defense", "companion_power:utility"]
   },
   {
     "id": "bard-s-storyteller-flamingo",
@@ -3359,6 +3385,12 @@
     "bonuses": ["cunning-hunter"]
   },
   {
+    "id": "cursed-strike",
+    "name": "Cursed Strike",
+    "filter": "group_buff",
+    "bonuses": ["cursed-strike"]
+  },
+  {
     "id": "dancing-blade-s-insight",
     "name": "Dancing Blade's Insight",
     "filter": "companion_power",
@@ -3427,7 +3459,7 @@
   },
   {
     "id": "demon-skull",
-    "name": "M32 Demon Skull",
+    "name": "Demon Skull",
     "filter": "artifact",
     "quality": "mythic",
     "il": 2600,
@@ -3461,6 +3493,19 @@
     "longDescription": "Smolder and Rimefire Smolder now deal 25% of their\ntotal damage when applied or reapplied, but they no\nlonger deal damage over time. Directed Flames can\noccur once every second.",
     "allowedClass": ["wizard"],
     "tags": ["exclusive:thaumaturge"]
+  },
+  {
+    "id": "divine-aegis",
+    "name": "Celestial Divine Aegis",
+    "filter": "combat_enchant_defense",
+    "quality": "celestial",
+    "il": 3000,
+    "overall_healing": 0.09,
+    "gameIds": [
+      "Enchantment_Combat_K_V2_R6_Account",
+      "Enchantment_Combat_K_R6_Account"
+    ],
+    "longDescription": "When you heal an ally with an At-Will, Encounter, or Daily power, generate a shield on yourself and your target equal to 1% of the affected character's Maximum HP. This effect may stack up to 20 times and lasts 10 seconds."
   },
   {
     "id": "divine-equilibrium",
@@ -3955,6 +4000,19 @@
     "name": "Flapjack",
     "filter": "group_buff",
     "bonuses": ["flapjack"]
+  },
+  {
+    "id": "flash-freeze",
+    "name": "Celestial Flash Freeze",
+    "filter": "combat_enchant_defense",
+    "quality": "celestial",
+    "il": 3000,
+    "incoming_damage": -0.12,
+    "gameIds": [
+      "Enchantment_Combat_C_V2_R6_Account",
+      "Enchantment_Combat_C_R6_Account"
+    ],
+    "longDescription": "On receiving damage, you have a 20% chance to apply a 24% slow and 6% Reduced Outgoing Damage to the target. This effect lasts 8 seconds and stacks 3 times."
   },
   {
     "id": "flask-of-potency-1-severity",
@@ -5371,8 +5429,61 @@
     "bonuses": ["lysaera"]
   },
   {
+    "id": "m14-apocalypse-bindings",
+    "name": "M14 Apocalypse Bindings",
+    "filter": "gear_waist",
+    "quality": "legendary",
+    "il": 800,
+    "str": 2,
+    "cha": 2,
+    "ca": 400,
+    "strike": 401,
+    "severity": 400,
+    "combined_rating": 720,
+    "gameIds": ["Waist_All_Artifact_Apocalypsedagger_L70_R4"]
+  },
+  {
+    "id": "m14-apocalypse-choker",
+    "name": "M14 Apocalypse Choker",
+    "filter": "gear_neck",
+    "quality": "legendary",
+    "il": 800,
+    "con": 4,
+    "acc": 400,
+    "strike": 400,
+    "crit_avoid": 401,
+    "combined_rating": 720,
+    "gameIds": ["Neck_All_Artifact_Apocalypsedagger_L70_R4"]
+  },
+  {
+    "id": "m14-vistani-pendant",
+    "name": "M14 Vistani Pendant",
+    "filter": "gear_neck",
+    "quality": "legendary",
+    "il": 800,
+    "con": 4,
+    "acc": 400,
+    "ca": 400,
+    "crit_avoid": 401,
+    "combined_rating": 720,
+    "gameIds": ["Neck_All_Artifact_Tarokkadeck_L70_R4"]
+  },
+  {
+    "id": "m14-vistani-raiments",
+    "name": "M14 Vistani Raiments",
+    "filter": "gear_waist",
+    "quality": "legendary",
+    "il": 800,
+    "str": 2,
+    "dex": 2,
+    "ca": 600,
+    "strike": 600,
+    "combined_rating": 720,
+    "gameIds": ["Waist_All_Artifact_Tarokkadeck_L70_R4"]
+  },
+  {
     "id": "m15-envenomed-storyteller-s-journal",
-    "name": "M15 Envenomed Storyteller's Journal",
+    "name": "Envenomed Storyteller's Journal",
     "filter": "artifact",
     "quality": "mythic",
     "il": 600,
@@ -5398,6 +5509,29 @@
     "allowedClass": ["barbarian"]
   },
   {
+    "id": "m24-eilistraee-s-grace",
+    "name": "M24 Eilistraee's Grace",
+    "filter": "gear_ring",
+    "quality": "mythic",
+    "il": 1850,
+    "ca": 5550,
+    "recharge": 0.015,
+    "combined_rating": 1480,
+    "gameIds": ["Ring_M24_Lightdps_Dungeon_Stat_1"]
+  },
+  {
+    "id": "m25-antiquated-drow-priest-s-mitts",
+    "name": "M25 Antiquated Drow Priest's Mitts",
+    "filter": "gear_arms",
+    "quality": "epic",
+    "il": 1900,
+    "acc": 570,
+    "severity": 855,
+    "out_healing": 1425,
+    "combined_rating": 1710,
+    "gameIds": ["Arms_M25_Heavyheal_Chase_Low"]
+  },
+  {
     "id": "m26-abyss-conquerer-s-mauler-plate",
     "name": "M26 Abyss Conquerer's Mauler Plate",
     "filter": "gear_armor",
@@ -5408,6 +5542,193 @@
     "combined_rating": 1845,
     "gameIds": ["Body_M26_Heavydps_Dungeon_Chase_R2"],
     "bonuses": ["m26-reckless-rage"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-book",
+    "name": "M26 Duergar Mercenary's Steel Book",
+    "filter": "gear_weapon_offhand",
+    "quality": "legendary",
+    "il": 1900,
+    "strike": 1425,
+    "defense": 1425,
+    "combined_rating": 1710,
+    "gameIds": ["Secondary_M26_Scourge_Masterwork"],
+    "allowedClass": ["warlock"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-book-1",
+    "name": "M26 Duergar Mercenary's Steel Book +1",
+    "filter": "gear_weapon_offhand",
+    "quality": "legendary",
+    "il": 2000,
+    "strike": 1500,
+    "defense": 1500,
+    "combined_rating": 1800,
+    "gameIds": ["Secondary_M26_Scourge_Masterwork_Hq"],
+    "allowedClass": ["warlock"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-icon",
+    "name": "M26 Duergar Mercenary's Steel Icon",
+    "filter": "gear_weapon_offhand",
+    "quality": "legendary",
+    "il": 1900,
+    "awareness": 1425,
+    "out_healing": 1425,
+    "combined_rating": 1710,
+    "gameIds": ["Secondary_M26_Devoted_Masterwork"],
+    "allowedClass": ["cleric"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-icon-1",
+    "name": "M26 Duergar Mercenary's Steel Icon +1",
+    "filter": "gear_weapon_offhand",
+    "quality": "legendary",
+    "il": 2000,
+    "awareness": 1500,
+    "out_healing": 1500,
+    "combined_rating": 1800,
+    "gameIds": ["Secondary_M26_Devoted_Masterwork_Hq"],
+    "allowedClass": ["cleric"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-lute",
+    "name": "M26 Duergar Mercenary's Steel Lute",
+    "filter": "gear_weapon_offhand",
+    "quality": "legendary",
+    "il": 1900,
+    "severity": 1425,
+    "awareness": 1425,
+    "combined_rating": 1710,
+    "gameIds": ["Secondary_M26_Bard_Masterwork"],
+    "allowedClass": ["bard"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-lute-1",
+    "name": "M26 Duergar Mercenary's Steel Lute +1",
+    "filter": "gear_weapon_offhand",
+    "quality": "legendary",
+    "il": 2000,
+    "severity": 1500,
+    "awareness": 1500,
+    "combined_rating": 1800,
+    "gameIds": ["Secondary_M26_Bard_Masterwork_Hq"],
+    "allowedClass": ["bard"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-pactblade",
+    "name": "M26 Duergar Mercenary's Steel Pactblade",
+    "filter": "gear_weapon_mainhand",
+    "quality": "legendary",
+    "il": 1900,
+    "strike": 1425,
+    "severity": 1425,
+    "base_damage_flat": 200,
+    "combined_rating": 1710,
+    "gameIds": ["Primary_M26_Scourge_Masterwork"],
+    "allowedClass": ["warlock"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-pactblade-1",
+    "name": "M26 Duergar Mercenary's Steel Pactblade +1",
+    "filter": "gear_weapon_mainhand",
+    "quality": "legendary",
+    "il": 2000,
+    "strike": 1500,
+    "severity": 1500,
+    "base_damage_flat": 200,
+    "combined_rating": 1800,
+    "gameIds": ["Primary_M26_Scourge_Masterwork_Hq"],
+    "allowedClass": ["warlock"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-rapier",
+    "name": "M26 Duergar Mercenary's Steel Rapier",
+    "filter": "gear_weapon_mainhand",
+    "quality": "legendary",
+    "il": 1900,
+    "ca": 1425,
+    "strike": 1425,
+    "base_damage_flat": 200,
+    "combined_rating": 1710,
+    "gameIds": ["Primary_M26_Bard_Masterwork"],
+    "allowedClass": ["bard"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-rapier-1",
+    "name": "M26 Duergar Mercenary's Steel Rapier +1",
+    "filter": "gear_weapon_mainhand",
+    "quality": "legendary",
+    "il": 2000,
+    "ca": 1500,
+    "strike": 1500,
+    "base_damage_flat": 200,
+    "combined_rating": 1800,
+    "gameIds": ["Primary_M26_Bard_Masterwork_Hq"],
+    "allowedClass": ["bard"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-symbol",
+    "name": "M26 Duergar Mercenary's Steel Symbol",
+    "filter": "gear_weapon_mainhand",
+    "quality": "legendary",
+    "il": 1900,
+    "strike": 1425,
+    "severity": 1425,
+    "base_damage_flat": 200,
+    "combined_rating": 1710,
+    "gameIds": ["Primary_M26_Devoted_Masterwork"],
+    "allowedClass": ["cleric"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-duergar-mercenary-s-steel-symbol-1",
+    "name": "M26 Duergar Mercenary's Steel Symbol +1",
+    "filter": "gear_weapon_mainhand",
+    "quality": "legendary",
+    "il": 2000,
+    "strike": 1500,
+    "severity": 1500,
+    "base_damage_flat": 200,
+    "combined_rating": 1800,
+    "gameIds": ["Primary_M26_Devoted_Masterwork_Hq"],
+    "allowedClass": ["cleric"],
+    "bonuses": ["m26-duergar-weapon"]
+  },
+  {
+    "id": "m26-jewel-of-the-marilith",
+    "name": "M26 Jewel of the Marilith",
+    "filter": "gear_neck",
+    "quality": "mythic",
+    "il": 2050,
+    "dex": 6,
+    "acc": 1538,
+    "strike": 1538,
+    "combined_rating": 1845,
+    "gameIds": ["Neck_M26_Dungeon_Artifact"]
+  },
+  {
+    "id": "m26-sash-of-the-marilith",
+    "name": "M26 Sash of the Marilith",
+    "filter": "gear_waist",
+    "quality": "mythic",
+    "il": 2050,
+    "str": 3,
+    "dex": 3,
+    "ca": 1538,
+    "strike": 1538,
+    "combined_rating": 1845,
+    "gameIds": ["Waist_M26_Dungeon_Artifact"]
   },
   {
     "id": "m26-scintillant-amulet",
@@ -5524,6 +5845,20 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m27-astral-raider-s-sleeves",
+    "name": "M27 Astral Raider's Sleeves",
+    "filter": "gear_arms",
+    "quality": "epic",
+    "il": 2200,
+    "severity": 1320,
+    "defense": 990,
+    "inc_healing": 990,
+    "combined_rating": 1980,
+    "gameIds": ["Arms_M27_Lightdps_Zone"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": ["m27-scaled-furor"]
+  },
+  {
     "id": "m28-ultraviolet-elven-gloves",
     "name": "M28 Ultraviolet Elven Gloves",
     "filter": "gear_arms",
@@ -5618,6 +5953,19 @@
     "gameIds": ["Body_M29_Mediumdps_Chase_T2"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m29-ruthless-advantage"]
+  },
+  {
+    "id": "m30-prismatic-luminstep-greaves",
+    "name": "M30 Prismatic Luminstep Greaves",
+    "filter": "gear_boots",
+    "quality": "mythic",
+    "il": 3700,
+    "forte": 2498,
+    "out_healing": 2220,
+    "combined_rating": 3330,
+    "gameIds": ["Feet_M30_Mediumheal_Chase_T2"],
+    "allowedClass": ["bard", "warlock"],
+    "bonuses": ["m30-ruthless-resources-greater"]
   },
   {
     "id": "m31-5-ritualistic-necklace",
@@ -5802,6 +6150,17 @@
     "bonuses": ["m31-thayan-predator"]
   },
   {
+    "id": "m31-sabatons-of-the-deathless-faith",
+    "name": "M31 Sabatons of the Deathless Faith",
+    "filter": "gear_boots",
+    "quality": "celestial",
+    "il": 4550,
+    "strike": 3686,
+    "forte": 3378,
+    "combined_rating": 4095,
+    "gameIds": ["Feet_M31_Heavyheal_S-tier"]
+  },
+  {
     "id": "m31-sanguine-seal-damage",
     "name": "M31 Sanguine Seal",
     "filter": "gear_ring",
@@ -5870,6 +6229,19 @@
     "combined_rating": 3320,
     "gameIds": ["Ring_M31_Mediumheal_S-tier"],
     "bonuses": ["m31-enduring-critical"]
+  },
+  {
+    "id": "m31-vambraces-of-the-bloodforged-edict",
+    "name": "M31 Vambraces of the Bloodforged Edict",
+    "filter": "gear_arms",
+    "quality": "celestial",
+    "il": 4550,
+    "ca": 2457,
+    "strike": 3686,
+    "combined_rating": 4095,
+    "gameIds": ["Arms_M31_Heavyall_Sss-tier"],
+    "shortDescription": "Max Divinity / Soulweave / Performance +20%",
+    "bonuses": ["m31-resourceful-healer-ascendant"]
   },
   {
     "id": "m31-visage-of-the-eternal-herald",
@@ -6368,7 +6740,7 @@
   },
   {
     "id": "m33-5-laughing-void",
-    "name": "M33.5 Laughing Void",
+    "name": "Laughing Void",
     "filter": "artifact",
     "quality": "mythic",
     "il": 2600,
@@ -8161,7 +8533,7 @@
   },
   {
     "id": "marco-s",
-    "name": "M27 Marco's Mystic Marker",
+    "name": "Marco's Mystic Marker",
     "filter": "artifact",
     "quality": "mythic",
     "il": 1500,
@@ -8169,6 +8541,18 @@
     "severity": 1125,
     "combined_rating": 1275,
     "gameIds": ["Artifact_M27_Marcosmissiles_R5"]
+  },
+  {
+    "id": "marilith-mask",
+    "name": "Marilith Mask",
+    "filter": "artifact",
+    "quality": "mythic",
+    "il": 1500,
+    "acc": 1125,
+    "ca": 1125,
+    "severity": 1125,
+    "combined_rating": 1275,
+    "gameIds": ["Artifact_M26_Dungeon_R5"]
   },
   {
     "id": "marilith-set",
@@ -9511,6 +9895,19 @@
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "refulgent-fortification",
+    "name": "Celestial Refulgent Fortification",
+    "filter": "combat_enchant_defense",
+    "quality": "celestial",
+    "il": 3000,
+    "incoming_damage": -0.12,
+    "gameIds": [
+      "Enchantment_Combat_H_V2_R6_Account",
+      "Enchantment_Combat_H_R6_Account"
+    ],
+    "longDescription": "When casting a single target heal on a target in combat, the target gains 18% Movement Speed and 6% reduction in incoming Damage for 4 seconds."
   },
   {
     "id": "regis-s-reflexes",
@@ -11255,6 +11652,18 @@
     "filter": "insignia_bonus",
     "insigniaRecipe": ["illuminated", "regal", "illuminated", "enlightened"],
     "shortDescription": "Whenever you use a Daily power, reduce the remaining cooldown on all Encounter powers by 5s. This effect can only trigger once every 15s."
+  },
+  {
+    "id": "tarokka-deck",
+    "name": "Tarokka Deck",
+    "filter": "artifact",
+    "quality": "mythic",
+    "il": 600,
+    "severity": 450,
+    "crit_avoid": 450,
+    "deflect_sev": 450,
+    "combined_rating": 510,
+    "gameIds": ["Artifact_Tarokkadeck_R5"]
   },
   {
     "id": "the-bigger-they-are-minsc-damage-defense",

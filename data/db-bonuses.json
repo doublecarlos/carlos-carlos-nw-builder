@@ -905,6 +905,20 @@
     ]
   },
   {
+    "id": "cursed-strike",
+    "name": "Cursed Strike",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_awareness": -0.02
+        }
+      }
+    ]
+  },
+  {
     "id": "death-s-bulwark-stats",
     "name": "Death's Bulwark Stats",
     "inputs": {
@@ -1960,6 +1974,24 @@
     ]
   },
   {
+    "id": "m26-duergar-weapon",
+    "name": "M26 Duergar Weapon Set",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.02,
+          "overall_healing": 0.02,
+          "incoming_damage": -0.02
+        }
+      }
+    ]
+  },
+  {
     "id": "m26-masterwork-neck-waist-set",
     "name": "M26 Masterwork Neck/Waist Set",
     "grants": [
@@ -2000,6 +2032,31 @@
         "scale": {
           "formula": "$stacks"
         }
+      }
+    ]
+  },
+  {
+    "id": "m27-scaled-furor",
+    "name": "M27 Scaled Furor",
+    "inputs": {
+      "strength": {
+        "type": "percent",
+        "label": "Damage bonus",
+        "min": 0,
+        "max": 0.2,
+        "step": 0.01,
+        "default": 0.2
+      }
+    },
+    "grants": [
+      {
+        "stats": {
+          "base_damage_mult": 1
+        },
+        "scale": {
+          "formula": "$strength"
+        },
+        "longDescription": "Grants up to 20% bonus Damage when your total item level is being scaled down."
       }
     ]
   },
@@ -2103,6 +2160,20 @@
         "stats": {
           "acc_p": 0.075,
           "ca_p": 0.075
+        }
+      }
+    ]
+  },
+  {
+    "id": "m30-ruthless-resources-greater",
+    "name": "M30 Ruthless Resources (Greater)",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "mana_regen": 0.25
         }
       }
     ]
@@ -2287,6 +2358,17 @@
         "stats": {
           "ca_p": 0.1,
           "crit_avoid_p": -0.075
+        }
+      }
+    ]
+  },
+  {
+    "id": "m31-resourceful-healer-ascendant",
+    "name": "M31 Resourceful Healer (Ascendant)",
+    "grants": [
+      {
+        "stats": {
+          "out_healing_p": 0.05
         }
       }
     ]
