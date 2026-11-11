@@ -27,6 +27,7 @@ You **MUST NOT**:
 - Use a bare `z-<number>` utility class (enforced by lint) - use the `--z-index-*` scale in `src/base.css`
 - Put `flex-wrap` on a row of form controls outside `src/components/ui` (enforced by lint) - use `FormGrid`, `InputRow` or a `RepeatableRows` `#lead` card, `md:flex-wrap` when the row has its own phone layout, or `flow-wrap` for a flow of independent items
 - Call a composable from inside a template expression - construct it once (in `<script setup>`, or cached by key for a per-row case) and read the result in the template
+- Call `history.pushState`/`replaceState` or listen for `popstate` outside `src/lib/navigation.ts` and `src/lib/back-to-close.ts` (enforced by lint) - see `# Navigation`
 
 # Good practices
 
@@ -36,6 +37,15 @@ You **MUST NOT**:
 - An editor form's draft shape, its entity conversion and its change labels live in `src/lib/*-draft.ts`, not in the SFC - the SFC owns markup and reactive wiring only. See `src/lib/item-draft.ts` for the worked example.
 - Motion is fast and never in the way: use the motion tokens in `src/base.css` (`transition-colors`, `animate-fade-in`, `animate-pop-in`), animate on enter only and close instantly, keep to `opacity`/`transform` within 200ms, and fade with opacity only over anything holding a fixed descendant (`ComboBoxMenu`). Rows highlighted by the keyboard get no transition.
 - When adding a case to something that already handles two or more sibling cases, check whether it wants a descriptor table instead of another branch. No lint rule catches this one; `GROUPS` in `src/components/LayerEditor.vue` is the worked example, where four parallel selection refs, row builders and save/delete/revert handlers collapsed onto one entry per overlay group.
+
+# Navigation
+
+Back and Forward move between **places**; **transient layers** sit on top of them.
+
+- A place lives in the URL's query string: the selected build or layer, the details tab, the stable reference, the layer editor's tab and open entry or new draft, the phone's pane. Add its param to `ROUTE_PARAMS` in `src/lib/route-model.ts`, which decides whether a change pushes or replaces and whether it can unmount a form.
+- Write a place with `navigation.write`; pass `transient` only for steps that should not be stops of their own, like arrow-key browsing. Leave a place the way Back would with `navigation.retreat`. Apply what Back or Forward landed on in a `navigation.onTraverse` listener.
+- A transient layer (modal, sheet, drawer, menu, combobox screen) holds Back with `useBackToClose` and never writes the URL.
+- A dirty draft is asked about before a programmatic navigation by its caller (`draftGuard.confirmDiscard`), and before Back or Forward lands by the navigation guard.
 
 # Tests
 

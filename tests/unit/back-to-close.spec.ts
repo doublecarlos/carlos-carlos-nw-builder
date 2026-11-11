@@ -52,7 +52,7 @@ function fakeWindow(
     addEventListener: target.addEventListener.bind(target),
   };
   /** The app's own popstate handler, registered after the shared instance listens at module
-   *  load, as App.vue's and LayerEditor's are. */
+   *  load, as navigation's is. */
   const app = vi.fn();
   return {
     host,

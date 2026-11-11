@@ -727,7 +727,7 @@ const warnCount = computed(
 // `status`/`q` params; `section` is the tab, `sectionId` a selected layout section.
 // `select`'s `push` flag keeps arrow-key browsing out of the back/forward history.
 
-/** The router params that select `id` in `group` and clear every other group's key. */
+/** The route params that select `id` in `group` and clear every other group's key. */
 function routeParamsFor(group: EditorGroup, id: string | null): RoutePatch {
   const params: RoutePatch = { new: null };
   for (const other of EDITOR_GROUPS) params[GROUPS[other].routerKey] = null;
