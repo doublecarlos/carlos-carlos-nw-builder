@@ -15,8 +15,13 @@ export const trashed = computed(() =>
   [..._trash.value].sort((a, b) => b.deletedAt - a.deletedAt),
 );
 
-export function _add(kind: "build" | "layer", item: Build | Layer) {
+export function _add(
+  kind: "build" | "layer",
+  item: Build | Layer,
+  folderId?: string | null,
+) {
   const entry: TrashEntry = { kind, item, deletedAt: Date.now() };
+  if (folderId) entry.folderId = folderId;
   _trash.value.push(entry);
   storage.putTrash(entry).catch(() => {
     // non-critical

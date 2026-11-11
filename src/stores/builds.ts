@@ -237,7 +237,7 @@ function trashBuild(id: string): RowPlacement | null {
   folders.removeBuild(id);
   storage.deleteBuildRecord(id).catch(() => {});
 
-  trash._add("build", b);
+  trash._add("build", b, placement.folderId);
 
   // Deleting the last build leaves the builder up with no builds, rather than the landing
   // screen: the build is sitting in the trash, and the landing would hide the nav it is
@@ -458,16 +458,18 @@ export function upsertImported(
   const unpacked = unpackCatalog(build);
   pruneStored(build);
   const existing = _builds.value.get(build.id);
-  if (replacing && existing) trash._add("build", existing);
+  if (replacing && existing)
+    trash._add("build", existing, folders.parentOf(build.id)?.id);
   else if (!existing) folders.appendBuild(build.id);
   _builds.value.set(build.id, build);
   markDirty(build.id);
   return unpacked;
 }
 
-/** The trash UI's Restore: puts a trashed build back at the bottom of the top level and
- *  selects it. When a live build holds its id (an import replaced it), the restored copy gets
- *  a fresh one, so both stay. Records nothing on the nav stack. */
+/** The trash UI's Restore: puts a trashed build back at the bottom of the folder it was
+ *  deleted from, or of the top level when that folder is gone, and selects it. When a live
+ *  build holds its id (an import replaced it), the restored copy gets a fresh one, so both
+ *  stay. Records nothing on the nav stack. */
 export function restoreFromTrash(entry: TrashEntry) {
   if (entry.kind !== "build") return;
   const item = toRaw(trash.restore(entry) as Build | null);
@@ -478,7 +480,10 @@ export function restoreFromTrash(entry: TrashEntry) {
   const unpacked = unpackCatalog(b);
   const landed = unpacked && unpackNotice([unpacked]);
   pruneStored(b);
-  addBuild(b, { folderId: null, index: Number.MAX_SAFE_INTEGER });
+  addBuild(b, {
+    folderId: entry.folderId ?? null,
+    index: Number.MAX_SAFE_INTEGER,
+  });
   selection.selectBuild(b.id);
   showNotice([`Restored “${b.name}”`, landed].filter(Boolean).join(". "));
 }

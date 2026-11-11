@@ -1032,6 +1032,8 @@ export interface TrashEntry {
   kind: "build" | "layer";
   item: Build | Layer;
   deletedAt: number;
+  /** The folder a build sat in when trashed, so a restore can put it back there. */
+  folderId?: string;
 }
 
 // --- resolution (bonus.ts / engine.ts) --------------------------------------------------------

@@ -842,6 +842,18 @@ describe("putBuild / putLayer / deleteBuildRecord / deleteLayerRecord / putTrash
     expect((trash[0].item as Build).name).toBe("Trashed");
   });
 
+  // Restore after a reload still knows which folder the build came from.
+  it("loadAll keeps a trashed build's folder", async () => {
+    await storage.putTrash({
+      kind: "build",
+      item: storage.defaultBuild("Trashed"),
+      deletedAt: 1000,
+      folderId: "f_1",
+    });
+    const { trash } = await storage.loadAll();
+    expect(trash[0].folderId).toBe("f_1");
+  });
+
   it("loadAll migrates a trashed build stored in an older shape", async () => {
     const stale = {
       ...storage.defaultBuild("Trashed"),
