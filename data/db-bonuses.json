@@ -634,6 +634,22 @@
     ]
   },
   {
+    "id": "bruenor-s-bulwark",
+    "name": "Bruenor's Bulwark",
+    "grants": [
+      {
+        "stats": {
+          "defense_p": 0.045,
+          "awareness_p": 0.045
+        },
+        "scale": {
+          "formula": "1 + 0.25 * (tagged(\"companion_of_the_hall:celestial\") - 1)",
+          "label": "+25% per other Companion of the Hall"
+        }
+      }
+    ]
+  },
+  {
     "id": "burning-radiant-shift-stacks",
     "name": "Burning/Radiant Shift stacks",
     "inputs": {
@@ -692,6 +708,22 @@
         },
         "stats": {
           "sev_p": 0.05
+        }
+      }
+    ]
+  },
+  {
+    "id": "catti-s-coordination",
+    "name": "Catti's Coordination",
+    "grants": [
+      {
+        "stats": {
+          "control_resist_p": 0.045,
+          "movement": 0.045
+        },
+        "scale": {
+          "formula": "1 + 0.25 * (tagged(\"companion_of_the_hall:celestial\") - 1)",
+          "label": "+25% per other Companion of the Hall"
         }
       }
     ]
@@ -818,6 +850,57 @@
         "stats": {
           "il": -1
         }
+      }
+    ]
+  },
+  {
+    "id": "compy-s-instincts",
+    "name": "Compy's Instincts",
+    "grants": [
+      {
+        "name": "Doubled in Chult",
+        "when": {
+          "equipped": {
+            "item": "location-chult"
+          }
+        },
+        "stats": {
+          "power_p": 0.09
+        }
+      }
+    ]
+  },
+  {
+    "id": "cunning-hunter",
+    "name": "Cunning Hunter",
+    "grants": [
+      {
+        "variants": [
+          {
+            "when": {
+              "role": "tank"
+            },
+            "stats": {
+              "awareness_p": 0.045
+            }
+          },
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "strike_p": 0.045
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "out_healing_p": 0.045
+            }
+          }
+        ]
       }
     ]
   },
@@ -991,6 +1074,22 @@
         },
         "stats": {
           "outgoing_damage_mult": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "drizzt-s-devastation",
+    "name": "Drizzt's Devastation",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.045,
+          "sev_p": 0.045
+        },
+        "scale": {
+          "formula": "1 + 0.25 * (tagged(\"companion_of_the_hall:celestial\") - 1)",
+          "label": "+25% per other Companion of the Hall"
         }
       }
     ]
@@ -1806,6 +1905,20 @@
         },
         "scale": {
           "formula": "$stacks"
+        }
+      }
+    ]
+  },
+  {
+    "id": "lysaera",
+    "name": "Lysaera",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_incoming_damage": 0.045
         }
       }
     ]
@@ -5990,6 +6103,22 @@
     ]
   },
   {
+    "id": "regis-s-reflexes",
+    "name": "Regis's Reflexes",
+    "grants": [
+      {
+        "stats": {
+          "deflect_p": 0.045,
+          "deflect_sev_p": 0.045
+        },
+        "scale": {
+          "formula": "1 + 0.25 * (tagged(\"companion_of_the_hall:celestial\") - 1)",
+          "label": "+25% per other Companion of the Hall"
+        }
+      }
+    ]
+  },
+  {
     "id": "relative-haste-2",
     "name": "Relative Haste",
     "inputs": {
@@ -6446,6 +6575,32 @@
     ]
   },
   {
+    "id": "spiteful-hex",
+    "name": "Spiteful Hex",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "defense_p": 0.045
+        },
+        "longDescription": "70% chance when struck by a Critical Strike (5s cooldown) to deal damage around you (Magnitude 100) and buff yourself with +4.5% Defense for 10 seconds. The enemy debuff is the Lysaera group buff."
+      }
+    ]
+  },
+  {
     "id": "spoonful-of-chaos",
     "name": "Spoonful of Chaos",
     "inputs": {
@@ -6828,6 +6983,22 @@
             "label": "Wraith Claw's damage"
           }
         ]
+      }
+    ]
+  },
+  {
+    "id": "wulfgar-s-wrecking",
+    "name": "Wulfgar's Wrecking",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.045,
+          "ca_p": 0.045
+        },
+        "scale": {
+          "formula": "1 + 0.25 * (tagged(\"companion_of_the_hall:celestial\") - 1)",
+          "label": "+25% per other Companion of the Hall"
+        }
       }
     ]
   }

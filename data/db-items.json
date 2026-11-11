@@ -1369,7 +1369,7 @@
     "ca_p": 0.045,
     "combined_rating": 900,
     "gameIds": ["Pet_Aoth_Fezim_Brightwing_Bonus"],
-    "longDescription": "Aoth's companion power. Role: Offense/Utility.",
+    "longDescription": "Aoth companion power. Role: Offense, Utility.",
     "tags": ["companion_power:utility", "companion_power:offense"]
   },
   {
@@ -1531,6 +1531,31 @@
     "bonuses": ["awakened-forger-s-box"]
   },
   {
+    "id": "baby-deep-crow-s-presence",
+    "name": "Baby Deep Crow's Presence",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "power_p": 0.09,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Deepcrow_Baby_Player_Bonus"],
+    "longDescription": "Baby Deep Crow companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
+  },
+  {
+    "id": "baby-polar-bear-s-instincts",
+    "name": "Baby Polar Bear's Instincts",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "defense_p": 0.045,
+    "out_healing_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Bear_Polar_Baby_Player_Bonus"],
+    "longDescription": "Polar Bear Cub companion power. Role: Defense, Utility.",
+    "tags": ["companion_power:defense", "companion_power:utility"]
+  },
+  {
     "id": "backup-performer",
     "name": "Backup Performer",
     "filter": "feat1",
@@ -1585,7 +1610,7 @@
     "ca_p": 0.045,
     "combined_rating": 900,
     "gameIds": ["Pet_Barbarianshaman_Player_Bonus"],
-    "longDescription": "Barbarian Shaman companion power. Role: Offense/Utility.",
+    "longDescription": "Barbarian Shaman companion power. Role: Offense, Utility.",
     "tags": ["companion_power:offense", "companion_power:utility"]
   },
   {
@@ -1631,6 +1656,18 @@
     "id": "black-death-scorpion",
     "name": "Black Death Scorpion",
     "filter": "group_buff"
+  },
+  {
+    "id": "black-dragon-s-insight",
+    "name": "Black Dragon's Insight",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "strike_p": 0.09,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Ioundragonstone_Black_Player_Bonus"],
+    "longDescription": "Black Dragon Ioun Stone companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
   },
   {
     "id": "blazing-oportunity-ca-severity-bestial-fire-archon-celestial",
@@ -2461,6 +2498,18 @@
     }
   },
   {
+    "id": "bruenor-s-bulwark",
+    "name": "Bruenor's Bulwark",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Bruenor_Player_Bonus"],
+    "longDescription": "Bruenor Battlehammer companion power, a Companion of the Hall. Role: Defense.",
+    "tags": ["companion_power:defense", "companion_of_the_hall:celestial"],
+    "bonuses": ["bruenor-s-bulwark"]
+  },
+  {
     "id": "brutality",
     "name": "Celestial Brutality",
     "filter": "insignia",
@@ -2655,6 +2704,18 @@
     "bonuses": ["captain"]
   },
   {
+    "id": "catti-s-coordination",
+    "name": "Catti's Coordination",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Cattibrie_Player_Bonus"],
+    "longDescription": "Catti-brie companion power, a Companion of the Hall. Role: Utility.",
+    "tags": ["companion_power:utility", "companion_of_the_hall:celestial"],
+    "bonuses": ["catti-s-coordination"]
+  },
+  {
     "id": "cautious-devotion",
     "name": "Cautious Devotion",
     "filter": "insignia_bonus",
@@ -2701,13 +2762,13 @@
   },
   {
     "id": "celestial-lion-s-presence",
-    "name": "Celestial Lion's Presence",
+    "name": "Celestial Lion's Presence (Stalwart Golden Lion)",
     "filter": "companion_power",
     "quality": "celestial",
     "il": 900,
     "combined_rating": 900,
     "gameIds": ["Pet_Lion_Celestial_Player_Bonus"],
-    "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
+    "longDescription": "Stalwart Golden Lion companion power. Role: Utility.\n\n50% chance, on companion power use, to apply a stack of Celestial Lion's Presence to you. This effect may only occur once every 15 seconds. Celestial Lion's Presence grants 9% additional damage as radiant damage for 10 seconds.",
     "dynamicStats": [
       {
         "stat": "overall_damage",
@@ -3123,7 +3184,8 @@
     "combined_rating": 900,
     "gameIds": ["Pet_Compy_Pack_Player_Bonus"],
     "longDescription": "Alpha Compy companion power. Role: Utility.",
-    "tags": ["companion_power:utility"]
+    "tags": ["companion_power:utility"],
+    "bonuses": ["compy-s-instincts"]
   },
   {
     "id": "courage-crescent",
@@ -3284,8 +3346,34 @@
     "gameIds": ["Artifact_Soulflight_R5"]
   },
   {
+    "id": "cunning-hunter",
+    "name": "Cunning Hunter (Mimic)",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "forte_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Mimic_Player_Bonus"],
+    "longDescription": "Cunning Mimic companion power. Role: Offense.",
+    "tags": ["companion_power:offense"],
+    "bonuses": ["cunning-hunter"]
+  },
+  {
+    "id": "dancing-blade-s-insight",
+    "name": "Dancing Blade's Insight",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "ca_p": 0.045,
+    "sev_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Dancingblade_Player_Bonus"],
+    "longDescription": "Dancing Blade companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
+  },
+  {
     "id": "dark-dealings-dark-dealer-accuracy-ca-utility",
-    "name": "Dark Dealings",
+    "name": "Dark Dealings (Dark Dealer)",
     "filter": "companion_power",
     "quality": "celestial",
     "il": 900,
@@ -3390,6 +3478,19 @@
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "divine-judgement",
+    "name": "Divine Judgement (Zariel, Soradiel)",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "strike_p": 0.045,
+    "sev_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Zariel_Player_Bonus"],
+    "longDescription": "Zariel and Soradiel companion power. Role: Defense.",
+    "tags": ["companion_power:defense"]
   },
   {
     "id": "dominance",
@@ -3525,6 +3626,18 @@
     "bonuses": ["drizzt"]
   },
   {
+    "id": "drizzt-s-devastation",
+    "name": "Drizzt's Devastation",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Drizzt_Player_Bonus"],
+    "longDescription": "Drizzt companion power, a Companion of the Hall. Role: Offense.",
+    "tags": ["companion_power:offense", "companion_of_the_hall:celestial"],
+    "bonuses": ["drizzt-s-devastation"]
+  },
+  {
     "id": "dummy-artifact-1200-il",
     "name": "Dummy Artifact 1200 IL",
     "filter": "artifact",
@@ -3539,6 +3652,17 @@
     "quality": "mythic",
     "il": 1500,
     "combined_rating": 1275
+  },
+  {
+    "id": "elaina-s-riposte",
+    "name": "Elaina's Riposte",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "combined_rating": 900,
+    "gameIds": ["Pet_M28_Elaina_Sartell_Player_Bonus"],
+    "longDescription": "Captain Elaina Sartell companion power. Role: Defense, Offense.\n\nWhen receiving Combat Advantage damage, you heal 9% of your Maximum Hit Points and deal that value to enemies within 15'. Not affected by Incoming or Outgoing Healing. Internal cooldown: 10 seconds.",
+    "tags": ["companion_power:defense", "companion_power:offense"]
   },
   {
     "id": "elemental-medley",
@@ -3795,10 +3919,36 @@
     ]
   },
   {
+    "id": "feypanther-s-presence",
+    "name": "Feypanther's Presence",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "acc_p": 0.045,
+    "ca_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Feypanther_Player_Bonus"],
+    "longDescription": "Fey Panther companion power. Role: Defense.",
+    "tags": ["companion_power:defense"]
+  },
+  {
     "id": "fighter-s-enforced-threat",
     "name": "Fighter's Enforced Threat",
     "filter": "group_buff",
     "bonuses": ["fighter-s-enforced-threat"]
+  },
+  {
+    "id": "flamesprite-s-insight",
+    "name": "Flamesprite's Insight",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "acc_p": 0.045,
+    "strike_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Flamesprite_Player_Bonus"],
+    "longDescription": "Flame Sprite companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
   },
   {
     "id": "flapjack",
@@ -4036,6 +4186,22 @@
     "tags": ["exclusive:thaumaturge"]
   },
   {
+    "id": "golden-bulette-pup-s-presence",
+    "name": "Golden Bulette Pup's Presence",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "out_healing_p": 0.09,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Bulette_Baby_Gold_Player_Bonus"],
+    "longDescription": "Golden Bulette Pup companion power. Role: Defense, Offense, Utility.",
+    "tags": [
+      "companion_power:defense",
+      "companion_power:offense",
+      "companion_power:utility"
+    ]
+  },
+  {
     "id": "golden-cat-s-instincts-golden-cat-ca-any",
     "name": "Golden Cat's Instincts",
     "filter": "companion_power",
@@ -4044,7 +4210,7 @@
     "ca_p": 0.09,
     "combined_rating": 900,
     "gameIds": ["Pet_Cat_Gold_Player_Bonus"],
-    "longDescription": "Golden Cat companion power. Role: Any (Offense, Defense, or Utility).",
+    "longDescription": "Golden Cat companion power. Role: Defense, Offense, Utility.",
     "tags": [
       "companion_power:offense",
       "companion_power:defense",
@@ -4060,7 +4226,7 @@
     "awareness_p": 0.09,
     "combined_rating": 900,
     "gameIds": ["Pet_Deepcrow_Baby_Gold_Player_Bonus"],
-    "longDescription": "Golden Deep Crow's companion power. Role: Any.",
+    "longDescription": "Golden Deep Crow companion power. Role: Defense, Offense, Utility.",
     "tags": [
       "companion_power:defense",
       "companion_power:offense",
@@ -4203,6 +4369,18 @@
       }
     ],
     "allowedClass": ["fighter"]
+  },
+  {
+    "id": "gromph-s-confidence",
+    "name": "Gromph's Confidence",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "strike_p": 0.09,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Gromph_Baenre_Player_Bonus"],
+    "longDescription": "Gromph Baenre companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
   },
   {
     "id": "guardian-s-spirit",
@@ -5163,6 +5341,11 @@
     "shortDescription": "Whenever you are below 30% of your Maximum Hit Points, you instantly recover 10% of your Stamina and 20% of your Maximum Hit Points. This effect can only occur once every 30 seconds."
   },
   {
+    "id": "location-chult",
+    "name": "Location: Chult",
+    "filter": "scenario_flag"
+  },
+  {
     "id": "location-thay",
     "name": "Location: Thay",
     "filter": "scenario_flag"
@@ -5180,6 +5363,12 @@
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "lysaera",
+    "name": "Lysaera",
+    "filter": "group_buff",
+    "bonuses": ["lysaera"]
   },
   {
     "id": "m15-envenomed-storyteller-s-journal",
@@ -7952,14 +8141,14 @@
   },
   {
     "id": "maestro-s-observation",
-    "name": "Maestro's Observation",
+    "name": "Maestro's Observation (Jarlaxle)",
     "filter": "companion_power",
     "quality": "celestial",
     "il": 900,
     "acc_p": 0.09,
     "combined_rating": 900,
     "gameIds": ["Pet_Jarlaxle_Player_Bonus"],
-    "longDescription": "Jarlaxle's companion power. Role: Offense.",
+    "longDescription": "Jarlaxle companion power. Role: Offense.",
     "tags": ["companion_power:offense"]
   },
   {
@@ -8125,6 +8314,19 @@
     "bonuses": ["mender-s-covenant"]
   },
   {
+    "id": "mercenary-s-discipline",
+    "name": "Mercenary's Discipline",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "power_p": 0.045,
+    "ca_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Mercenary_Player_Bonus"],
+    "longDescription": "Mercenary companion power. Role: Offense, Utility.",
+    "tags": ["companion_power:offense", "companion_power:utility"]
+  },
+  {
     "id": "misnc",
     "name": "Misnc",
     "filter": "group_buff",
@@ -8263,6 +8465,19 @@
     "bonuses": ["mythic-bregan-chest"]
   },
   {
+    "id": "neverember-guard-s-discipline",
+    "name": "Neverember Guard's Discipline",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "awareness_p": 0.045,
+    "out_healing_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Neveremberguard_Player_Bonus"],
+    "longDescription": "Neverember Guard companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
+  },
+  {
     "id": "neverwinter-knight-s-discipline-neverwinter-knight-damage-offense",
     "name": "Neverwinter Knight's Discipline",
     "filter": "companion_power",
@@ -8314,6 +8529,19 @@
     "allowedClass": ["wizard"]
   },
   {
+    "id": "orc-wolf-s-instincts",
+    "name": "Orc Wolf's Instincts",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "acc_p": 0.045,
+    "strike_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Armored_Orc_Wolf_Player_Bonus"],
+    "longDescription": "Armored Orc Wolf companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
+  },
+  {
     "id": "other-bard-s-lore",
     "name": "Other: Bard's Lore",
     "filter": "artifact_call",
@@ -8341,6 +8569,20 @@
     "name": "Paladin Aura",
     "filter": "group_buff",
     "bonuses": ["paladin-aura"]
+  },
+  {
+    "id": "panda-s-prowess",
+    "name": "Panda's Prowess",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "acc_p": 0.03,
+    "strike_p": 0.03,
+    "forte_p": 0.03,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Panda_Player_Bonus"],
+    "longDescription": "Panda companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
   },
   {
     "id": "paragon-arbiter",
@@ -8540,6 +8782,19 @@
     "filter": "artifact_call",
     "allowedClass": ["warlock"],
     "bonuses": ["personal-warlock-s-tyrannical-curse"]
+  },
+  {
+    "id": "pidwick-ii-s-precision",
+    "name": "Pidwick II's Precision",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "acc_p": 0.045,
+    "ca_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_M29_Masquerade_Pidwick_Ii_Player_Bonus"],
+    "longDescription": "Pidwick II companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
   },
   {
     "id": "piercing-javelin",
@@ -8831,6 +9086,22 @@
     "bonuses": ["protector-s-covenant"]
   },
   {
+    "id": "proud-pink-yeti-s-presence",
+    "name": "Proud Pink Yeti's Presence",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "out_healing_p": 0.09,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Yeti_Pink_Player_Bonus"],
+    "longDescription": "Proud Pink Yeti companion power. Role: Defense, Offense, Utility.",
+    "tags": [
+      "companion_power:defense",
+      "companion_power:offense",
+      "companion_power:utility"
+    ]
+  },
+  {
     "id": "providence-celestial",
     "name": "Providence",
     "filter": "mount_equip",
@@ -8879,6 +9150,19 @@
     "il": 1750,
     "combined_rating": 1575,
     "gameIds": ["Mount_Passive_Daily_Recovery"]
+  },
+  {
+    "id": "quickling-s-wisdom",
+    "name": "Quickling's Wisdom",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "strike_p": 0.045,
+    "out_healing_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Quickling_Player_Bonus"],
+    "longDescription": "Quickling companion power. Role: Offense, Utility.",
+    "tags": ["companion_power:offense", "companion_power:utility"]
   },
   {
     "id": "race-aasimar",
@@ -9229,6 +9513,18 @@
     "bonuses": ["paragon-exclusive"]
   },
   {
+    "id": "regis-s-reflexes",
+    "name": "Regis's Reflexes",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Regis_Player_Bonus"],
+    "longDescription": "Regis companion power, a Companion of the Hall. Role: Defense.",
+    "tags": ["companion_power:defense", "companion_of_the_hall:celestial"],
+    "bonuses": ["regis-s-reflexes"]
+  },
+  {
     "id": "relative-haste",
     "name": "Relative Haste",
     "filter": "feat1",
@@ -9566,9 +9862,21 @@
     "il": 900,
     "combined_rating": 900,
     "gameIds": ["Pet_Spineddevil_Player_Bonus"],
-    "longDescription": "Spined Devil companion power. Role: Offense.",
+    "longDescription": "Spined Devil companion power. Role: Offense.\n\n25% chance, on Encounter hit, to release a hail of spines dealing 120 magnitude physical damage to the target and nearby enemies. This effect can only occur once per second.",
     "tags": ["companion_power:offense"],
     "bonuses": ["spined-devil-s-influence-spined-devil-damage-offense"]
+  },
+  {
+    "id": "spiteful-hex",
+    "name": "Spiteful Hex (Lysaera)",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "combined_rating": 900,
+    "gameIds": ["Pet_M31_Succubus_Bonus"],
+    "longDescription": "Lysaera companion power. Role: Defense, Utility.",
+    "tags": ["companion_power:defense", "companion_power:utility"],
+    "bonuses": ["spiteful-hex"]
   },
   {
     "id": "spoonful-of-chaos",
@@ -10838,7 +11146,7 @@
     "il": 900,
     "ca_p": 0.09,
     "combined_rating": 900,
-    "longDescription": "Staldorf's companion power. Role: Offense.",
+    "longDescription": "Staldorf companion power. Role: Offense.",
     "tags": ["companion_power:offense"]
   },
   {
@@ -10950,7 +11258,7 @@
   },
   {
     "id": "the-bigger-they-are-minsc-damage-defense",
-    "name": "The Bigger They Are",
+    "name": "The Bigger They Are (Minsc)",
     "filter": "companion_power",
     "quality": "celestial",
     "il": 900,
@@ -11056,7 +11364,7 @@
   },
   {
     "id": "undying-overlord",
-    "name": "Undying Overlord",
+    "name": "Undying Overlord (Lich)",
     "filter": "companion_power",
     "quality": "celestial",
     "il": 900,
@@ -11244,5 +11552,17 @@
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "wulfgar-s-wrecking",
+    "name": "Wulfgar's Wrecking",
+    "filter": "companion_power",
+    "quality": "celestial",
+    "il": 900,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Wulfgar_Player_Bonus"],
+    "longDescription": "Wulfgar companion power, a Companion of the Hall. Role: Offense.",
+    "tags": ["companion_power:offense", "companion_of_the_hall:celestial"],
+    "bonuses": ["wulfgar-s-wrecking"]
   }
 ]
