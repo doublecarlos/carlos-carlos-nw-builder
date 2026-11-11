@@ -279,7 +279,7 @@ if (bonusDraftRegistry && props.registryId) {
       <slot />
       <FormSection :nested="embedded">Identification</FormSection>
       <FormGrid class="mb-2">
-        <FormField label="Name" class="flex-1">
+        <FormField label="Name" class="min-w-60 flex-1">
           <OcrTextField
             v-model="draft.name"
             type="input"
