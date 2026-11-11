@@ -16,7 +16,8 @@ const props = defineProps<{
   values: Record<string, number>;
   /** True when the caller laid out a shared column grid (the build editor's section): the
    *  steppers become its items, one per column. PresetForm.vue leaves this off and wraps, and
-   *  so does a phone, whose section has a single track. */
+   *  so does a phone, whose section has a single track. The wrap stays flex: auto-filled grid
+   *  tracks need a fixed size, so they cannot fit each stepper's own width. */
   subgrid?: boolean;
 }>();
 

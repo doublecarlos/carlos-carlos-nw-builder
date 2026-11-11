@@ -841,7 +841,8 @@ function showsGroup(group: FieldGroup): boolean {
 
       <RepeatableRows
         :rows="draft.insigniaSlots"
-        row-class="insignia-slot-row mb-1 flex md:flex-wrap items-center gap-1.5"
+        row-class="insignia-slot-row mb-1"
+        labeled-fields
         add-label="Add insignia slot"
         remove-label="Remove insignia slot"
         add-testid="item-add-insignia-slot"
@@ -960,7 +961,7 @@ function showsGroup(group: FieldGroup): boolean {
       </FormSectionDescription>
       <RepeatableRows
         :rows="draft.defaultParams"
-        row-class="default-param-row flex md:flex-wrap items-center gap-1.5 mb-1"
+        row-class="default-param-row mb-1"
         add-label="Add default build parameter"
         remove-label="Remove default build parameter"
         @add="addDefaultParam"
@@ -998,7 +999,7 @@ function showsGroup(group: FieldGroup): boolean {
       </FormSectionDescription>
       <RepeatableRows
         :rows="draft.publishes"
-        row-class="publishes-row flex md:flex-wrap items-center gap-1.5 mb-1"
+        row-class="publishes-row mb-1"
         add-label="Add published value"
         remove-label="Remove published value"
         @add="addPublishes"

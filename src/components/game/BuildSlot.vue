@@ -229,7 +229,9 @@ useCursorRowKeys(anchor, {
       // A mouse keeps the far right free for the info button, on every row so they align.
       coarsePointer ? 'pr-2.5' : 'pr-8',
       // A nested row is an attachment of the one above it, so it reads smaller and tighter.
-      nest ? 'py-0.5 text-[13px]' : 'py-1',
+      nest
+        ? 'py-0.5 text-[13px] [--row-indent:--spacing(8.5)]'
+        : 'py-1 [--row-indent:--spacing(2.5)]',
       noBorder || (nest && !nest.last)
         ? 'border-b-0'
         : 'border-b border-line/45 last:border-b-0',
@@ -248,8 +250,7 @@ useCursorRowKeys(anchor, {
          row's first line once diff notes make the row taller. The left padding lives here, not
          on the row: on the row it would push the label into the shared label-to-control gap. -->
     <div
-      class="col-start-1 flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5 max-md:col-span-full max-md:w-auto"
-      :class="nest ? 'pl-8.5' : 'pl-2.5'"
+      class="flex items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5 pl-(--row-indent) [grid-column:label]"
     >
       <!-- A point_assignment row has no single control to point `for` at (it is a row of
            steppers, one per item), so it labels the group instead -- see `aria-labelledby`
@@ -319,10 +320,11 @@ useCursorRowKeys(anchor, {
       /></IconButton>
     </div>
 
-    <!-- Nested controls step in too, so the control column itself shows the tree. -->
+    <!-- Nested controls step in too, so the control column itself shows the tree. On a phone
+         the controls stack under the label and take its indent. -->
     <div
-      class="build-values min-w-0 grid [grid-column:2/-1] [grid-template-columns:subgrid] max-md:[grid-column:1/-1]"
-      :class="nest ? 'pl-6 max-md:pl-8.5' : 'max-md:pl-2.5'"
+      class="build-values min-w-0 grid max-md:pl-(--row-indent) [grid-column:controls] [grid-template-columns:subgrid]"
+      :class="nest && 'md:pl-6'"
       :role="labelsOneControl ? undefined : 'group'"
       :aria-labelledby="labelsOneControl ? undefined : labelId"
     >

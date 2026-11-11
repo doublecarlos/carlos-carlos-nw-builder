@@ -19,7 +19,7 @@ const model = defineModel<number | null | undefined>();
       v-for="preset in presets"
       :key="preset"
       type="button"
-      class="relative rounded-md border px-1.5 py-0.5 pointer-coarse:-ml-px pointer-coarse:min-w-0 pointer-coarse:after:inset-x-0 pointer-coarse:rounded-none pointer-coarse:px-2.5 pointer-coarse:first:ml-0 pointer-coarse:first:rounded-l-md pointer-coarse:last:rounded-r-md"
+      class="tap-area relative rounded-md border px-1.5 py-0.5 pointer-coarse:-ml-px pointer-coarse:min-w-0 pointer-coarse:after:inset-x-0 pointer-coarse:rounded-none pointer-coarse:px-2.5 pointer-coarse:first:ml-0 pointer-coarse:first:rounded-l-md pointer-coarse:last:rounded-r-md"
       :class="
         model != null && Number(model) === preset
           ? 'z-base border-accent bg-accent-soft text-text'

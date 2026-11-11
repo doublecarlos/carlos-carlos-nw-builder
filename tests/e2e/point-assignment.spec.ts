@@ -447,67 +447,75 @@ function labelBox(page: Page, slotId: string, itemId: string) {
   return assignmentLabel(slotRow(page, slotId), itemId).boundingBox();
 }
 
-test.describe("point_assignment shared column layout", () => {
-  test("a row's steppers stay on one line instead of wrapping", async ({
-    page,
-  }) => {
-    await openRaceSection(page);
-    const first = await labelBox(page, STR_SLOT, `leveling-str-${COLUMN_ITEM}`);
-    const last = await labelBox(page, STR_SLOT, "leveling-str-20");
-    expect(first).not.toBeNull();
-    expect(last).not.toBeNull();
-    expect(Math.abs(first!.y - last!.y)).toBeLessThan(2);
-  });
-
-  test("the section scrolls horizontally when the columns don't fit", async ({
-    page,
-  }) => {
-    await openRaceSection(page);
-    const scrollable = await sectionBody(page, RACE_SECTION).evaluate(
-      (el) => el.scrollWidth > el.clientWidth,
-    );
-    expect(scrollable).toBe(true);
-  });
-
-  test("the same column keeps one width across rows", async ({ page }) => {
-    await openRaceSection(page);
-    const str = await labelBox(page, STR_SLOT, `leveling-str-${COLUMN_ITEM}`);
-    const con = await labelBox(page, CON_SLOT, `leveling-con-${COLUMN_ITEM}`);
-    expect(str).not.toBeNull();
-    expect(con).not.toBeNull();
-    expect(Math.abs(str!.x - con!.x)).toBeLessThan(1);
-    expect(Math.abs(str!.width - con!.width)).toBeLessThan(1);
-  });
-
-  test("a picker's menu is not clipped by the horizontally scrolling body", async ({
-    page,
-  }) => {
-    const SLOT_ID = "raceLeveling.race";
-    const ITEM_ID = shippedItemName("race-aasimar");
-
-    await page.setViewportSize({ width: 1400, height: 1400 });
-    await openRaceSection(page);
-    await chooseItem(page, SLOT_ID, ITEM_ID);
-
-    // Filtered down to one picker row, so the body is far shorter than the menu.
-    await slotFilterInput(page).fill("Race Ability Score 1");
-    const row = slotRow(page, "raceLeveling.raceAttributes1");
-    await expect(slotRow(page, STR_SLOT)).toBeHidden();
-    await pickerInput(row).click();
-
-    const menu = page.getByTestId("picker-menu");
-    await expect(menu).toBeVisible();
-    const menuBox = await menu.boundingBox();
-    const bodyBox = await sectionBody(page, RACE_SECTION).boundingBox();
-    expect(menuBox!.y + menuBox!.height).toBeGreaterThan(
-      bodyBox!.y + bodyBox!.height,
-    );
-    // The menu's bottom edge must be the topmost element there.
-    const bottomHitsMenu = await menu.evaluate((el) => {
-      const box = el.getBoundingClientRect();
-      const hit = document.elementFromPoint(box.left + 10, box.bottom - 4);
-      return !!hit && el.contains(hit);
+test.describe(
+  "point_assignment shared column layout",
+  { tag: "@cross-browser" },
+  () => {
+    test("a row's steppers stay on one line instead of wrapping", async ({
+      page,
+    }) => {
+      await openRaceSection(page);
+      const first = await labelBox(
+        page,
+        STR_SLOT,
+        `leveling-str-${COLUMN_ITEM}`,
+      );
+      const last = await labelBox(page, STR_SLOT, "leveling-str-20");
+      expect(first).not.toBeNull();
+      expect(last).not.toBeNull();
+      expect(Math.abs(first!.y - last!.y)).toBeLessThan(2);
     });
-    expect(bottomHitsMenu).toBe(true);
-  });
-});
+
+    test("the section scrolls horizontally when the columns don't fit", async ({
+      page,
+    }) => {
+      await openRaceSection(page);
+      const scrollable = await sectionBody(page, RACE_SECTION).evaluate(
+        (el) => el.scrollWidth > el.clientWidth,
+      );
+      expect(scrollable).toBe(true);
+    });
+
+    test("the same column keeps one width across rows", async ({ page }) => {
+      await openRaceSection(page);
+      const str = await labelBox(page, STR_SLOT, `leveling-str-${COLUMN_ITEM}`);
+      const con = await labelBox(page, CON_SLOT, `leveling-con-${COLUMN_ITEM}`);
+      expect(str).not.toBeNull();
+      expect(con).not.toBeNull();
+      expect(Math.abs(str!.x - con!.x)).toBeLessThan(1);
+      expect(Math.abs(str!.width - con!.width)).toBeLessThan(1);
+    });
+
+    test("a picker's menu is not clipped by the horizontally scrolling body", async ({
+      page,
+    }) => {
+      const SLOT_ID = "raceLeveling.race";
+      const ITEM_ID = shippedItemName("race-aasimar");
+
+      await page.setViewportSize({ width: 1400, height: 1400 });
+      await openRaceSection(page);
+      await chooseItem(page, SLOT_ID, ITEM_ID);
+
+      // Filtered down to one picker row, so the body is far shorter than the menu.
+      await slotFilterInput(page).fill("Race Ability Score 1");
+      const row = slotRow(page, "raceLeveling.raceAttributes1");
+      await expect(slotRow(page, STR_SLOT)).toBeHidden();
+      await pickerInput(row).click();
+
+      const menu = page.getByTestId("picker-menu");
+      await expect(menu).toBeVisible();
+      const menuBox = await menu.boundingBox();
+      const bodyBox = await sectionBody(page, RACE_SECTION).boundingBox();
+      expect(menuBox!.y + menuBox!.height).toBeGreaterThan(
+        bodyBox!.y + bodyBox!.height,
+      );
+      // The menu's bottom edge must be the topmost element there.
+      const bottomHitsMenu = await menu.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + 10, box.bottom - 4);
+        return !!hit && el.contains(hit);
+      });
+      expect(bottomHitsMenu).toBe(true);
+    });
+  },
+);

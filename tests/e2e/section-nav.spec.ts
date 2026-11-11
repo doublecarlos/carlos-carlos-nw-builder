@@ -34,51 +34,57 @@ function headerInset(page: Page, sectionId: string) {
 }
 
 test.describe("sticky section headers", () => {
-  test("a section's header stays put while its own rows scroll past", async ({
-    page,
-  }) => {
-    await openBuilder(page);
-    await scrollSectionToTop(page, "boons");
+  test(
+    "a section's header stays put while its own rows scroll past",
+    { tag: "@cross-browser" },
+    async ({ page }) => {
+      await openBuilder(page);
+      await scrollSectionToTop(page, "boons");
 
-    // Far enough into Boons that its header's natural position is well off the top.
-    await page
-      .getByTestId("editor-column")
-      .evaluate((el) => el.scrollBy(0, 400));
+      // Far enough into Boons that its header's natural position is well off the top.
+      await page
+        .getByTestId("editor-column")
+        .evaluate((el) => el.scrollBy(0, 400));
 
-    // Which section you are reading is what a long section otherwise stops telling you.
-    await expect(headerRow(page, "boons")).toBeInViewport();
-    await expect.poll(() => headerInset(page, "boons")).toBe(0);
-  });
+      // Which section you are reading is what a long section otherwise stops telling you.
+      await expect(headerRow(page, "boons")).toBeInViewport();
+      await expect.poll(() => headerInset(page, "boons")).toBe(0);
+    },
+  );
 
-  test("a header gives way to the next section's rather than stacking up", async ({
-    page,
-  }) => {
-    await openBuilder(page);
-    await scrollSectionToTop(page, "boons");
+  test(
+    "a header gives way to the next section's rather than stacking up",
+    { tag: "@cross-browser" },
+    async ({ page }) => {
+      await openBuilder(page);
+      await scrollSectionToTop(page, "boons");
 
-    // Past the end of Boons entirely.
-    await page
-      .getByTestId("editor-column")
-      .evaluate((el) => el.scrollBy(0, 4000));
+      // Past the end of Boons entirely.
+      await page
+        .getByTestId("editor-column")
+        .evaluate((el) => el.scrollBy(0, 4000));
 
-    // Each header sticks within its own section, so the outgoing one is pushed off rather than
-    // piling up with the one arriving under it.
-    await expect.poll(() => headerInset(page, "boons")).toBeLessThan(0);
-  });
+      // Each header sticks within its own section, so the outgoing one is pushed off rather than
+      // piling up with the one arriving under it.
+      await expect.poll(() => headerInset(page, "boons")).toBeLessThan(0);
+    },
+  );
 
-  test("nothing scrolls through the band above a pinned header", async ({
-    page,
-  }) => {
-    await openBuilder(page);
+  test(
+    "nothing scrolls through the band above a pinned header",
+    { tag: "@cross-browser" },
+    async ({ page }) => {
+      await openBuilder(page);
 
-    // A scroll container does not clip inside its own padding, so the list's padding lives on
-    // the content instead -- otherwise rows would show above the header, unclipped.
-    const scrollerPadTop = await page
-      .getByTestId("editor-column")
-      // eslint-disable-next-line no-restricted-syntax
-      .evaluate((el) => getComputedStyle(el).paddingTop);
-    expect(scrollerPadTop).toBe("0px");
-  });
+      // A scroll container does not clip inside its own padding, so the list's padding lives on
+      // the content instead -- otherwise rows would show above the header, unclipped.
+      const scrollerPadTop = await page
+        .getByTestId("editor-column")
+        // eslint-disable-next-line no-restricted-syntax
+        .evaluate((el) => getComputedStyle(el).paddingTop);
+      expect(scrollerPadTop).toBe("0px");
+    },
+  );
 
   test("collapsing a section from its stuck header keeps your place", async ({
     page,

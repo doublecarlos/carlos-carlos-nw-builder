@@ -15,10 +15,11 @@ type Variant = "default" | "primary" | "subtle" | "ghost";
 type Tone = Exclude<Variant, "ghost"> | "active" | "danger";
 type Shape = "label" | "icon";
 
-// Centered, so content stays in the middle when a coarse pointer's tap-size minimum widens the
-// button past it.
+// Centered, so content stays in the middle when a coarse pointer's drawn minimum widens the
+// button past it. `tap-area` makes up the rest of the tap target, so a 32px labeled button also
+// takes taps a little above and below its edges.
 const CONTENT =
-  "inline-flex items-center justify-center gap-1 cursor-pointer transition-colors";
+  "tap-area inline-flex items-center justify-center gap-1 cursor-pointer transition-colors";
 const GHOST = `${CONTENT} [&_svg]:size-[14px] bg-transparent border-0 px-1 py-0.5 enabled:hover:text-accent`;
 const BOX = `${CONTENT} rounded-md border disabled:cursor-default disabled:opacity-60`;
 

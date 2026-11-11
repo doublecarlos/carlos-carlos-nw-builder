@@ -41,6 +41,8 @@ useCursorRowKeys(anchor, {
   <div
     class="relative grid col-span-full py-1 pr-2.5 [grid-template-columns:subgrid]"
     :class="[
+      // The same indents as BuildSlot, so the label lines up with the rows around it.
+      nest ? '[--row-indent:--spacing(8.5)]' : '[--row-indent:--spacing(2.5)]',
       noBorder || (nest && !nest.last)
         ? 'border-b-0'
         : 'border-b border-line/45 last:border-b-0',
@@ -55,13 +57,12 @@ useCursorRowKeys(anchor, {
   >
     <NestGuide v-if="nest" :nest="nest" />
     <span
-      class="col-start-1 w-44 min-w-0 truncate self-start py-0.5 text-muted max-md:col-span-full max-md:w-auto"
-      :class="nest ? 'pl-8.5' : 'pl-2.5'"
+      class="min-w-0 truncate self-start py-0.5 pl-(--row-indent) text-muted [grid-column:label]"
       >{{ slotDef.label }}</span
     >
     <div
-      class="min-w-0 [grid-column:2/-1] py-0.5 max-md:[grid-column:1/-1]"
-      :class="nest ? 'pl-6 max-md:pl-8.5' : 'max-md:pl-2.5'"
+      class="min-w-0 py-0.5 max-md:pl-(--row-indent) [grid-column:controls]"
+      :class="nest && 'md:pl-6'"
     >
       <span
         v-if="reason === 'extraRow'"

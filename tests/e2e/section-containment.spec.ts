@@ -34,40 +34,44 @@ for (const [query, slotId, sectionId] of [
   ["Insignia 5.4", "insignia.insignia5_4", "insignia"],
   ["Daily damage", "scalers.dailyDamage", "scalers"],
 ]) {
-  test(`a jump to ${slotId} on a fresh load lands it on screen, below its header`, async ({
-    page,
-  }) => {
-    await openBuilder(page);
-    await expandAllSections(page);
+  test(
+    `a jump to ${slotId} on a fresh load lands it on screen, below its header`,
+    { tag: "@cross-browser" },
+    async ({ page }) => {
+      await openBuilder(page);
+      await expandAllSections(page);
 
-    await jumpTo(page, query, slotId);
+      await jumpTo(page, query, slotId);
 
-    await expect.poll(() => cursorKey(page)).toBe(`slot:${slotId}`);
-    await expect(slotRow(page, slotId)).toBeInViewport({ ratio: 1 });
-    await expect
-      .poll(() => clearanceUnderHeader(page, slotId, sectionId))
-      .toBeGreaterThanOrEqual(0);
-  });
+      await expect.poll(() => cursorKey(page)).toBe(`slot:${slotId}`);
+      await expect(slotRow(page, slotId)).toBeInViewport({ ratio: 1 });
+      await expect
+        .poll(() => clearanceUnderHeader(page, slotId, sectionId))
+        .toBeGreaterThanOrEqual(0);
+    },
+  );
 }
 
-test("a section header stays pinned while its body scrolls under it", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  await expandAllSections(page);
-  const header = headerRow(page, "insignia");
-  await header.scrollIntoViewIfNeeded();
-  const editor = page.getByTestId("editor-column");
-  const pinnedAt = await editor.evaluate(
-    (el) => el.getBoundingClientRect().top + el.clientTop,
-  );
+test(
+  "a section header stays pinned while its body scrolls under it",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await openBuilder(page);
+    await expandAllSections(page);
+    const header = headerRow(page, "insignia");
+    await header.scrollIntoViewIfNeeded();
+    const editor = page.getByTestId("editor-column");
+    const pinnedAt = await editor.evaluate(
+      (el) => el.getBoundingClientRect().top + el.clientTop,
+    );
 
-  // Halfway down a long body: the header has reached the editor's top edge and stays there.
-  await slotRow(page, "insignia.insignia3_2").evaluate((row) =>
-    row.scrollIntoView({ block: "center" }),
-  );
-  await expect
-    .poll(async () => Math.abs((await header.boundingBox())!.y - pinnedAt))
-    .toBeLessThan(2);
-  await expect(header).toBeInViewport();
-});
+    // Halfway down a long body: the header has reached the editor's top edge and stays there.
+    await slotRow(page, "insignia.insignia3_2").evaluate((row) =>
+      row.scrollIntoView({ block: "center" }),
+    );
+    await expect
+      .poll(async () => Math.abs((await header.boundingBox())!.y - pinnedAt))
+      .toBeLessThan(2);
+    await expect(header).toBeInViewport();
+  },
+);

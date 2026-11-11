@@ -24,6 +24,14 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       testIgnore: "mobile/**",
     },
+    // Layout checks tagged @cross-browser also run in Firefox, so engine differences in
+    // grid, table and flex layout show up in the suite. FIREFOX_ALL=1 runs every desktop spec.
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+      testIgnore: "mobile/**",
+      grep: process.env.FIREFOX_ALL ? undefined : /@cross-browser/,
+    },
     {
       name: "mobile",
       use: { ...devices["Pixel 7"] },

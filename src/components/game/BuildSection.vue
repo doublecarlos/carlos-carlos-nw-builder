@@ -13,6 +13,10 @@ import FoldChevron from "../ui/FoldChevron.vue";
 import SectionActionsMenu from "./SectionActionsMenu.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, ref, useTemplateRef, watch } from "vue";
+import {
+  PHONE_SECTION_COLUMNS,
+  sectionColumns,
+} from "../../lib/section-columns";
 import type { Slot, SectionPreset, BuildOption } from "../../types";
 
 const props = defineProps<{
@@ -48,9 +52,9 @@ defineEmits<{
 }>();
 
 defineSlots<{
-  /** `shown` goes on the row's own root as `hidden`: a wrapper would sit between the body
-   *  grid and the row's subgrid, and `v-show` on a component re-renders it on every parent
-   *  render. */
+  /** `shown` goes on the row's own root as `hidden`. Nothing may wrap a row between the body
+   *  grid and the row's subgrid, which would cut the row off the body's tracks, and `v-show`
+   *  on a component re-renders it on every parent render. */
   default(props: { slotDef: Slot; shown: boolean }): unknown;
 }>();
 
@@ -92,17 +96,12 @@ watch(
 );
 
 /** Every section body is one grid and every row reuses its tracks via subgrid, so labels and
- *  controls line up across the whole editor. A point section adds one max-content stepper
- *  track plus a trailing filler every row spans, so the steppers neither wrap nor stretch and
- *  a picker still fills the width; other sections get one shrinking track that truncates a
- *  long picker summary. The column gap is declared here alone; subgrids inherit it.
- *
- *  A phone has no width for a label column: every row stacks its label over its control in
- *  one track, and a point row wraps its steppers instead of scrolling them. */
+ *  controls line up across the whole editor. Rows place by the template's named lines, so a
+ *  phone swaps the template alone (see section-columns.ts). The column gap is declared here
+ *  alone; subgrids inherit it. */
 const bodyStyle = computed(() => ({
-  "--section-columns": hasAssignments.value
-    ? `11rem repeat(${props.assignmentColumns}, max-content) 1fr`
-    : "11rem minmax(0, 1fr)",
+  "--section-columns": sectionColumns(props.assignmentColumns),
+  "--section-phone-columns": PHONE_SECTION_COLUMNS,
 }));
 </script>
 
@@ -163,7 +162,7 @@ const bodyStyle = computed(() => ({
       v-if="bodyMounted"
       v-show="expanded"
       ref="body"
-      class="bg-surface pb-2 pt-1 grid gap-x-2.5 animate-fade-in grid-cols-(--section-columns) max-md:grid-cols-[minmax(0,1fr)] [contain-intrinsic-block-size:auto_none]"
+      class="bg-surface pb-2 pt-1 grid gap-x-2.5 animate-fade-in grid-cols-(--section-phone-columns) md:grid-cols-(--section-columns) [contain-intrinsic-block-size:auto_none]"
       :class="[
         hasAssignments && 'md:overflow-x-auto',
         contained && '[content-visibility:auto] [overflow-clip-margin:4px]',

@@ -49,7 +49,7 @@ function choose(value: string) {
         <button
           type="button"
           :data-choice-menu="triggerId"
-          class="inline-flex min-w-0 cursor-pointer items-center gap-0.5 rounded-sm text-muted transition-colors hover:text-text"
+          class="tap-area inline-flex min-w-0 cursor-pointer items-center gap-0.5 rounded-sm text-muted transition-colors hover:text-text"
           :aria-label="`${label}: ${current?.label ?? ''}`"
           :data-testid="testid"
           v-bind="attrs"
