@@ -26,9 +26,9 @@ import { isFormControl } from "../../composables/focus";
 import { isDisabled } from "../../lib/slot-toggle";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, useTemplateRef } from "vue";
-import { Info } from "@lucide/vue";
+import { Info, Trash } from "@lucide/vue";
 import IconButton from "../ui/IconButton.vue";
-import { coarsePointer } from "../../stores/viewport";
+import { coarsePointer, isPhone } from "../../stores/viewport";
 import type {
   RowSlot,
   Item,
@@ -166,6 +166,15 @@ const toggleableSlot = computed(() =>
     : null,
 );
 
+/** A phone moves an item_picker_list row's remove button up to the label line, so the picker
+ *  keeps the full width; ItemPickerRow drops its own there. */
+const phoneRemove = computed(
+  () =>
+    isPhone.value &&
+    props.slotDef.type === "item_picker" &&
+    !!props.slotDef.list,
+);
+
 /** An empty row has nothing to switch off, so the box is hidden. Its space is kept, or picking
  *  an item would shift the label under the pointer. */
 const hasChoice = computed(() =>
@@ -254,6 +263,15 @@ useCursorRowKeys(anchor, {
         >{{ labelOverride || slotDef.label }}</component
       >
 
+      <!-- Kept well clear of the row's other icons, so a near miss doesn't remove the row. -->
+      <IconButton
+        v-if="phoneRemove"
+        class="compact-tap mr-4 shrink-0"
+        :title="`Remove ${slotDef.label}`"
+        :data-testid="'list-remove:' + slotDef.id"
+        @click.stop="buildEditor.removeListRow(slotDef.id)"
+        ><Trash
+      /></IconButton>
       <!-- Its own accessible name: the row label beside it belongs to the picker. -->
       <BaseTooltip
         v-if="toggleableSlot"
@@ -270,10 +288,11 @@ useCursorRowKeys(anchor, {
         />
       </BaseTooltip>
       <!-- `compact-tap`: a finger-sized button would stand the label line taller than the
-           row's other lines and the nest guide's elbow. -->
+           row's other lines and the nest guide's elbow. The margin keeps its tap area off the
+           row's checkbox. -->
       <IconButton
         v-if="showInfo && coarsePointer"
-        class="compact-tap shrink-0"
+        class="compact-tap ml-2 shrink-0"
         :title="`Show the item in ${labelOverride || slotDef.label}`"
         :data-testid="'slot-info:' + slotDef.id"
         @click.stop="onInfo"

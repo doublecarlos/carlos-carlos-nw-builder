@@ -194,9 +194,9 @@ const stableGroup = computed(() => {
       <Table />
     </IconButton>
     <!-- Rows of an item_picker_list are the only removable ones; a hand-authored slot has no
-         `list` and so no button. -->
+         `list` and so no button. A phone shows it on the row's label line instead. -->
     <IconButton
-      v-if="slotDef.list"
+      v-if="slotDef.list && !isPhone"
       :title="`Remove ${slotDef.label}`"
       :data-testid="'list-remove:' + slotDef.id"
       @click.stop="buildEditor.removeListRow(slotDef.id)"

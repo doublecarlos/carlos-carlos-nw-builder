@@ -135,6 +135,8 @@
 
   /* Smallest comfortable touch target, as `min-h-tap`/`min-w-tap`/`size-tap`. */
   --spacing-tap: 40px;
+  /* Smallest drawn size of a control on a coarse pointer; an invisible area makes up the tap. */
+  --spacing-tap-drawn: 32px;
 
   /* Stacking layers, low to high. Anchored surfaces (menus, tooltips, popovers) teleport to
    * <body> rather than order themselves within a sticky/fixed ancestor's stacking context; see
@@ -235,20 +237,13 @@
 }
 
 /* A small button inside a line of text, such as a row's info icon. On a coarse pointer it keeps
- * its drawn size instead of the finger-sized minimum below, which would stand the whole line that
- * tall, and an invisible area centered on it keeps the tap target finger-sized. */
+ * its drawn size instead of the minimum below, which would stand the whole line that tall. Its
+ * invisible tap area still applies. */
 @utility compact-tap {
   @media (pointer: coarse) {
-    position: relative;
     flex: none;
     min-height: 0;
     min-width: 0;
-
-    &::after {
-      content: "";
-      position: absolute;
-      inset: calc((100% - var(--spacing-tap)) / 2);
-    }
   }
 }
 
@@ -347,15 +342,29 @@
     }
   }
 
-  /* Finger-sized controls on a coarse pointer, whatever the viewport width. In the base layer,
-   * so a control that has to stay compact can still opt out with a `pointer-coarse:` utility. */
+  /* Finger-friendly controls on a coarse pointer, whatever the viewport width. A control draws
+   * a little larger and an invisible area centered on it fills out the tap target, so dense rows
+   * don't swell to the full tap size. In the base layer, so a control that has to stay compact
+   * can still opt out with a `pointer-coarse:` utility. */
   @media (pointer: coarse) {
     button,
     [role="button"],
     select,
     summary {
-      min-height: var(--spacing-tap);
-      min-width: var(--spacing-tap);
+      min-height: var(--spacing-tap-drawn);
+      min-width: var(--spacing-tap-drawn);
+    }
+
+    button,
+    [role="button"],
+    summary {
+      position: relative;
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset: min(0px, calc((100% - var(--spacing-tap)) / 2));
+      }
     }
   }
 }

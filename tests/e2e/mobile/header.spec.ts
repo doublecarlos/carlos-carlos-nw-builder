@@ -208,6 +208,26 @@ test("icon-only header buttons center their icon", async ({ page }) => {
   }
 });
 
+// On touch a control draws smaller than a finger and an invisible area fills out its tap
+// target, so a dense row stays compact while a slightly-off tap still lands.
+test("an icon button catches a tap just past its drawn edge", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: MIN_SUPPORTED_WIDTH, height: 800 });
+  await openBuilder(page);
+
+  const b = await box(kebab(page));
+  const hit = await page.evaluate(
+    ({ x, y }) =>
+      document
+        .elementFromPoint(x, y)
+        ?.closest("[data-testid]")
+        ?.getAttribute("data-testid") ?? null,
+    { x: b.x + b.width / 2, y: b.y + b.height + 2 },
+  );
+  expect(hit).toBe("header-menu");
+});
+
 for (const width of [768, 1000]) {
   test(`a tablet header keeps its file actions on one row at ${width}px`, async ({
     page,
