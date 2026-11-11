@@ -27,6 +27,8 @@
   --danger: #b42318;
   --danger-soft: #fdecea;
   --warn: #b54708;
+  /* Mixed from the theme's own warn and surface, so it follows the dark theme as is. */
+  --warn-soft: color-mix(in oklab, var(--warn) 25%, var(--surface));
   --ok: #087443;
   --diff: #ab9000;
   --radius: 6px;
@@ -115,6 +117,7 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
   --color-ok: var(--ok);
   --color-diff: var(--diff);
   --color-capped: var(--capped);

@@ -63,7 +63,7 @@ ordinary one.
 | PresetButtons                             | A row of one-click values next to a number field, the current one highlighted                                                                                  |
 | RailGutter / RailToggle                   | A side rail's show/hide-and-resize edge, and the button that collapses/restores it                                                                             |
 | RepeatableRows                            | A list whose rows share one Add/Remove pair, with an empty state that still offers Add                                                                         |
-| SegmentedControl                          | "Pick exactly one of a few options"; a compact grid of its options when one row does not fit                                                                   |
+| SegmentedControl                          | "Pick exactly one of a few options"; its segments wrap onto more lines when one row does not fit                                                               |
 | TabButton / TabStrip                      | A row of tabs, each drawn as its own button rather than joined to the panel below                                                                              |
 | ThemeToggle                               | System -> Light -> Dark cycle button                                                                                                                           |
 | TokenInput                                | Token/chip input with autocomplete and optional free text; `fromImage` reads a pasted screenshot into a token                                                  |
@@ -91,9 +91,8 @@ Wide, the form primitives keep the desktop layout their callers size: a field's 
 - RepeatableRows turns a row with a `#lead` into a card on a phone; from `md` up the
   caller's `rowClass` lays the row out as before. `headerActions` puts the card's
   Add/Remove pair on the lead's line, for a row of several fields or nested content.
-- SegmentedControl measures instead: a breakpoint cannot know how long its labels are. It
-  compares the one-row width of its labels with its own width, and when that does not fit lays
-  them out as a grid of equal cells in the fewest rows that fit (`src/lib/segmented-fit.ts`).
+- SegmentedControl wraps with plain CSS: a segment never wraps its label, and each wrapped
+  line's segments grow to fill it, so the control stays a rectangle.
 - FormField provides the label association (`src/composables/useFormField.ts`). A new text
   control in this directory calls `useFormFieldControl` for its input id and its
   `aria-describedby` (the field's `hint`); a control that a `<label for>` cannot name reads
