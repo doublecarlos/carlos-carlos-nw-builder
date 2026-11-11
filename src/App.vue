@@ -183,9 +183,38 @@ function onTraverse(route: Route) {
   applyStableRoute(route);
 }
 
+/** Set while a gone selection is moved onto the build that shows. */
+let repairing = false;
+
+/** Whether the selection names a build or layer that is gone: deleted, or named by a stale
+ *  history entry or session. The editor then falls back to the first build. */
+const selectionGone = computed(() => {
+  const sel = selection.selection.value;
+  if (!sel || loading.value) return false;
+  if (sel.kind === "build") return !builds.get(sel.id);
+  return !selectedLayer.value;
+});
+
+// The nav highlights the selection, so it follows the editor's fallback. The repair replaces
+// the entry naming the gone place rather than adding one Back would land on again.
+watch(
+  selectionGone,
+  (gone) => {
+    if (!gone) return;
+    repairing = true;
+    const shown = activeBuild.value;
+    if (shown) selection.land({ kind: "build", id: shown.id });
+    else selection.clearSelection();
+  },
+  { immediate: true },
+);
+
 watch(
   () => selection.selection.value,
-  () => syncRoute(),
+  () => {
+    syncRoute({ transient: repairing });
+    repairing = false;
+  },
 );
 watch(details.tab, () => syncRoute());
 watch([stableBrowser.isOpen, stableBrowser.tab, stableBrowser.group], () =>
