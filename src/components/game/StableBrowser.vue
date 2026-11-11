@@ -171,13 +171,18 @@ function create(filter: string) {
         class="mb-3 rounded-md border border-line"
         data-testid="stable-group-card"
       >
+        <!-- The divider only separates the header from an open body; a collapsed card's own
+             border already closes it. -->
         <div
-          class="flex items-center gap-2 border-b border-line pr-2.5 max-md:flex-wrap max-md:gap-y-0"
+          class="relative flex items-center gap-2 border-line pr-2.5 max-md:flex-wrap max-md:gap-y-0"
+          :class="!isCollapsed(card) && 'border-b'"
         >
-          <!-- "Use mount" stays outside the toggle: a button cannot nest in another. -->
+          <!-- "Use mount" stays outside the toggle: a button cannot nest in another.
+               On a phone the toggle holds only the name line, so it skips the finger-sized
+               minimum height and instead stretches its tap area over the whole header. -->
           <button
             type="button"
-            class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left hover:bg-surface-2"
+            class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left hover:bg-surface-2 max-md:pb-0 max-md:after:absolute max-md:after:inset-0 max-md:after:content-[''] max-md:pointer-coarse:min-h-0"
             :aria-expanded="!isCollapsed(card)"
             :title="isCollapsed(card) ? 'Expand' : 'Collapse'"
             :data-testid="'stable-card-toggle:' + card.id"
@@ -206,7 +211,7 @@ function create(filter: string) {
                bonus under it. -->
           <BaseButton
             v-if="tab === 'mount' && group !== null"
-            class="flex-none"
+            class="relative flex-none"
             data-testid="stable-apply"
             :title="`Set Mount ${group} to ${card.name}`"
             @click="apply(card.head)"
@@ -214,7 +219,7 @@ function create(filter: string) {
           >
           <!-- A phone has no room for the line beside the name, so it gets its own line under
                the header, indented past the chevron, outside the toggle so its label stays one
-               line. -->
+               line. Taps on it reach the toggle's stretched area. -->
           <span
             class="basis-full pb-1.5 pl-8.5 text-muted md:hidden"
             data-testid="stable-card-meta"
