@@ -3,8 +3,9 @@
 // with create/select/restore. The Slots tab uses LayerSlotOutline.vue instead.
 //
 // Owns the keyboard cursor; the parent owns what "select" does (routing, section state).
-import { computed } from "vue";
+import { computed, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
+import { useListScroll } from "../../composables/useListScroll";
 import { CirclePlus, RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
@@ -58,7 +59,18 @@ const props = defineProps<{
   hasUnsavedDraft: (row: EditorRow) => boolean;
   /** The Items tab's category choices. */
   categories: string[];
+  /** Names this list's remembered scroll position, per layer and tab. */
+  scrollKey: string;
 }>();
+
+const scroller = useTemplateRef<HTMLElement>("scroller");
+const { focusCurrent } = useListScroll(
+  scroller,
+  () => props.scrollKey,
+  () => props.selectedKey,
+);
+
+defineExpose({ focusCurrent });
 
 /** The header text for each overlay group the list serves. */
 interface SectionChrome {
@@ -159,13 +171,14 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         >
       </template>
     </LayerListHeader>
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div ref="scroller" class="min-h-0 flex-1 overflow-y-auto">
       <div
         v-for="row in rows"
         :key="row.key"
         tabindex="0"
         class="editor-row flex cursor-pointer items-center gap-1.5 border-b border-line/45 px-2 py-1 hover:bg-surface-2"
         :class="row.key === selectedKey && 'is-on bg-accent-soft'"
+        :aria-current="row.key === selectedKey ? 'true' : undefined"
         @click="onRowClick(row)"
       >
         <span

@@ -97,8 +97,11 @@ export async function openNewItem(seed: Item) {
   seedNewItem(seed);
 }
 
-/** Opens item `itemId` in the target layer's editor. The layer's memory is set first, since a
- *  mounting editor restores from it. */
+/** The layer whose next mounting editor should show its open entry in the list. */
+let pendingReveal: string | null = null;
+
+/** Opens item `itemId` in the target layer's editor, showing it in the list. The layer's memory
+ *  is set first, since a mounting editor restores from it. */
 export function openItem(itemId: string) {
   const layer = layers.ensureTargetLayer();
   Object.assign(getState(layer.id), {
@@ -107,7 +110,15 @@ export function openItem(itemId: string) {
     slotsGroup: "",
     view: "detail",
   });
+  pendingReveal = layer.id;
   selection.selectLayer(layer.id);
+}
+
+/** Whether `layerId`'s editor was opened by a jump to show, cleared as it is read. */
+export function takeReveal(layerId: string): boolean {
+  const asked = pendingReveal === layerId;
+  pendingReveal = null;
+  return asked;
 }
 
 // --- pending new-preset seed ---------------------------------------------------------------

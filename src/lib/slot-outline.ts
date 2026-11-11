@@ -4,7 +4,8 @@
 // Pure, so it is testable without a DOM. Tombstones appear as `removed` rows so they can be
 // restored, and slots whose section no longer exists go in a trailing bucket.
 import * as catalog from "../data/catalog";
-import { matchesQuery } from "./text-filter";
+import { keepsRow, type FilterableRow } from "./entry-list-filter";
+import { defaultItemListFilter } from "./item-list-filter";
 import { nestedParentId } from "./slot-parent";
 import type { CatalogOverlay, Db, SectionPreset, Slot } from "../types";
 import type { EntryStatus } from "../data/catalog";
@@ -149,14 +150,18 @@ export interface OutlineFilter {
   status: string;
 }
 
+/** What the entry list filters read off an outline row: its detail is the searched column. */
+export const outlineFilterable = (row: OutlineRow): FilterableRow => ({
+  name: row.name,
+  filter: row.detail,
+  status: row.status,
+});
+
 function passes(row: OutlineRow, filter: OutlineFilter): boolean {
-  if (filter.status === "changed" && row.status === "base") return false;
-  if (
-    ["added", "edited", "removed"].includes(filter.status) &&
-    row.status !== filter.status
-  )
-    return false;
-  return matchesQuery([row.name, row.detail], filter.query);
+  return keepsRow(
+    { ...filter, items: defaultItemListFilter() },
+    outlineFilterable(row),
+  );
 }
 
 /** The tree narrowed to matching rows, keeping any group with a match. */

@@ -10,6 +10,7 @@
 import {
   computed,
   defineAsyncComponent,
+  nextTick,
   onMounted,
   onScopeDispose,
   onUnmounted,
@@ -72,10 +73,14 @@ import * as history from "../stores/history";
 import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
 import * as rails from "../stores/rails";
-import { matchesQuery } from "../lib/text-filter";
+import {
+  keepsRow,
+  unhide,
+  type EntryListFilters,
+  type FilterableRow,
+} from "../lib/entry-list-filter";
 import {
   defaultItemListFilter,
-  keepsItem,
   type ItemListFilter,
 } from "../lib/item-list-filter";
 import { editorDb } from "../lib/editor-db";
@@ -103,7 +108,14 @@ import type {
   BonusRow,
   FilterRow,
 } from "./game/LayerEntryList.vue";
-import type { OutlineKind, OutlineMove, OutlineRow } from "../lib/slot-outline";
+import {
+  buildOutline,
+  outlineFilterable,
+  outlineRows,
+  type OutlineKind,
+  type OutlineMove,
+  type OutlineRow,
+} from "../lib/slot-outline";
 
 const storedEntriesCollapsed = rails.collapsed("layerEntries");
 const entriesWidth = rails.width("layerEntries");
@@ -542,26 +554,64 @@ const tabs = computed(() =>
   })),
 );
 
-const filtered = computed(() => {
-  return rows.value.filter((row) => {
-    if (statusFilter.value === "changed" && row.status === "base") return false;
-    if (
-      ["added", "edited", "removed"].includes(statusFilter.value) &&
-      row.status !== statusFilter.value
-    )
-      return false;
-    if (
-      row.kind === "item" &&
-      !keepsItem(
-        itemFilter.value,
-        row.item,
-        row.item ? isRetired(db.value, row.item.id) : false,
-      )
-    )
-      return false;
-    return matchesQuery([row.name, row.filter ?? ""], query.value);
-  });
-});
+const listFilters = computed<EntryListFilters>(() => ({
+  status: statusFilter.value,
+  query: query.value,
+  items: itemFilter.value,
+}));
+
+/** What the list filters read off a row. */
+const filterable = (row: EditorRow): FilterableRow =>
+  row.kind === "item"
+    ? {
+        ...row,
+        retired: row.item ? isRetired(db.value, row.item.id) : false,
+      }
+    : { name: row.name, filter: row.filter, status: row.status };
+
+const filtered = computed(() =>
+  rows.value.filter((row) => keepsRow(listFilters.value, filterable(row))),
+);
+
+const entryList = useTemplateRef("entryList");
+const slotOutline = useTemplateRef("slotOutline");
+
+/** `group`'s selected entry as the list filters read it: a flat list row, or the Slots tab's
+ *  outline row. */
+function shownRow(group: EditorGroup): FilterableRow | undefined {
+  const key = selectedBySection[group];
+  if (!key) return undefined;
+  if (GROUPS[group].tab !== "slots") {
+    const row = rows.value.find((entry) => entry.key === key);
+    return row && filterable(row);
+  }
+  const kind = OUTLINE_KIND_OF[group];
+  const row = outlineRows(buildOutline(db.value, overlay.value)).find(
+    (entry) => entry.kind === kind && entry.key === key,
+  );
+  return row && outlineFilterable(row);
+}
+
+/** After a jump to `group`'s entry: clears the list filters hiding it, says so, and on desktop
+ *  focuses its row so the arrow keys browse from there. */
+async function showInList(group: EditorGroup) {
+  const row = shownRow(group);
+  if (row) {
+    const { filters, cleared } = unhide(listFilters.value, row);
+    if (cleared.length) {
+      statusFilter.value = filters.status;
+      query.value = filters.query;
+      itemFilter.value = filters.items;
+      const last = cleared.pop();
+      const named = cleared.length ? `${cleared.join(", ")} and ${last}` : last;
+      showNotice(`Cleared the ${named} to show "${row.name}"`);
+    }
+  }
+  if (layout.value.back) return;
+  await nextTick();
+  const list = tab.value === "slots" ? slotOutline.value : entryList.value;
+  list?.focusCurrent();
+}
 
 const statusFilterOptions = [
   { value: "all", label: "all" },
@@ -604,13 +654,19 @@ const selectedSection = computed<SlotSection | null>(
 );
 
 /** What the outline shows as open. Only one Slots tab group is selected at a time. */
+/** The outline row kind of each Slots tab group. */
+const OUTLINE_KIND_OF: Partial<Record<EditorGroup, OutlineKind>> = {
+  sections: "section",
+  slots: "slot",
+  sectionPresets: "sectionPreset",
+};
+
 const outlineSelection = computed<{ kind: OutlineKind; key: string } | null>(
   () => {
-    for (const [kind, group] of [
-      ["section", "sections"],
-      ["slot", "slots"],
-      ["sectionPreset", "sectionPresets"],
-    ] as [OutlineKind, EditorGroup][]) {
+    for (const [group, kind] of Object.entries(OUTLINE_KIND_OF) as [
+      EditorGroup,
+      OutlineKind,
+    ][]) {
       const key = selectedBySection[group];
       if (key) return { kind, key };
     }
@@ -799,7 +855,12 @@ function dropSeeds() {
 
 /** Applies a route to this layer's tab, selection and list filters. */
 function applyRoute(route: Route) {
+  const marked = { ...selectedBySection };
   restoreSelection(route);
+  // A phone's route names an entry only while its form shows, so its list keeps the entry
+  // the form showed marked.
+  if (layout.value.back && viewOf(route) === "list")
+    Object.assign(selectedBySection, marked);
   // A fresh blank form, never a draft left from before.
   if (route.new) newItemCounter.value++;
   statusFilter.value =
@@ -1112,6 +1173,7 @@ async function jumpTo(group: EditorGroup, id: string) {
     section: tabParam(target),
     ...routeParamsFor(group, id),
   });
+  void showInList(group);
 }
 
 /** Jump to whatever a validation finding points at. Findings carry `kind` precisely so this
@@ -1443,6 +1505,8 @@ onMounted(() => {
     restoreLayer(navigation.route.value);
   }
   itemFilter.value = ui.value.itemFilter;
+  // A jump from the build editor shows its item in the list.
+  if (layerEditorUi.takeReveal(props.layer.id)) void showInList("items");
 });
 
 // The per-layer store remembers which half a phone showed, for a later remount.
@@ -1708,8 +1772,10 @@ onUnmounted(() => {
       >
         <LayerSlotOutline
           v-if="!entriesCollapsed && tab === 'slots'"
+          ref="slotOutline"
           v-model:query="query"
           v-model:status-filter="statusFilter"
+          :scroll-key="`${props.layer.id}:slots`"
           class="min-w-0 flex-1"
           :db="db"
           :overlay="overlay"
@@ -1723,9 +1789,11 @@ onUnmounted(() => {
         />
         <LayerEntryList
           v-else-if="!entriesCollapsed"
+          ref="entryList"
           v-model:query="query"
           v-model:status-filter="statusFilter"
           v-model:item-filter="itemFilter"
+          :scroll-key="`${props.layer.id}:${activeGroup}`"
           class="min-w-0 flex-1"
           :rows="filtered"
           :categories="filters"

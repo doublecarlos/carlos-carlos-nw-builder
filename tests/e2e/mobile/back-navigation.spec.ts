@@ -99,3 +99,24 @@ test("a reload keeps the stats pane", async ({ page }) => {
   await page.reload();
   await expect(page.getByTestId("stat-panel-column")).toBeVisible();
 });
+
+test("Back from a form returns to its row, where the list was", async ({
+  page,
+}) => {
+  // The list unmounts while a form fills the pane; Back brings it back scrolled as it was,
+  // with the row that was open still marked and in view.
+  await openLayer(page);
+  const scroller = list(page).locator(".overflow-y-auto").last();
+  const rows = page.locator(".editor-row");
+  await rows.nth(40).scrollIntoViewIfNeeded();
+  const row = rows.nth(40);
+  const name = await row.locator(".editor-row-name").textContent();
+  await row.tap();
+  await expect(form(page)).toBeVisible();
+
+  await page.goBack();
+  const current = page.locator('.editor-row[aria-current="true"]');
+  await expect(current).toContainText(name ?? "");
+  await expect(current).toBeInViewport();
+  expect(await scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+});
