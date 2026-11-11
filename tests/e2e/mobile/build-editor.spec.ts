@@ -28,6 +28,28 @@ test("a row's label sits above its control", async ({ page }) => {
   expect(input.y).toBeGreaterThanOrEqual(label.y + label.height);
 });
 
+test("a point row stacks its label over steppers that stay on screen", async ({
+  page,
+}) => {
+  // A phone swaps the section's column template for one track; a point row follows it and
+  // wraps its steppers rather than scrolling them sideways.
+  await openBuilder(page);
+  await ensureSectionExpanded(page, "raceLeveling");
+  const row = slotRow(page, "raceLeveling.leveling_str");
+  await row.scrollIntoViewIfNeeded();
+  const label = (await row.locator(".slot-label").boundingBox())!;
+  const steppers = row.locator('[data-testid^="assignment-label-"]');
+  const boxes = await steppers.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().toJSON() as DOMRect),
+  );
+  expect(boxes.length).toBeGreaterThan(1);
+  const width = page.viewportSize()!.width;
+  for (const b of boxes) {
+    expect(b.top).toBeGreaterThanOrEqual(label.y + label.height);
+    expect(b.right).toBeLessThanOrEqual(width);
+  }
+});
+
 test("the toolbar's actions sit in an overflow menu", async ({ page }) => {
   await openBuilder(page);
   await expect(page.getByTestId("editor-expand-all")).toHaveCount(0);
