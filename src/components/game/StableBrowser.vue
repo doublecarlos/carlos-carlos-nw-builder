@@ -178,11 +178,11 @@ function create(filter: string) {
           :class="!isCollapsed(card) && 'border-b'"
         >
           <!-- "Use mount" stays outside the toggle: a button cannot nest in another.
-               On a phone the toggle holds only the name line, so it skips the finger-sized
+               On a phone the toggle holds only the name line, so it skips the drawn
                minimum height and instead stretches its tap area over the whole header. -->
           <button
             type="button"
-            class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left hover:bg-surface-2 max-md:pb-0 max-md:after:absolute max-md:after:inset-0 max-md:after:content-[''] max-md:pointer-coarse:min-h-0"
+            class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left hover:bg-surface-2 max-md:static max-md:pb-0 max-md:after:absolute max-md:after:inset-0 max-md:after:content-[''] max-md:pointer-coarse:min-h-0"
             :aria-expanded="!isCollapsed(card)"
             :title="isCollapsed(card) ? 'Expand' : 'Collapse'"
             :data-testid="'stable-card-toggle:' + card.id"

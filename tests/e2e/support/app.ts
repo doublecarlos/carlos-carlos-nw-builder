@@ -71,11 +71,11 @@ export async function parkCursorOnRow(page: Page, slotId: string) {
 
 /**
  * Moves focus off whatever field or row holds it, the precondition for any shortcut guarded by
- * `isFormControl`. Clicks the header's top-left corner rather than its center: the bar is a row
- * of controls, and its middle is whichever one happens to land there at the current width.
+ * `isFormControl`. Clicks the header's very corner rather than its center: the bar is a row of
+ * controls, and on touch each one's tap area reaches a few pixels past its edge.
  */
 export async function blurToHeader(page: Page) {
-  await page.getByTestId("app-header").click({ position: { x: 4, y: 4 } });
+  await page.getByTestId("app-header").click({ position: { x: 1, y: 1 } });
 }
 
 /** An `item_picker_list`'s add-a-row button, and the rows it grows. */

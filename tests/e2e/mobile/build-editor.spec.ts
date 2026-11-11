@@ -3,6 +3,7 @@
 // phone widths is checked in layout-sweep.spec.ts.
 import { test, expect, type Page } from "@playwright/test";
 import {
+  blurToHeader,
   chooseItem,
   ensureSectionExpanded,
   openBuilder,
@@ -91,7 +92,7 @@ test("tapping a row does not open the hover card", async ({ page }) => {
   await openBuilder(page);
   await importTestHead(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
-  await page.getByTestId("app-header").click({ position: { x: 4, y: 4 } });
+  await blurToHeader(page);
 
   await page.clock.install();
   // A tap fires the row's `mouseenter` before its click, which is what would arm the card.
@@ -152,6 +153,80 @@ test.describe("a picked row's info button", () => {
     expect(
       Math.abs(label.y + label.height / 2 - (elbow.y + elbow.height / 2)),
     ).toBeLessThanOrEqual(2);
+  });
+
+  test("leaves the row's checkbox its whole width to tap", async ({ page }) => {
+    // The info button's tap area reaches past its icon; it must not take taps from the
+    // checkbox beside it.
+    const SLOT = "buffs.elixir";
+    await openBuilder(page);
+    await importTestCatalog(page, {
+      items: [
+        {
+          id: "test-tap-elixir",
+          name: "Test Tap Elixir",
+          filter: "consumable_elixir",
+        },
+      ],
+      choices: { [SLOT]: "test-tap-elixir" },
+    });
+    await ensureSectionExpanded(page, "buffs");
+    const checkbox = slotRow(page, SLOT).getByTestId(`slot-toggle:${SLOT}`);
+    await expect(
+      slotRow(page, SLOT).getByTestId(`slot-info:${SLOT}`),
+    ).toBeVisible();
+    await checkbox.scrollIntoViewIfNeeded();
+    const box = (await checkbox.boundingBox())!;
+    for (const x of [box.x + 1, box.x + box.width / 2, box.x + box.width - 1])
+      await expect
+        .poll(() =>
+          page.evaluate(
+            ({ x, y }) =>
+              document.elementFromPoint(x, y)?.getAttribute("data-testid") ??
+              null,
+            { x, y: box.y + box.height / 2 },
+          ),
+        )
+        .toBe(`slot-toggle:${SLOT}`);
+  });
+
+  test("a list row puts its remove button on the label line, clear of the checkbox", async ({
+    page,
+  }) => {
+    // A phone gives the picker the row's full width, so remove joins the row's other icons:
+    // before the checkbox, with info last, and far enough off that a near miss doesn't delete.
+    const SLOT = "group.group#1";
+    await openBuilder(page);
+    await importTestCatalog(page, {
+      items: [
+        { id: "test-tap-group", name: "Test Tap Group", filter: "group_buff" },
+      ],
+      choices: { [SLOT]: "test-tap-group" },
+    });
+    await ensureSectionExpanded(page, "group");
+    const row = slotRow(page, SLOT);
+    const remove = row.getByTestId(`list-remove:${SLOT}`);
+    await remove.scrollIntoViewIfNeeded();
+    const removeBox = (await remove.boundingBox())!;
+    const checkBox = (await row
+      .getByTestId(`slot-toggle:${SLOT}`)
+      .boundingBox())!;
+    const infoBox = (await row.getByTestId(`slot-info:${SLOT}`).boundingBox())!;
+    const pickerBox = (await pickerInput(row).boundingBox())!;
+
+    expect(removeBox.y + removeBox.height).toBeLessThanOrEqual(pickerBox.y + 1);
+    expect(removeBox.x + removeBox.width).toBeLessThanOrEqual(checkBox.x);
+    expect(checkBox.x + checkBox.width).toBeLessThanOrEqual(infoBox.x);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          ({ x, y }) =>
+            document.elementFromPoint(x, y)?.getAttribute("data-testid") ??
+            null,
+          { x: checkBox.x + 1, y: checkBox.y + checkBox.height / 2 },
+        ),
+      )
+      .toBe(`slot-toggle:${SLOT}`);
   });
 
   test("keeps a finger-sized tap target around the icon", async ({ page }) => {
