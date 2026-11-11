@@ -279,6 +279,52 @@ describe("builds.restoreFromTrash", () => {
     expect(builds.builds.value.map((b) => b.id).at(-1)).toBe(id);
     expect(builds.build.value!.id).toBe(id);
   });
+
+  // A build deleted from a folder comes back into that folder, not the top level.
+  it("puts the build back in the folder it was deleted from", async () => {
+    const { builds, trash, folders } = await freshStores();
+    builds.createBuild();
+    const id = builds.build.value!.id;
+    const folderId = folders.createFolder("Alts");
+    folders.placeRow(id, folderId);
+    builds.deleteBuild(id);
+
+    builds.restoreFromTrash(trash.trashed.value[0]);
+
+    expect(folders.parentOf(id)?.id).toBe(folderId);
+  });
+
+  it("falls back to the top level when the folder is gone", async () => {
+    const { builds, trash, folders } = await freshStores();
+    builds.createBuild();
+    const id = builds.build.value!.id;
+    const folderId = folders.createFolder("Alts");
+    folders.placeRow(id, folderId);
+    builds.deleteBuild(id);
+    folders.deleteFolder(folderId);
+
+    builds.restoreFromTrash(trash.trashed.value[0]);
+
+    expect(folders.parentOf(id)).toBeUndefined();
+    expect(builds.builds.value.map((b) => b.id)).toContain(id);
+  });
+
+  // An import that replaces a filed build trashes the old copy with its folder.
+  it("restores a copy an import replaced into the replaced build's folder", async () => {
+    const { builds, trash, folders, storage } = await freshStores();
+    const liveId = builds.build.value!.id;
+    const folderId = folders.createFolder("Alts");
+    folders.placeRow(liveId, folderId);
+    builds.upsertImported(
+      { ...storage.defaultBuild("Incoming"), id: liveId },
+      true,
+    );
+
+    builds.restoreFromTrash(trash.trashed.value[0]);
+
+    const restored = builds.builds.value.find((b) => b.id !== liveId)!;
+    expect(folders.parentOf(restored.id)?.id).toBe(folderId);
+  });
 });
 
 describe("builds.upsertImported", () => {

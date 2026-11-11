@@ -8,11 +8,14 @@ import {
   addFolder,
   buildRow,
   buildRowNesting,
+  confirmDangerAction,
   folderRow,
   filterBuilds,
   moveViaMenu,
   openRowMenu,
+  recentlyDeletedHeader,
   renameViaSidebar,
+  restoreTrash,
   navName,
 } from "./support/nav";
 import { beginDrag, dragOnto, dropAt, requireBox } from "./support/dragDrop";
@@ -154,6 +157,27 @@ test("the build menu moves a build into a folder and back out", async ({
   await expect(buildRowNesting(page, "Build 1")).not.toHaveAttribute(
     "data-nested",
   );
+});
+
+// Restore from Recently deleted puts a build back in the folder it was deleted from.
+test("restoring a deleted build puts it back in its folder", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await addFolder(page);
+  await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
+  await moveViaMenu(buildRow(page, "Build 2"), "Alts");
+
+  await confirmDangerAction(
+    await openRowMenu(buildRow(page, "Build 2")),
+    "Delete",
+  );
+  await expect(buildRow(page, "Build 2")).toHaveCount(0);
+
+  await recentlyDeletedHeader(page).click();
+  await restoreTrash(page);
+  await expect(buildRowNesting(page, "Build 2")).toHaveAttribute("data-nested");
 });
 
 test("dragging a build out of a folder returns it to the top level", async ({

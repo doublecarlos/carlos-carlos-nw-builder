@@ -649,8 +649,15 @@ export async function loadAll(): Promise<{
       )
         return [];
       const { deletedAt } = t;
-      if (t.kind === "build")
-        return [{ kind: "build", item: normalize(t.item), deletedAt }];
+      if (t.kind === "build") {
+        const entry: TrashEntry = {
+          kind: "build",
+          item: normalize(t.item),
+          deletedAt,
+        };
+        if (typeof t.folderId === "string") entry.folderId = t.folderId;
+        return [entry];
+      }
       if (t.kind === "layer")
         return [{ kind: "layer", item: normalizeLayer(t.item), deletedAt }];
       return [];
