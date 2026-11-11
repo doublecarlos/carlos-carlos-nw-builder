@@ -91,3 +91,70 @@ test("stats the two builds agree on grow no compare line at all", async ({
   await chooseClass(page, "warlock");
   await expect(compareLines(page)).toHaveCount(0);
 });
+
+/** How far a stat's value sits off its label's vertical center once the label wraps. */
+async function wrappedLabelOffset(page: Page, key: string) {
+  return statRow(page, key).evaluate((row) => {
+    const label = row.querySelector<HTMLElement>('[data-testid="stat-label"]')!;
+    label.textContent = "A stat name long enough to wrap onto several lines";
+    label.style.display = "block";
+    label.style.width = "6ch";
+    // The text itself, not its box, which stretches to fill the cell.
+    const range = document.createRange();
+    range.selectNodeContents(row.querySelector('[data-testid="stat-main"]')!);
+    const middle = (box: DOMRect) => box.top + box.height / 2;
+    const labelBox = label.getBoundingClientRect();
+    const valueBox = range.getBoundingClientRect();
+    return {
+      labelHeight: labelBox.height,
+      valueHeight: valueBox.height,
+      offset: Math.abs(middle(labelBox) - middle(valueBox)),
+    };
+  });
+}
+
+/** Wraps a row's label and asserts its value centers on it. */
+async function expectValueCentered(page: Page, key: string) {
+  const { labelHeight, valueHeight, offset } = await wrappedLabelOffset(
+    page,
+    key,
+  );
+  expect(labelHeight, key).toBeGreaterThan(valueHeight * 2);
+  expect(offset, key).toBeLessThanOrEqual(1);
+}
+
+// One row from the ratings table and one from a label / value table.
+const CENTERED_ROWS = ["power", "hp"];
+
+test("a wrapped label's value centers on it", async ({ page }) => {
+  // The value reads with the label beside it, as the info button does.
+  await openBuilder(page);
+  await chooseClass(page, "warlock");
+  for (const key of CENTERED_ROWS) {
+    await expect(statRow(page, key)).toBeVisible();
+    await expectValueCentered(page, key);
+  }
+});
+
+test("a wrapped label's value centers on it with stats compared", async ({
+  page,
+}) => {
+  // The value still centers on its label, while the compare line stays level with the
+  // label's Other line along the bottom.
+  await openBuilder(page);
+  await chooseClass(page, "warlock");
+  await page.getByTestId("nav-add-build").click();
+  await chooseCombo(comparePicker(page), "Build 1");
+  await compareToggle(page).check();
+  for (const key of CENTERED_ROWS) {
+    await expect(compareValue(page, key)).toBeVisible();
+    await expectValueCentered(page, key);
+    const tops = await statRow(page, key)
+      .getByTestId("compare-line")
+      .evaluateAll((lines) =>
+        lines.map((line) => line.getBoundingClientRect().top),
+      );
+    expect(tops.length, key).toBeGreaterThan(1);
+    expect(Math.max(...tops) - Math.min(...tops), key).toBeLessThanOrEqual(1);
+  }
+});
