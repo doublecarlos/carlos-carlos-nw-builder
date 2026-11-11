@@ -1,7 +1,7 @@
 // The build editor on a phone: a row stacks its label over its control, the toolbar's actions
 // live in an overflow menu, and the item card opens from a button instead of on hover. Fit at
 // phone widths is checked in layout-sweep.spec.ts.
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import {
   blurToHeader,
   chooseItem,
@@ -250,5 +250,65 @@ test.describe("a picked row's info button", () => {
         ),
       )
       .toBe("slot-info:gear.mainhand");
+  });
+});
+
+test.describe("a point stepper on touch", () => {
+  const SLOT = "boons.tier1";
+  const ITEM = "test-tap-boon";
+
+  /** Whether a tap `offset` px from one edge of `target`, at its middle height, lands on it.
+   *  Measured at the moment of the tap, so a row settling after a scroll is not misread. */
+  function takesTapAt(target: Locator, edge: "left" | "right", offset: number) {
+    return target.evaluate(
+      (el, { edge, offset }) => {
+        const box = el.getBoundingClientRect();
+        const x = (edge === "left" ? box.left : box.right) + offset;
+        const hit = document.elementFromPoint(x, box.top + box.height / 2);
+        return !!hit && el.contains(hit);
+      },
+      { edge, offset },
+    );
+  }
+
+  async function openStepper(page: Page) {
+    await openBuilder(page);
+    await importTestCatalog(page, {
+      items: [
+        {
+          id: ITEM,
+          name: "Test Tap Boon",
+          filter: "boon_tier1",
+          inlineRepetition: { min: 0, max: 5, default: 1 },
+        },
+      ],
+    });
+    await ensureSectionExpanded(page, "boons");
+    const input = slotRow(page, SLOT).getByTestId(`assignment-input-${ITEM}`);
+    await input.scrollIntoViewIfNeeded();
+    return input;
+  }
+
+  test("leaves its input whole to tap, beside the small -/+ buttons", async ({
+    page,
+  }) => {
+    // The buttons draw smaller than a finger and their tap areas reach past them; those
+    // areas must stop short of the input between them.
+    const input = await openStepper(page);
+    await expect.poll(() => takesTapAt(input, "left", 1)).toBe(true);
+    await expect.poll(() => takesTapAt(input, "right", -1)).toBe(true);
+  });
+
+  test("still catches a tap just past the + button's outer edge", async ({
+    page,
+  }) => {
+    await openStepper(page);
+    // The innermost box holding the input is its stepper.
+    const stepper = slotRow(page, SLOT)
+      .locator("div")
+      .filter({ has: page.getByTestId(`assignment-input-${ITEM}`) })
+      .last();
+    const plus = stepper.getByRole("button", { name: /^Increase/ });
+    await expect.poll(() => takesTapAt(plus, "right", 2)).toBe(true);
   });
 });

@@ -55,7 +55,8 @@ function stepBy(dir: 1 | -1, event: MouseEvent) {
 </script>
 
 <template>
-  <div class="flex items-center gap-1">
+  <!-- On touch the gap is wider than the buttons' tap areas reach, so the input keeps its taps. -->
+  <div class="flex items-center gap-1 pointer-coarse:gap-2">
     <IconButton
       :title="decreaseTitle"
       :disabled="model <= min"

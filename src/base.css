@@ -236,10 +236,28 @@
   flex-wrap: wrap;
 }
 
+/* On a coarse pointer, an invisible box centered on a small control fills out its tap target to
+ * the full tap size, so a dense row can draw the control smaller. Opt in per control: the box
+ * reaches past the control's edges, so place it clear of neighboring controls. Positions the
+ * control, which then anchors any absolute descendant. */
+@utility tap-area {
+  @media (pointer: coarse) {
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: min(0px, calc((100% - var(--spacing-tap)) / 2));
+    }
+  }
+}
+
 /* A small button inside a line of text, such as a row's info icon. On a coarse pointer it keeps
- * its drawn size instead of the minimum below, which would stand the whole line that tall. Its
- * invisible tap area still applies. */
+ * its drawn size instead of the minimum below, which would stand the whole line that tall, and
+ * its tap area makes up the rest. */
 @utility compact-tap {
+  @apply tap-area;
+
   @media (pointer: coarse) {
     flex: none;
     min-height: 0;
@@ -343,7 +361,7 @@
   }
 
   /* Finger-friendly controls on a coarse pointer, whatever the viewport width. A control draws
-   * a little larger and an invisible area centered on it fills out the tap target, so dense rows
+   * a little larger, and a small one adds `tap-area` to fill out the tap target, so dense rows
    * don't swell to the full tap size. In the base layer, so a control that has to stay compact
    * can still opt out with a `pointer-coarse:` utility. */
   @media (pointer: coarse) {
@@ -353,18 +371,6 @@
     summary {
       min-height: var(--spacing-tap-drawn);
       min-width: var(--spacing-tap-drawn);
-    }
-
-    button,
-    [role="button"],
-    summary {
-      position: relative;
-
-      &::after {
-        content: "";
-        position: absolute;
-        inset: min(0px, calc((100% - var(--spacing-tap)) / 2));
-      }
     }
   }
 }

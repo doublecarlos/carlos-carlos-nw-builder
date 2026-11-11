@@ -206,7 +206,7 @@ function onRowKeydown(event: KeyboardEvent) {
         <button
           type="button"
           data-no-drag
-          class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
+          class="nav-kebab tap-area flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
           :aria-label="`${kind} menu`"
           aria-haspopup="menu"
           :aria-expanded="menuOpen"

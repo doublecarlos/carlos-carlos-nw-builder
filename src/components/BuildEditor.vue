@@ -1374,7 +1374,7 @@ watch(
           >
             <button
               type="button"
-              class="flex cursor-pointer items-center gap-1"
+              class="tap-area flex cursor-pointer items-center gap-1"
               aria-label="Show only the slots holding retired items"
               data-testid="retired-items-show"
               @click="slotFilter.retired.value = true"
@@ -1391,7 +1391,7 @@ watch(
           >
             <button
               type="button"
-              class="flex cursor-pointer items-center gap-1"
+              class="tap-area flex cursor-pointer items-center gap-1"
               aria-label="Replace every retired item that has a replacement"
               data-testid="retired-items-apply"
               @click="buildEditor.applyRetiredItems()"

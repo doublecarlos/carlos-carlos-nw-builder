@@ -79,7 +79,7 @@ defineEmits<{
           <BaseTooltip text="Trash menu">
             <button
               type="button"
-              class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
+              class="nav-kebab tap-area flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
               aria-label="Trash menu"
               aria-haspopup="menu"
               :aria-expanded="menuOpenId === `${entry.kind}_${entry.item.id}`"

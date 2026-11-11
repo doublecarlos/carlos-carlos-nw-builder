@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
           <h2 :id="titleId" class="text-base font-semibold">{{ title }}</h2>
           <button
             type="button"
-            class="cursor-pointer px-1 text-muted transition-colors hover:text-text"
+            class="tap-area cursor-pointer px-1 text-muted transition-colors hover:text-text"
             aria-label="Close"
             data-testid="sheet-close"
             @click="emit('close')"
