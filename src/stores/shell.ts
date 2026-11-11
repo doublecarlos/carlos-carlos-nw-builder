@@ -1,30 +1,46 @@
 // Narrow-viewport shell state: whether the nav drawer is open and which pane a phone shows.
 //
-// Held in memory only. It describes the current visit on a small screen, so it is never
-// persisted and never touches the desktop rail preferences in `rails.ts`.
+// The drawer is held in memory only, and the pane in the URL on a phone. Neither is persisted
+// or touches the desktop rail preferences in `rails.ts`.
 import { computed, ref, shallowRef } from "vue";
+import { navigation } from "../lib/navigation";
 import type { PhonePane } from "../lib/shell-layout";
+import * as viewport from "./viewport";
 
 export const navDrawerOpen = ref(false);
 
-export const phonePane = ref<PhonePane>("editor");
+/** The pane a wider layout last asked for. Only a phone shows one pane at a time, and there
+ *  the route holds it. */
+const widePane = ref<PhonePane>("editor");
 
-const _paneBack = shallowRef<(() => void) | null>(null);
+export const phonePane = computed<PhonePane>(() => {
+  if (!viewport.isPhone.value) return widePane.value;
+  return navigation.route.value.pane === "stats" ? "stats" : "editor";
+});
 
-/** What Back does while the pane a jump brought up is still showing: return to where the jump
- *  started. App.vue holds Back for it on the phone layout. */
-export const paneBack = computed(() => _paneBack.value);
+/** What Back does on top of returning to the editor pane, while the pane a jump brought up is
+ *  still showing: return to where the jump started. */
+const paneBack = shallowRef<(() => void) | null>(null);
 
-/** Brings `pane` up on a phone. Called by the stores whose requests land in one pane, so an
- *  action taken from the other pane follows its result there. Wider layouts show both panes,
- *  and the value only decides where a later phone layout opens.
+/** Brings `pane` up. Called by the stores whose requests land in one pane, so an action taken
+ *  from the other pane follows its result there. On a phone the pane is a place in the URL,
+ *  so Back returns to the pane before; wider layouts show both panes and keep the URL as is.
  *
- *  `back` makes the jump one that Back undoes. Any later pane change, the pane switch included,
+ *  `back` runs when Back undoes this jump. Any later pane change, the pane switch included,
  *  drops it: by then the user has moved on from the jump. */
 export function showPane(pane: PhonePane, back?: () => void) {
-  phonePane.value = pane;
-  _paneBack.value = back ?? null;
+  widePane.value = pane;
+  paneBack.value = back ?? null;
+  if (viewport.isPhone.value)
+    navigation.write({ pane: pane === "stats" ? "stats" : null });
 }
+
+// Back off the pane a jump brought up returns to where the jump started.
+navigation.onTraverse((to, from) => {
+  const back = paneBack.value;
+  paneBack.value = null;
+  if (back && from.pane === "stats" && to.pane !== "stats") back();
+});
 
 export function openNavDrawer() {
   navDrawerOpen.value = true;

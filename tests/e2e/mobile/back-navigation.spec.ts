@@ -71,7 +71,7 @@ test("a cancelled Back over a dirty draft keeps the form and the way back", asyn
   await expect.poll(() => page.url()).toBe(before);
 });
 
-test.fixme("Back from the stats pane returns to the editor pane", async ({
+test("Back from the stats pane returns to the editor pane", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -92,7 +92,7 @@ test("a reload keeps the open form", async ({ page }) => {
   await expect(form(page)).toBeVisible();
 });
 
-test.fixme("a reload keeps the stats pane", async ({ page }) => {
+test("a reload keeps the stats pane", async ({ page }) => {
   await openBuilder(page);
   await page.getByTestId("pane-stats").click();
   await expect(page.getByTestId("stat-panel-column")).toBeVisible();
