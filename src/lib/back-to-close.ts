@@ -168,11 +168,22 @@ export function createBackToClose(host: BackHost) {
     run(unwind, write, reconcile);
   }
 
-  return { hold, beneath, idle };
+  /** Moves `delta` route entries, under any markers. The pop is swallowed like any other
+   *  traversal this makes. Resolves once it lands. */
+  function go(delta: number): Promise<void> {
+    return new Promise((resolve) =>
+      run(unwind, () => traverse(delta), reconcile, resolve),
+    );
+  }
+
+  return { hold, beneath, go, idle };
 }
 
+export type BackToClose = ReturnType<typeof createBackToClose>;
+
 /** `createBackToClose` over the real window. */
-const shared = typeof window === "undefined" ? null : createBackToClose(window);
+export const shared =
+  typeof window === "undefined" ? null : createBackToClose(window);
 
 export function holdBack(close: () => void): () => Promise<void> {
   if (!shared) throw new Error("holdBack needs a window");
