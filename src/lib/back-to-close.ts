@@ -1,18 +1,21 @@
 // Lets the browser's Back close an open overlay on a touch layout instead of leaving the page.
+// Overlays are transient layers: they hold Back here and never write the URL, while places go
+// through lib/navigation.ts.
 //
 // Every open overlay keeps one marker entry on top of history, with the same URL as the entry
 // under it. Back pops a marker to close the innermost overlay, and closing any other way steps
 // back over one, so no stray entry is left behind. Each marker records its depth, so a pop
 // tells how many overlays it closed, and a Forward onto an old marker is stepped back off.
 //
-// Route writes go through `beneath`: with markers on top, it steps back over them, writes the
-// route, then pushes markers again for whatever is still open. A route never lands above a
-// marker, so Back always means "close the innermost overlay" first and "previous route" after.
+// Route writes go through `beneath`, since a place can change while an overlay is open (a pick
+// in the nav drawer): with markers on top, it steps back over them, writes the route, then
+// pushes markers again for whatever is still open. A route never lands above a marker, so Back
+// always means "close the innermost overlay" first and "previous place" after. Navigation's own
+// traversals go through `go`, in the same queue.
 //
-// Every pop this makes is swallowed before the app's own popstate handlers (App.vue's route
-// sync, LayerEditor's selection restore) see it. Listeners on the window itself run in the
-// order they were added, whatever their capture flag, so the shared instance listens from
-// module load, ahead of any component's setup.
+// Every pop this makes is swallowed before navigation's popstate listener sees it. Listeners on
+// the window itself run in the order they were added, whatever their capture flag, so the
+// shared instance listens from module load, ahead of navigation's.
 
 /** The key flagging a marker entry's history state. Its value is the marker's depth. */
 export const MARKER = "backToClose";
