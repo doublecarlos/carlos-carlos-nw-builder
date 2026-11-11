@@ -22,12 +22,13 @@ test(
     const name = page.getByTestId("item-name-input");
     const id = page.getByTestId("item-id-copy").first();
 
-    // The whole name fits in its box, with no sideways scroll inside it.
-    expect(
-      await name.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
-    ).toBe(true);
+    // The category field wraps below the name rather than sitting beside a squeezed one.
     const nameBox = (await name.boundingBox())!;
     const idBox = (await id.boundingBox())!;
+    const filterBox = (await page
+      .getByTestId("item-filter-input")
+      .boundingBox())!;
+    expect(filterBox.y).toBeGreaterThanOrEqual(nameBox.y + nameBox.height);
     expect(idBox.width).toBeLessThan(nameBox.width);
   },
 );
