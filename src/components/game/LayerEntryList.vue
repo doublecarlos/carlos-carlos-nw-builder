@@ -86,7 +86,7 @@ const CHROME: Record<string, SectionChrome> = {
 const chrome = computed(() => CHROME[props.section] ?? CHROME.items);
 
 const emit = defineEmits<{
-  select: [row: EditorRow, options?: { push?: boolean }];
+  select: [row: EditorRow, options?: { transient?: boolean }];
   create: [];
   restore: [row: EditorRow];
 }>();
@@ -130,7 +130,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         ? 0
         : rowsList.length - 1
       : Math.min(Math.max(idx + dir, 0), rowsList.length - 1);
-  emit("select", rowsList[next], { push: false });
+  emit("select", rowsList[next], { transient: true });
 });
 </script>
 

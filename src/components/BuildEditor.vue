@@ -64,7 +64,6 @@ import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
 import * as storage from "../storage/storage";
-import * as router from "../lib/router";
 import * as builds from "../stores/builds";
 import * as buildEditor from "../stores/buildEditor";
 import { ringRow } from "../lib/row-slide";
@@ -983,9 +982,7 @@ const rowHandlers = useKeyedCache((slotId: string) => ({
 }));
 
 function openInLayerEditor(itemId: string) {
-  const layer = layers.ensureTargetLayer();
-  router.apply({ item: itemId });
-  selection.selectLayer(layer.id);
+  layerEditorUi.openItem(itemId);
 }
 
 /** The card is dismissed first: it would otherwise hang over the editor it just opened. */

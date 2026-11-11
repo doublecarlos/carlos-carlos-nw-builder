@@ -21,7 +21,7 @@ async function openLayer(page: Page) {
   return { before, layer: page.url() };
 }
 
-test.fixme("Forward after Back from a form opens the form again", async ({
+test("Forward after Back from a form opens the form again", async ({
   page,
 }) => {
   await openLayer(page);
@@ -36,7 +36,7 @@ test.fixme("Forward after Back from a form opens the form again", async ({
   expect(param(page, "item")).toBe(item);
 });
 
-test.fixme("Back from an entry a form linked to returns to that form", async ({
+test("Back from an entry a form linked to returns to that form", async ({
   page,
 }) => {
   await openLayer(page);

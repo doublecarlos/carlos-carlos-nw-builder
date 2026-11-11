@@ -11,6 +11,7 @@ import {
   computed,
   defineAsyncComponent,
   onMounted,
+  onScopeDispose,
   onUnmounted,
   provide,
   reactive,
@@ -19,7 +20,6 @@ import {
   watch,
 } from "vue";
 import BaseModal from "./ui/BaseModal.vue";
-import { useEventListener } from "@vueuse/core";
 import * as viewport from "../stores/viewport";
 import * as confirm from "../stores/confirm";
 import * as draftGuard from "../stores/draftGuard";
@@ -65,7 +65,8 @@ import {
 import * as catalog from "../data/catalog";
 import { isRetired } from "../data/db";
 import { showNotice } from "../stores/notice";
-import * as router from "../lib/router";
+import { navigation } from "../lib/navigation";
+import type { Route, RoutePatch } from "../lib/route-model";
 import * as engine from "../stores/resolved";
 import * as history from "../stores/history";
 import * as layers from "../stores/layers";
@@ -79,12 +80,8 @@ import {
 } from "../lib/item-list-filter";
 import { editorDb } from "../lib/editor-db";
 import { viewportKind } from "../lib/shell-layout";
-import {
-  layerEditorLayout,
-  type LayerEditorView,
-} from "../lib/layer-editor-layout";
+import { layerEditorLayout, viewOf } from "../lib/layer-editor-layout";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
-import { useBackToClose } from "../composables/useBackToClose";
 import { provideEditorDb } from "../composables/useEditorDb";
 import type {
   CatalogGroup,
@@ -147,11 +144,8 @@ provideEditorDb(db);
  *  the previous layer's stored state. */
 const ui = computed(() => layerEditorUi.getState(props.layer.id));
 
-/** The phone's master-detail half, remembered per layer like the rest of `ui`. */
-const view = computed<LayerEditorView>({
-  get: () => ui.value.view,
-  set: (next) => (ui.value.view = next),
-});
+/** The phone's master-detail half, which the route decides. */
+const view = computed(() => viewOf(navigation.route.value));
 
 const layout = computed(() =>
   layerEditorLayout(
@@ -203,34 +197,19 @@ const entriesStyle = computed(() =>
     : undefined,
 );
 
-/** Back from a phone's form to its list. Leaving unmounts the form, so a dirty draft asks
- *  first, the same as any other move away from it. False when the user stays.
- *
- *  The list keeps its entry marked, but the route stops naming it: a phone's route names an
- *  entry only while its form shows, so a reload lands where the user was. */
-async function backToList(): Promise<boolean> {
-  if (!(await draftGuard.confirmDiscard())) return false;
-  view.value = "list";
-  writeRoute(routeParamsFor(activeGroup.value, null));
-  return true;
+/** The form bar's Back from a phone's form to its list. Leaving unmounts the form, so a dirty
+ *  draft asks first. The list keeps its entry marked, but the route stops naming it, so a
+ *  reload lands where the user was. */
+async function backToList() {
+  if (!(await draftGuard.confirmDiscard())) return;
+  await navigation.retreat(routeParamsFor(activeGroup.value, null));
 }
 
-// On a phone the browser's Back leaves the form for the list, through the same guard. That
-// marker is the editor's only history step: every route write replaces instead (`writeRoute`),
-// so Back runs form, list, then whatever came before the layer.
-useBackToClose(() => layout.value.back && view.value === "detail", backToList);
-
-/** Writes this editor's route params, replacing the entry instead of pushing on a phone. */
-function writeRoute(
-  params: router.RouterParams,
-  { push = true }: { push?: boolean } = {},
-) {
-  router.apply(params, { push: push && !layout.value.back });
+/** Writes this editor's route params. `transient` keeps a step like arrow-key browsing off
+ *  history. */
+function writeRoute(params: RoutePatch, { transient = false } = {}) {
+  navigation.write(params, { transient });
 }
-
-/** Whether any group has an entry selected, which a phone shows as its form. */
-const anySelected = () =>
-  EDITOR_GROUPS.some((group) => selectedBySection[group] != null);
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
@@ -749,23 +728,23 @@ const warnCount = computed(
 // `select`'s `push` flag keeps arrow-key browsing out of the back/forward history.
 
 /** The router params that select `id` in `group` and clear every other group's key. */
-function routeParamsFor(
-  group: EditorGroup,
-  id: string | null,
-): router.RouterParams {
-  const params: router.RouterParams = {};
+function routeParamsFor(group: EditorGroup, id: string | null): RoutePatch {
+  const params: RoutePatch = { new: null };
   for (const other of EDITOR_GROUPS) params[GROUPS[other].routerKey] = null;
   params[GROUPS[group].routerKey] = id;
   return params;
 }
 
 /** Only this group's own key, for saves and deletes that stay on the same tab. */
-function routeParamFor(
-  group: EditorGroup,
-  id: string | null,
-): router.RouterParams {
-  return { [GROUPS[group].routerKey]: id };
+function routeParamFor(group: EditorGroup, id: string | null): RoutePatch {
+  return { [GROUPS[group].routerKey]: id, new: null };
 }
+
+/** The params of `group`'s new draft. */
+const newDraftParams = (group: EditorGroup): RoutePatch => ({
+  ...routeParamsFor(group, null),
+  new: group,
+});
 
 /** Whether `source.status` names one of `statusFilterOptions`' own values. */
 function isValidStatusFilter(value: unknown) {
@@ -783,6 +762,8 @@ interface SelectionSource {
   slot?: string;
   sectionId?: string;
   filter?: string;
+  /** The group whose new draft is open. In the URL only. */
+  new?: string;
   /** Stored per layer, never in the URL: the Slots tab group last shown. */
   slotsGroup?: string;
 }
@@ -793,34 +774,72 @@ function restoreSelection(source: SelectionSource) {
   const target = TABS.find((entry) => entry.id === source.section) ?? TABS[0];
   tab.value = target.id;
   const groups = groupsOfTab(target.id);
+  const fresh = groups.find((group) => group === source.new);
   for (const group of groups) {
     const id = source[GROUPS[group].routerKey];
     selectedBySection[group] =
-      id && GROUPS[group].existsIn(db.value, id) ? id : null;
+      !fresh && id && GROUPS[group].existsIn(db.value, id) ? id : null;
   }
-  // The selected group decides which form opens; otherwise the tab's last shown group.
+  // A new draft, else the selected group, decides which form opens; otherwise the tab's last
+  // shown group.
   const chosen =
+    fresh ??
     groups.find((group) => selectedBySection[group]) ??
     groups.find((group) => group === source.slotsGroup);
   if (chosen) slotsGroup.value = chosen;
 }
 
-/** Back/forward landed on this component while it was already mounted (still in the
- * editor, just a different item/bonus/section/status filter/query). A fresh mount reads the
- * same params in `onMounted`. */
-function onPopState() {
-  // A duplicate draft's seed is only ever meant for the mount it was set up for -- back/
-  // forward must never resurrect it onto an unrelated blank draft.
+/** Clears every duplicate seed: one belongs only to the draft it was set up for. */
+function dropSeeds() {
   duplicateItemSeed.value = null;
   duplicateBonusSeed.value = null;
   duplicatePresetSeed.value = null;
   duplicateSlotSeed.value = null;
-  const route = router.parse();
+}
+
+/** Applies a route to this layer's tab, selection and list filters. */
+function applyRoute(route: Route) {
   restoreSelection(route);
-  view.value = anySelected() ? "detail" : "list";
-  statusFilter.value = isValidStatusFilter(route.status) ? route.status : "all";
+  // A fresh blank form, never a draft left from before.
+  if (route.new) newItemCounter.value++;
+  statusFilter.value =
+    route.status && isValidStatusFilter(route.status) ? route.status : "all";
   query.value = route.q ?? "";
 }
+
+/** Names what this editor shows in the URL without a history step, after a remount or a layer
+ *  switch restored it from memory. A phone names the entry only if its form was showing. */
+function syncRoute(formShowing: boolean) {
+  const group = activeGroup.value;
+  writeRoute(
+    {
+      section: tabParam(tab.value),
+      ...routeParamsFor(
+        group,
+        formShowing || !layout.value.back ? selectedBySection[group] : null,
+      ),
+      status: statusFilter.value === "all" ? null : statusFilter.value,
+      q: query.value || null,
+    },
+    { transient: true },
+  );
+}
+
+/** A traversal to another layer, for the layer watcher below to restore from. */
+let arrivingRoute: Route | null = null;
+
+// Back or Forward within this layer applies here. One that switches layers lands through the
+// layer watcher, and a fresh mount reads the route in `onMounted`.
+onScopeDispose(
+  navigation.onTraverse((route) => {
+    dropSeeds();
+    if (route.layer !== props.layer.id) {
+      arrivingRoute = route;
+      return;
+    }
+    applyRoute(route);
+  }),
+);
 
 /** The `section` param for a tab: the default tab leaves it off the URL entirely. */
 const tabParam = (target: string) => (target === TABS[0].id ? null : target);
@@ -830,7 +849,6 @@ async function switchTab(target: string) {
   if (!(await draftGuard.confirmDiscard())) return;
   tab.value = target;
   // A phone lands on the new tab's list, the way into any of its entries.
-  view.value = "list";
   const group = groupsOfTab(target)[0];
   writeRoute({
     section: tabParam(target),
@@ -843,25 +861,23 @@ async function switchTab(target: string) {
 
 async function select(
   row: EditorRow | OutlineRow,
-  { push = true }: { push?: boolean } = {},
+  { transient = false }: { transient?: boolean } = {},
 ) {
   if (row.status === "removed") return;
   const group = GROUP_OF_KIND[row.kind];
   if (activeGroup.value === group && selectedBySection[group] === row.key) {
     // A phone's marked row reopens its form, and the route names the entry again.
-    const reopening = layout.value.back && view.value === "list";
-    view.value = "detail";
-    if (reopening) writeRoute(routeParamsFor(group, row.key), { push });
+    if (view.value === "list")
+      writeRoute(routeParamsFor(group, row.key), { transient });
     return;
   }
   if (!(await draftGuard.confirmDiscard())) return;
-  view.value = "detail";
   // Clear the sibling groups too, or their forms would stay selected behind the new one.
   for (const sibling of groupsOfTab(GROUPS[group].tab))
     selectedBySection[sibling] = null;
   selectedBySection[group] = row.key;
   slotsGroup.value = group;
-  writeRoute(routeParamsFor(group, row.key), { push });
+  writeRoute(routeParamsFor(group, row.key), { transient });
 }
 
 const selectedKey = computed(() => selectedBySection[activeGroup.value]);
@@ -874,8 +890,7 @@ async function newEntry(group: EditorGroup) {
     selectedBySection[sibling] = null;
   slotsGroup.value = group;
   newItemCounter.value++;
-  view.value = "detail";
-  writeRoute(routeParamsFor(group, null));
+  writeRoute(newDraftParams(group));
 }
 
 function newItem() {
@@ -907,8 +922,7 @@ async function duplicateItem() {
   duplicateItemSeed.value = item;
   selectedBySection.items = null;
   newItemCounter.value++;
-  view.value = "detail";
-  writeRoute({ item: null });
+  writeRoute(newDraftParams("items"));
   showNotice(`Duplicating "${item.name}". Edit and save to create a copy.`);
 }
 
@@ -921,8 +935,7 @@ async function createFromTooltip(draft: Partial<Item>) {
   selectedBySection.items = null;
   duplicateItemSeed.value = { id: "", name: "", ...draft } as Item;
   newItemCounter.value++;
-  view.value = "detail";
-  writeRoute({ item: null });
+  writeRoute(newDraftParams("items"));
   showTooltipImport.value = false;
   showNotice(
     `Filled ${Object.keys(draft).length} field(s) from the tooltip. Review and save to create the item.`,
@@ -958,8 +971,7 @@ async function duplicateBonus() {
   duplicateBonusSeed.value = bonus;
   selectedBySection.bonuses = null;
   newItemCounter.value++;
-  view.value = "detail";
-  writeRoute({ bonus: null });
+  writeRoute(newDraftParams("bonuses"));
   showNotice(
     `Duplicating "${bonus.name || bonus.id}". Edit and save to create a copy.`,
   );
@@ -988,8 +1000,7 @@ async function duplicateSlot() {
   selectedBySection.slots = null;
   slotsGroup.value = "slots";
   newItemCounter.value++;
-  view.value = "detail";
-  writeRoute(routeParamFor("slots", null));
+  writeRoute(newDraftParams("slots"));
   showNotice(
     `Duplicating "${slot.label || slot.id}". Edit and save to create a copy.`,
   );
@@ -1013,7 +1024,8 @@ function saveEntry(
     catalog.upsert(overlay.value, group, id, entity),
   );
   selectedBySection[group] = id;
-  writeRoute(routeParamFor(group, id));
+  // A saved draft is now the entry: the same place, named.
+  writeRoute(routeParamFor(group, id), { transient: true });
   showNotice(`Saved ${noun} "${label}"`);
 }
 
@@ -1032,6 +1044,11 @@ function updateEntry(
   );
 }
 
+/** Leaves a deleted entry's form for the list, the way Back would: its place is gone. */
+function leaveDeleted(group: EditorGroup) {
+  void navigation.retreat(routeParamFor(group, null));
+}
+
 function deleteEntry(group: EditorGroup) {
   const { noun, labelIn } = GROUPS[group];
   const id = selectedBySection[group]!;
@@ -1042,8 +1059,7 @@ function deleteEntry(group: EditorGroup) {
     catalog.remove(overlay.value, group, id),
   );
   selectedBySection[group] = null;
-  view.value = "list";
-  writeRoute(routeParamFor(group, null));
+  leaveDeleted(group);
   showNotice(`Removed ${noun} "${label}"`);
 }
 
@@ -1079,13 +1095,8 @@ async function resetAll(event: MouseEvent) {
   });
   if (!ok) return;
   commit(null, "Discard all changes", catalog.emptyOverlay());
-  const cleared: router.RouterParams = {};
-  for (const group of Object.keys(GROUPS) as EditorGroup[]) {
-    selectedBySection[group] = null;
-    Object.assign(cleared, routeParamFor(group, null));
-  }
-  view.value = "list";
-  writeRoute(cleared);
+  for (const group of EDITOR_GROUPS) selectedBySection[group] = null;
+  void navigation.retreat(routeParamsFor(activeGroup.value, null));
   showNotice("Discarded every change. The layer is back to the shipped data.");
 }
 
@@ -1097,7 +1108,6 @@ async function jumpTo(group: EditorGroup, id: string) {
   for (const sibling of groupsOfTab(target)) selectedBySection[sibling] = null;
   selectedBySection[group] = id;
   slotsGroup.value = group;
-  view.value = "detail";
   writeRoute({
     section: tabParam(target),
     ...routeParamsFor(group, id),
@@ -1164,8 +1174,7 @@ async function onDeleteBonusTop(event?: MouseEvent) {
     catalog.remove(next, "bonuses", bonus.id),
   );
   selectedBySection.bonuses = null;
-  view.value = "list";
-  writeRoute(routeParamFor("bonuses", null));
+  leaveDeleted("bonuses");
   showNotice(`Removed bonus "${label}"`);
 }
 const onRevertBonusTop = () => revertEntry("bonuses");
@@ -1250,8 +1259,7 @@ async function onDeleteSection(event?: MouseEvent) {
     catalog.remove(next, "sections", section.id),
   );
   selectedBySection.sections = null;
-  view.value = "list";
-  writeRoute(routeParamFor("sections", null));
+  leaveDeleted("sections");
   showNotice(`Removed section "${label}"`);
 }
 
@@ -1348,10 +1356,10 @@ async function importOverlay(event: Event) {
 }
 
 watch(statusFilter, (value) => {
-  writeRoute({ status: value === "all" ? null : value }, { push: false });
+  writeRoute({ status: value === "all" ? null : value });
 });
 watch(query, (value) => {
-  writeRoute({ q: value || null }, { push: false });
+  writeRoute({ q: value || null });
 });
 
 // Mirror every field this component owns into the per-layer store, so a later remount (a
@@ -1375,11 +1383,11 @@ watch(
   },
 );
 
-/** Whether the URL itself carries any of this component's own params -- true for a deep
- *  link or a back/forward navigation, false for a plain remount after switching editors
- *  (those params were wiped on the way out). Only in the true case should the URL outrank
- *  the per-layer store below. */
-function hasRoutedLayerState(routed: Record<string, string>) {
+/** Whether the URL itself carries any of this component's own params: true for a deep link or
+ *  a back/forward navigation, false for a plain remount after switching editors (those params
+ *  were wiped on the way out). Only in the true case should the URL outrank the per-layer
+ *  store below. */
+function hasRoutedLayerState(routed: Route) {
   return Boolean(
     routed.item ||
     routed.bonus ||
@@ -1387,61 +1395,71 @@ function hasRoutedLayerState(routed: Record<string, string>) {
     routed.preset ||
     routed.slot ||
     routed.sectionId ||
+    routed.new ||
     routed.section ||
     routed.status ||
     routed.q,
   );
 }
 
+/** Restores this layer from the route when it names something here, else from the per-layer
+ *  store, and has the URL name what shows. */
+function restoreLayer(routed: Route) {
+  if (hasRoutedLayerState(routed)) {
+    applyRoute(routed);
+    syncRoute(viewOf(routed) === "detail");
+  } else {
+    const showing = ui.value.view === "detail";
+    restoreSelection(ui.value);
+    statusFilter.value = isValidStatusFilter(ui.value.status)
+      ? ui.value.status
+      : "all";
+    query.value = ui.value.q;
+    syncRoute(showing);
+  }
+  itemFilter.value = ui.value.itemFilter;
+}
+
 onMounted(() => {
-  const routed = router.parse();
-  const routedActive = hasRoutedLayerState(routed);
-  const source = routedActive ? routed : ui.value;
-  // Restore what this layer had open, unless a new-item seed outranks it (first branch).
-  // When the layer changes, keep the `item` param if the new layer's composed catalog
-  // still has that id, otherwise drop it (phase 6 §2.3).
+  // Restore what this layer had open, unless a seed outranks it. When the layer changes, keep
+  // the `item` param if the new layer's composed catalog still has that id, otherwise drop it.
   if (newPresetSeed) {
     // BuildSection's "Create new from current": the pre-filled draft *is* the point of the
-    // jump, so it outranks whatever this layer had open -- same reasoning as `newItemSeed`.
+    // jump, so it outranks whatever this layer had open, the same as `newItemSeed`.
     tab.value = "slots";
     slotsGroup.value = "sectionPresets";
     selectedBySection.sectionPresets = null;
     ui.value.section = "slots";
     ui.value.slotsGroup = "sectionPresets";
     ui.value.preset = "";
+    writeRoute(
+      { section: "slots", ...newDraftParams("sectionPresets") },
+      { transient: true },
+    );
     showNotice("New preset from the current build. Name it and save.");
-    view.value = "detail";
   } else if (newItemSeed) {
     showNewItemSeed(newItemSeed);
   } else {
-    restoreSelection(source);
-    // A deep link or back/forward names what to show; a plain remount keeps the stored view.
-    if (routedActive) view.value = anySelected() ? "detail" : "list";
+    restoreLayer(navigation.route.value);
   }
-  if (isValidStatusFilter(source.status)) statusFilter.value = source.status;
-  if (source.q) query.value = source.q;
   itemFilter.value = ui.value.itemFilter;
 });
 
-useEventListener(window, "popstate", onPopState);
+// The per-layer store remembers which half a phone showed, for a later remount.
+watch(view, (next) => (ui.value.view = next));
 
 // A nav pick can switch `props.layer` without remounting this component. Reset the local
-// selection to the new layer's own remembered state (and force a fresh blank form), so the
-// previous layer's open draft does not linger into the new one.
+// selection to the new layer's own state (and force a fresh blank form), so the previous
+// layer's open draft does not linger into the new one. A traversal brings the route it
+// landed on.
 watch(
   () => props.layer.id,
   () => {
-    duplicateItemSeed.value = null;
-    duplicateBonusSeed.value = null;
-    duplicatePresetSeed.value = null;
-    duplicateSlotSeed.value = null;
+    dropSeeds();
     newItemCounter.value++;
-    restoreSelection(ui.value);
-    statusFilter.value = isValidStatusFilter(ui.value.status)
-      ? ui.value.status
-      : "all";
-    query.value = ui.value.q;
-    itemFilter.value = ui.value.itemFilter;
+    const routed = arrivingRoute;
+    arrivingRoute = null;
+    restoreLayer(routed ?? {});
   },
 );
 
@@ -1450,9 +1468,12 @@ watch(
  *  since that is what a later remount restores from. */
 function showNewItemSeed(seed: Item) {
   tab.value = "items";
-  view.value = "detail";
   ui.value.section = "items";
   ui.value.item = "";
+  writeRoute(
+    { section: tabParam("items"), ...newDraftParams("items") },
+    { transient: true },
+  );
   const narrowedTo = [seed.filter, ...(seed.tags ?? [])]
     .filter(Boolean)
     .join(", ");
@@ -1482,11 +1503,12 @@ onUnmounted(() => {
       preset: null,
       slot: null,
       sectionId: null,
+      new: null,
       section: null,
       status: null,
       q: null,
     },
-    { push: false },
+    { transient: true },
   );
 });
 </script>

@@ -58,7 +58,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  select: [row: OutlineRow, options?: { push?: boolean }];
+  select: [row: OutlineRow, options?: { transient?: boolean }];
   /** The section to add to; absent for "New section". */
   create: [payload: { kind: OutlineKind; sectionId: string }];
   restore: [row: OutlineRow];
@@ -304,7 +304,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         ? 0
         : list.length - 1
       : Math.min(Math.max(idx + dir, 0), list.length - 1);
-  emit("select", list[next], { push: false });
+  emit("select", list[next], { transient: true });
 });
 </script>
 

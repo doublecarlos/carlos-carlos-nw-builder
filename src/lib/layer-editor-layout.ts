@@ -5,10 +5,26 @@
 // - Tablet: list stacked above the form; the list can still collapse.
 // - Phone: master-detail. The list fills the pane until an entry opens, then the form fills
 //   it with a Back control; the toolbar's actions fold into one menu.
+import type { Route, RouteKey } from "./route-model";
 import type { ViewportKind } from "./shell-layout";
 
 /** Which half a phone shows: the entry list or the open entry's form. */
 export type LayerEditorView = "list" | "detail";
+
+/** The params naming an open entry, or a group's new draft. */
+const ENTRY_KEYS: readonly RouteKey[] = [
+  "item",
+  "bonus",
+  "filter",
+  "preset",
+  "slot",
+  "sectionId",
+  "new",
+];
+
+/** A phone's form shows while the route names an entry or a new draft, its list otherwise. */
+export const viewOf = (route: Route): LayerEditorView =>
+  ENTRY_KEYS.some((key) => route[key]) ? "detail" : "list";
 
 export interface LayerEditorLayout {
   list: boolean;

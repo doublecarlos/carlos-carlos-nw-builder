@@ -17,7 +17,7 @@ async function openLayerOnItem(page: Page) {
   return page.url();
 }
 
-test.fixme("a cancelled Back to the previous entry keeps the new draft", async ({
+test("a cancelled Back to the previous entry keeps the new draft", async ({
   page,
 }) => {
   const onItem = await openLayerOnItem(page);
@@ -35,9 +35,7 @@ test.fixme("a cancelled Back to the previous entry keeps the new draft", async (
   await expect(page.getByTestId("item-name-input")).not.toHaveValue(DRAFT);
 });
 
-test("a cancelled Back to the previous build keeps the way back", async ({
-  page,
-}) => {
+test("a cancelled Back keeps the way back to the build", async ({ page }) => {
   await openBuilder(page);
   const build = page.url();
   await addLayer(page);
@@ -45,14 +43,18 @@ test("a cancelled Back to the previous build keeps the way back", async ({
   await expect.poll(() => param(page, "layer")).not.toBeNull();
   const layer = page.url();
   await page.getByTestId("new-item").click();
+  await expect.poll(() => param(page, "new")).toBe("items");
+  const draft = page.url();
   await page.getByTestId("item-name-input").fill(DRAFT);
 
   await page.goBack();
   await page.getByTestId("confirm-cancel").click();
-  await expect.poll(() => page.url()).toBe(layer);
+  await expect.poll(() => page.url()).toBe(draft);
   await expect(page.getByTestId("item-name-input")).toHaveValue(DRAFT);
 
   await page.goBack();
   await page.getByTestId("confirm-accept").click();
+  await expect.poll(() => page.url()).toBe(layer);
+  await page.goBack();
   await expect.poll(() => page.url()).toBe(build);
 });
