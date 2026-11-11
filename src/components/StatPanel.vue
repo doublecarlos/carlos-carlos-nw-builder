@@ -466,120 +466,73 @@ const {
             </td>
           </tr>
         </thead>
-        <tbody>
-          <!-- Each cell colored off its own column's 'over', not the row: rating and
+        <!-- One tbody per stat, its compare values on a second row, as StatPanelPairsTable's
+             are. Each cell colored off its own column's 'over', not the row: rating and
              percentage cap independently, so one can read green while the other reads
              red on the same row. -->
-          <tr
-            v-for="row in capRows"
-            :key="row.key"
-            class="even:bg-surface-2/55 group hover:outline hover:outline-2 hover:outline-accent max-lg:-outline-offset-2"
-            :data-stat-row="row.key"
-          >
-            <td
-              class="h-px border border-line px-1 py-0.5"
-              :class="row.sepAfter && 'border-b-2 border-b-text/50'"
-            >
-              <div class="flex h-full flex-col">
-                <div class="flex flex-1 items-center">
-                  <StatInfoButton :stat-key="row.key" :label="row.label" />
-                  <span data-testid="stat-label">{{ row.label }}</span>
-                </div>
-                <CompareLine
-                  v-if="row.compare"
-                  text="↳ Other"
-                  :title="compareName"
-                  fit-right
-                />
+        <tbody
+          v-for="row in capRows"
+          :key="row.key"
+          class="[&:nth-of-type(even)]:bg-surface-2/55 group hover:outline hover:outline-2 hover:outline-accent max-lg:-outline-offset-2"
+          :class="
+            row.sepAfter
+              ? 'border-b-2 border-b-text/50'
+              : 'border-b border-b-line'
+          "
+          :data-stat-row="row.key"
+        >
+          <tr>
+            <td class="border-x border-line px-1 py-0.5">
+              <div class="flex items-center">
+                <StatInfoButton :stat-key="row.key" :label="row.label" />
+                <span data-testid="stat-label">{{ row.label }}</span>
               </div>
             </td>
             <td
-              class="h-px border border-line px-1 py-0.5 text-right tabular-nums"
-              :class="[
-                row.rating.primaryCls,
-                row.sepAfter && 'border-b-2 border-b-text/50',
-              ]"
+              class="border-x border-line px-1 py-0.5 text-right tabular-nums"
+              :class="row.rating.primaryCls"
               data-testid="stat-value"
             >
-              <div class="flex h-full flex-col">
-                <span
-                  class="flex flex-1 items-center justify-end"
-                  data-testid="stat-main"
-                  >{{ int(row.rating.total) }}</span
-                >
-                <CompareLine
-                  v-if="row.compare"
-                  class="tabular-nums"
-                  :class="row.compare.rating.cls"
-                  :text="row.compare.rating.text"
-                />
-              </div>
+              {{ int(row.rating.total) }}
             </td>
             <td
-              class="h-px border border-line px-1 py-0.5 text-right tabular-nums"
-              :class="[
-                row.percent.primaryCls,
-                row.sepAfter && 'border-b-2 border-b-text/50',
-              ]"
+              class="border-x border-line px-1 py-0.5 text-right tabular-nums"
+              :class="row.percent.primaryCls"
             >
-              <div class="flex h-full flex-col">
-                <span
-                  class="flex flex-1 items-center justify-end"
-                  data-testid="stat-main"
-                  >{{ pct(row.percent.capped) }}</span
-                >
-                <CompareLine
-                  v-if="row.compare"
-                  class="tabular-nums"
-                  :class="row.compare.percent.cls"
-                  :text="row.compare.percent.text"
-                />
-              </div>
+              {{ pct(row.percent.capped) }}
             </td>
             <td
-              class="h-px border border-line px-1 py-0.5 text-right tabular-nums text-muted"
-              :class="[
-                row.percent.overCls,
-                row.sepAfter && 'border-b-2 border-b-text/50',
-              ]"
+              class="border-x border-line px-1 py-0.5 text-right tabular-nums text-muted"
+              :class="row.percent.overCls"
             >
-              <div class="flex h-full flex-col">
-                <span
-                  class="flex flex-1 items-center justify-end"
-                  data-testid="stat-main"
-                  >{{ signedPct(row.percent.over) }}</span
-                >
-                <!-- Keeps this column level with the compared ones beside it. -->
-                <span
-                  v-if="row.compare"
-                  class="block border-t border-transparent leading-tight"
-                  aria-hidden="true"
-                  >&nbsp;</span
-                >
-              </div>
+              {{ signedPct(row.percent.over) }}
             </td>
             <td
-              class="h-px border border-line px-1 py-0.5 text-right tabular-nums text-muted"
-              :class="[
-                row.rating.overCls,
-                row.sepAfter && 'border-b-2 border-b-text/50',
-              ]"
+              class="border-x border-line px-1 py-0.5 text-right tabular-nums text-muted"
+              :class="row.rating.overCls"
             >
-              <div class="flex h-full flex-col">
-                <span
-                  class="flex flex-1 items-center justify-end"
-                  data-testid="stat-main"
-                  >{{ signedInt(row.rating.over) }}</span
-                >
-                <!-- Keeps this column level with the compared ones beside it. -->
-                <span
-                  v-if="row.compare"
-                  class="block border-t border-transparent leading-tight"
-                  aria-hidden="true"
-                  >&nbsp;</span
-                >
-              </div>
+              {{ signedInt(row.rating.over) }}
             </td>
+          </tr>
+          <tr v-if="row.compare">
+            <td class="border-x border-line px-1 pb-0.5">
+              <CompareLine text="↳ Other" :title="compareName" fit-right />
+            </td>
+            <td
+              class="border-x border-line px-1 pb-0.5 text-right tabular-nums"
+              :class="row.compare.rating.cls"
+              data-testid="compare-value"
+            >
+              <CompareLine :text="row.compare.rating.text" />
+            </td>
+            <td
+              class="border-x border-line px-1 pb-0.5 text-right tabular-nums"
+              :class="row.compare.percent.cls"
+            >
+              <CompareLine :text="row.compare.percent.text" />
+            </td>
+            <td class="border-x border-line" />
+            <td class="border-x border-line" />
           </tr>
         </tbody>
       </table>

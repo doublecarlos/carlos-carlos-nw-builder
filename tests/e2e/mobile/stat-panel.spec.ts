@@ -190,7 +190,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
     await expect(page.getByTestId("compare-line").first()).toBeVisible();
 
     const spreads = await statColumn(page)
-      .locator("tr[data-stat-row]")
+      .locator("[data-stat-row]")
       .evaluateAll((rows) =>
         rows.flatMap((row) => {
           const tops = [
@@ -219,7 +219,7 @@ test("a stat row with an info button is no taller than one without", async ({
   await showStats(page, MIN_SUPPORTED_WIDTH);
   const height = (key: string) =>
     statColumn(page)
-      .locator(`tr[data-stat-row="${key}"]`)
+      .locator(`[data-stat-row="${key}"]`)
       .evaluate((row) => row.getBoundingClientRect().height);
 
   // Both lead rows of the item level tile; only item level has the button. The icon's own

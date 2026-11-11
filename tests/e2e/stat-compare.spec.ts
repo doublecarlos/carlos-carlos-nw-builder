@@ -11,20 +11,18 @@ const statRow = (page: Page, key: string) =>
   page.locator(`[data-stat-row="${key}"]`);
 const compareLines = (page: Page) =>
   page.locator('[data-testid="compare-line"]');
-/** The compare line inside a stat's *value* cell -- the row's label cell carries one too
- * (the compare build's name), and both answer to the same test id. */
+/** The compare line under a stat's value. The label cell carries one too (the compare
+ * build's name), and both answer to the same test id. */
 const compareValue = (page: Page, key: string) =>
   statRow(page, key).locator(
-    '[data-testid="stat-value"] [data-testid="compare-line"]',
+    '[data-testid="compare-value"] [data-testid="compare-line"]',
   );
 
-/** This build's own number for a stat, with any compare line inside the cell stripped off. */
+/** This build's own number for a stat. */
 async function ownValue(page: Page, key: string) {
-  const cell = statRow(page, key).getByTestId("stat-value");
-  const whole = (await cell.innerText()).trim();
-  const line = compareValue(page, key);
-  if ((await line.count()) === 0) return whole;
-  return whole.replace((await line.innerText()).trim(), "").trim();
+  return (
+    await statRow(page, key).getByTestId("stat-value").innerText()
+  ).trim();
 }
 
 test("the toggle stays disabled until a compare build is picked", async ({
@@ -101,7 +99,7 @@ async function wrappedLabelOffset(page: Page, key: string) {
     label.style.width = "6ch";
     // The text itself, not its box, which stretches to fill the cell.
     const range = document.createRange();
-    range.selectNodeContents(row.querySelector('[data-testid="stat-main"]')!);
+    range.selectNodeContents(row.querySelector('[data-testid="stat-value"]')!);
     const middle = (box: DOMRect) => box.top + box.height / 2;
     const labelBox = label.getBoundingClientRect();
     const valueBox = range.getBoundingClientRect();
@@ -156,5 +154,23 @@ test("a wrapped label's value centers on it with stats compared", async ({
       );
     expect(tops.length, key).toBeGreaterThan(1);
     expect(Math.max(...tops) - Math.min(...tops), key).toBeLessThanOrEqual(1);
+  }
+});
+
+test("a compare line sits below its stat's own value, not over it", async ({
+  page,
+}) => {
+  // The two builds' numbers must both stay readable.
+  await openBuilder(page);
+  await chooseClass(page, "warlock");
+  await page.getByTestId("nav-add-build").click();
+  await chooseCombo(comparePicker(page), "Build 1");
+  await compareToggle(page).check();
+  for (const key of CENTERED_ROWS) {
+    const value = await statRow(page, key)
+      .getByTestId("stat-value")
+      .boundingBox();
+    const line = await compareValue(page, key).boundingBox();
+    expect(line!.y, key).toBeGreaterThanOrEqual(value!.y + value!.height - 1);
   }
 });
