@@ -171,7 +171,9 @@ function create(filter: string) {
         class="mb-3 rounded-md border border-line"
         data-testid="stable-group-card"
       >
-        <div class="flex items-center gap-2 border-b border-line pr-2.5">
+        <div
+          class="flex items-center gap-2 border-b border-line pr-2.5 max-md:flex-wrap max-md:gap-y-0"
+        >
           <!-- "Use mount" stays outside the toggle: a button cannot nest in another. -->
           <button
             type="button"
@@ -185,8 +187,14 @@ function create(filter: string) {
               :expanded="!isCollapsed(card)"
               class="size-4 flex-none text-muted"
             />
-            <span class="shrink-0 font-semibold">{{ card.name }}</span>
-            <span class="min-w-0 truncate text-muted">{{ card.meta }}</span>
+            <span
+              class="shrink-0 font-semibold"
+              data-testid="stable-card-name"
+              >{{ card.name }}</span
+            >
+            <span class="min-w-0 truncate text-muted max-md:hidden">{{
+              card.meta
+            }}</span>
             <!-- A narrowed card says what it is a subset of. -->
             <span class="ml-auto shrink-0 pl-2 text-muted">{{
               card.matchedByRow
@@ -204,6 +212,14 @@ function create(filter: string) {
             @click="apply(card.head)"
             >Use mount</BaseButton
           >
+          <!-- A phone has no room for the line beside the name, so it gets its own line under
+               the header, indented past the chevron, outside the toggle so its label stays one
+               line. -->
+          <span
+            class="basis-full pb-1.5 pl-8.5 text-muted md:hidden"
+            data-testid="stable-card-meta"
+            >{{ card.meta }}</span
+          >
         </div>
         <div v-if="!isCollapsed(card)" class="animate-fade-in">
           <div
@@ -220,7 +236,7 @@ function create(filter: string) {
             <li
               v-for="row in card.rows"
               :key="row.id"
-              class="flex items-center gap-2 border-l-2 px-2.5 py-1"
+              class="flex items-center gap-2 border-l-2 px-2.5 py-1 max-md:flex-wrap max-md:gap-y-0"
               :class="
                 row.matched && !card.matchedByRow
                   ? 'border-accent bg-accent-soft font-semibold'
@@ -229,7 +245,7 @@ function create(filter: string) {
               data-testid="stable-reach-row"
             >
               <span class="shrink-0"
-                ><span>{{ row.name }}</span
+                ><span data-testid="stable-row-name">{{ row.name }}</span
                 ><BaseTooltip
                   v-if="row.preferred"
                   :text="preferredTitle(row.preferred)"
@@ -242,7 +258,11 @@ function create(filter: string) {
                   ></BaseTooltip
                 ></span
               >
-              <span class="min-w-0 truncate text-muted">{{ row.meta }}</span>
+              <span
+                class="min-w-0 text-muted max-md:order-last max-md:basis-full md:truncate"
+                data-testid="stable-row-meta"
+                >{{ row.meta }}</span
+              >
               <BaseButton
                 v-if="tab === 'bonus' && group !== null"
                 class="ml-auto flex-none"
