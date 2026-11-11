@@ -83,23 +83,41 @@ describe("createNavigation", () => {
     });
   });
 
-  it("pushes a place and replaces a setting", () => {
+  it("pushes a place and replaces a setting", async () => {
     const win = fakeWindow();
     win.nav.write({ build: null, layer: "l1" });
+    await settled();
     win.nav.write({ q: "ring" });
-    expect(win.hrefs()).toEqual(["/?build=b1", "/?layer=l1&q=ring"]);
+    // The route answers at once, before history catches up.
     expect(win.nav.route.value).toEqual({ layer: "l1", q: "ring" });
+    await settled();
+    expect(win.hrefs()).toEqual(["/?build=b1", "/?layer=l1&q=ring"]);
   });
 
-  it("a transient write replaces even a place", () => {
+  it("writes in one task are one step, a push if any of them pushes", async () => {
+    // One action touching several stores (a tab and a pane, say) is one Back.
+    const win = fakeWindow();
+    win.nav.write({ q: "ring" });
+    win.nav.write({ tab: "bonuses" });
+    win.nav.write({ pane: "stats" }, { transient: true });
+    await settled();
+    expect(win.hrefs()).toEqual([
+      "/?build=b1",
+      "/?build=b1&tab=bonuses&pane=stats&q=ring",
+    ]);
+  });
+
+  it("a transient write replaces even a place", async () => {
     const win = fakeWindow("/?layer=l1&item=a");
     win.nav.write({ item: "b" }, { transient: true });
+    await settled();
     expect(win.hrefs()).toEqual(["/?layer=l1&item=b"]);
   });
 
-  it("a write that changes nothing leaves history alone", () => {
+  it("a write that changes nothing leaves history alone", async () => {
     const win = fakeWindow();
     win.nav.write({ build: "b1", item: null });
+    await settled();
     expect(win.hrefs()).toEqual(["/?build=b1"]);
   });
 
@@ -108,6 +126,7 @@ describe("createNavigation", () => {
     const listener = vi.fn();
     win.nav.onTraverse(listener);
     win.nav.write({ build: "b2" });
+    await settled();
     expect(listener).not.toHaveBeenCalled();
 
     win.back();
@@ -119,6 +138,7 @@ describe("createNavigation", () => {
   it("retreat steps Back onto the place before, adding no entry", async () => {
     const win = fakeWindow("/?layer=l1");
     win.nav.write({ item: "a" });
+    await settled();
     const retreated = win.nav.retreat({ item: null });
     await settled();
     await retreated;
@@ -139,10 +159,12 @@ describe("createNavigation", () => {
   });
 
   describe("a guarded Back", () => {
-    function guardedWindow(answer: boolean) {
+    async function guardedWindow(answer: boolean) {
       const win = fakeWindow("/?layer=l1");
       win.nav.write({ item: "a" });
+      await settled();
       win.nav.write({ item: null, new: "items" });
+      await settled();
       const listener = vi.fn();
       win.nav.onTraverse(listener);
       const ask = vi.fn(() => Promise.resolve(answer));
@@ -151,7 +173,7 @@ describe("createNavigation", () => {
     }
 
     it("is put back before it asks, and a veto keeps every entry", async () => {
-      const win = guardedWindow(false);
+      const win = await guardedWindow(false);
       win.back();
       await settled();
       expect(win.ask).toHaveBeenCalledOnce();
@@ -162,7 +184,7 @@ describe("createNavigation", () => {
     });
 
     it("lands once the guard lets it through", async () => {
-      const win = guardedWindow(true);
+      const win = await guardedWindow(true);
       win.back();
       await settled();
       expect(win.index()).toBe(1);
@@ -171,8 +193,9 @@ describe("createNavigation", () => {
     });
 
     it("never asks about a change that cannot unmount a form", async () => {
-      const win = guardedWindow(false);
+      const win = await guardedWindow(false);
       win.nav.write({ pane: "stats" });
+      await settled();
       win.back();
       await settled();
       expect(win.ask).not.toHaveBeenCalled();
@@ -182,6 +205,7 @@ describe("createNavigation", () => {
     it("a guard returning null lets it through without asking", async () => {
       const win = fakeWindow("/?layer=l1");
       win.nav.write({ item: "a" });
+      await settled();
       win.nav.addGuard(() => null);
       win.back();
       await settled();

@@ -23,7 +23,7 @@ export const ROUTE_PARAMS = {
   build: PLACE,
   layer: PLACE,
   // BuildDetails' tab.
-  tab: SETTING,
+  tab: VIEW,
   // The stable reference's tab, while it is open on no group.
   stable: VIEW,
   // The phone's pane; the editor is the default and stays off the URL.

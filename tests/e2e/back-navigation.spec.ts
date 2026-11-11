@@ -58,3 +58,18 @@ test("a cancelled Back keeps the way back to the build", async ({ page }) => {
   await page.goBack();
   await expect.poll(() => page.url()).toBe(build);
 });
+
+test("Back undoes a switch of the details tab", async ({ page }) => {
+  // The tab is a place in the URL like the editor's own tabs, so Back returns to the one
+  // before rather than leaving the build.
+  await openBuilder(page);
+  const build = page.url();
+  const sidebar = page.getByTestId("details-sidebar");
+  const bonusesTab = sidebar.getByRole("button", { name: /^Bonuses/ });
+  await bonusesTab.click();
+  await expect.poll(() => param(page, "tab")).toBe("bonuses");
+
+  await page.goBack();
+  await expect(bonusesTab).toHaveAttribute("aria-pressed", "false");
+  await expect.poll(() => page.url()).toBe(build);
+});

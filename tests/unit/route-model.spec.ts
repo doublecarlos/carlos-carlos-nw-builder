@@ -45,15 +45,15 @@ describe("policy", () => {
   const change = (from: string, to: string) =>
     changedKeys(parseQuery(from), parseQuery(to));
 
-  it("pushes a selection, an entry, a pane and a stable tab", () => {
+  it("pushes a selection, an entry, a pane, a details tab and a stable tab", () => {
     expect(pushes(change("build=b1", "build=b2"))).toBe(true);
     expect(pushes(change("layer=l1", "layer=l1&item=a"))).toBe(true);
     expect(pushes(change("build=b1", "build=b1&pane=stats"))).toBe(true);
     expect(pushes(change("build=b1", "build=b1&stable=mount"))).toBe(true);
+    expect(pushes(change("build=b1", "build=b1&tab=bonuses"))).toBe(true);
   });
 
-  it("replaces for a details tab, list filters and the maintainer flag", () => {
-    expect(pushes(change("build=b1", "build=b1&tab=bonuses"))).toBe(false);
+  it("replaces for list filters and the maintainer flag", () => {
     expect(pushes(change("layer=l1", "layer=l1&q=ring&status=added"))).toBe(
       false,
     );
@@ -64,6 +64,8 @@ describe("policy", () => {
     expect(guarded(change("layer=l1&item=a", "layer=l1&item=b"))).toBe(true);
     expect(guarded(change("layer=l1", "layer=l1&new=items"))).toBe(true);
     expect(guarded(change("layer=l1", "build=b1"))).toBe(true);
-    expect(guarded(change("layer=l1", "layer=l1&pane=stats&q=x"))).toBe(false);
+    expect(
+      guarded(change("layer=l1", "layer=l1&pane=stats&tab=bonuses&q=x")),
+    ).toBe(false);
   });
 });

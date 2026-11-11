@@ -2,8 +2,10 @@
 // query string; transient layers (modals, sheets, drawers) hold Back through lib/back-to-close.ts
 // and never write the URL.
 //
-// - `write` merges a patch onto the route. The policy table decides push or replace; a caller
-//   can only mark a write transient, for steps like arrow-key browsing.
+// - `write` merges a patch onto the route at once. Writes made in the same task land in history
+//   as one step, so one action is one Back however many stores it touches. The policy table
+//   decides push or replace; a caller can only mark a write transient, for steps like arrow-key
+//   browsing.
 // - `retreat` leaves the current place the way Back would, without adding an entry.
 // - Back and Forward land through guards. A guard that objects gets history put back first and
 //   asks after, so a veto leaves every entry where it was.
@@ -75,13 +77,29 @@ export function createNavigation(host: NavigationHost, stack: CloseStack) {
     );
   }
 
+  /** The writes of the current task, still to land in history. */
+  let batch: { from: Route; push: boolean } | null = null;
+
   function write(patch: RoutePatch, { transient = false } = {}) {
     const from = route.value;
     const to = mergeRoute(from, patch);
     const changed = changedKeys(from, to);
     if (!changed.length) return;
     route.value = to;
-    const push = !transient && pushes(changed);
+    if (!batch) {
+      batch = { from, push: false };
+      queueMicrotask(flush);
+    }
+    if (!transient && pushes(changed)) batch.push = true;
+  }
+
+  /** Lands the current task's writes as one push or replace. */
+  function flush() {
+    if (!batch) return;
+    const { from, push } = batch;
+    batch = null;
+    const to = route.value;
+    if (!changedKeys(from, to).length) return;
     stack.beneath(() => {
       if (push) {
         const previous = serializeQuery(from);
@@ -104,6 +122,7 @@ export function createNavigation(host: NavigationHost, stack: CloseStack) {
   /** Leaves for `patch` merged onto the route: a step Back when the entry before is that place,
    *  otherwise a replace. Guards are not asked; the caller already has. */
   async function retreat(patch: RoutePatch): Promise<void> {
+    flush();
     const to = mergeRoute(route.value, patch);
     const previous = stateRecord(host.history.state)[PREVIOUS];
     if (previous !== serializeQuery(to)) {
