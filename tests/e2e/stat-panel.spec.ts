@@ -362,7 +362,7 @@ test("rating labels stay on one line at the panel's default width", async ({
   await openBuilder(page);
   await importStatItems(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
-  const labels = page.locator("tr[data-stat-row] td:first-child > div > span");
+  const labels = page.locator('tr[data-stat-row] [data-testid="stat-label"]');
   // Rows of a section that is not on screen measure zero and say nothing about wrapping.
   const heights = await labels.evaluateAll((spans) =>
     spans

@@ -33,10 +33,17 @@ defineProps<{
 </script>
 
 <template>
-  <!-- Below lg the table scrolls inside its own box when its numbers outgrow the panel, so
-       the panel's other sections stay put. The row outline is inset there so the box does not
-       clip it. -->
-  <div class="max-lg:overflow-x-auto" data-testid="stat-table-scroll">
+  <!-- Below lg the table scrolls sideways inside its own box when its numbers outgrow the panel,
+       so the panel's other sections stay put. Never up and down: the info buttons' tap areas
+       reach past the outer rows. The row outline is inset there so the box does not clip it.
+
+       Each cell fills its row (the h-px / h-full pair) so its main line centers on the space
+       above the compare line: a wrapped label and its value center on each other, and the
+       compare lines stay level along the bottom. -->
+  <div
+    class="max-lg:overflow-x-auto max-lg:overflow-y-hidden"
+    data-testid="stat-table-scroll"
+  >
     <table class="w-full border-collapse border border-line">
       <tbody>
         <tr
@@ -46,46 +53,51 @@ defineProps<{
           :class="row.lead && 'font-semibold'"
           :data-stat-row="row.key"
         >
-          <td
-            class="px-1 py-0.5 align-bottom"
-            :class="row.muted && 'text-muted'"
-          >
-            <div class="flex items-center gap-0.5">
-              <StatInfoButton
-                v-if="row.infoKey"
-                class="flex-none"
-                :stat-key="row.infoKey"
-                :label="row.label"
+          <td class="h-px px-1 py-0.5" :class="row.muted && 'text-muted'">
+            <div class="flex h-full flex-col">
+              <div class="flex flex-1 items-center gap-0.5">
+                <StatInfoButton
+                  v-if="row.infoKey"
+                  class="flex-none"
+                  :stat-key="row.infoKey"
+                  :label="row.label"
+                />
+                <span data-testid="stat-label">{{ row.label }}</span>
+                <span
+                  v-if="row.delta"
+                  class="ml-auto pl-2 font-semibold tabular-nums"
+                  :class="TREND_TONE[row.delta.trend]"
+                  :data-trend="row.delta.trend"
+                  data-testid="stat-delta"
+                  >{{ row.delta.text }}</span
+                >
+              </div>
+              <CompareLine
+                v-if="row.compare"
+                class="font-normal"
+                text="↳ Other"
+                :title="compareLabel"
+                fit-right
               />
-              <span>{{ row.label }}</span>
-              <span
-                v-if="row.delta"
-                class="ml-auto pl-2 font-semibold tabular-nums"
-                :class="TREND_TONE[row.delta.trend]"
-                :data-trend="row.delta.trend"
-                data-testid="stat-delta"
-                >{{ row.delta.text }}</span
-              >
             </div>
-            <CompareLine
-              v-if="row.compare"
-              class="font-normal"
-              text="↳ Other"
-              :title="compareLabel"
-              fit-right
-            />
           </td>
           <td
-            class="px-1 py-0.5 text-right align-bottom tabular-nums"
+            class="h-px px-1 py-0.5 text-right tabular-nums"
             :class="row.muted && 'text-muted'"
             data-testid="stat-value"
           >
-            {{ row.value }}
-            <CompareLine
-              v-if="row.compare"
-              class="font-normal tabular-nums"
-              :text="row.compare"
-            />
+            <div class="flex h-full flex-col">
+              <span
+                class="flex flex-1 items-center justify-end"
+                data-testid="stat-main"
+                >{{ row.value }}</span
+              >
+              <CompareLine
+                v-if="row.compare"
+                class="font-normal tabular-nums"
+                :text="row.compare"
+              />
+            </div>
           </td>
         </tr>
       </tbody>

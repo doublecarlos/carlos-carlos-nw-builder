@@ -121,6 +121,26 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412, 900, 1440]) {
   });
 }
 
+test("no stat table scrolls up and down", async ({ page }) => {
+  // A table only ever scrolls sideways: the info buttons' tap areas reach past its outer
+  // rows, which must not leave a few pixels of vertical scroll in its box.
+  await openComparedBuild(page);
+  await showStats(page, MIN_SUPPORTED_WIDTH);
+  await expect(page.getByTestId("compare-line").first()).toBeVisible();
+
+  const scrollable = await tableScrolls(page).evaluateAll((boxes) =>
+    boxes
+      .filter(
+        (box) =>
+          box.scrollHeight > box.clientHeight &&
+          // eslint-disable-next-line no-restricted-syntax
+          ["auto", "scroll"].includes(getComputedStyle(box).overflowY),
+      )
+      .map((box) => box.textContent?.slice(0, 40)),
+  );
+  expect(scrollable).toEqual([]);
+});
+
 test("a table wider than the panel scrolls inside its own box", async ({
   page,
 }) => {
