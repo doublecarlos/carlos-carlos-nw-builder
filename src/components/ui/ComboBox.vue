@@ -564,13 +564,11 @@ for (const target of keyTargets) {
       ref="input"
       :aria-describedby="describedBy"
       data-testid="picker-input"
-      class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      class="w-full rounded-md border aria-[invalid=true]:border-danger bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       :class="[
-        invalid
-          ? 'border-danger'
-          : tone
-            ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
-            : 'border-line',
+        tone
+          ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
+          : 'border-line',
         tone && 'text-(--tone)',
         placeholderClass,
         inputClass,

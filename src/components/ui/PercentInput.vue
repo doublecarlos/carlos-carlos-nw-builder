@@ -104,7 +104,7 @@ function nudge(direction: number, event: KeyboardEvent) {
       ref="input"
       :aria-describedby="describedBy"
       :aria-invalid="invalid || undefined"
-      class="peer w-full border border-line rounded-md pr-5 text-right tabular-nums text-accent focus:text-text bg-surface"
+      class="peer w-full border border-line aria-[invalid=true]:border-danger rounded-md pr-5 text-right tabular-nums text-accent focus:text-text bg-surface"
       type="text"
       inputmode="decimal"
       autocomplete="off"

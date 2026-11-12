@@ -96,7 +96,9 @@ Wide, the form primitives keep the desktop layout their callers size: a field's 
   line's segments grow to fill it, so the control stays a rectangle.
 - FormField provides the label association (`src/composables/useFormField.ts`). A new text
   control in this directory calls `useFormFieldControl` for its input id, its
-  `aria-describedby` (the field's `error`, then its `hint`) and its `aria-invalid` (`invalid`); a control that a `<label for>` cannot name reads
+  `aria-describedby` (the field's `error`, then its `hint`) and its `aria-invalid`
+  (`invalid`), and draws its danger border from `aria-invalid` with
+  `aria-[invalid=true]:border-danger`. A control that a `<label for>` cannot name reads
   `useFormFieldLabelId` for `aria-labelledby` instead.
 
 Outside this directory, lint rejects `flex-wrap` on an element holding form controls: such a

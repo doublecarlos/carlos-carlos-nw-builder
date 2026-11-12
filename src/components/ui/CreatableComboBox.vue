@@ -122,7 +122,7 @@ onKeyStroke(
       ref="input"
       :aria-describedby="describedBy"
       :aria-invalid="invalid || undefined"
-      class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      class="w-full rounded-md border border-line aria-[invalid=true]:border-danger bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       type="text"
       role="combobox"
       aria-autocomplete="list"

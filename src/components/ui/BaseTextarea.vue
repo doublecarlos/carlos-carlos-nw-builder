@@ -18,6 +18,6 @@ const { id, describedBy, invalid } = useFormFieldControl(
     v-model="model"
     :aria-describedby="describedBy"
     :aria-invalid="invalid || undefined"
-    class="resize-y rounded-md border border-line bg-surface p-2"
+    class="resize-y rounded-md border border-line aria-[invalid=true]:border-danger bg-surface p-2"
   ></textarea>
 </template>

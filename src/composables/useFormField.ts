@@ -66,8 +66,9 @@ export function provideFormField(
 /**
  * A labelable control's id and description. Inside a FormField with no control yet, the
  * control claims the field: the label points at its id, `describedBy` names the field's error
- * and hint, in that order, and `invalid` says whether the field shows an error. `explicitId` (a caller's own `inputId`) wins over the generated id. Outside a field the
- * id is just `explicitId`.
+ * and hint, in that order, and `invalid` says whether the field shows an error. `explicitId`
+ * (a caller's own `inputId`) wins over the generated id. Outside a field the id is just
+ * `explicitId`.
  */
 export function useFormFieldControl(
   explicitId: () => string | undefined = () => undefined,
