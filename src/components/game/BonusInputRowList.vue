@@ -7,12 +7,12 @@
 import { computed } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import ComboBox from "../ui/ComboBox.vue";
-import BonusOptionRow from "./BonusOptionRow.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";
 import FormField from "../ui/FormField.vue";
 import IdField from "../ui/IdField.vue";
+import BonusOptionRow from "./BonusOptionRow.vue";
 import type { InputDraft } from "../../lib/bonus-draft";
 import type { GlobalInputs } from "../../engine/global-inputs";
 
@@ -115,7 +115,13 @@ const controlOptions = [
           :model-value="row.global"
           :options="globalOptions"
           show-empty-option
-          :closed-display="row.global ? '' : 'this bonus'"
+          :closed-display="
+            !row.global
+              ? 'this bonus'
+              : globals.has(row.global)
+                ? ''
+                : row.global
+          "
           menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
           data-testid="bonus-input-global"
           @update:model-value="(v) => (row.global = v)"
@@ -134,8 +140,8 @@ const controlOptions = [
         @click="emit('make-global', index)"
         >Make global</BaseButton
       >
-      <!-- The text keeps a control's border and padding, so it sits level with the picker,
-           and wraps in the row's spare width rather than dropping below it. -->
+      <!-- Keeps a control's border and padding so it sits level with the picker. It wraps
+           beside the picker until the row runs out of room. -->
       <FormField
         v-if="row.global"
         label="Reads"

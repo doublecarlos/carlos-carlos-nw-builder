@@ -21,14 +21,14 @@ const globalSlot = (id: string, label: string, path: string) => ({
   globalInput: true,
 });
 
-async function openReader(page: Page): Promise<Locator> {
+async function openReader(page: Page, reads = SONG): Promise<Locator> {
   await openBuilder(page);
   await importTestCatalog(page, {
     bonuses: [
       {
         id: "test-ballad",
         name: "Test Ballad",
-        inputs: { song: { global: SONG } },
+        inputs: { song: { global: reads } },
         grants: [
           { when: { input: { key: "song", is: true } }, stats: { power: 5 } },
         ],
@@ -93,7 +93,7 @@ test(
     const summary = await boxOf(row.getByTestId("bonus-input-global-summary"));
 
     expect(summary.y).toBeGreaterThanOrEqual(label.y + label.height - 1);
-    // Its first line shares the picker's line, even when a narrow pane wraps the text.
+    // On desktop the summary shares the picker's line, its first line level with the box.
     expect(Math.abs(summary.y - picker.y)).toBeLessThan(2);
     // Beside the picker, not on top of it.
     expect(summary.x).toBeGreaterThanOrEqual(picker.x + picker.width);
@@ -115,3 +115,15 @@ test(
     await expectNoHorizontalScroll(page);
   },
 );
+
+// A reference to a global input that no longer exists still names it, beside the summary
+// saying so, so the author can see what to fix.
+test("a reference to a missing global input shows its id", async ({ page }) => {
+  const row = await openReader(page, "test-globals.gone");
+  await expect(
+    row.getByTestId("bonus-input-global").getByRole("combobox"),
+  ).toHaveValue("test-globals.gone");
+  await expect(row.getByTestId("bonus-input-global-summary")).toContainText(
+    "is not a global input",
+  );
+});
