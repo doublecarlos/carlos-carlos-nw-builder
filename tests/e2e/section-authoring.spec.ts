@@ -51,6 +51,16 @@ async function addTextSlot(page: Page, text: string) {
   await page.getByTestId("save-slot").click();
 }
 
+/** Adds one item picker to whatever section the outline has open. A section shows in the
+ *  build editor only while it holds a field, so a text slot alone would leave it hidden. */
+async function addPickerSlot(page: Page, label: string) {
+  await newInOutline(page, "new-slot");
+  await page.getByTestId("slot-label-input").fill(label);
+  await chooseCombo(page.getByTestId("slot-kind-input"), "item picker");
+  await page.getByTestId("slot-filter-input").fill("gear_ring");
+  await page.getByTestId("save-slot").click();
+}
+
 test("a section created in a layer renders in the build editor", async ({
   page,
 }) => {
@@ -58,6 +68,7 @@ test("a section created in a layer renders in the build editor", async ({
   await openSlotsFor(page);
   await createSection(page);
   await addTextSlot(page, "Remember the boons");
+  await addPickerSlot(page, "Spare Ring");
 
   await backToBuild(page);
   await expect(headerRow(page, "field-notes")).toContainText(SECTION);
@@ -77,9 +88,9 @@ test("a section starts open or collapsed as authored, whatever UI state was save
 
   await openSlotsFor(page);
   await createSection(page);
-  await addTextSlot(page, "Remember the boons");
+  await addPickerSlot(page, "Spare Ring");
   await createSection(page, "Scratch", { collapsed: true });
-  await addTextSlot(page, "Scratch notes");
+  await addPickerSlot(page, "Scratch Ring");
 
   await backToBuild(page);
   await expect(headerRow(page, "field-notes")).toHaveAttribute(

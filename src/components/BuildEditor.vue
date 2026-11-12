@@ -50,6 +50,7 @@ import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotsWithCompare } from "../lib/slot-availability";
+import { isLayoutRow, visibleRows } from "../lib/row-visibility";
 import { keepArray, keepEqual, keepMap, keepSet } from "../lib/keep-identity";
 import {
   nestedParentId,
@@ -299,7 +300,7 @@ function suppliesNeed(slotDef: Slot): boolean {
  *  underneath it), its current choice's (or linked item's) name, or its rendered stat
  *  summary (`statSummary`). The stat filter and the chips always narrow the result further. */
 function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
-  if (slotDef.type === "separator" || slotDef.type === "text") return false;
+  if (isLayoutRow(slotDef)) return false;
   if (!activeChips.value.every((filter) => filter.keeps(slotDef))) return false;
   // A list's container is its "Add" row: no choice or stats for the text and stat filters to
   // match, so it only survives a chip that keeps it explicitly.
@@ -492,9 +493,12 @@ const { rowDiff, rowHasDiff } = useCompareDiff({
 interface SectionRow extends SlotSection {
   /** Every row the section renders. Rows the filter drops stay mounted, hidden. */
   slots: Slot[];
-  /** The rows the filter leaves on screen, in order: matches plus their context parents. */
+  /** The rows on screen, in order: matches plus their context parents, with the text and
+   *  separator rows their groups keep. */
   shown: Slot[];
   shownIds: ReadonlySet<string>;
+  /** How many of `shown` are fields rather than text or separator rows. */
+  fields: number;
   filled: number;
   errors: number;
   warnings: number;
@@ -554,7 +558,7 @@ const allSlotsBySection = computed(() =>
 );
 
 /** Every section with every row, so typing in the filter flips `hidden` instead of
- *  unmounting and remounting rows. A section with no shown row is hidden the same way. Its
+ *  unmounting and remounting rows. A section with no shown field is hidden the same way. Its
  *  row sets and presets keep their previous identity while unchanged, so a keystroke
  *  re-renders only the sections whose rows it changed. */
 const sections = computed<SectionRow[]>((previous) =>
@@ -583,11 +587,13 @@ const sections = computed<SectionRow[]>((previous) =>
     );
     const shown = keepArray(
       before?.shown,
-      anyFilterActive.value
-        ? allSlots.filter(
-            (slotDef) => matchedIds.has(slotDef.id) || context.has(slotDef.id),
-          )
-        : allSlots,
+      visibleRows(
+        allSlots,
+        (slotDef) =>
+          !anyFilterActive.value ||
+          matchedIds.has(slotDef.id) ||
+          context.has(slotDef.id),
+      ),
     );
     // The fill-count badge only means anything for item_picker slots -- a build_parameter
     // always has *some* value, "filled" isn't a meaningful state for it. A section made
@@ -628,6 +634,7 @@ const sections = computed<SectionRow[]>((previous) =>
         before?.shownIds,
         new Set(shown.map((slotDef) => slotDef.id)),
       ),
+      fields: shown.filter((slotDef) => !isLayoutRow(slotDef)).length,
       filled,
       errors,
       warnings,
@@ -647,11 +654,9 @@ const sections = computed<SectionRow[]>((previous) =>
   }),
 );
 
-/** Sections with any row on screen: all of them unless a filter is active. */
+/** Sections with any field on screen. Text and separator rows alone do not keep one. */
 const shownSections = computed(() =>
-  sections.value.filter(
-    (section) => section.shown.length > 0 || !anyFilterActive.value,
-  ),
+  sections.value.filter((section) => section.fields > 0),
 );
 const shownSectionIds = computed(
   () => new Set(shownSections.value.map((section) => section.id)),
@@ -669,7 +674,7 @@ useFoldSlide(root, () => ({
  *  the filter controls. */
 const filteredSlotCount = computed(() =>
   shownSections.value.reduce(
-    (sum, section) => sum + section.shown.length - section.context.size,
+    (sum, section) => sum + section.fields - section.context.size,
     0,
   ),
 );
