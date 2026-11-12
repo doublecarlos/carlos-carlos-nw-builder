@@ -543,10 +543,11 @@ test(
     const steppers = await Promise.all(
       BOONS.map((id) => boxOf(assignmentInput(row, id))),
     );
-    // The first boon's stepper comes first, so its input does too.
-    expect(steppers[0].x).toBeLessThan(steppers[2].x);
-    const first = await boxOf(bonusInputControl(row, FIRST_BONUS, "active"));
-    const second = await boxOf(bonusInputControl(row, LAST_BONUS, "active"));
+    // Priority puts the last boon's stepper first, against catalog and id order, and the
+    // inputs follow the steppers.
+    expect(steppers[2].x).toBeLessThan(steppers[0].x);
+    const first = await boxOf(bonusInputControl(row, LAST_BONUS, "active"));
+    const second = await boxOf(bonusInputControl(row, FIRST_BONUS, "active"));
     const rowBox = await boxOf(row);
 
     for (const stepper of steppers) {

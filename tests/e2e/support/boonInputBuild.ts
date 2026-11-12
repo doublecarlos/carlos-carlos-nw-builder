@@ -4,7 +4,8 @@ import type { Page } from "@playwright/test";
 import { confirmImport, importText, openBuilder, slotRow } from "./app";
 
 export const BOON_SLOT = "boons.tier1";
-/** The middle boon has no input. */
+/** In catalog and id order. Priority sorts the steppers the other way round, last boon
+ *  first, so a test can tell stepper order from either. The middle boon has no input. */
 export const BOONS = ["test-boon-first", "test-boon-plain", "test-boon-last"];
 export const FIRST_BONUS = "test-boon-first-proc";
 export const LAST_BONUS = "test-boon-last-proc";
@@ -33,9 +34,9 @@ const build = {
   },
   catalog: {
     items: {
-      [BOONS[0]]: boon(BOONS[0], 1, [FIRST_BONUS]),
+      [BOONS[0]]: boon(BOONS[0], 3, [FIRST_BONUS]),
       [BOONS[1]]: boon(BOONS[1], 2, []),
-      [BOONS[2]]: boon(BOONS[2], 3, [LAST_BONUS]),
+      [BOONS[2]]: boon(BOONS[2], 1, [LAST_BONUS]),
     },
     bonuses: {
       [FIRST_BONUS]: {

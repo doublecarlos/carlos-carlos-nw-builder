@@ -25,7 +25,7 @@ const model = defineModel<string | number | null>({ default: "" });
 
 /** A caller-given `id` falls through onto the input, so the field label must name that one. */
 const attrs = useAttrs();
-const { id, describedBy } = useFormFieldControl(
+const { id, describedBy, invalid } = useFormFieldControl(
   () => attrs.id as string | undefined,
 );
 
@@ -57,6 +57,7 @@ defineExpose({ select });
     :id="id"
     ref="input"
     :aria-describedby="describedBy"
+    :aria-invalid="invalid || undefined"
     :value="model"
     :type="type"
     class="rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"

@@ -7,7 +7,8 @@
 // assistive tech reads the pair. SegmentedControl names its group with the label instead.
 //
 // The hint shows muted under the control and describes the claiming control. It wraps to the
-// field's width rather than widening the field.
+// field's width rather than widening the field. An error shows above the hint the same way,
+// describes the control first and marks it invalid.
 import { provideFormField } from "../../composables/useFormField";
 
 const props = defineProps<{
@@ -17,11 +18,14 @@ const props = defineProps<{
   labelSpacer?: boolean;
   /** A short note on what to type, shown under the control. */
   hint?: string;
+  /** What is wrong with the value, shown under the control. */
+  error?: string | null;
 }>();
 
-const { labelId, hintId, controlId } = provideFormField(
+const { labelId, hintId, errorId, controlId } = provideFormField(
   () => !!props.label,
   () => !!props.hint,
+  () => !!props.error,
 );
 </script>
 
@@ -39,6 +43,14 @@ const { labelId, hintId, controlId } = provideFormField(
     >
     <span v-else-if="labelSpacer" aria-hidden="true">&nbsp;</span>
     <slot />
+    <p
+      v-if="error"
+      :id="errorId"
+      class="w-0 min-w-full text-sm text-danger"
+      data-testid="form-field-error"
+    >
+      {{ error }}
+    </p>
     <p v-if="hint" :id="hintId" class="w-0 min-w-full text-sm text-muted">
       {{ hint }}
     </p>

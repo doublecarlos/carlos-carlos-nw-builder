@@ -26,7 +26,7 @@ import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
 import { inputFormulaClashes, namedCycles } from "../../engine/formula";
 import type { Bonus, BonusOption, Db } from "../../types";
-import type { MakeGlobalRequest, TakenGlobalIds } from "../../lib/make-global";
+import type { MakeGlobalRequest } from "../../lib/make-global";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -72,8 +72,6 @@ const props = withDefaults(
     /** Where "Make global" writes. When set, a saved bonus's own inputs offer it, and the host
      *  writes the result as one layer edit (`make-global`). */
     makeGlobalScope?: bonusDraft.MakeGlobalScope | null;
-    /** What the id "Make global" gives a new global input must stay clear of. */
-    globalIdsTaken?: TakenGlobalIds;
   }>(),
   {
     source: null,
@@ -92,7 +90,6 @@ const props = withDefaults(
     collapsed: false,
     toggleable: false,
     makeGlobalScope: null,
-    globalIdsTaken: () => ({ ids: [], paths: [] }),
   },
 );
 
@@ -373,11 +370,11 @@ if (bonusDraftRegistry && props.registryId) {
         @make-global="offerMakeGlobal"
       />
       <MakeGlobalDialog
-        v-if="makeGlobal"
+        v-if="makeGlobal && makeGlobalScope"
         :name="makeGlobal.name"
         :def="makeGlobal.def"
         :others="makeGlobal.others"
-        :taken="globalIdsTaken"
+        :taken="makeGlobalScope.taken"
         @confirm="confirmMakeGlobal"
         @close="makeGlobal = null"
       />

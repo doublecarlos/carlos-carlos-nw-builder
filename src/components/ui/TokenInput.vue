@@ -52,7 +52,7 @@ defineSlots<{
 }>();
 
 const model = defineModel<string[]>({ default: () => [] });
-const { id: controlId, describedBy } = useFormFieldControl();
+const { id: controlId, describedBy, invalid } = useFormFieldControl();
 
 const optionByValue = computed(
   () => new Map(props.options.map((option) => [option.value, option])),
@@ -208,6 +208,7 @@ async function onPaste(event: ClipboardEvent) {
       ref="input"
       v-model="query"
       :aria-describedby="describedBy"
+      :aria-invalid="invalid || undefined"
       data-testid="token-query"
       class="min-w-20 flex-1 border-0 bg-transparent px-0.5 py-0.5 outline-none"
       type="text"

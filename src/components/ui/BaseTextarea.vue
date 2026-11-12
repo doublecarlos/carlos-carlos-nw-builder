@@ -7,7 +7,7 @@ import { useFormFieldControl } from "../../composables/useFormField";
 const model = defineModel<string>({ default: "" });
 
 const attrs = useAttrs();
-const { id, describedBy } = useFormFieldControl(
+const { id, describedBy, invalid } = useFormFieldControl(
   () => attrs.id as string | undefined,
 );
 </script>
@@ -17,6 +17,7 @@ const { id, describedBy } = useFormFieldControl(
     :id="id"
     v-model="model"
     :aria-describedby="describedBy"
+    :aria-invalid="invalid || undefined"
     class="resize-y rounded-md border border-line bg-surface p-2"
   ></textarea>
 </template>

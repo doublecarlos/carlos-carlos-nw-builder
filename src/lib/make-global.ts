@@ -62,7 +62,8 @@ export function globalIdError(
 }
 
 /** The id "Make global" offers first: `globals.` and the input's label, else its name, with
- *  a number added until it is free. */
+ *  a number added until it is free. Under a taken path no number helps, so the stem is
+ *  offered as is and the dialog reports it. */
 export function defaultGlobalId(
   name: string,
   def: InputDef,
@@ -73,6 +74,7 @@ export function defaultGlobalId(
     def.label || name,
     [],
   );
+  if (taken.paths.some((path) => stem.startsWith(`${path}.`))) return stem;
   let id = stem;
   for (let n = 2; globalIdError(id, taken) !== null; n += 1)
     id = `${stem}-${n}`;

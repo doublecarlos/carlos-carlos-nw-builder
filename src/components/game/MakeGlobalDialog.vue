@@ -26,9 +26,11 @@ import type { InputDef } from "../../types";
 const props = defineProps<{
   /** The input's id. */
   name: string;
+  /** The input's definition, whose label names the default id. */
   def: InputDef;
   /** Bonuses offered for converting along, unticked to start with. */
   others: MakeGlobalCandidate[];
+  /** The ids and paths the new global input's id must stay clear of. */
   taken: TakenGlobalIds;
 }>();
 
@@ -69,20 +71,12 @@ function submit() {
         this layer. Builds keep the value they hold. A bonus from another layer
         or the shipped catalog is copied into this layer to convert it.
       </p>
-      <FormField label="Global input id" class="mb-3">
+      <FormField label="Global input id" :error="idError" class="mb-3">
         <BaseInput
           v-model="id"
           class="w-full font-mono"
-          :aria-invalid="idError !== null"
           data-testid="make-global-id"
         />
-        <p
-          v-if="idError !== null"
-          class="text-danger"
-          data-testid="make-global-id-error"
-        >
-          {{ idError }}
-        </p>
       </FormField>
       <template v-if="others.length">
         <p class="mb-1">Other bonuses with an input “{{ name }}” to convert:</p>

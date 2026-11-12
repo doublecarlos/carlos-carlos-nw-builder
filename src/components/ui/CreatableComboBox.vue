@@ -31,7 +31,7 @@ const props = withDefaults(
 );
 
 const model = defineModel<string>({ default: "" });
-const { id: controlId, describedBy } = useFormFieldControl();
+const { id: controlId, describedBy, invalid } = useFormFieldControl();
 
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
@@ -121,6 +121,7 @@ onKeyStroke(
       :id="controlId"
       ref="input"
       :aria-describedby="describedBy"
+      :aria-invalid="invalid || undefined"
       class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       type="text"
       role="combobox"

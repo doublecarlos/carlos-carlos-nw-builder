@@ -21,6 +21,8 @@ const singer = (id: string, name: string): Bonus => ({
   grants: [{ when: { input: { key: "song", is: true } }, stats: { power: 5 } }],
 });
 
+const TAKEN_PATH = "globals.test.encore";
+
 async function openWithSingers(page: Page) {
   await openBuilder(page);
   await importTestCatalog(page, {
@@ -41,6 +43,25 @@ async function openWithSingers(page: Page) {
     bonuses: [
       singer("test-ballad", "Test Ballad"),
       singer("test-chorus", "Test Chorus"),
+    ],
+    // A parameter whose path a new global input must stay clear of.
+    slots: [
+      {
+        id: "test-options.encore",
+        label: "Test encore",
+        section: "test-options",
+        type: "build_parameter",
+        paramType: "boolean",
+        path: TAKEN_PATH,
+        default: false,
+      },
+    ],
+    sections: [
+      {
+        id: "test-options",
+        label: "Test Options",
+        slotIds: ["test-options.encore"],
+      },
     ],
     choices: { "gear.ring1": "test-lute", "gear.ring2": "test-drum" },
   });
@@ -122,14 +143,15 @@ test("the new global input's id can be edited, and a taken one is refused", asyn
   const submit = dialog.getByTestId("make-global-submit");
   await expect(id).toHaveValue(/^globals\./);
 
-  // The shipped health input already owns this id.
-  await id.fill("globals.health");
-  await expect(dialog.getByTestId("make-global-id-error")).toBeVisible();
+  // The error is the field's description, so a screen reader hears why.
+  await id.fill(TAKEN_PATH);
+  await expect(id).toHaveAccessibleDescription(/already/);
   await expect(id).toHaveAttribute("aria-invalid", "true");
   await expect(submit).toBeDisabled();
 
   await id.fill("globals.scenario.song");
-  await expect(dialog.getByTestId("make-global-id-error")).toBeHidden();
+  await expect(dialog.getByTestId("form-field-error")).toBeHidden();
+  await expect(id).not.toHaveAttribute("aria-invalid");
   await submit.click();
   await expect(dialog).toBeHidden();
 

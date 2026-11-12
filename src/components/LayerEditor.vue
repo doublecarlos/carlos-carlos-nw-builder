@@ -1217,23 +1217,20 @@ const onUpdateBonusTop = ({
 }) => updateEntry("bonuses", id, bonus, label);
 
 /** Where "Make global" writes, for the bonus form to say which bonuses it would copy in and
- *  which a higher layer overrides. */
+ *  which a higher layer overrides, and every slot id and parameter path the new global
+ *  input's id must stay clear of. */
 const makeGlobalScope = computed<MakeGlobalScope>(() => ({
   inLayer: new Set(Object.keys(overlay.value.bonuses)),
   shadowedBy: shadowedEntries(layers.layers.value, props.layer.id, "bonuses"),
+  taken: takenGlobalIds(db.value, allocatableIds.value.slots),
 }));
-
-/** What a new global input's id must stay clear of: every slot id and parameter path. */
-const globalIdsTaken = computed(() =>
-  takenGlobalIds(db.value, allocatableIds.value.slots),
-);
 
 /** "Make global" from the bonus form, as one undo step. */
 function onMakeGlobal(request: MakeGlobalRequest) {
   const { overlay: next } = makeGlobalOverlay(
     overlay.value,
     db.value,
-    globalIdsTaken.value,
+    makeGlobalScope.value.taken,
     request,
   );
   commit(null, `Make input "${request.name}" global`, next);
@@ -1893,7 +1890,6 @@ onUnmounted(() => {
           :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds.bonuses"
           :make-global-scope="makeGlobalScope"
-          :global-ids-taken="globalIdsTaken"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
           @make-global="onMakeGlobal"

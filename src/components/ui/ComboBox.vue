@@ -130,7 +130,11 @@ const props = withDefaults(
   },
 );
 
-const { id: controlId, describedBy } = useFormFieldControl(() => props.inputId);
+const {
+  id: controlId,
+  describedBy,
+  invalid: fieldInvalid,
+} = useFormFieldControl(() => props.inputId);
 
 defineSlots<{
   /** `depth` is how many headings the option sits under. */
@@ -582,7 +586,7 @@ for (const target of keyTargets) {
       :aria-expanded="readonly ? undefined : open ? 'true' : 'false'"
       :aria-controls="open && !screen ? listboxId : undefined"
       :aria-activedescendant="screen ? undefined : activeDescendant"
-      :aria-invalid="invalid ? 'true' : undefined"
+      :aria-invalid="invalid || fieldInvalid ? 'true' : undefined"
       autocomplete="off"
       spellcheck="false"
       :value="

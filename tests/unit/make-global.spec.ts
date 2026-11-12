@@ -151,6 +151,14 @@ describe("global input ids", () => {
     );
   });
 
+  // No number frees an id below a taken path, so the default stops instead of searching.
+  it("offers the stem when a taken path sits above every candidate", () => {
+    const above = { ids: [], paths: ["globals"] };
+    const id = defaultGlobalId("hits", hitsDef, above);
+    expect(id).toBe("globals.recent-hits");
+    expect(globalIdError(id, above)).not.toBe(null);
+  });
+
   it("accepts an id under the naming convention", () => {
     expect(globalIdError("globals.enemyTier.boss", taken)).toBe(null);
     expect(globalIdError("globals.location.sword-coast", taken)).toBe(null);
