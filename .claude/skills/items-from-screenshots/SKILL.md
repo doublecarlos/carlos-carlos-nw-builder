@@ -166,6 +166,7 @@ Pick the bonus shape:
 - **Shared circumstances (global inputs):** current health, fighting a boss, being in a place and other facts not tied to one item are global inputs. These are `build_parameter` slots flagged `globalInput: true` in the `globals` section of `data/slots.json`.
   - **Reuse first.** Grep `"globalInput": true` in `data/slots.json` before adding one. When one fits, declare it in the bonus's `inputs` as `"<local name>": { "global": "<slot id>" }` and gate with `"input": { "key": "<local name>", ... }`. Never read its path with `param`.
   - **Add one only when none fits,** and only for a bonus that reads it now. Its id is its `path`, grouped by axis: `globals.location.<place>` (one flag per place; a place inside another sets both), `globals.enemyTier.<tier>` (boss and similar ranks), `globals.enemyType.<type>` (Demon, Devil, Undead, ...). Health is the exception: id `globals.health`, path `health`.
+  - **Label it `Category: Value`**, the value capitalized: `Enemy: Boss`, `Enemy: Undead`, `Location: Thay`. Health keeps `Current health`.
   - A circumstance only one item's proc depends on stays a private input of its bonus, like `Proc` above.
   - Formulas cannot read a boolean input, so an effect doubled in a place is two grants, one gated on the input and one on its `not`. See `m28-voidtouched-set`.
 - **Text-only effects:** put anything you can't model in the grant's `longDescription`, or the item's `shortDescription`.
