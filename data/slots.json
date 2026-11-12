@@ -1676,6 +1676,51 @@
           "globalInput": true
         },
         {
+          "id": "globals.enemyType.cultist",
+          "label": "Fighting cultists",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.cultist",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.demon",
+          "label": "Fighting demons",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.demon",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.devil",
+          "label": "Fighting devils",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.devil",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.dinosaur",
+          "label": "Fighting dinosaurs",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.dinosaur",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.undead",
+          "label": "Fighting undead",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.undead",
+          "default": false,
+          "globalInput": true
+        },
+        {
           "id": "globals.location.chult",
           "label": "In Chult",
           "type": "build_parameter",
