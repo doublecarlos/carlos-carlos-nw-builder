@@ -238,12 +238,6 @@ export function defaultBuild(name = "New build", db: Db = baseDb()): Build {
   };
 }
 
-/**
- * Coerce anything build-shaped into a valid build. Tolerates a truncated write, an older
- * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
- * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
- * `raw` is plain data, as parsed or stored; a live store object is unwrapped by its caller.
- */
 const isPlain = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
@@ -343,6 +337,7 @@ function migrateClassToChoice(
  * Coerce anything build-shaped into a valid build. Tolerates a truncated write, an older
  * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
  * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
+ * `raw` is plain data, as parsed or stored; a live store object is unwrapped by its caller.
  */
 export function normalize(
   raw: unknown,
