@@ -363,8 +363,13 @@ export const KNOWN_LOSSY_NOTES = [
 ];
 
 /** Rolls `notInDemo` slot ids up into the authored groups, plus a catch-all per section for any
- *  slot the table does not name, so a new slot cannot vanish from the report. */
-export function notInDemoGroups(db: Db, slotIds: string[]): NotInDemoGroup[] {
+ *  slot the table does not name, so a new slot cannot vanish from the report. `reasons` is the
+ *  authored table, the shipped one by default. */
+export function notInDemoGroups(
+  db: Pick<Db, "slots" | "sections">,
+  slotIds: string[],
+  reasons: readonly NotInDemoReasonEntry[] = GAME_IMPORT_DATA.notInDemoReasons,
+): NotInDemoGroup[] {
   const present = new Set(slotIds);
   const bySection = new Map<string, string[]>();
   for (const slot of db.slots) {
@@ -376,7 +381,7 @@ export function notInDemoGroups(db: Db, slotIds: string[]): NotInDemoGroup[] {
 
   const covered = new Set<string>();
   const groups: NotInDemoGroup[] = [];
-  for (const authored of GAME_IMPORT_DATA.notInDemoReasons) {
+  for (const authored of reasons) {
     const candidates =
       authored.slotIds ??
       (authored.sections ?? []).flatMap((s) => bySection.get(s) ?? []);

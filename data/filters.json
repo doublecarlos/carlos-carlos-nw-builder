@@ -153,8 +153,5 @@
   },
   "race_attributes": {
     "maxCopies": 1
-  },
-  "scenario_flag": {
-    "maxCopies": 1
   }
 }

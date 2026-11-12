@@ -15,6 +15,8 @@ import {
   chooseItem,
   undoButton,
   pickerMenu,
+  importText,
+  confirmImport,
 } from "./support/app";
 import { TEST_HEAD, importTestHead } from "./support/testHead";
 
@@ -259,6 +261,50 @@ test.describe("section collapse/expand", () => {
     await expandAll.click();
     await expect(expandAll).toBeDisabled();
     await expect(collapseAll).toBeEnabled();
+  });
+
+  // A section with no shown field is hidden, so its folded state leaves the buttons nothing to
+  // do there: expand-all stays disabled while every shown section is open.
+  test('"expand all" ignores a hidden, folded section', async ({ page }) => {
+    await openBuilder(page);
+    await importText(
+      page,
+      JSON.stringify({
+        name: "Hidden section",
+        catalog: {
+          items: {},
+          bonuses: {},
+          sectionPresets: {},
+          slots: {
+            "e2eHidden.flag": {
+              id: "e2eHidden.flag",
+              label: "Hidden flag",
+              section: "e2eHidden",
+              type: "build_parameter",
+              paramType: "boolean",
+              path: "e2eHidden.flag",
+              globalInput: true,
+              default: false,
+            },
+          },
+          sections: {
+            e2eHidden: {
+              id: "e2eHidden",
+              label: "Hidden section",
+              defaultOpen: false,
+              slotIds: [],
+            },
+          },
+          filters: {},
+        },
+      }),
+    );
+    await confirmImport(page);
+    await expect(headerRow(page, "e2eHidden")).toBeHidden();
+    await expect(headerRow(page, "gear")).toBeVisible();
+
+    await expect(page.getByTestId("editor-expand-all")).toBeDisabled();
+    await expect(page.getByTestId("editor-collapse-all")).toBeEnabled();
   });
 
   test("the Options header's badge only counts its item_picker slots (Class, Paragon)", async ({

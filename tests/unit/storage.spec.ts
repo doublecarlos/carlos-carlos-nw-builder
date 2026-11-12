@@ -4,6 +4,7 @@
 // un-enveloped (pre-existing) data still works, a genuine mismatch is refused with a message
 // instead of silently misread, and a stale catalog is a soft signal, not a refusal.
 import { describe, expect, it, beforeEach } from "vitest";
+import { reactive } from "vue";
 import { installWindowShim, installIdbShim } from "./stores/window-shim";
 import * as storage from "../../src/storage/storage";
 import { APP_COMMIT, APP_NAME, HOMEPAGE_URL } from "../../src/lib/app-info";
@@ -621,6 +622,38 @@ describe("scaler parameters", () => {
     expect(nested(copy)).not.toBe(nested(source));
     nested(copy).encounterDamage = 0.5;
     expect(nested(source).encounterDamage).toBe(0);
+  });
+
+  // Duplicate takes the live build from the reactive store, and migrations write nested
+  // paths (`globals.location.thay`, a layer's `custom.proc`) in place, so the copy must not
+  // throw on the proxy and must share no branch with its source, snapshot included.
+  it("duplicate copies a reactive build without sharing a nested branch", () => {
+    const context = {
+      globals: { location: { thay: true } },
+      custom: { proc: { on: true } },
+    };
+    const plain = storage.normalize({ id: "b1", name: "B", context });
+    const source = reactive({
+      ...plain,
+      downloaded: {
+        snapshot: storage.normalize({ id: "b1", name: "B", context }),
+        at: 1,
+      },
+    }) as Build;
+    const copy = storage.duplicate(source);
+    type Nested = {
+      globals: { location: Record<string, boolean> };
+      custom: { proc: Record<string, boolean> };
+    };
+    const nested = (build: { context: unknown }) => build.context as Nested;
+    nested(copy).globals.location.thay = false;
+    nested(copy).custom.proc.on = false;
+    nested(copy.downloaded!.snapshot).globals.location.thay = false;
+    expect(nested(source).globals.location.thay).toBe(true);
+    expect(nested(source).custom.proc.on).toBe(true);
+    expect(nested(source.downloaded!.snapshot).globals.location.thay).toBe(
+      true,
+    );
   });
 });
 

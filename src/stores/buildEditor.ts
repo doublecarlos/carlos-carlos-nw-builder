@@ -413,8 +413,10 @@ export const retired = computed(() => {
 export function applyRetiredItems() {
   const b = builds.build.value;
   if (!b) return;
-  const migrated = migrateItemIds(db.value, b);
-  if (migrated === b) return;
+  // Unwrapped, as the migration clones the context and `structuredClone` rejects a proxy.
+  const raw = toRaw(b);
+  const migrated = migrateItemIds(db.value, raw);
+  if (migrated === raw) return;
   const count = retired.value.filter(({ to }) => to).length;
   history.snapshot(
     "build",

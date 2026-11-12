@@ -164,12 +164,13 @@ watch(
   { deep: true },
 );
 
-/** How many sections the manual preference has open, for the toolbar buttons' enable state. */
+/** How many shown sections the manual preference has open, for the toolbar buttons' enable
+ *  state. A hidden section, such as Global inputs, has nothing for them to do. */
 const expandedSectionCount = computed(
-  () => db.value.sections.filter((section) => expanded[section.id]).length,
+  () => shownSections.value.filter((section) => expanded[section.id]).length,
 );
 const allSectionsExpanded = computed(
-  () => expandedSectionCount.value === db.value.sections.length,
+  () => expandedSectionCount.value === shownSections.value.length,
 );
 const noSectionsExpanded = computed(() => expandedSectionCount.value === 0);
 

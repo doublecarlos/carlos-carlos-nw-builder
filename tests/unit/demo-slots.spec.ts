@@ -20,7 +20,7 @@ import {
   validateValueMap,
 } from "../../src/lib/demo-slots";
 import type { DemoItem } from "../../src/lib/demo-snapshot";
-import type { Item } from "../../src/types";
+import type { Item, Slot } from "../../src/types";
 
 const testItem = (
   id: string,
@@ -782,6 +782,61 @@ describe("notInDemoGroups", () => {
         slotIds: ["overloads.overload1"],
       },
     ]);
+  });
+});
+
+describe("notInDemoGroups on a test catalog", () => {
+  const slot = (id: string, section: string): Slot => ({
+    id,
+    label: id,
+    section,
+    type: "build_parameter",
+    paramType: "boolean",
+    path: id,
+  });
+  const testDb = {
+    sections: [
+      { id: "named", label: "Named section", slotIds: [] },
+      { id: "plain", label: "Plain section", slotIds: [] },
+    ],
+    slots: [
+      slot("named.a", "named"),
+      slot("named.b", "named"),
+      slot("plain.c", "plain"),
+    ],
+  };
+
+  // A section the table names reads under its authored label, so the report never falls back
+  // to the section's own label for it, as it does for the global inputs' section.
+  it("files a named section's slots under its authored group only", () => {
+    const groups = notInDemoGroups(
+      testDb,
+      ["named.a", "named.b", "plain.c"],
+      [{ label: "Authored", reason: "Why.", sections: ["named"] }],
+    );
+    expect(groups).toEqual([
+      { label: "Authored", reason: "Why.", slotIds: ["named.a", "named.b"] },
+      {
+        label: "Plain section",
+        reason: "Not recorded in the game export.",
+        slotIds: ["plain.c"],
+      },
+    ]);
+  });
+});
+
+describe("notInDemoGroups on the shipped table", () => {
+  // Global inputs have no row in the build editor, so the section-labeled fallback would name
+  // a section the player never sees.
+  it("the shipped table names every global input in an authored group", () => {
+    const authored = new Set(
+      GAME_IMPORT_DATA.notInDemoReasons.map((r) => r.label),
+    );
+    const globals = NW_SLOTS.slots
+      .filter((s) => s.type === "build_parameter" && s.globalInput)
+      .map((s) => s.id);
+    const groups = notInDemoGroups(db, globals);
+    expect(groups.filter((g) => !authored.has(g.label))).toEqual([]);
   });
 });
 

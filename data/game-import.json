@@ -255,7 +255,6 @@
         "options.forte2b",
         "options.m32Forte",
         "options.enemies",
-        "options.scenario",
         "options.duration",
         "options.toggleConsumables",
         "options.toggleParty",
@@ -323,6 +322,11 @@
       "label": "Group / Artifact Call / Misc",
       "reason": "Not recorded in the game export.",
       "sections": ["group", "artifactCall", "misc"]
+    },
+    {
+      "label": "Health, boss and location",
+      "reason": "Not recorded in the game export.",
+      "sections": ["globals"]
     }
   ],
   "hclassToClass": {
