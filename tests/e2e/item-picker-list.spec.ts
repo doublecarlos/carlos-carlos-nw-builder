@@ -98,6 +98,10 @@ test("dragging a row by its grip moves its pick there", async ({ page }) => {
   );
 
   await expect.poll(() => picks(page, 3)).toEqual(["", "", MISC_ITEM.name]);
+  // The cursor lands on the row dragged, not on the row now in its old place.
+  await expect(
+    slotRow(page, row(3)).locator("[data-cursor-anchor]"),
+  ).toBeFocused();
 });
 
 // A hover card left over the rows would take the drop, so a drag closes it.

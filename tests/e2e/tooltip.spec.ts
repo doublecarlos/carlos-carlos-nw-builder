@@ -2,7 +2,8 @@
 // worth having over a native `title` are all behavioral: it shows on keyboard focus, it can be
 // dismissed, and it does not linger over whatever a click just opened.
 import { test, expect } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { addListRows, openBuilder } from "./support/app";
+import { beginDrag } from "./support/dragDrop";
 
 /** The header's About button: an icon-only control whose whole label lives in its tooltip,
  *  which is exactly the case native `title` served worst. Outside the build editor, whose
@@ -129,6 +130,28 @@ test("clicking a trigger dismisses its tooltip, so it can't cover what opened", 
   await expect(tooltip(page)).toBeHidden();
   // The click's own dialog is what should be on screen now.
   await expect(page.getByTestId("about-dialog")).toBeVisible();
+});
+
+// A drag captures the pointer on its grip and never clicks, so the grip's tooltip would
+// otherwise ride along for the whole drag, and every grip passed over would open its own.
+test("dragging from a grip closes its tooltip and opens no other on the way", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await openBuilder(page);
+  await addListRows(page, "misc.misc", 2);
+  const grip = (row: number) => page.getByTestId(`list-drag:misc.misc#${row}`);
+
+  await grip(1).hover();
+  await page.clock.runFor(1000);
+  await expect(tooltip(page)).toBeVisible();
+
+  const drag = await beginDrag(grip(1));
+  await expect(tooltip(page)).toBeHidden();
+  await drag.over(grip(2));
+  await page.clock.runFor(1000);
+  await expect(tooltip(page)).toBeHidden();
+  await drag.end();
 });
 
 test("wrapping a control leaves its layout and classes alone", async ({

@@ -161,12 +161,16 @@ function bindListeners() {
   bound = true;
   const capture = { capture: true };
 
-  // Recorded before any focus the press causes reaches a trigger.
+  // Recorded before any focus the press causes reaches a trigger. A mouse press on a trigger
+  // closes its bubble as a click would, since a press that becomes a drag never clicks and
+  // its pointer never leaves the trigger it captured.
   document.addEventListener(
     "pointerdown",
     (event: PointerEvent) => {
       lastPress = event.pointerType;
       pressedOutside(event.target as Node | null);
+      const trigger = triggerOf(event.target);
+      if (trigger && event.pointerType === "mouse") triggerLeft(trigger);
     },
     capture,
   );

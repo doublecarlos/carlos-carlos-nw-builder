@@ -355,7 +355,9 @@ function startDrag(
   scrollRaf = requestAnimationFrame(autoscrollTick);
 }
 
-function teardown() {
+/** `released` is a drag ended by the button coming up: its click is still on the way, in the
+ *  same task, so the swallow outlives teardown by one tick. */
+function teardown(released = false) {
   if (scrollRaf !== null) {
     cancelAnimationFrame(scrollRaf);
     scrollRaf = null;
@@ -363,7 +365,10 @@ function teardown() {
   document.documentElement.classList.remove("is-dragging");
   window.removeEventListener("keydown", onEscape, true);
   window.removeEventListener("blur", onWindowBlur);
-  window.removeEventListener("click", swallowClick, true);
+  const unswallow = () =>
+    window.removeEventListener("click", swallowClick, true);
+  if (released) setTimeout(unswallow);
+  else unswallow();
 }
 
 /** The key of the row just dropped, until the update the drop caused has rendered. */
@@ -377,7 +382,7 @@ export function droppedKey(): string | null {
 
 function endDrag() {
   const { source, target } = state;
-  teardown();
+  teardown(true);
   state.source = null;
   state.target = null;
   if (!source || !target) return;

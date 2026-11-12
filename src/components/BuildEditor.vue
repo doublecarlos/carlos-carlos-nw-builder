@@ -1041,7 +1041,7 @@ const sectionDrop = useKeyedCache((sectionId: string) =>
       source.kind === LIST_ROW_DRAG &&
       db.value.slotById.get(source.containerId)?.section === sectionId,
     onDrop: (source, gap) =>
-      buildEditor.moveListRow(
+      moveListRow(
         rowSlotId(source.containerId, source.index + 1),
         reorderIndex(source.index, gap) + 1,
       ),
@@ -1098,19 +1098,31 @@ function listDropProps(slotId: string, shown: boolean, end = false) {
   return sectionDrop(row.list.section).rowProps(row.index);
 }
 
-/** Alt+arrow on a list row: moves it one step, and the cursor along with it. Focus stays put
- *  while the motion scrolls the row into view. */
-const listRowMove = useKeyedCache((slotId: string) => async (dir: 1 | -1) => {
+/** A cursor row by its slot id. */
+function cursorRow(slotId: string) {
+  return root.value?.querySelector(
+    `[data-cursor-key="slot:${CSS.escape(slotId)}"]`,
+  );
+}
+
+/** Moves a list row to row `to` (1-based, clamped) and parks the cursor on it. Row ids are
+ *  positional, so the row's old place now holds another row's pick. Focus does not scroll,
+ *  since the motion reveals the row itself. */
+async function moveListRow(slotId: string, to: number) {
   const row = listRows.value.get(slotId);
   if (!row) return;
-  const to = row.index + 1 + dir;
-  if (to < 1 || to > listRowCount(build.value, row.list)) return;
-  buildEditor.moveListRow(slotId, to);
+  const target = Math.min(Math.max(to, 1), listRowCount(build.value, row.list));
+  if (target === row.index + 1) return;
+  buildEditor.moveListRow(slotId, target);
   await nextTick();
-  const target = root.value?.querySelector(
-    `[data-cursor-key="slot:${CSS.escape(rowSlotId(row.list.id, to))}"]`,
-  );
-  if (target) focusRow(target, true);
+  const moved = cursorRow(rowSlotId(row.list.id, target));
+  if (moved) focusRow(moved, true);
+}
+
+/** Alt+arrow on a list row: moves it one step, the cursor along with it. */
+const listRowMove = useKeyedCache((slotId: string) => (dir: 1 | -1) => {
+  const index = listRows.value.get(slotId)?.index;
+  if (index !== undefined) void moveListRow(slotId, index + 1 + dir);
 });
 
 function openInLayerEditor(itemId: string) {
