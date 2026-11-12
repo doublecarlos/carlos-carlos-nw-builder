@@ -201,11 +201,15 @@ const duplicateInputNames = computed(() =>
   bonusDraft.duplicateInputNames(draft.value.inputs),
 );
 
+const canMakeGlobal = computed(() =>
+  bonusDraft.canMakeGlobal(props.makeGlobalScope, props.source?.id),
+);
+
 /** The open "Make global" offer, or null. */
 const makeGlobal = shallowRef<bonusDraft.MakeGlobalOffer | null>(null);
 
 function offerMakeGlobal(index: number) {
-  if (!props.source || !props.makeGlobalScope) return;
+  if (!props.source || !props.makeGlobalScope || !canMakeGlobal.value) return;
   makeGlobal.value = bonusDraft.makeGlobalOffer(
     draft.value.inputs[index],
     props.source.id,
@@ -359,7 +363,7 @@ if (bonusDraftRegistry && props.registryId) {
       <BonusInputRowList
         :rows="draft.inputs"
         :globals="db.globalInputs"
-        :can-make-global="Boolean(makeGlobalScope && source)"
+        :can-make-global="canMakeGlobal"
         @add="draft.inputs.push(bonusDraft.newInput())"
         @remove="(i) => draft.inputs.splice(i, 1)"
         @make-global="offerMakeGlobal"

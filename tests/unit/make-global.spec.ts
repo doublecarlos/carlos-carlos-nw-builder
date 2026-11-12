@@ -142,4 +142,13 @@ describe("shadowedEntries", () => {
       new Map([["a", "top"]]),
     );
   });
+
+  // A deletion marker removes the entry rather than overriding it.
+  it("passes over a deletion marker above", () => {
+    const top = layer("top", true, []);
+    top.overlay.bonuses.a = null;
+    expect(
+      shadowedEntries([top, layer("edited", true, ["a"])], "edited", "bonuses"),
+    ).toEqual(new Map());
+  });
 });

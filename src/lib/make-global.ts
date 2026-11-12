@@ -56,7 +56,7 @@ export function makeGlobalOverlay(
 }
 
 /** Entries of `group` an enabled layer above `layerId` overrides, by that layer's name, the
- *  highest one when several do. `layers` is in display order, highest priority first. */
+ *  highest one when several do. A deletion marker overrides nothing here. `layers` is in display order, highest priority first. */
 export function shadowedEntries(
   layers: readonly Layer[],
   layerId: string,
@@ -66,8 +66,8 @@ export function shadowedEntries(
   for (const layer of layers) {
     if (layer.id === layerId) break;
     if (!layer.enabled) continue;
-    for (const id of Object.keys(layer.overlay[group] ?? {}))
-      if (!out.has(id)) out.set(id, layer.name);
+    for (const [id, entry] of Object.entries(layer.overlay[group] ?? {}))
+      if (entry !== null && !out.has(id)) out.set(id, layer.name);
   }
   return out;
 }

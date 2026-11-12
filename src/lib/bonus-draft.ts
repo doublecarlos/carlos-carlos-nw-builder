@@ -611,6 +611,14 @@ export interface MakeGlobalScope {
   shadowedBy: ReadonlyMap<string, string>;
 }
 
+/** Whether bonus `bonusId` can offer "Make global" in `scope`: not while a higher layer
+ *  overrides it, as the edit would have no effect. */
+export const canMakeGlobal = (
+  scope: MakeGlobalScope | null | undefined,
+  bonusId: string | undefined,
+): boolean =>
+  Boolean(scope && bonusId !== undefined && !scope.shadowedBy.has(bonusId));
+
 /** Another bonus "Make global" can convert along. */
 export interface MakeGlobalCandidate {
   bonus: Bonus;

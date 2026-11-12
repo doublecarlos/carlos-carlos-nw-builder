@@ -20,6 +20,7 @@ import {
   duplicateFormulaNames,
   formulaOwner,
   makeGlobalOffer,
+  canMakeGlobal,
 } from "../../src/lib/bonus-draft";
 import type { Bonus, Grant, InputDef } from "../../src/types";
 
@@ -764,6 +765,18 @@ describe("make global offer", () => {
       copied: true,
       shadowedBy: "Top",
     });
+  });
+
+  // Converting a bonus a higher layer overrides would change nothing in the engine.
+  it("is not offered on a bonus a higher layer overrides", () => {
+    expect(canMakeGlobal(scope, "own")).toBe(true);
+    expect(
+      canMakeGlobal(
+        { inLayer: new Set(), shadowedBy: new Map([["own", "Top"]]) },
+        "own",
+      ),
+    ).toBe(false);
+    expect(canMakeGlobal(null, "own")).toBe(false);
   });
 
   it("offers nothing for a reference or an unnamed row", () => {
