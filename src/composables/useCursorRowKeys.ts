@@ -8,6 +8,8 @@ export interface CursorRowKeyHandlers {
   /** Arrow keys: move focus to the neighbouring row, or -- held with the platform modifier
    *  -- to the neighbouring section. */
   onArrow: (dir: 1 | -1, bySection: boolean) => void;
+  /** Alt+arrow: move the row itself one step, for a row that can be reordered. */
+  onMove?: (dir: 1 | -1) => void;
   /** Enter: focus the row's control (opens it, same as a click). */
   onEnter?: () => void;
   /** Backspace/Delete: clear an item choice or reset a build_parameter to its default. */
@@ -30,16 +32,15 @@ export function useCursorRowKeys(
   target: Ref<HTMLElement | null>,
   handlers: CursorRowKeyHandlers,
 ) {
-  const { onArrow, onEnter, onClear, onSeed } = handlers;
+  const { onArrow, onMove, onEnter, onClear, onSeed } = handlers;
 
   onKeyStroke(
     ["ArrowDown", "ArrowUp"],
     (event) => {
       event.preventDefault();
-      onArrow(
-        event.key === "ArrowDown" ? 1 : -1,
-        isMac ? event.metaKey : event.ctrlKey,
-      );
+      const dir = event.key === "ArrowDown" ? 1 : -1;
+      if (event.altKey && onMove) onMove(dir);
+      else onArrow(dir, isMac ? event.metaKey : event.ctrlKey);
     },
     { target, dedupe: true },
   );

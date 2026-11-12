@@ -59,6 +59,14 @@ import {
 import { useHoverCard, type HoverPosition } from "../composables/useHoverCard";
 import { useFoldSlide } from "../composables/useFoldSlide";
 import { useKeyedCache } from "../composables/useKeyedCache";
+import { useReorderMotion } from "../composables/useReorderMotion";
+import {
+  dragSource,
+  reorderIndex,
+  useDragHandles,
+  useDropList,
+} from "../composables/useDragAndDrop";
+import { listRowCount, rowSlotId } from "../lib/item-picker-list";
 import * as viewport from "../stores/viewport";
 import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
@@ -83,6 +91,7 @@ import { anyPickerOpen } from "../composables/useOpenPickers";
 import type {
   Build,
   Item,
+  ItemPickerListSlot,
   EvaluatedBonus,
   EngineError,
   Slot,
@@ -367,8 +376,16 @@ const {
 } = useHoverCard<HoverPosition>(
   tooltip,
   ({ slotId, itemId }) => itemForHover(slotId, itemId) !== null,
-  { disabled: viewport.coarsePointer },
+  // No card while dragging either: one opening over the rows would take the drop.
+  { disabled: () => viewport.coarsePointer.value || !!dragSource.value },
 );
+
+// A drag started from a row with an item drops the card it opened or has pending.
+watch(dragSource, (source) => {
+  if (!source) return;
+  onRowLeave();
+  if (!pinned.value) closeCard();
+});
 
 /** The row whose item the sheet shows, opened from that row's info button. The touch stand-in
  *  for the hover card, which a tap never opens. */
@@ -981,6 +998,121 @@ const rowHandlers = useKeyedCache((slotId: string) => ({
     onRowClick(event, slotId, itemId),
 }));
 
+// --- reordering list rows -----------------------------------------------------------------
+// An item_picker_list's rows move by their grip or by Alt+arrow on the row cursor. Row ids are
+// positional, so the rows a motion follows are keyed by the store's row identities instead.
+
+const LIST_ROW_DRAG = "list-row";
+
+interface ListRow {
+  list: ItemPickerListSlot;
+  /** 0-based position in the list. */
+  index: number;
+  /** Identity for the row motion. Carries the build id, so a build switch reads as another
+   *  list and stays instant. */
+  flipKey: string;
+}
+
+const listRows = computed(() => {
+  const rows = new Map<string, ListRow>();
+  for (const list of db.value.slots) {
+    if (list.type !== "item_picker_list") continue;
+    buildEditor.listRowKeys(build.value, list).forEach((key, index) =>
+      rows.set(rowSlotId(list.id, index + 1), {
+        list,
+        index,
+        flipKey: `${build.value.id}:${list.id}:${key}`,
+      }),
+    );
+  }
+  return rows;
+});
+
+// Moved rows slide to their new place and a removed row's neighbours close the gap.
+useReorderMotion(root, () =>
+  [...listRows.value.values()].map((row) => row.flipKey),
+);
+
+/** One drop list per section body, taking rows of the lists in that section. A row only ever
+ *  moves within its own list, which the drag source names as its container. */
+const sectionDrop = useKeyedCache((sectionId: string) =>
+  useDropList({
+    accepts: (source) =>
+      source.kind === LIST_ROW_DRAG &&
+      db.value.slotById.get(source.containerId)?.section === sectionId,
+    onDrop: (source, gap) =>
+      buildEditor.moveListRow(
+        rowSlotId(source.containerId, source.index + 1),
+        reorderIndex(source.index, gap) + 1,
+      ),
+  }),
+);
+
+/** What each section holding a list hands its body for dropping. */
+const sectionDrops = computed(() => {
+  const drops = new Map<
+    string,
+    { list: Record<string, string>; indicator: { top: string } | null }
+  >();
+  for (const slot of db.value.slots) {
+    if (slot.type !== "item_picker_list" || drops.has(slot.section)) continue;
+    const drop = sectionDrop(slot.section);
+    drops.set(slot.section, {
+      list: drop.listProps(),
+      indicator: drop.separatorStyle.value,
+    });
+  }
+  return drops;
+});
+
+const dragHandle = useDragHandles();
+
+/** A list row's grip, or undefined for any other row. */
+function listRowHandle(slotId: string) {
+  const row = listRows.value.get(slotId);
+  return (
+    row &&
+    dragHandle({
+      kind: LIST_ROW_DRAG,
+      containerId: row.list.id,
+      key: row.flipKey,
+      index: row.index,
+    })
+  );
+}
+
+/** The drop target a row of the list being dragged binds. Only rows on screen count, so a row
+ *  the filter hides never stands in the way. `end` is the list's add row, the gap after its
+ *  last row. */
+function listDropProps(slotId: string, shown: boolean, end = false) {
+  const source = dragSource.value;
+  if (!shown || source?.kind !== LIST_ROW_DRAG) return undefined;
+  const slot = db.value.slotById.get(slotId);
+  if (end) {
+    if (slot?.type !== "item_picker_list" || slot.id !== source.containerId)
+      return undefined;
+    return sectionDrop(slot.section).rowProps(listRowCount(build.value, slot));
+  }
+  const row = listRows.value.get(slotId);
+  if (row?.list.id !== source.containerId) return undefined;
+  return sectionDrop(row.list.section).rowProps(row.index);
+}
+
+/** Alt+arrow on a list row: moves it one step, and the cursor along with it. Focus stays put
+ *  while the motion scrolls the row into view. */
+const listRowMove = useKeyedCache((slotId: string) => async (dir: 1 | -1) => {
+  const row = listRows.value.get(slotId);
+  if (!row) return;
+  const to = row.index + 1 + dir;
+  if (to < 1 || to > listRowCount(build.value, row.list)) return;
+  buildEditor.moveListRow(slotId, to);
+  await nextTick();
+  const target = root.value?.querySelector(
+    `[data-cursor-key="slot:${CSS.escape(rowSlotId(row.list.id, to))}"]`,
+  );
+  if (target) focusRow(target, true);
+});
+
 function openInLayerEditor(itemId: string) {
   layerEditorUi.openItem(itemId);
 }
@@ -1517,6 +1649,7 @@ watch(
           :highlight-diff="highlightDiff"
           :other-builds="otherBuilds"
           :presets="section.presets"
+          :drop="sectionDrops.get(section.id)"
           @toggle="sectionHandlers(section.id).toggle"
           @copy="sectionHandlers(section.id).copy"
           @copy-to="sectionHandlers(section.id).copyTo"
@@ -1546,6 +1679,7 @@ watch(
               :slot-def="slotDef"
               class="col-span-full"
               :on-arrow="moveCursor"
+              v-bind="listDropProps(slotDef.id, shown, true)"
             />
             <CompareOnlyRow
               v-else-if="compareOnly.has(slotDef.id)"
@@ -1576,9 +1710,20 @@ watch(
               :is-hovered="hover?.slotId === slotDef.id"
               :no-border="noBorderIds.has(slotDef.id)"
               :nest="nestById.get(slotDef.id)"
-              :class="contextIds.has(slotDef.id) && 'opacity-60'"
+              :class="[
+                contextIds.has(slotDef.id) && 'opacity-60',
+                dragSource &&
+                  dragSource.key === listRows.get(slotDef.id)?.flipKey &&
+                  'is-drag-source opacity-50',
+              ]"
               :data-filter-context="contextIds.has(slotDef.id) || undefined"
+              :data-flip-key="listRows.get(slotDef.id)?.flipKey"
+              v-bind="listDropProps(slotDef.id, shown)"
               :on-arrow="moveCursor"
+              :on-move="
+                listRows.has(slotDef.id) ? listRowMove(slotDef.id) : undefined
+              "
+              :drag-handle="listRowHandle(slotDef.id)"
               :item="rowDataFor(slotDef.id).item"
               :items="rowDataFor(slotDef.id).items"
               :hidden-reasons="rowDataFor(slotDef.id).hiddenReasons"

@@ -1,5 +1,5 @@
-// End-to-end coverage for the `item_picker_list` slot type: rows are added and removed from
-// the build editor, and a removal closes the gap rather than leaving a hole. `misc.misc` is the
+// End-to-end coverage for the `item_picker_list` slot type: rows are added, removed and
+// reordered from the build editor, and a removal closes the gap rather than leaving a hole. `misc.misc` is the
 // shipped list used throughout, picking from a test item.
 import { test, expect, type Page } from "@playwright/test";
 import {
@@ -13,6 +13,7 @@ import {
 } from "./support/app";
 import { shippedSlotLabel } from "./support/shippedData";
 import { storedBuilds } from "./support/storage";
+import { beginDrag, dragOnto } from "./support/dragDrop";
 import { importTestCatalog } from "./support/testCatalog";
 
 const LIST = "misc.misc";
@@ -75,6 +76,112 @@ test("removing a row closes the gap under it", async ({ page }) => {
   // One row left, holding what row 2 held.
   await expect(slotRow(page, row(2))).toHaveCount(0);
   await expect(pickerInput(slotRow(page, row(1)))).toHaveValue(kept);
+});
+
+/** The picks of the list's first `count` rows, in order. */
+async function picks(page: Page, count: number) {
+  const values: string[] = [];
+  for (let i = 1; i <= count; i += 1)
+    values.push(await pickerInput(slotRow(page, row(i))).inputValue());
+  return values;
+}
+
+test("dragging a row by its grip moves its pick there", async ({ page }) => {
+  await openWithMiscItem(page);
+  await addListRows(page, LIST, 3);
+  await chooseItem(page, row(1), MISC_ITEM.name);
+
+  await dragOnto(
+    page.getByTestId(`list-drag:${row(1)}`),
+    slotRow(page, row(3)),
+    "after",
+  );
+
+  await expect.poll(() => picks(page, 3)).toEqual(["", "", MISC_ITEM.name]);
+});
+
+// A hover card left over the rows would take the drop, so a drag closes it.
+test("starting a drag closes the row's hover card", async ({ page }) => {
+  await openWithMiscItem(page);
+  await addListRows(page, LIST, 2);
+  await chooseItem(page, row(1), MISC_ITEM.name);
+  const card = page.getByTestId("item-card");
+  await slotRow(page, row(1)).getByText(`${LABEL} 1`).hover();
+  await expect(card).toBeVisible();
+
+  const drag = await beginDrag(page.getByTestId(`list-drag:${row(1)}`));
+  await expect(card).toBeHidden();
+  await drag.end();
+});
+
+// Alt+arrow is the keyboard's way to reorder, and the cursor stays on the row it moved.
+test("Alt+arrow moves the row under the cursor and keeps the cursor on it", async ({
+  page,
+}) => {
+  await openWithMiscItem(page);
+  await addListRows(page, LIST, 3);
+  await chooseItem(page, row(1), MISC_ITEM.name);
+  await slotRow(page, row(1)).locator("[data-cursor-anchor]").focus();
+
+  await page.keyboard.press("Alt+ArrowDown");
+
+  await expect.poll(() => picks(page, 3)).toEqual(["", MISC_ITEM.name, ""]);
+  await expect(
+    slotRow(page, row(2)).locator("[data-cursor-anchor]"),
+  ).toBeFocused();
+
+  // Already first: the row stays where it is.
+  await page.keyboard.press("Alt+ArrowUp");
+  await page.keyboard.press("Alt+ArrowUp");
+  await expect.poll(() => picks(page, 3)).toEqual([MISC_ITEM.name, "", ""]);
+});
+
+test("a hand-authored item_picker row has no grip", async ({ page }) => {
+  await openBuilder(page);
+  await expect(
+    slotRow(page, "gear.head").getByTestId(/^list-drag:/),
+  ).toHaveCount(0);
+});
+
+test.describe("with motion", () => {
+  test.use({ contextOptions: { reducedMotion: "no-preference" } });
+
+  /** Row slot ids whose row is sliding right now. */
+  function sliding(page: Page) {
+    return page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>("[data-flip-key]")]
+        .filter((el) => el.getAnimations().some((a) => a.id === "row-slide"))
+        .map((el) => el.dataset.cursorKey),
+    );
+  }
+
+  // A moved row slides from where it was, and the one it displaced slides the other way.
+  test("moving a row slides it and the row it swapped with", async ({
+    page,
+  }) => {
+    await openWithMiscItem(page);
+    await addListRows(page, LIST, 3);
+    await slotRow(page, row(2)).locator("[data-cursor-anchor]").focus();
+
+    await page.keyboard.press("Alt+ArrowUp");
+
+    await expect
+      .poll(async () => (await sliding(page)).sort(), { intervals: [16] })
+      .toEqual([`slot:${row(1)}`, `slot:${row(2)}`]);
+  });
+
+  // A removed row goes at once, and the rows below close the gap by sliding up.
+  test("removing a row slides the rows below it up", async ({ page }) => {
+    await openWithMiscItem(page);
+    await addListRows(page, LIST, 3);
+    await expect.poll(() => sliding(page)).toEqual([]);
+
+    await page.getByTestId(`list-remove:${row(1)}`).click();
+
+    await expect
+      .poll(async () => (await sliding(page)).sort(), { intervals: [16] })
+      .toEqual([`slot:${row(1)}`, `slot:${row(2)}`]);
+  });
 });
 
 test("an empty row survives a save and reload", async ({ page }) => {
