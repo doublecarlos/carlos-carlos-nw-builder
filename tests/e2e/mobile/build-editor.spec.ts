@@ -4,6 +4,7 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import {
   blurToHeader,
+  bonusInputControl,
   chooseItem,
   ensureSectionExpanded,
   openBuilder,
@@ -12,6 +13,12 @@ import {
 } from "../support/app";
 import { importTestCatalog } from "../support/testCatalog";
 import { TEST_HEAD, importTestHead } from "../support/testHead";
+import {
+  FIRST_BONUS,
+  LAST_BONUS,
+  openWithBoonInputs,
+} from "../support/boonInputBuild";
+import { expectNoHorizontalScroll } from "../support/viewport";
 
 const HEAD_ITEM = TEST_HEAD.name;
 
@@ -48,6 +55,32 @@ test("a point row stacks its label over steppers that stay on screen", async ({
     expect(b.top).toBeGreaterThanOrEqual(label.y + label.height);
     expect(b.right).toBeLessThanOrEqual(width);
   }
+});
+
+// The steppers wrap on a phone, so the inputs follow the last of them instead of breaking up
+// the wrapped lines, and stay on screen.
+test("a point row's inputs sit below its wrapped steppers, on screen", async ({
+  page,
+}) => {
+  const row = await openWithBoonInputs(page);
+  const steppers = await row
+    .locator('[data-testid^="assignment-input-"]')
+    .evaluateAll((els) =>
+      els.map((el) => el.getBoundingClientRect().toJSON() as DOMRect),
+    );
+  const lastStepperBottom = Math.max(...steppers.map((b) => b.bottom));
+  const width = page.viewportSize()!.width;
+  for (const bonusId of [FIRST_BONUS, LAST_BONUS]) {
+    const input = (await bonusInputControl(
+      row,
+      bonusId,
+      "active",
+    ).boundingBox())!;
+    expect(input.y).toBeGreaterThanOrEqual(lastStepperBottom);
+    expect(input.x).toBeGreaterThanOrEqual(0);
+    expect(input.x + input.width).toBeLessThanOrEqual(width);
+  }
+  await expectNoHorizontalScroll(page);
 });
 
 test("the toolbar's actions sit in an overflow menu", async ({ page }) => {

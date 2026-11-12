@@ -59,7 +59,7 @@ const props = withDefaults(
 defineOptions({ inheritAttrs: false });
 
 const model = defineModel<string>({ default: "" });
-const { id: controlId, describedBy } = useFormFieldControl();
+const { id: controlId, describedBy, invalid } = useFormFieldControl();
 
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
@@ -222,7 +222,8 @@ onKeyStroke(
         :id="controlId"
         ref="input"
         :aria-describedby="describedBy"
-        class="w-full rounded-md border border-line bg-surface py-0.5 pl-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        :aria-invalid="invalid || undefined"
+        class="w-full rounded-md border border-line aria-[invalid=true]:border-danger bg-surface py-0.5 pl-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
         :class="[
           model ? 'placeholder:text-text' : 'placeholder:text-muted',
           clearable

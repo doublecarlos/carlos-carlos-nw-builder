@@ -738,7 +738,8 @@ describe("make global offer", () => {
     defining("other-type", { type: "boolean", default: false }),
     { id: "reader", inputs: { hits: { global: "globals.hits" } }, grants: [] },
   ];
-  const scope = { inLayer: new Set<string>(), shadowedBy: new Map() };
+  const taken = { ids: [], paths: [] };
+  const scope = { inLayer: new Set<string>(), shadowedBy: new Map(), taken };
 
   // Only an input that could share one value is offered: same name, same type, not already
   // a reference.
@@ -755,11 +756,13 @@ describe("make global offer", () => {
     const inLayer = makeGlobalOffer(row, "own", bonuses, {
       inLayer: new Set(["same"]),
       shadowedBy: new Map(),
+      taken,
     });
     expect(inLayer?.others[0]).toEqual({ bonus: bonuses[1], copied: false });
     const shadowed = makeGlobalOffer(row, "own", bonuses, {
       inLayer: new Set(),
       shadowedBy: new Map([["same", "Top"]]),
+      taken,
     });
     expect(shadowed?.others[0]).toMatchObject({
       copied: true,
@@ -772,7 +775,11 @@ describe("make global offer", () => {
     expect(canMakeGlobal(scope, "own")).toBe(true);
     expect(
       canMakeGlobal(
-        { inLayer: new Set(), shadowedBy: new Map([["own", "Top"]]) },
+        {
+          inLayer: new Set(),
+          shadowedBy: new Map([["own", "Top"]]),
+          taken,
+        },
         "own",
       ),
     ).toBe(false);
