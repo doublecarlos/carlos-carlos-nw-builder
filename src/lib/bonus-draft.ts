@@ -603,6 +603,80 @@ export const inputOptions = (
     return [{ value: name, label: def.label ?? name, type: def.type }];
   });
 
+/** Where "Make global" writes a converted bonus: the edited layer, which already holds the
+ *  bonuses in `inLayer` and gets a copy of any other. A bonus in `shadowedBy` is overridden
+ *  by a higher enabled layer, named there, so converting it here would change nothing. */
+export interface MakeGlobalScope {
+  inLayer: ReadonlySet<string>;
+  shadowedBy: ReadonlyMap<string, string>;
+}
+
+/** Whether bonus `bonusId` can offer "Make global" in `scope`: not while a higher layer
+ *  overrides it, as the edit would have no effect. */
+export const canMakeGlobal = (
+  scope: MakeGlobalScope | null | undefined,
+  bonusId: string | undefined,
+): boolean =>
+  Boolean(scope && bonusId !== undefined && !scope.shadowedBy.has(bonusId));
+
+/** Another bonus "Make global" can convert along. */
+export interface MakeGlobalCandidate {
+  bonus: Bonus;
+  /** Defined outside the edited layer, so converting it copies it in. */
+  copied: boolean;
+  /** The higher layer overriding it, when one does. */
+  shadowedBy?: string;
+}
+
+/** What "Make global" offers for one input row: the definition the global input takes over,
+ *  and the other bonuses defining an input of the same name and type, which can read it too. */
+export interface MakeGlobalOffer {
+  name: string;
+  def: InputDef;
+  others: MakeGlobalCandidate[];
+}
+
+/** The offer for `row` of bonus `bonusId`, or null for a reference or an unnamed row. */
+export function makeGlobalOffer(
+  row: InputDraft,
+  bonusId: string,
+  bonuses: readonly Bonus[],
+  scope: MakeGlobalScope,
+): MakeGlobalOffer | null {
+  const name = row.name.trim();
+  if (!name || row.global) return null;
+  const def = rowsToInputs([row])[name] as InputDef;
+  const others = bonuses.flatMap((bonus): MakeGlobalCandidate[] => {
+    const decl = bonus.inputs?.[name];
+    if (
+      bonus.id === bonusId ||
+      decl === undefined ||
+      isGlobalRef(decl) ||
+      decl.type !== def.type
+    )
+      return [];
+    const candidate: MakeGlobalCandidate = {
+      bonus,
+      copied: !scope.inLayer.has(bonus.id),
+    };
+    const shadowedBy = scope.shadowedBy.get(bonus.id);
+    if (shadowedBy !== undefined) candidate.shadowedBy = shadowedBy;
+    return [candidate];
+  });
+  return { name, def, others };
+}
+
+/** `bonus` reading its input `name` from the global input `slotId`. The local name stays, as
+ *  it is how a build's stored value finds its new address. */
+export const readingGlobal = (
+  bonus: Bonus,
+  name: string,
+  slotId: string,
+): Bonus => ({
+  ...bonus,
+  inputs: { ...bonus.inputs, [name]: { global: slotId } },
+});
+
 /** One `Bonus.formulas` entry. */
 export interface NamedFormulaDraft extends FormulaDraft {
   /** Referenced as `$name`. */

@@ -30,11 +30,18 @@ import {
   unpackNotice,
   type UnpackedCatalog,
 } from "./buildCatalog";
+import { migrateGlobalInputs } from "../storage/migrate-global-inputs";
 import {
   clearSlotContents,
   pruneUnavailableSlots,
 } from "../lib/slot-availability";
-import type { Build, BuildNavEntry, BuildOption, TrashEntry } from "../types";
+import type {
+  Build,
+  BuildNavEntry,
+  BuildOption,
+  Db,
+  TrashEntry,
+} from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -132,33 +139,42 @@ export function replaceActive(newBuild: Build) {
  *  format change, so it goes through `normalize` like any stored build. */
 export function restoreSnapshot(json: string) {
   const b = storage.normalize(JSON.parse(json));
-  pruneStored(b);
+  syncStored(b);
   replaceActive(b);
 }
 
 // --- slot availability ----------------------------------------------------------------------
 
-/** Empties `b`'s unavailable slots in place. Returns the ids it cleared. */
-function pruneStored(b: Build): string[] {
+/** Brings `b` in line with the catalog in place: moves the input values the catalog relocated,
+ *  then empties its unavailable slots. Every way a build meets the catalog ends here: a load,
+ *  an import, an undo restore, a catalog change and every edit. `prev` is the catalog `b` was
+ *  last in line with, when known. */
+function syncStored(
+  b: Build,
+  prev?: Db,
+): { moved: boolean; cleared: string[] } {
   const db = engineDb.value;
+  const moved = migrateGlobalInputs(db, b, prev);
   const { cleared } = pruneUnavailableSlots(db, toRaw(b));
   for (const slotId of cleared) {
     const slot = db.slotById.get(slotId);
     if (slot) clearSlotContents(b, slot);
   }
-  return cleared;
+  return { moved, cleared };
 }
 
 /**
- * Every build edit ends here. Empties the slots the edit made unavailable, inside the edit's own
- * undo step, then shows `done` (the edit's own notice, if any) and what was cleared, with an
+ * Every build edit ends here. Syncs the build with the catalog (`syncStored`) inside the edit's
+ * own undo step, then shows `done` (the edit's own notice, if any) and what was cleared, with an
  * undo that takes back both.
  */
 export function finishEdit(id: string, done = "") {
   const b = _builds.value.get(id);
   if (!b) return;
-  const cleared = pruneStored(b)
-    .map((slotId) => engineDb.value.slotById.get(slotId)?.label ?? slotId)
+  const cleared = syncStored(b)
+    .cleared.map(
+      (slotId) => engineDb.value.slotById.get(slotId)?.label ?? slotId,
+    )
     .join(", ");
   const text = cleared
     ? done
@@ -170,14 +186,14 @@ export function finishEdit(id: string, done = "") {
 
 /**
  * `finishEdit` for one edit made to several builds, which need not include the selected one.
- * Each is pruned and saved, and one notice offers an undo that takes back every build without
+ * Each is synced and saved, and one notice offers an undo that takes back every build without
  * moving the selection.
  */
 export function finishBulkEdit(ids: string[], done: string) {
   for (const id of ids) {
     const b = _builds.value.get(id);
     if (!b) continue;
-    pruneStored(b);
+    syncStored(b);
     markDirty(id);
   }
   showUndoNotice(done, () => {
@@ -192,19 +208,24 @@ function undoInPlace(id: string) {
   const json = history.undo("build", id, b, { select: false });
   if (json == null) return;
   const restored = storage.normalize(JSON.parse(json));
-  pruneStored(restored);
+  syncStored(restored);
   _builds.value.set(id, restored);
   markDirty(id);
 }
 
-/** Empties every stored build's unavailable slots, for a catalog change or a load. Not
- *  undoable: the catalog, not an edit, is what hid them. */
-export function pruneAll() {
+/** The catalog `syncAll` last brought every stored build in line with. */
+let syncedDb: Db | undefined;
+
+/** Brings every stored build in line with the catalog, for a catalog change or a load. Not
+ *  undoable: the catalog, not an edit, is what changed. */
+export function syncAll() {
+  const prev = syncedDb;
+  syncedDb = engineDb.value;
   const names: string[] = [];
   for (const b of _builds.value.values()) {
-    if (!pruneStored(b).length) continue;
-    markDirty(b.id);
-    names.push(`“${b.name}”`);
+    const { moved, cleared } = syncStored(b, prev);
+    if (moved || cleared.length) markDirty(b.id);
+    if (cleared.length) names.push(`“${b.name}”`);
   }
   if (names.length)
     showNotice(
@@ -212,9 +233,9 @@ export function pruneAll() {
     );
 }
 
-// A catalog change can hide slots in any build, open or not.
+// A catalog change can move input values and hide slots in any build, open or not.
 watch(engineDb, () => {
-  if (!_loading.value) pruneAll();
+  if (!_loading.value) syncAll();
 });
 
 /** Puts a build into the pool at `placement`. */
@@ -257,6 +278,7 @@ function trashBuild(id: string): RowPlacement | null {
 function restoreBuild(id: string, placement: RowPlacement): boolean {
   const item = trash.takeById("build", id);
   if (!item) return false;
+  syncStored(item);
   addBuild(item, placement);
   return true;
 }
@@ -422,7 +444,7 @@ export function importBuilds(newBuilds: Build[], stale: boolean) {
   const unpacked: UnpackedCatalog[] = [];
   for (const b of newBuilds) {
     const result = unpackCatalog(b);
-    pruneStored(b);
+    syncStored(b);
     if (result) unpacked.push(result);
     _builds.value.set(b.id, b);
     folders.appendBuild(b.id);
@@ -456,7 +478,7 @@ export function upsertImported(
   replacing: boolean,
 ): UnpackedCatalog | null {
   const unpacked = unpackCatalog(build);
-  pruneStored(build);
+  syncStored(build);
   const existing = _builds.value.get(build.id);
   if (replacing && existing)
     trash._add("build", existing, folders.parentOf(build.id)?.id);
@@ -479,7 +501,7 @@ export function restoreFromTrash(entry: TrashEntry) {
     : item;
   const unpacked = unpackCatalog(b);
   const landed = unpacked && unpackNotice([unpacked]);
-  pruneStored(b);
+  syncStored(b);
   addBuild(b, {
     folderId: entry.folderId ?? null,
     index: Number.MAX_SAFE_INTEGER,

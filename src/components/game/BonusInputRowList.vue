@@ -2,8 +2,10 @@
 // A repeatable list of a bonus's input declarations (id / type / label / default, plus
 // bounds, step, presets and control for a number), or a reference to a global input that
 // defines all of those. The same row-mutating shape as `DynamicStatRowList`, the id leading
-// the row so a phone gives it the card's first line.
+// the row so a phone gives it the card's first line. With `canMakeGlobal`, an input the bonus
+// defines offers to become a global input.
 import { computed } from "vue";
+import BaseButton from "../ui/BaseButton.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -13,8 +15,16 @@ import IdField from "../ui/IdField.vue";
 import type { InputDraft } from "../../lib/bonus-draft";
 import type { GlobalInputs } from "../../engine/global-inputs";
 
-const props = defineProps<{ rows: InputDraft[]; globals: GlobalInputs }>();
-const emit = defineEmits<{ add: []; remove: [index: number] }>();
+const props = defineProps<{
+  rows: InputDraft[];
+  globals: GlobalInputs;
+  canMakeGlobal?: boolean;
+}>();
+const emit = defineEmits<{
+  add: [];
+  remove: [index: number];
+  "make-global": [index: number];
+}>();
 
 /** Where an input's definition comes from: the bonus itself, or a global input. */
 const sourceOptions = computed(() => [
@@ -91,7 +101,7 @@ const controlOptions = [
         />
       </FormField>
     </template>
-    <template #row="{ row }">
+    <template #row="{ row, index }">
       <FormField
         v-if="globals.size || row.global"
         label="Defined by"
@@ -105,6 +115,14 @@ const controlOptions = [
           @update:model-value="(v) => (row.global = v)"
         />
       </FormField>
+      <BaseButton
+        v-if="canMakeGlobal && !row.global && row.name.trim()"
+        class="self-end"
+        title="Share this input with other bonuses through a new global input"
+        data-testid="bonus-input-make-global"
+        @click="emit('make-global', index)"
+        >Make global</BaseButton
+      >
       <p
         v-if="row.global"
         class="self-center text-muted"

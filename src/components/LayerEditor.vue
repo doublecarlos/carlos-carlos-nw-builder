@@ -84,6 +84,12 @@ import {
   type ItemListFilter,
 } from "../lib/item-list-filter";
 import { editorDb } from "../lib/editor-db";
+import type { MakeGlobalScope } from "../lib/bonus-draft";
+import {
+  makeGlobalOverlay,
+  shadowedEntries,
+  type MakeGlobalRequest,
+} from "../lib/make-global";
 import { viewportKind } from "../lib/shell-layout";
 import { layerEditorLayout, viewOf } from "../lib/layer-editor-layout";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
@@ -1209,6 +1215,28 @@ const onUpdateBonusTop = ({
   label: string;
 }) => updateEntry("bonuses", id, bonus, label);
 
+/** Where "Make global" writes, for the bonus form to say which bonuses it would copy in and
+ *  which a higher layer overrides. */
+const makeGlobalScope = computed<MakeGlobalScope>(() => ({
+  inLayer: new Set(Object.keys(overlay.value.bonuses)),
+  shadowedBy: shadowedEntries(layers.layers.value, props.layer.id, "bonuses"),
+}));
+
+/** "Make global" from the bonus form, as one undo step. */
+function onMakeGlobal(request: MakeGlobalRequest) {
+  const { overlay: next } = makeGlobalOverlay(
+    overlay.value,
+    db.value,
+    allocatableIds.value.slots,
+    request,
+  );
+  commit(null, `Make input "${request.name}" global`, next);
+  const count = request.readers.length;
+  showNotice(
+    `Made “${request.name}” a global input, read by ${count} bonus${count === 1 ? "" : "es"}`,
+  );
+}
+
 async function onDeleteBonusTop(event?: MouseEvent) {
   const bonus = selectedBonus.value;
   if (!bonus) return;
@@ -1858,8 +1886,10 @@ onUnmounted(() => {
           :tags="tagList"
           :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds.bonuses"
+          :make-global-scope="makeGlobalScope"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
+          @make-global="onMakeGlobal"
           @delete="onDeleteBonusTop"
           @duplicate="duplicateBonus"
           @revert="onRevertBonusTop"

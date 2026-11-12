@@ -14,6 +14,7 @@ import {
   STABLE_ROLE_FILTER,
   checkSlotAvailability,
   checkSlotParent,
+  nextSlotId,
   validateSlotDefaults,
 } from "../data/catalog";
 import {
@@ -28,12 +29,14 @@ import type {
   BuildParameterSlot,
   ConditionWhen,
   Db,
+  InputDef,
   ItemPickerListSlot,
   ItemPickerSlot,
   NumberControl,
   PointAssignmentSlot,
   SeparatorSlot,
   Slot,
+  SlotSection,
   StableRole,
   TextSlot,
 } from "../types";
@@ -43,6 +46,44 @@ type Scaler = NonNullable<BuildParameterSlot["scaler"]>;
 export interface OptionRow {
   value: string;
   label: string;
+}
+
+/** The section "Make global" files a new global input under, created along with it when the
+ *  catalog has none. The build editor never renders a global input, so it stays hidden. */
+export const GLOBAL_INPUTS_SECTION: SlotSection = {
+  id: "globals",
+  label: "Global inputs",
+  defaultOpen: false,
+  slotIds: [],
+};
+
+/** A new global input defined as bonus input `name` was, for "Make global". Its id doubles
+ *  as its path, named after the input's label, else its name, clear of every id and path in
+ *  `taken`. */
+export function globalInputSlot(
+  name: string,
+  def: InputDef,
+  taken: readonly string[],
+): BuildParameterSlot {
+  const label = def.label || name;
+  const id = nextSlotId(GLOBAL_INPUTS_SECTION.id, label, [...taken]);
+  const slot: BuildParameterSlot = {
+    id,
+    label,
+    section: GLOBAL_INPUTS_SECTION.id,
+    type: "build_parameter",
+    paramType: def.type,
+    path: id,
+    globalInput: true,
+    default: def.default,
+  };
+  if (def.type === "boolean") return slot;
+  putIfSet(slot, "min", def.min);
+  putIfSet(slot, "max", def.max);
+  putIfSet(slot, "step", def.step);
+  putIfSet(slot, "presets", def.presets);
+  putIfSet(slot, "control", def.control);
+  return slot;
 }
 
 /** The field blocks each slot type is authored with, rendered in order by the form. */

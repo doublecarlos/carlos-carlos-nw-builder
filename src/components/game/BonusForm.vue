@@ -2,7 +2,7 @@
 // Editing form for one bonus. Hybrid approach:
 // - Existing bonuses (source != null): live edits, changes emit immediately
 // - New bonuses (source == null): explicit Save button, draft until name is finalized
-import { computed, inject, onMounted, onUnmounted } from "vue";
+import { computed, inject, onMounted, onUnmounted, shallowRef } from "vue";
 import BonusRows from "./BonusRows.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
@@ -21,10 +21,12 @@ import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import BonusOptionRow from "./BonusOptionRow.vue";
 import BonusInputRowList from "./BonusInputRowList.vue";
+import MakeGlobalDialog from "./MakeGlobalDialog.vue";
 import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
 import { inputFormulaClashes, namedCycles } from "../../engine/formula";
 import type { Bonus, BonusOption, Db } from "../../types";
+import type { MakeGlobalRequest } from "../../lib/make-global";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -67,6 +69,9 @@ const props = withDefaults(
     collapsed?: boolean;
     /** Whether the header bar's inert area raises `toggle`, see DraftFormBar.vue. */
     toggleable?: boolean;
+    /** Where "Make global" writes. When set, a saved bonus's own inputs offer it, and the host
+     *  writes the result as one layer edit (`make-global`). */
+    makeGlobalScope?: bonusDraft.MakeGlobalScope | null;
   }>(),
   {
     source: null,
@@ -84,6 +89,7 @@ const props = withDefaults(
     canDelete: true,
     collapsed: false,
     toggleable: false,
+    makeGlobalScope: null,
   },
 );
 
@@ -99,6 +105,9 @@ const emit = defineEmits<{
   toggle: [];
   /** A "Granted by" member link was clicked: open that item in the editor. */
   "open-item": [itemId: string];
+  /** "Make global" was confirmed on input `name`: a new global input defined as `def`, read
+   *  by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
+  "make-global": [payload: MakeGlobalRequest];
 }>();
 
 function computeId(local: bonusDraft.BonusDraft): string {
@@ -192,29 +201,66 @@ const duplicateInputNames = computed(() =>
   bonusDraft.duplicateInputNames(draft.value.inputs),
 );
 
+const canMakeGlobal = computed(() =>
+  bonusDraft.canMakeGlobal(props.makeGlobalScope, props.source?.id),
+);
+
+/** The open "Make global" offer, or null. */
+const makeGlobal = shallowRef<bonusDraft.MakeGlobalOffer | null>(null);
+
+function offerMakeGlobal(index: number) {
+  if (!props.source || !props.makeGlobalScope || !canMakeGlobal.value) return;
+  makeGlobal.value = bonusDraft.makeGlobalOffer(
+    draft.value.inputs[index],
+    props.source.id,
+    props.db.bonuses,
+    props.makeGlobalScope,
+  );
+}
+
+function confirmMakeGlobal(otherIds: string[]) {
+  const offer = makeGlobal.value;
+  // Written as drafted, so it passes the same checks as a save.
+  const bonus = offer && checkedBonus();
+  if (!offer || !bonus) return;
+  const others = offer.others
+    .filter((other) => otherIds.includes(other.bonus.id))
+    .map((other) => other.bonus);
+  emit("make-global", {
+    name: offer.name,
+    def: offer.def,
+    readers: [bonus, ...others],
+  });
+}
+
 defineExpose({ draft, dirty });
 
-function save() {
+/** The draft as a bonus, or null with `error` saying why it cannot be written yet: no name,
+ *  a half-drawn condition `toBonus` would drop, or a grant's invalid JSON. */
+function checkedBonus(): Bonus | null {
   error.value = "";
-  const name = draft.value.name.trim();
-  if (!name) {
+  if (!draft.value.name.trim()) {
     error.value = "The bonus needs a name.";
-    return;
+    return null;
   }
   if (
     !draft.value.grants.every((grant) => bonusDraft.grantWhenIsComplete(grant))
   ) {
     error.value =
       "A grant has an unfinished condition; fill in its value or remove the condition before saving.";
-    return;
+    return null;
   }
-  let bonus: Bonus;
   try {
-    bonus = toBonus(draft.value);
+    return toBonus(draft.value);
   } catch (err: unknown) {
     error.value = `A grant has invalid JSON: ${err instanceof Error ? err.message : String(err)}`;
-    return;
+    return null;
   }
+}
+
+function save() {
+  const bonus = checkedBonus();
+  if (!bonus) return;
   emit("save", { id: bonus.id, bonus });
 }
 
@@ -317,8 +363,17 @@ if (bonusDraftRegistry && props.registryId) {
       <BonusInputRowList
         :rows="draft.inputs"
         :globals="db.globalInputs"
+        :can-make-global="canMakeGlobal"
         @add="draft.inputs.push(bonusDraft.newInput())"
         @remove="(i) => draft.inputs.splice(i, 1)"
+        @make-global="offerMakeGlobal"
+      />
+      <MakeGlobalDialog
+        v-if="makeGlobal"
+        :name="makeGlobal.name"
+        :others="makeGlobal.others"
+        @confirm="confirmMakeGlobal"
+        @close="makeGlobal = null"
       />
       <p
         v-if="duplicateInputNames.length"
