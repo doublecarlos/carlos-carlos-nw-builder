@@ -44,6 +44,8 @@ describe("build-path", () => {
     for (const slot of NW_SLOTS.slots) {
       if (slot.type !== "build_parameter" || slot.default === undefined)
         continue;
+      // A global input reads its default while unset, so it is never seeded.
+      if (slot.globalInput) continue;
       // An empty default means "no value": `setPath` deletes empty leaves, so the path
       // reads as empty rather than carrying an explicit "" (see setPath's test above).
       // Every consumer falls back the same way (`?? ""`, `|| 0`).

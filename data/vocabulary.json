@@ -287,10 +287,6 @@
     "reinforcement_jewel": {
       "label": "Reinforcement jewel"
     },
-    "scenario_flag": {
-      "label": "Scenario flag",
-      "defaultMaxCopies": 1
-    },
     "sturdy_collar": {
       "label": "Sturdy collar"
     },

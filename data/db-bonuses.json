@@ -414,12 +414,18 @@
   {
     "id": "batiri-s-wisdom-batiri-damage-offense",
     "name": "Batiri's Wisdom",
+    "inputs": {
+      "boss": {
+        "global": "globals.enemyTier.boss"
+      }
+    },
     "grants": [
       {
         "when": {
           "toggle": "combat",
-          "equipped": {
-            "item": "enemy-type-boss"
+          "input": {
+            "key": "boss",
+            "is": true
           }
         },
         "stats": {
@@ -731,10 +737,15 @@
   {
     "id": "cautious-devotion",
     "name": "Cautious Devotion",
+    "inputs": {
+      "health": {
+        "global": "globals.health"
+      }
+    },
     "grants": [
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "exactly": 1
           }
@@ -856,12 +867,18 @@
   {
     "id": "compy-s-instincts",
     "name": "Compy's Instincts",
+    "inputs": {
+      "chult": {
+        "global": "globals.location.chult"
+      }
+    },
     "grants": [
       {
         "name": "Doubled in Chult",
         "when": {
-          "equipped": {
-            "item": "location-chult"
+          "input": {
+            "key": "chult",
+            "is": true
           }
         },
         "stats": {
@@ -2092,9 +2109,9 @@
   {
     "id": "m28-voidtouched-set",
     "name": "M28 Voidtouched Set",
-    "formulas": {
-      "multiplier": {
-        "formula": "1 + min(equipped(\"location-wildspace\"), 1)"
+    "inputs": {
+      "wildspace": {
+        "global": "globals.location.wildspace"
       }
     },
     "grants": [
@@ -2111,8 +2128,9 @@
       },
       {
         "when": {
-          "equipped": {
-            "item": "location-wildspace"
+          "input": {
+            "key": "wildspace",
+            "is": true
           },
           "bonusOccurrences": {
             "atLeast": 2
@@ -2123,6 +2141,7 @@
         }
       },
       {
+        "name": "Outside Wildspace",
         "when": {
           "enemies": {
             "exactly": 1
@@ -2130,6 +2149,12 @@
           "toggle": "combat",
           "bonusOccurrences": {
             "atLeast": 2
+          },
+          "not": {
+            "input": {
+              "key": "wildspace",
+              "is": true
+            }
           }
         },
         "variants": [
@@ -2159,7 +2184,52 @@
           }
         ],
         "scale": {
-          "formula": "intervals(duration, 2, 10) * $multiplier"
+          "formula": "intervals(duration, 2, 10)"
+        }
+      },
+      {
+        "name": "Doubled in Wildspace",
+        "when": {
+          "enemies": {
+            "exactly": 1
+          },
+          "toggle": "combat",
+          "bonusOccurrences": {
+            "atLeast": 2
+          },
+          "input": {
+            "key": "wildspace",
+            "is": true
+          }
+        },
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.006
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "overall_healing": 0.006
+            }
+          },
+          {
+            "when": {
+              "role": "tank"
+            },
+            "stats": {
+              "incoming_damage": -0.006
+            }
+          }
+        ],
+        "scale": {
+          "formula": "intervals(duration, 2, 10) * 2"
         }
       }
     ]
@@ -2286,14 +2356,20 @@
   {
     "id": "m31-critical-empowerment",
     "name": "M31 Critical Empowerment",
+    "inputs": {
+      "thay": {
+        "global": "globals.location.thay"
+      }
+    },
     "grants": [
       {
         "variants": [
           {
             "when": {
               "toggle": "combat",
-              "equipped": {
-                "item": "location-thay"
+              "input": {
+                "key": "thay",
+                "is": true
               }
             },
             "stats": {
@@ -2444,13 +2520,19 @@
   {
     "id": "m31-thayan-predator",
     "name": "M31 Thayan Predator",
+    "inputs": {
+      "thay": {
+        "global": "globals.location.thay"
+      }
+    },
     "grants": [
       {
         "variants": [
           {
             "when": {
-              "equipped": {
-                "item": "location-thay"
+              "input": {
+                "key": "thay",
+                "is": true
               }
             },
             "stats": {
@@ -3323,10 +3405,15 @@
   {
     "id": "m33-balanced-vitality",
     "name": "M33 Balanced Vitality",
+    "inputs": {
+      "health": {
+        "global": "globals.health"
+      }
+    },
     "grants": [
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "atLeast": 0.6
           }
@@ -3337,7 +3424,7 @@
       },
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "below": 0.6
           }
@@ -3718,13 +3805,18 @@
   {
     "id": "m33-deity-s-gift",
     "name": "M33 Deity's Gift",
+    "inputs": {
+      "health": {
+        "global": "globals.health"
+      }
+    },
     "grants": [
       {
         "stats": {
           "power_p": 0.065
         },
         "scale": {
-          "formula": "param(\"health\")"
+          "formula": "$health"
         }
       }
     ]
@@ -3732,13 +3824,18 @@
   {
     "id": "m33-deity-s-gift-celestial",
     "name": "M33 Deity's Gift (Celestial)",
+    "inputs": {
+      "health": {
+        "global": "globals.health"
+      }
+    },
     "grants": [
       {
         "stats": {
           "power_p": 0.085
         },
         "scale": {
-          "formula": "param(\"health\")"
+          "formula": "$health"
         }
       }
     ]
@@ -4517,6 +4614,11 @@
   {
     "id": "m33-survivor-s-critical-resilience",
     "name": "M33 Survivor's Critical Resilience",
+    "inputs": {
+      "health": {
+        "global": "globals.health"
+      }
+    },
     "grants": [
       {
         "stats": {
@@ -4524,7 +4626,7 @@
           "deflect_p": 0.04
         },
         "scale": {
-          "formula": "param(\"health\")"
+          "formula": "$health"
         }
       }
     ]
@@ -4544,10 +4646,15 @@
   {
     "id": "m33-survivor-s-instinct",
     "name": "M33 Survivor's Instinct",
+    "inputs": {
+      "health": {
+        "global": "globals.health"
+      }
+    },
     "grants": [
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "atLeast": 0.9
           }
@@ -4558,7 +4665,7 @@
       },
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "below": 0.5
           }
@@ -4596,11 +4703,16 @@
   {
     "id": "m33-unbroken-strength",
     "name": "M33 Unbroken Strength",
+    "inputs": {
+      "health": {
+        "global": "globals.health"
+      }
+    },
     "grants": [
       {
         "when": {
           "toggle": "combat",
-          "param": {
+          "input": {
             "key": "health",
             "exactly": 1
           }
@@ -6873,9 +6985,7 @@
     "name": "Sword Coast Tactician",
     "inputs": {
       "active": {
-        "type": "boolean",
-        "label": "On Sword Coast",
-        "default": false
+        "global": "globals.location.swordCoast"
       }
     },
     "grants": [

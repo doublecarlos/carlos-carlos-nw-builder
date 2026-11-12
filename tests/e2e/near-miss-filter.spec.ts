@@ -95,13 +95,15 @@ async function importProcBoon(page: Page) {
   });
 }
 
-/** A ring whose bonus needs the Wildspace location, an item only the scenario flags list can
- *  hold, so the one slot that could supply it is a row that may not exist yet. */
+/** A ring whose bonus needs a test flag item, which only a test list can hold, so the one
+ *  slot that could supply it is a row that may not exist yet. */
 const LOCATION_RING_ID = "test-location-ring";
 const LOCATION_BONUS_ID = "test-location-bonus";
 const LOCATION_NEED_LOCATE = `bonus-need-locate-${LOCATION_BONUS_ID}-0`;
-const SCENARIO_LIST = "options.scenario";
-const LOCATION_NEED = "could supply 1× Location: Wildspace";
+const FLAG_ID = "test-flag-wildspace";
+const FLAG_NAME = "Test Flag: Wildspace";
+const SCENARIO_LIST = "options.testFlags";
+const LOCATION_NEED = `could supply 1× ${FLAG_NAME}`;
 
 async function importLocationRing(page: Page) {
   await importText(
@@ -117,6 +119,17 @@ async function importLocationRing(page: Page) {
             filter: "gear_ring",
             bonuses: [LOCATION_BONUS_ID],
           },
+          [FLAG_ID]: { id: FLAG_ID, name: FLAG_NAME, filter: "test_flag" },
+        },
+        slots: {
+          [SCENARIO_LIST]: {
+            id: SCENARIO_LIST,
+            label: "Test flags",
+            section: "options",
+            type: "item_picker_list",
+            filter: "test_flag",
+            defaultRows: 0,
+          },
         },
         bonuses: {
           [LOCATION_BONUS_ID]: {
@@ -124,7 +137,7 @@ async function importLocationRing(page: Page) {
             name: "Test Location Bonus",
             grants: [
               {
-                when: { equipped: { item: "location-wildspace" } },
+                when: { equipped: { item: FLAG_ID } },
                 stats: { power: 100 },
               },
             ],
@@ -251,7 +264,7 @@ test("a need only a list can supply keeps the list's add row, from the hover car
 
   await card
     .getByTestId("item-card-bonus-unmet")
-    .filter({ hasText: "Location: Wildspace" })
+    .filter({ hasText: FLAG_NAME })
     .getByTestId("item-card-need-locate")
     .click();
 
