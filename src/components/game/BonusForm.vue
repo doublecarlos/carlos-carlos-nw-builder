@@ -26,7 +26,7 @@ import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
 import { inputFormulaClashes, namedCycles } from "../../engine/formula";
 import type { Bonus, BonusOption, Db } from "../../types";
-import type { MakeGlobalRequest } from "../../lib/make-global";
+import type { MakeGlobalRequest, TakenGlobalIds } from "../../lib/make-global";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -72,6 +72,8 @@ const props = withDefaults(
     /** Where "Make global" writes. When set, a saved bonus's own inputs offer it, and the host
      *  writes the result as one layer edit (`make-global`). */
     makeGlobalScope?: bonusDraft.MakeGlobalScope | null;
+    /** What the id "Make global" gives a new global input must stay clear of. */
+    globalIdsTaken?: TakenGlobalIds;
   }>(),
   {
     source: null,
@@ -90,6 +92,7 @@ const props = withDefaults(
     collapsed: false,
     toggleable: false,
     makeGlobalScope: null,
+    globalIdsTaken: () => ({ ids: [], paths: [] }),
   },
 );
 
@@ -105,8 +108,8 @@ const emit = defineEmits<{
   toggle: [];
   /** A "Granted by" member link was clicked: open that item in the editor. */
   "open-item": [itemId: string];
-  /** "Make global" was confirmed on input `name`: a new global input defined as `def`, read
-   *  by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
+  /** "Make global" was confirmed on input `name`: a new global input `id` defined as `def`,
+   *  read by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
   "make-global": [payload: MakeGlobalRequest];
 }>();
 
@@ -218,7 +221,7 @@ function offerMakeGlobal(index: number) {
   );
 }
 
-function confirmMakeGlobal(otherIds: string[]) {
+function confirmMakeGlobal(id: string, otherIds: string[]) {
   const offer = makeGlobal.value;
   // Written as drafted, so it passes the same checks as a save.
   const bonus = offer && checkedBonus();
@@ -227,6 +230,7 @@ function confirmMakeGlobal(otherIds: string[]) {
     .filter((other) => otherIds.includes(other.bonus.id))
     .map((other) => other.bonus);
   emit("make-global", {
+    id,
     name: offer.name,
     def: offer.def,
     readers: [bonus, ...others],
@@ -371,7 +375,9 @@ if (bonusDraftRegistry && props.registryId) {
       <MakeGlobalDialog
         v-if="makeGlobal"
         :name="makeGlobal.name"
+        :def="makeGlobal.def"
         :others="makeGlobal.others"
+        :taken="globalIdsTaken"
         @confirm="confirmMakeGlobal"
         @close="makeGlobal = null"
       />

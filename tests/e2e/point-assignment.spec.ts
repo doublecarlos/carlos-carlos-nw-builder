@@ -1,7 +1,7 @@
 // End-to-end coverage for a point_assignment slot's row of steppers (BuildSlot.vue via
 // PointAssignmentInput.vue), driven through the shipped "boons.tier1" slot with two imported
 // test boons in its filter, each starting at its default of 0.
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import {
   confirmImport,
   ensureSectionExpanded,
@@ -14,8 +14,15 @@ import {
   slotFilterInput,
   hoverForCard,
   chooseItem,
+  bonusInputControl,
 } from "./support/app";
 import { importTestCatalog } from "./support/testCatalog";
+import {
+  BOONS,
+  FIRST_BONUS,
+  LAST_BONUS,
+  openWithBoonInputs,
+} from "./support/boonInputBuild";
 import { shippedItemName } from "./support/shippedData";
 
 const SLOT_ID = "boons.tier1";
@@ -517,5 +524,41 @@ test.describe(
       });
       expect(bottomHitsMenu).toBe(true);
     });
+  },
+);
+
+async function boxOf(target: Locator) {
+  const box = await target.boundingBox();
+  if (!box) throw new Error("Element is not visible");
+  return box;
+}
+
+// A boon's inputs are listed below the steppers, one per line, rather than under each stepper:
+// the steppers keep one line, and each input gets a whole line for its label.
+test(
+  "a point row lists its inputs below the steppers, one per line, in stepper order",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    const row = await openWithBoonInputs(page);
+    const steppers = await Promise.all(
+      BOONS.map((id) => boxOf(assignmentInput(row, id))),
+    );
+    // The first boon's stepper comes first, so its input does too.
+    expect(steppers[0].x).toBeLessThan(steppers[2].x);
+    const first = await boxOf(bonusInputControl(row, FIRST_BONUS, "active"));
+    const second = await boxOf(bonusInputControl(row, LAST_BONUS, "active"));
+    const rowBox = await boxOf(row);
+
+    for (const stepper of steppers) {
+      expect(Math.abs(stepper.y - steppers[0].y)).toBeLessThan(2);
+      expect(first.y).toBeGreaterThanOrEqual(stepper.y + stepper.height);
+    }
+    expect(second.y).toBeGreaterThanOrEqual(first.y + first.height);
+    for (const input of [first, second]) {
+      expect(input.x).toBeGreaterThanOrEqual(rowBox.x);
+      expect(input.y + input.height).toBeLessThanOrEqual(
+        rowBox.y + rowBox.height + 1,
+      );
+    }
   },
 );

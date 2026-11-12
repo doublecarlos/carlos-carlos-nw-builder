@@ -14,7 +14,6 @@ import {
   STABLE_ROLE_FILTER,
   checkSlotAvailability,
   checkSlotParent,
-  nextSlotId,
   validateSlotDefaults,
 } from "../data/catalog";
 import {
@@ -57,16 +56,14 @@ export const GLOBAL_INPUTS_SECTION: SlotSection = {
   slotIds: [],
 };
 
-/** A new global input defined as bonus input `name` was, for "Make global". Its id doubles
- *  as its path, named after the input's label, else its name, clear of every id and path in
- *  `taken`. */
+/** A new global input `id` defined as bonus input `name` was, for "Make global". Its id
+ *  doubles as its path, and it is labeled as the input was, else by its name. */
 export function globalInputSlot(
+  id: string,
   name: string,
   def: InputDef,
-  taken: readonly string[],
 ): BuildParameterSlot {
   const label = def.label || name;
-  const id = nextSlotId(GLOBAL_INPUTS_SECTION.id, label, [...taken]);
   const slot: BuildParameterSlot = {
     id,
     label,

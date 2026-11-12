@@ -87,6 +87,7 @@ import { editorDb } from "../lib/editor-db";
 import type { MakeGlobalScope } from "../lib/bonus-draft";
 import {
   makeGlobalOverlay,
+  takenGlobalIds,
   shadowedEntries,
   type MakeGlobalRequest,
 } from "../lib/make-global";
@@ -1222,12 +1223,17 @@ const makeGlobalScope = computed<MakeGlobalScope>(() => ({
   shadowedBy: shadowedEntries(layers.layers.value, props.layer.id, "bonuses"),
 }));
 
+/** What a new global input's id must stay clear of: every slot id and parameter path. */
+const globalIdsTaken = computed(() =>
+  takenGlobalIds(db.value, allocatableIds.value.slots),
+);
+
 /** "Make global" from the bonus form, as one undo step. */
 function onMakeGlobal(request: MakeGlobalRequest) {
   const { overlay: next } = makeGlobalOverlay(
     overlay.value,
     db.value,
-    allocatableIds.value.slots,
+    globalIdsTaken.value,
     request,
   );
   commit(null, `Make input "${request.name}" global`, next);
@@ -1887,6 +1893,7 @@ onUnmounted(() => {
           :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds.bonuses"
           :make-global-scope="makeGlobalScope"
+          :global-ids-taken="globalIdsTaken"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
           @make-global="onMakeGlobal"

@@ -5,6 +5,7 @@ import {
   bonusInputControl,
   ensureSectionExpanded,
   openBuilder,
+  pickerMenu,
   slotRow,
   undoButton,
 } from "./support/app";
@@ -99,4 +100,44 @@ test("making an input global shares it with the picked bonuses and keeps the bui
   // Private again: setting one leaves the other alone.
   await lute(page).uncheck();
   await expect(drum(page)).toBeChecked();
+});
+
+async function openBalladForm(page: Page) {
+  await openWithSingers(page);
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
+  await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+  await page.locator(".editor-search").fill("Test Ballad");
+  await page.locator(".editor-row", { hasText: "Test Ballad" }).first().click();
+}
+
+// The author picks where the global input sits under the naming convention. A typed id that is
+// taken is reported, not renamed, so the id written is always the one typed.
+test("the new global input's id can be edited, and a taken one is refused", async ({
+  page,
+}) => {
+  await openBalladForm(page);
+  await page.getByTestId("bonus-input-make-global").click();
+  const dialog = page.getByTestId("make-global");
+  const id = dialog.getByTestId("make-global-id");
+  const submit = dialog.getByTestId("make-global-submit");
+  await expect(id).toHaveValue(/^globals\./);
+
+  // The shipped health input already owns this id.
+  await id.fill("globals.health");
+  await expect(dialog.getByTestId("make-global-id-error")).toBeVisible();
+  await expect(id).toHaveAttribute("aria-invalid", "true");
+  await expect(submit).toBeDisabled();
+
+  await id.fill("globals.scenario.song");
+  await expect(dialog.getByTestId("make-global-id-error")).toBeHidden();
+  await submit.click();
+  await expect(dialog).toBeHidden();
+
+  const picker = page.getByTestId("bonus-input-global");
+  await picker.getByRole("combobox").click();
+  await expect(
+    pickerMenu(picker)
+      .getByRole("option", { name: /Sang/ })
+      .getByTestId("bonus-option-id"),
+  ).toHaveText("globals.scenario.song");
 });
