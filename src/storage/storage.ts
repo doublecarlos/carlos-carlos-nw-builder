@@ -32,6 +32,7 @@ import {
   migrateScenarioFlags,
   withoutScenarioRows,
 } from "./migrate-scenario-flags";
+import { toRaw } from "vue";
 import pkg from "../../package.json";
 import { showNotice } from "../stores/notice";
 import type {
@@ -241,6 +242,7 @@ export function defaultBuild(name = "New build", db: Db = baseDb()): Build {
  * Coerce anything build-shaped into a valid build. Tolerates a truncated write, an older
  * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
  * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
+ * `raw` is plain data, as parsed or stored; a live store object is unwrapped by its caller.
  */
 const isPlain = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -349,7 +351,11 @@ export function normalize(
   const base = defaultBuild();
   if (!isPlain(raw)) return base;
 
-  const context = isPlain(raw.context) ? raw.context : {};
+  // A copy of its own, so the passes below and later in-place writes at any dotted path never
+  // reach an object the input owns.
+  const context: Record<string, unknown> = isPlain(raw.context)
+    ? structuredClone(raw.context)
+    : {};
   const compare = isPlain(raw.compare) ? raw.compare : {};
 
   // The catalog a download embeds (see `Build.catalog`). Coerced like the rest of the build so
@@ -402,11 +408,6 @@ export function normalize(
       ...base.context.forte,
       ...(isPlain(context.forte) ? context.forte : {}),
     },
-    // Global inputs nest under `globals` and are written in place by the migrations, so the
-    // branch is copied whole rather than shared with the input.
-    ...(isPlain(context.globals)
-      ? { globals: structuredClone(context.globals) }
-      : {}),
   };
   applyScenarioFlags(normalizedContext, scenario.flags);
   // A scaler parameter is validated rather than passed through like class/role: it multiplies
@@ -416,17 +417,6 @@ export function normalize(
   // engine reports without clamping.
   for (const slot of NW_SLOTS.slots) {
     if (slot.type !== "build_parameter" || !slot.scaler) continue;
-    // The spread above shares every nested object with the raw input, and `duplicate` hands
-    // a live build in, so a dotted path is copied node by node before the write: it must not
-    // land in an object the input still owns, the same isolation `toggles`/`forte` get. A
-    // non-object node is left for `setPath` to rebuild.
-    let node: Record<string, unknown> = normalizedContext;
-    for (const key of slot.path.split(".").slice(0, -1)) {
-      const next = node[key];
-      if (!isPlain(next)) break;
-      node[key] = { ...next };
-      node = node[key] as Record<string, unknown>;
-    }
     const value = Number(getPath(context, slot.path));
     setPath(
       normalizedContext,
@@ -473,9 +463,11 @@ export function normalize(
   };
 }
 
+/** A copy of `build` under a new id. `build` may be a live store object: it is unwrapped
+ *  here, as `normalize` takes plain data and `structuredClone` rejects a reactive proxy. */
 export function duplicate(build: Build, name?: string): Build {
   return {
-    ...normalize(build),
+    ...normalize(toRaw(build)),
     id: newId(),
     name: name ?? `${build.name} copy`,
   };
