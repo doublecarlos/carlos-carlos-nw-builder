@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// The point_assignment case of BuildSlot.vue's row content: the stepper row, each item's own
-// typed values under its stepper, and this type's diff notes. Row chrome (label, cursor anchor,
+// The point_assignment case of BuildSlot.vue's row content: the stepper row, its typed values
+// one per line below it, and this type's diff notes. Row chrome (label, cursor anchor,
 // hover/diff highlighting, the errors list) stays in BuildSlot.vue since it's identical across
 // every slot type.
 import { computed, useTemplateRef } from "vue";
@@ -8,10 +8,8 @@ import PointAssignmentInput from "./PointAssignmentInput.vue";
 import BuildInputControl from "./BuildInputControl.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import * as buildEditor from "../../stores/buildEditor";
-import {
-  useSlotInputs,
-  type BuildInput,
-} from "../../composables/useSlotInputs";
+import { db } from "../../stores/resolved";
+import { useSlotInputs } from "../../composables/useSlotInputs";
 import { assignmentAddress, inputKey } from "../../lib/build-inputs";
 import type { Build, PointAssignmentSlot } from "../../types";
 import type { InputDiff } from "../../composables/useCompareDiff";
@@ -46,20 +44,19 @@ const inputs = useSlotInputs(
   () => (props.inputDiffs ?? []).map((diff) => diff.address),
 );
 
-/** The repetition counts are the steppers themselves. Values tied to one item render under
- *  its stepper, anything else below the row. */
-const byItem = computed(() => {
-  const map = new Map<string, BuildInput[]>();
-  for (const input of inputs.value) {
-    const itemId = input.anchor.itemId;
-    if (input.kind === "repetition" || !itemId) continue;
-    map.set(itemId, [...(map.get(itemId) ?? []), input]);
-  }
-  return map;
+/** The repetition counts are the steppers themselves. Every other value is listed below the
+ *  row in stepper order, so the steppers keep one line and each value gets a whole line for
+ *  its label. Values tied to no item come last. */
+const listed = computed(() => {
+  const order = new Map(
+    db.value.forSlot(props.slotDef.id).map((item, index) => [item.id, index]),
+  );
+  const rank = (itemId?: string) =>
+    (itemId === undefined ? undefined : order.get(itemId)) ?? order.size;
+  return inputs.value
+    .filter((input) => input.kind !== "repetition")
+    .sort((a, b) => rank(a.anchor.itemId) - rank(b.anchor.itemId));
 });
-const unanchored = computed(() =>
-  inputs.value.filter((input) => !input.anchor.itemId),
-);
 
 function setCount(itemId: string, count: number) {
   buildEditor.setInput(assignmentAddress(props.slotDef.id, itemId), count);
@@ -77,28 +74,16 @@ function setCount(itemId: string, count: number) {
       @change="setCount"
       @item-enter="(event, itemId) => emit('itemEnter', event, itemId)"
       @item-leave="emit('itemLeave')"
-    >
-      <template #item="{ item }">
-        <div
-          v-if="byItem.get(item.id)?.length"
-          class="flex flex-wrap items-center justify-center gap-2"
-        >
-          <BuildInputControl
-            v-for="input in byItem.get(item.id)"
-            :key="inputKey(input.address)"
-            :input="input"
-          />
-        </div>
-      </template>
-    </PointAssignmentInput>
+    />
   </div>
 
   <div
-    v-if="unanchored.length"
+    v-if="listed.length"
     class="mt-1 flex flex-col gap-1.5 col-span-full"
+    data-testid="assignment-inputs"
   >
     <BuildInputControl
-      v-for="input in unanchored"
+      v-for="input in listed"
       :key="inputKey(input.address)"
       :input="input"
     />

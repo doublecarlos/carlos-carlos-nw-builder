@@ -5,7 +5,14 @@ import { describe, expect, it } from "vitest";
 import * as db from "../../src/data/db";
 import { emptyOverlay } from "../../src/data/catalog";
 import { globalInputDef } from "../../src/engine/global-inputs";
-import { makeGlobalOverlay, shadowedEntries } from "../../src/lib/make-global";
+import {
+  defaultGlobalId,
+  globalIdError,
+  makeGlobalOverlay,
+  shadowedEntries,
+  takenGlobalIds,
+  type TakenGlobalIds,
+} from "../../src/lib/make-global";
 import { GLOBAL_INPUTS_SECTION } from "../../src/lib/slot-draft";
 import type {
   Bonus,
@@ -63,20 +70,28 @@ function catalogWith(sections: SlotSection[]) {
 
 const options: SlotSection = { id: "options", label: "Options", slotIds: [] };
 const request = {
+  id: "globals.recentHits",
   name: "hits",
   def: hitsDef,
   readers: [defining("a"), defining("b")],
 };
+
+const NONE_TAKEN: TakenGlobalIds = { ids: [], paths: [] };
 
 describe("makeGlobalOverlay", () => {
   it("defines the global input as the input was, and every reader keeps the name", () => {
     const { overlay, slot } = makeGlobalOverlay(
       emptyOverlay(),
       catalogWith([options]),
-      [],
+      NONE_TAKEN,
       request,
     );
-    expect(slot).toMatchObject({ globalInput: true, section: "globals" });
+    expect(slot).toMatchObject({
+      id: request.id,
+      path: request.id,
+      globalInput: true,
+      section: "globals",
+    });
     expect(globalInputDef(slot)).toEqual(hitsDef);
     expect(overlay.slots[slot.id]).toEqual(slot);
     for (const id of ["a", "b"])
@@ -85,25 +100,22 @@ describe("makeGlobalOverlay", () => {
       });
   });
 
-  // The id doubles as the path, so it must not land on a value another slot owns.
-  it("keeps the id clear of taken ids and parameter paths", () => {
-    const { slot } = makeGlobalOverlay(
-      emptyOverlay(),
-      catalogWith([options]),
-      ["globals.recent-hits-2"],
-      request,
-    );
-    expect(slot.path).toBe(slot.id);
-    expect(["globals.recent-hits", "globals.recent-hits-2"]).not.toContain(
-      slot.id,
-    );
+  // The dialog checks the id first, so a taken one reaching here is a bug, not a rename.
+  it("refuses an id that is not free instead of renaming it", () => {
+    const catalog = catalogWith([options]);
+    expect(() =>
+      makeGlobalOverlay(emptyOverlay(), catalog, takenGlobalIds(catalog, []), {
+        ...request,
+        id: "globals.recent-hits",
+      }),
+    ).toThrow();
   });
 
   it("adds the Global inputs section only when the catalog has none", () => {
     const missing = makeGlobalOverlay(
       emptyOverlay(),
       catalogWith([options]),
-      [],
+      NONE_TAKEN,
       request,
     );
     expect(missing.overlay.sections[GLOBAL_INPUTS_SECTION.id]).toEqual(
@@ -112,10 +124,68 @@ describe("makeGlobalOverlay", () => {
     const present = makeGlobalOverlay(
       emptyOverlay(),
       catalogWith([options, { ...GLOBAL_INPUTS_SECTION, label: "Mine" }]),
-      [],
+      NONE_TAKEN,
       request,
     );
     expect(present.overlay.sections).toEqual({});
+  });
+});
+
+// The id doubles as the path, and paths nest in the build's context, so a new global input
+// must not land on, above or below a value another slot owns.
+describe("global input ids", () => {
+  const taken: TakenGlobalIds = {
+    ids: ["options.hits", "globals.recent-hits-2"],
+    paths: ["globals.recent-hits", "globals.location.enclave"],
+  };
+
+  it("offers globals.<label> first, numbered past taken ids and paths", () => {
+    expect(defaultGlobalId("hits", hitsDef, NONE_TAKEN)).toBe(
+      "globals.recent-hits",
+    );
+    expect(defaultGlobalId("hits", hitsDef, taken)).toBe(
+      "globals.recent-hits-3",
+    );
+    expect(globalIdError(defaultGlobalId("hits", hitsDef, taken), taken)).toBe(
+      null,
+    );
+  });
+
+  // No number frees an id below a taken path, so the default stops instead of searching.
+  it("offers the stem when a taken path sits above every candidate", () => {
+    const above = { ids: [], paths: ["globals"] };
+    const id = defaultGlobalId("hits", hitsDef, above);
+    expect(id).toBe("globals.recent-hits");
+    expect(globalIdError(id, above)).not.toBe(null);
+  });
+
+  it("accepts an id under the naming convention", () => {
+    expect(globalIdError("globals.enemyTier.boss", taken)).toBe(null);
+    expect(globalIdError("globals.location.sword-coast", taken)).toBe(null);
+  });
+
+  it("rejects a taken id or path", () => {
+    expect(globalIdError("options.hits", taken)).not.toBe(null);
+    expect(globalIdError("globals.recent-hits-2", taken)).not.toBe(null);
+    expect(globalIdError("globals.recent-hits", taken)).not.toBe(null);
+  });
+
+  it("rejects an id above or below a taken path", () => {
+    expect(globalIdError("globals.location", taken)).not.toBe(null);
+    expect(globalIdError("globals.recent-hits.max", taken)).not.toBe(null);
+  });
+
+  // Outside `globals.` an id could land on a path the engine reads directly.
+  it("rejects an empty id, one outside globals. and a malformed one", () => {
+    for (const id of [
+      "",
+      "globals",
+      "health",
+      "globals.",
+      "globals..a",
+      "globals.a b",
+    ])
+      expect(globalIdError(id, NONE_TAKEN)).not.toBe(null);
   });
 });
 

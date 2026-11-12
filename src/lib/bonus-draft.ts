@@ -20,6 +20,7 @@
 // imply the whole bonus stacks), so they're edited once by the caller (BonusForm.vue/
 // bonus-groups.js), not per row here.
 
+import type { TakenGlobalIds } from "./make-global";
 import {
   whenIsRepresentable,
   whenToRows,
@@ -605,10 +606,12 @@ export const inputOptions = (
 
 /** Where "Make global" writes a converted bonus: the edited layer, which already holds the
  *  bonuses in `inLayer` and gets a copy of any other. A bonus in `shadowedBy` is overridden
- *  by a higher enabled layer, named there, so converting it here would change nothing. */
+ *  by a higher enabled layer, named there, so converting it here would change nothing. The
+ *  new global input's id stays clear of `taken`. */
 export interface MakeGlobalScope {
   inLayer: ReadonlySet<string>;
   shadowedBy: ReadonlyMap<string, string>;
+  taken: TakenGlobalIds;
 }
 
 /** Whether bonus `bonusId` can offer "Make global" in `scope`: not while a higher layer

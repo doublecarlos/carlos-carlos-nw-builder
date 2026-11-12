@@ -36,9 +36,11 @@ const model = defineModel<string>({ default: "" });
 defineOptions({ inheritAttrs: false });
 
 const attrs = useAttrs();
-const { id: controlId, describedBy } = useFormFieldControl(
-  () => attrs.id as string | undefined,
-);
+const {
+  id: controlId,
+  describedBy,
+  invalid,
+} = useFormFieldControl(() => attrs.id as string | undefined);
 
 const wrapper = useTemplateRef<HTMLElement>("wrapper");
 const control = useTemplateRef<HTMLTextAreaElement>("control");
@@ -78,13 +80,14 @@ async function onPaste(event: ClipboardEvent) {
       :id="controlId"
       ref="control"
       :aria-describedby="describedBy"
+      :aria-invalid="invalid || undefined"
       :value="model"
       :rows="rows"
       :placeholder="placeholder"
       :class="
         type === 'input'
-          ? 'rounded-md border border-line bg-surface py-0.5 pl-1.5 pr-7 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
-          : 'w-full resize-y rounded-md border border-line bg-surface p-2 pr-7 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
+          ? 'rounded-md border border-line aria-[invalid=true]:border-danger bg-surface py-0.5 pl-1.5 pr-7 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
+          : 'w-full resize-y rounded-md border border-line aria-[invalid=true]:border-danger bg-surface p-2 pr-7 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
       "
       @input="onInput"
       @paste="onPaste"

@@ -40,7 +40,7 @@ ordinary one.
 | FoldChevron                               | A fold's open/closed chevron, turning down when expanded                                                                                                       |
 | FormulaInput                              | A one-line expression field marking each problem's range under it; `#leading` adornment                                                                        |
 | FormBar                                   | Sticky action bar at the top of an editing form                                                                                                                |
-| FormField                                 | Label-above-control stack; `<label for>` names the first ui control, `hint` describes it                                                                       |
+| FormField                                 | Label-above-control stack; `<label for>` names the first ui control, `error` and `hint` describe it, `error` marks it invalid                                  |
 | FormGrid                                  | A wrapping row of FormFields at their own widths, one full-width field per line when narrow                                                                    |
 | FormSection                               | Section heading inside an editing form                                                                                                                         |
 | FormSectionDescription                    | Section description inside an editing form                                                                                                                     |
@@ -95,8 +95,10 @@ Wide, the form primitives keep the desktop layout their callers size: a field's 
 - SegmentedControl wraps with plain CSS: a segment never wraps its label, and each wrapped
   line's segments grow to fill it, so the control stays a rectangle.
 - FormField provides the label association (`src/composables/useFormField.ts`). A new text
-  control in this directory calls `useFormFieldControl` for its input id and its
-  `aria-describedby` (the field's `hint`); a control that a `<label for>` cannot name reads
+  control in this directory calls `useFormFieldControl` for its input id, its
+  `aria-describedby` (the field's `error`, then its `hint`) and its `aria-invalid`
+  (`invalid`), and draws its danger border from `aria-invalid` with
+  `aria-[invalid=true]:border-danger`. A control that a `<label for>` cannot name reads
   `useFormFieldLabelId` for `aria-labelledby` instead.
 
 Outside this directory, lint rejects `flex-wrap` on an element holding form controls: such a

@@ -87,6 +87,7 @@ import { editorDb } from "../lib/editor-db";
 import type { MakeGlobalScope } from "../lib/bonus-draft";
 import {
   makeGlobalOverlay,
+  takenGlobalIds,
   shadowedEntries,
   type MakeGlobalRequest,
 } from "../lib/make-global";
@@ -1216,10 +1217,12 @@ const onUpdateBonusTop = ({
 }) => updateEntry("bonuses", id, bonus, label);
 
 /** Where "Make global" writes, for the bonus form to say which bonuses it would copy in and
- *  which a higher layer overrides. */
+ *  which a higher layer overrides, and every slot id and parameter path the new global
+ *  input's id must stay clear of. */
 const makeGlobalScope = computed<MakeGlobalScope>(() => ({
   inLayer: new Set(Object.keys(overlay.value.bonuses)),
   shadowedBy: shadowedEntries(layers.layers.value, props.layer.id, "bonuses"),
+  taken: takenGlobalIds(db.value, allocatableIds.value.slots),
 }));
 
 /** "Make global" from the bonus form, as one undo step. */
@@ -1227,7 +1230,7 @@ function onMakeGlobal(request: MakeGlobalRequest) {
   const { overlay: next } = makeGlobalOverlay(
     overlay.value,
     db.value,
-    allocatableIds.value.slots,
+    makeGlobalScope.value.taken,
     request,
   );
   commit(null, `Make input "${request.name}" global`, next);

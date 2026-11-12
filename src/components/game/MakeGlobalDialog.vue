@@ -6,33 +6,52 @@
 //
 // A converted bonus defined outside this layer is copied into it. One a higher enabled layer
 // overrides is shown but cannot be ticked, as the copy here would have no effect.
-import { ref } from "vue";
+//
+// The new global input's id starts as the default and can be edited, so an author can place
+// it under the naming convention. A typed id that is taken is reported, never renamed.
+import { computed, ref } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import BaseModal from "../ui/BaseModal.vue";
+import FormField from "../ui/FormField.vue";
 import type { MakeGlobalCandidate } from "../../lib/bonus-draft";
+import {
+  defaultGlobalId,
+  globalIdError,
+  type TakenGlobalIds,
+} from "../../lib/make-global";
+import type { InputDef } from "../../types";
 
 const props = defineProps<{
   /** The input's id. */
   name: string;
+  /** The input's definition, whose label names the default id. */
+  def: InputDef;
   /** Bonuses offered for converting along, unticked to start with. */
   others: MakeGlobalCandidate[];
+  /** The ids and paths the new global input's id must stay clear of. */
+  taken: TakenGlobalIds;
 }>();
 
 const emit = defineEmits<{
-  confirm: [otherIds: string[]];
+  confirm: [id: string, otherIds: string[]];
   close: [];
 }>();
 
 const ticked = ref<string[]>([]);
+const id = ref(defaultGlobalId(props.name, props.def, props.taken));
+const idError = computed(() => globalIdError(id.value.trim(), props.taken));
 
 function submit() {
+  if (idError.value !== null) return;
   // In offer order, whatever order they were ticked in.
   emit(
     "confirm",
+    id.value.trim(),
     props.others
       .map((other) => other.bonus.id)
-      .filter((id) => ticked.value.includes(id)),
+      .filter((otherId) => ticked.value.includes(otherId)),
   );
   emit("close");
 }
@@ -52,6 +71,13 @@ function submit() {
         this layer. Builds keep the value they hold. A bonus from another layer
         or the shipped catalog is copied into this layer to convert it.
       </p>
+      <FormField label="Global input id" :error="idError" class="mb-3">
+        <BaseInput
+          v-model="id"
+          class="w-full font-mono"
+          data-testid="make-global-id"
+        />
+      </FormField>
       <template v-if="others.length">
         <p class="mb-1">Other bonuses with an input “{{ name }}” to convert:</p>
         <div
@@ -94,6 +120,7 @@ function submit() {
       <BaseButton
         variant="primary"
         data-testid="make-global-submit"
+        :disabled="idError !== null"
         @click="submit"
         >Make global</BaseButton
       >

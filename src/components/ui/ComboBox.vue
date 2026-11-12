@@ -130,7 +130,11 @@ const props = withDefaults(
   },
 );
 
-const { id: controlId, describedBy } = useFormFieldControl(() => props.inputId);
+const {
+  id: controlId,
+  describedBy,
+  invalid: fieldInvalid,
+} = useFormFieldControl(() => props.inputId);
 
 defineSlots<{
   /** `depth` is how many headings the option sits under. */
@@ -560,13 +564,11 @@ for (const target of keyTargets) {
       ref="input"
       :aria-describedby="describedBy"
       data-testid="picker-input"
-      class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      class="w-full rounded-md border aria-[invalid=true]:border-danger bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       :class="[
-        invalid
-          ? 'border-danger'
-          : tone
-            ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
-            : 'border-line',
+        tone
+          ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
+          : 'border-line',
         tone && 'text-(--tone)',
         placeholderClass,
         inputClass,
@@ -582,7 +584,7 @@ for (const target of keyTargets) {
       :aria-expanded="readonly ? undefined : open ? 'true' : 'false'"
       :aria-controls="open && !screen ? listboxId : undefined"
       :aria-activedescendant="screen ? undefined : activeDescendant"
-      :aria-invalid="invalid ? 'true' : undefined"
+      :aria-invalid="invalid || fieldInvalid ? 'true' : undefined"
       autocomplete="off"
       spellcheck="false"
       :value="

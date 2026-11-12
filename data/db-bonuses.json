@@ -440,7 +440,7 @@
     "inputs": {
       "active": {
         "type": "boolean",
-        "label": "Proc",
+        "label": "Blessed Advantage's Proc",
         "default": false
       }
     },
@@ -480,7 +480,7 @@
     "inputs": {
       "active": {
         "type": "boolean",
-        "label": "Proc",
+        "label": "Blessed Resilience's Proc",
         "default": false
       }
     },
@@ -941,7 +941,7 @@
     "inputs": {
       "active": {
         "type": "boolean",
-        "label": "Proc",
+        "label": "Death's Bulwark's Proc",
         "default": false
       }
     },
@@ -984,7 +984,7 @@
     "inputs": {
       "active": {
         "type": "boolean",
-        "label": "Proc",
+        "label": "Deathly Rage's Proc",
         "default": false
       }
     },

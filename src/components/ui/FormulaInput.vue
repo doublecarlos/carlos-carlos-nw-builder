@@ -38,7 +38,11 @@ const indent = computed(() =>
 );
 const field = useTemplateRef<HTMLInputElement>("field");
 const messagesId = useId();
-const { id: controlId, describedBy } = useFormFieldControl();
+const {
+  id: controlId,
+  describedBy,
+  invalid: fieldInvalid,
+} = useFormFieldControl();
 
 const hasError = computed(() =>
   props.issues.some((issue) => (issue.level ?? "error") === "error"),
@@ -112,10 +116,10 @@ defineExpose({ insert });
         type="text"
         spellcheck="false"
         autocomplete="off"
-        class="w-full rounded-md border bg-surface py-0.5 font-mono focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        :class="[hasError ? 'border-danger' : 'border-line', indent]"
+        class="w-full rounded-md border border-line aria-[invalid=true]:border-danger bg-surface py-0.5 font-mono focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        :class="indent"
         :placeholder="placeholder"
-        :aria-invalid="hasError || undefined"
+        :aria-invalid="hasError || fieldInvalid || undefined"
         :aria-describedby="describedByIds"
         :data-testid="testid"
       />

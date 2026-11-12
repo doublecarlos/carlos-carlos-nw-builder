@@ -52,7 +52,7 @@ defineSlots<{
 }>();
 
 const model = defineModel<string[]>({ default: () => [] });
-const { id: controlId, describedBy } = useFormFieldControl();
+const { id: controlId, describedBy, invalid } = useFormFieldControl();
 
 const optionByValue = computed(
   () => new Map(props.options.map((option) => [option.value, option])),
@@ -182,7 +182,7 @@ async function onPaste(event: ClipboardEvent) {
 <template>
   <div
     ref="root"
-    class="relative flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-line bg-surface px-1.5 py-1 cursor-text focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+    class="relative flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-line has-[[aria-invalid=true]]:border-danger bg-surface px-1.5 py-1 cursor-text focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
     @mousedown.self="input?.focus()"
   >
     <span
@@ -208,6 +208,7 @@ async function onPaste(event: ClipboardEvent) {
       ref="input"
       v-model="query"
       :aria-describedby="describedBy"
+      :aria-invalid="invalid || undefined"
       data-testid="token-query"
       class="min-w-20 flex-1 border-0 bg-transparent px-0.5 py-0.5 outline-none"
       type="text"

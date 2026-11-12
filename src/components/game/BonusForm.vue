@@ -105,8 +105,8 @@ const emit = defineEmits<{
   toggle: [];
   /** A "Granted by" member link was clicked: open that item in the editor. */
   "open-item": [itemId: string];
-  /** "Make global" was confirmed on input `name`: a new global input defined as `def`, read
-   *  by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
+  /** "Make global" was confirmed on input `name`: a new global input `id` defined as `def`,
+   *  read by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
   "make-global": [payload: MakeGlobalRequest];
 }>();
 
@@ -218,7 +218,7 @@ function offerMakeGlobal(index: number) {
   );
 }
 
-function confirmMakeGlobal(otherIds: string[]) {
+function confirmMakeGlobal(id: string, otherIds: string[]) {
   const offer = makeGlobal.value;
   // Written as drafted, so it passes the same checks as a save.
   const bonus = offer && checkedBonus();
@@ -227,6 +227,7 @@ function confirmMakeGlobal(otherIds: string[]) {
     .filter((other) => otherIds.includes(other.bonus.id))
     .map((other) => other.bonus);
   emit("make-global", {
+    id,
     name: offer.name,
     def: offer.def,
     readers: [bonus, ...others],
@@ -369,9 +370,11 @@ if (bonusDraftRegistry && props.registryId) {
         @make-global="offerMakeGlobal"
       />
       <MakeGlobalDialog
-        v-if="makeGlobal"
+        v-if="makeGlobal && makeGlobalScope"
         :name="makeGlobal.name"
+        :def="makeGlobal.def"
         :others="makeGlobal.others"
+        :taken="makeGlobalScope.taken"
         @confirm="confirmMakeGlobal"
         @close="makeGlobal = null"
       />
