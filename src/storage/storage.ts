@@ -160,8 +160,9 @@ export const newId = (prefix = "b") =>
  * The stored values a fresh build starts with, read off `slots`' declared defaults: a
  * `build_parameter`'s written to its path unless it is a global input, an `item_picker`'s as
  * an ordinary choice, and every `point_assignment` row from its item's own
- * `inlineRepetition.default` (`db` resolves those item lists). Seeded values are ordinary stored ones, so nothing downstream needs an
- * `?? slot.default` fallback for a build the app itself produced.
+ * `inlineRepetition.default` (`db` resolves those item lists). Seeded values are ordinary
+ * stored ones, so nothing downstream needs an `?? slot.default` fallback for a build the app
+ * itself produced.
  */
 export function seededDefaults(
   slots: Slot[],

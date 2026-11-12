@@ -367,6 +367,8 @@ describe("range errors of a global input", () => {
   // The global input has no row, so its error belongs on the rows that show its control.
   it("reports on each reader's row, once per row", () => {
     expect(rangeSlots({ a: "drum", b: "horn" })).toEqual(["a", "b"]);
+    // Horn carries two readers anchored on its row, which still gives one error.
+    expect(rangeSlots({ b: "horn" })).toEqual(["b"]);
   });
 
   // With no reader equipped there is no control to fix the value with.
