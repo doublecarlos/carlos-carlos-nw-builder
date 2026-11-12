@@ -2,7 +2,6 @@
 // reads this table, so a new kind of value gets its errors by adding an entry.
 import {
   assignmentAddress,
-  bonusInputAddress,
   bonusStatAddress,
   itemStatAddress,
   readInput,
@@ -16,6 +15,7 @@ import {
   statInput,
 } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
+import { declaredInputs } from "./global-inputs";
 import type {
   Bonus,
   BoundedValueConfig,
@@ -55,6 +55,9 @@ export interface InputEntry {
   source: string;
   /** The item carrying the value on its slot, where a slot holds several. */
   itemId?: string;
+  /** A bonus input's bonus and the name it declares the input by, plus the global input's
+   *  slot id when the input references one. */
+  bonusInput?: { bonusId: string; name: string; global?: string };
 }
 
 export interface InputKind {
@@ -207,24 +210,31 @@ const bonusDynamic: InputKind = {
     ),
 };
 
-/** One entry per input of every bonus on the build, attributed to the bonus's anchor. */
+/** One entry per input of every bonus on the build, attributed to the bonus's anchor. A
+ *  global input has one entry per reader, all at the slot's address. */
 const bonusInput: InputKind = {
   id: "bonusInput",
-  entries: (_db, build, resolved) =>
+  entries: (db, build, resolved) =>
     resolved.bonuses.flatMap((entry) =>
-      Object.entries(entry.bonus.inputs ?? {}).map(([name, def]) => {
-        const address = bonusInputAddress(entry.bonusId, name);
-        const spec = bonusInputSpec(def, name);
-        return {
-          kind: "bonusInput" as const,
-          address,
-          spec,
-          value: readInput(build, address, spec.default),
-          slotId: entry.slotId,
-          source: entry.bonus.name ?? entry.bonusId,
-          itemId: entry.sources[0]?.itemId,
-        };
-      }),
+      declaredInputs(entry.bonus, db.globalInputs).map(
+        ({ name, def, address, global }) => {
+          const spec = bonusInputSpec(def, name);
+          return {
+            kind: "bonusInput" as const,
+            address,
+            spec,
+            value: readInput(build, address, spec.default),
+            slotId: entry.slotId,
+            source: entry.bonus.name ?? entry.bonusId,
+            itemId: entry.sources[0]?.itemId,
+            bonusInput: {
+              bonusId: entry.bonusId,
+              name,
+              ...(global !== undefined && { global }),
+            },
+          };
+        },
+      ),
     ),
 };
 

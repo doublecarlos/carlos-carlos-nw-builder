@@ -35,6 +35,12 @@ import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { INSIGNIA_SHAPES } from "../types";
 import { bonusStatConfigs, canStep } from "../engine/inputs";
 import {
+  globalInputsOf,
+  isGlobalRef,
+  withInputDefs,
+  type WithInputDefs,
+} from "../engine/global-inputs";
+import {
   formulaSites,
   inputFormulaClashes,
   isFormulaName,
@@ -62,7 +68,9 @@ import type {
   ConditionWhen,
   FormulaCondition,
   Grant,
+  GlobalInputRef,
   InputCondition,
+  InputDecl,
   InputDef,
   ParamCondition,
   LintFinding,
@@ -848,6 +856,14 @@ function checkParamCondition(
     return;
   }
 
+  if (slot.globalInput) {
+    report(
+      "error",
+      `${path}: param "${spec.key}" is a global input; declare it in the bonus's inputs and read it with an "input" condition`,
+    );
+    return;
+  }
+
   const numeric = slot.paramType === "number" || slot.paramType === "percent";
   if (
     numeric &&
@@ -1046,9 +1062,10 @@ function controlProblem(
 const INPUT_NAME = /^[a-zA-Z_]\w*$/;
 
 /** A bonus's input declarations: a valid name and type, a boolean default on a boolean, and
- *  bounds on a number or percent. */
+ *  bounds on a number or percent. A reference names a global input and nothing else. */
 function checkInputDefs(
-  inputs: Record<string, InputDef>,
+  inputs: Record<string, InputDecl>,
+  paramSlotsById: ReadonlyMap<string, BuildParameterSlot>,
   report: (level: "error" | "warn", message: string) => void,
 ) {
   for (const [name, def] of Object.entries(inputs)) {
@@ -1058,6 +1075,11 @@ function checkInputDefs(
         "error",
         `${label}: a name is a letter or _ then letters, digits or _`,
       );
+    if (isGlobalRef(def)) {
+      const problem = globalRefProblem(def, paramSlotsById);
+      if (problem) report("error", `${label}: ${problem}`);
+      continue;
+    }
     if (!def || typeof def !== "object" || !INPUT_TYPES.has(def.type)) {
       report("error", `${label}: type must be boolean, number or percent`);
       continue;
@@ -1077,11 +1099,28 @@ function checkInputDefs(
   }
 }
 
+/** What is wrong with a reference to a global input, or null. */
+function globalRefProblem(
+  ref: GlobalInputRef,
+  paramSlotsById: ReadonlyMap<string, BuildParameterSlot>,
+): string | null {
+  const extra = Object.keys(ref).filter((key) => key !== "global");
+  if (extra.length)
+    return `a reference to a global input takes no other field (${extra.join(", ")})`;
+  if (typeof ref.global !== "string" || !ref.global)
+    return `"global" names a global input's slot id`;
+  const slot = paramSlotsById.get(ref.global);
+  if (!slot) return `"${ref.global}" is not a build_parameter slot`;
+  if (!slot.globalInput)
+    return `"${ref.global}" is not a global input; flag the slot with globalInput`;
+  return null;
+}
+
 /** One formula site: its shape, its text, and every id, path and input it reads. Input names
  *  it reads (`$name` in `scope`) are added to `readInputs`. */
 function checkFormulaSite(
   site: FormulaSite,
-  bonus: Bonus,
+  bonus: WithInputDefs<Bonus>,
   scope: NamedScope,
   vocabulary: FormulaVocabulary,
   report: (level: "error" | "warn", message: string) => void,
@@ -1112,7 +1151,7 @@ function checkFormulaSite(
 /** Every formula `bonus` declares or uses, plus reference cycles among its named formulas and
  *  names it declares both as a formula and as an input. */
 function checkBonusFormulas(
-  bonus: Bonus,
+  bonus: WithInputDefs<Bonus>,
   vocabulary: FormulaVocabulary,
   report: (level: "error" | "warn", message: string) => void,
   readInputs: Set<string>,
@@ -1144,7 +1183,7 @@ function checkBonusFormulas(
 function checkGrantShape(
   grant: Grant,
   label: string,
-  bonus: Bonus,
+  bonus: WithInputDefs<Bonus>,
   report: (level: "error" | "warn", message: string) => void,
 ) {
   const legacy = (grant as { scaledBy?: unknown }).scaledBy;
@@ -1391,8 +1430,37 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         });
       }
     }
+    if (slot.globalInput)
+      for (const problem of globalInputSlotProblems(slot))
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: ${problem}`,
+        });
   }
   return findings;
+}
+
+/** What a `globalInput` slot cannot carry. Its value is read only through the bonus inputs
+ *  referencing it, so it has no row, no scaler and no reader of its own. */
+function globalInputSlotProblems(slot: BuildParameterSlot): string[] {
+  const out: string[] = [];
+  if (slot.quick)
+    out.push("a global input has no row of its own, so it cannot be quick");
+  if (slot.scaler)
+    out.push("a global input is read through bonus inputs, not as a scaler");
+  if (slot.paramType === "list" || slot.optionsFrom)
+    out.push("a global input is a boolean, number or percent");
+  const engineRead =
+    Object.hasOwn(ENGINE_PARAM_PATHS, slot.path) ||
+    Object.hasOwn(DEDICATED_LEAF_FOR_PATH, slot.path) ||
+    slot.path.startsWith("toggles.");
+  if (engineRead)
+    out.push(
+      `path "${slot.path}" is read directly by the engine or a condition, not through bonus inputs`,
+    );
+  return out;
 }
 
 // The slot types a preset field may reference -- `validatePresets`' own check that e.g.
@@ -1544,9 +1612,11 @@ export function bonusValuesProblems(
         );
     for (const [name, value] of Object.entries(values.input ?? {})) {
       const def = bonus.inputs?.[name];
-      const problem = def
-        ? inputValueProblem(def, value)
-        : "is not an input of it";
+      const problem = !def
+        ? "is not an input of it"
+        : isGlobalRef(def)
+          ? "is a global input, stored on the build rather than the bonus"
+          : inputValueProblem(def, value);
       if (problem)
         out.push(`bonusValues "${bonusId}": input "${name}" ${problem}`);
     }
@@ -2655,6 +2725,7 @@ export function validate(
       paramSlotsById.set(slot.id, slot);
     }
   }
+  const globalInputs = globalInputsOf(allSlots);
   const checkStats = (
     stats: Record<string, unknown> | undefined,
     label: string,
@@ -2984,16 +3055,17 @@ export function validate(
     }
     const bonusReport = (level: "error" | "warn", message: string) =>
       report(level, message, bonus.id, "bonus");
-    const inputs = bonus.inputs ?? {};
-    checkInputDefs(inputs, bonusReport);
+    checkInputDefs(bonus.inputs ?? {}, paramSlotsById, bonusReport);
+    const owner = withInputDefs(bonus, globalInputs);
+    const inputs = owner.inputs;
     const readInputs = new Set<string>();
     if (bonus.formulas || formulaSites(bonus).length) {
       vocabulary ??= formulaVocabulary();
-      checkBonusFormulas(bonus, vocabulary, bonusReport, readInputs);
+      checkBonusFormulas(owner, vocabulary, bonusReport, readInputs);
     }
     bonus.grants?.forEach((grant, index) => {
       const label = `grant ${index + 1}`;
-      checkGrantShape(grant, label, bonus, bonusReport);
+      checkGrantShape(grant, label, owner, bonusReport);
       checkConditions(grant.when, label, bonusReport, paramSlots, inputs);
       inputNames(grant.when, readInputs);
       for (const variant of grant.variants ?? []) {

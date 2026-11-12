@@ -18,6 +18,7 @@ import * as engine from "../stores/resolved";
 import * as builds from "../stores/builds";
 import { bonusContext, resolveInputValues } from "../engine/bonus";
 import { bonusInputSpec } from "../engine/inputs";
+import { withInputDefs, type WithInputDefs } from "../engine/global-inputs";
 import type { FormulaVocabulary, LabelContext } from "../engine/formula";
 import type {
   Bonus,
@@ -26,11 +27,15 @@ import type {
   EvalContext,
 } from "../types";
 
-/** The bonus whose formulas are edited, as the formula checks read it. */
-export type FormulaOwner = Pick<
+/** The bonus whose formulas are edited, as saved. */
+export type AuthoredOwner = Pick<
   Bonus,
   "id" | "inputs" | "formulas" | "stacking"
 >;
+
+/** The bonus whose formulas are edited, as the formula checks read it: references to global
+ *  inputs resolved. */
+export type FormulaOwner = WithInputDefs<AuthoredOwner>;
 
 export interface FormulaContext {
   owner: ComputedRef<FormulaOwner>;
@@ -50,10 +55,13 @@ const FORMULA_CONTEXT: InjectionKey<FormulaContext> = Symbol("formulaContext");
 
 /** Offers the formula context of `owner` to every formula field below. */
 export function provideFormulaContext(
-  owner: () => FormulaOwner,
+  owner: () => AuthoredOwner,
 ): FormulaContext {
   const db = useEditorDb();
-  const ownerRef = computed(owner);
+  const authored = computed(owner);
+  const ownerRef = computed(() =>
+    withInputDefs(authored.value, db.value.globalInputs),
+  );
   const params = computed(
     () =>
       new Map(
@@ -98,11 +106,11 @@ export function provideFormulaContext(
       const resolved = engine.resolved.value;
       const build = builds.build.value;
       if (!resolved.ok || !build) return null;
-      const bonus = ownerRef.value;
+      const bonus = authored.value;
       return bonusContext(
         bonus,
         resolved.result.context,
-        resolveInputValues(bonus, build),
+        resolveInputValues(bonus, build, resolved.result.context.globalInputs),
       );
     },
   };

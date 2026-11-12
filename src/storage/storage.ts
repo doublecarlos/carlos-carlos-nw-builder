@@ -158,7 +158,7 @@ export const newId = (prefix = "b") =>
  */
 /**
  * The stored values a fresh build starts with, read off `slots`' declared defaults: a
- * `build_parameter`'s written to its path, an `item_picker`'s as an ordinary choice, and every
+ * `build_parameter`'s written to its path unless it is a global input, an `item_picker`'s as an ordinary choice, and every
  * `point_assignment` row from its item's own `inlineRepetition.default` (`db` resolves those
  * item lists). Seeded values are ordinary stored ones, so nothing downstream needs an
  * `?? slot.default` fallback for a build the app itself produced.
@@ -173,7 +173,9 @@ export function seededDefaults(
   const listRows: Build["listRows"] = {};
   for (const slot of slots) {
     if (slot.type === "build_parameter" && slot.default !== undefined) {
-      setPath(root.context, slot.path, slot.default);
+      // A global input reads its default while unset, so a stored value is always the
+      // player's own.
+      if (!slot.globalInput) setPath(root.context, slot.path, slot.default);
     } else if (slot.type === "item_picker") {
       if (slot.default) choices[slot.id] = slot.default;
     } else if (slot.type === "item_picker_list") {

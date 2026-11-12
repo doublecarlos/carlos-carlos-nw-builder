@@ -44,6 +44,7 @@ import type {
   PointAssignmentSlot,
 } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
+import { isGlobalInputSlot } from "../../engine/global-inputs";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 const props = withDefaults(
@@ -134,9 +135,11 @@ const sectionOptions = computed(() =>
 
 /** Off the composed catalog rather than the shipped file, so a layer-authored param is
  * offered here the same as a shipped one: a preset seeding a custom param is the whole
- * point of both being overlayable. */
+ * point of both being overlayable. A global input has no row a preset could fill. */
 const slotsInSection = computed(() =>
-  props.db.slots.filter((slot) => slot.section === draft.value.section),
+  props.db.slots.filter(
+    (slot) => slot.section === draft.value.section && !isGlobalInputSlot(slot),
+  ),
 );
 
 const paramSlotOptions = computed(() =>

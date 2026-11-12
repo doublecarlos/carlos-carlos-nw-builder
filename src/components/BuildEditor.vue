@@ -50,8 +50,11 @@ import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotsWithCompare } from "../lib/slot-availability";
-import { isLayoutRow, visibleRows } from "../lib/row-visibility";
-import { isQuick } from "../lib/quick-summary";
+import {
+  isLayoutRow,
+  shownOutsideSection,
+  visibleRows,
+} from "../lib/row-visibility";
 import { keepArray, keepEqual, keepMap, keepSet } from "../lib/keep-identity";
 import {
   nestedParentId,
@@ -544,9 +547,10 @@ const allSlotsBySection = computed(() =>
   db.value.sections.map((section) => ({
     section,
     slots: editorSlots.value.filter(
-      // A quick slot renders in the QuickOptions strip, so it never counts toward its
-      // section's badge, diff or unsaved state.
-      (slotDef) => slotDef.section === section.id && !isQuick(slotDef),
+      // A slot shown outside its section never counts toward the section's badge, diff or
+      // unsaved state, and a section left with no field hides.
+      (slotDef) =>
+        slotDef.section === section.id && !shownOutsideSection(slotDef),
     ),
   })),
 );

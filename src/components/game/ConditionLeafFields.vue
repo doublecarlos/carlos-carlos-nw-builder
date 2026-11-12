@@ -120,11 +120,14 @@ const isMultiValue = computed(() =>
   MULTI_VALUE_LEAF_TYPES.includes(row.value.type ?? ""),
 );
 
+/** A global input is read through the bonus's inputs, never by a `param` leaf. */
 const paramKeyOptions = computed(() =>
-  paramSlots.value.map((slot) => ({
-    value: slot.path,
-    label: `${slot.label} (${slot.path})`,
-  })),
+  paramSlots.value
+    .filter((slot) => !slot.globalInput)
+    .map((slot) => ({
+      value: slot.path,
+      label: `${slot.label} (${slot.path})`,
+    })),
 );
 
 function paramSlotFor(key?: string) {

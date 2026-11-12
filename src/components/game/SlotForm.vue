@@ -345,12 +345,28 @@ function save() {
             data-testid="slot-path-input"
           />
         </FormField>
-        <FormField label="Quick">
+        <FormField label="Global input">
+          <BaseCheckbox
+            v-model="draft.globalInput"
+            data-testid="slot-global-input"
+          >
+            shared by the bonuses reading it
+          </BaseCheckbox>
+        </FormField>
+        <FormField v-if="!draft.globalInput" label="Quick">
           <BaseCheckbox v-model="draft.quick" data-testid="slot-quick-input">
             show in the quick strip
           </BaseCheckbox>
         </FormField>
       </FormGrid>
+      <p
+        v-if="draft.globalInput"
+        class="mb-2 text-muted"
+        data-testid="slot-global-note"
+      >
+        Shown on the build only on the rows of equipped items whose bonuses
+        reference it.
+      </p>
 
       <p
         v-if="pathConflict"
@@ -431,7 +447,7 @@ function save() {
       <!-- A scaler multiplies stat lines by this parameter's value, so only a numeric param
            can be one. Filters/tags name the items scaled wholesale; a scaler with neither is
            reached only through a grant's `scale` formula. -->
-      <FormGrid v-if="numeric" class="mb-2">
+      <FormGrid v-if="numeric && !draft.globalInput" class="mb-2">
         <FormField label="Scales stats" class="w-52">
           <ComboBox
             :model-value="draft.scalerMode"

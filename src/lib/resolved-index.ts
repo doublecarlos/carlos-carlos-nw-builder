@@ -75,10 +75,10 @@ export function inputCopiesBySlot(
 ): Map<string, InputCopy[]> {
   const map = new Map<string, InputCopy[]>();
   for (const entry of inputs) {
-    if (entry.kind !== "bonusInput" || entry.address.store !== "bonusValues")
-      continue;
+    if (!entry.bonusInput) continue;
     const seen = new Set([entry.slotId]);
-    for (const source of bonusById.get(entry.address.bonusId)?.sources ?? []) {
+    for (const source of bonusById.get(entry.bonusInput.bonusId)?.sources ??
+      []) {
       if (seen.has(source.slotId)) continue;
       seen.add(source.slotId);
       const copy = { entry, itemId: source.itemId };
@@ -88,4 +88,40 @@ export function inputCopiesBySlot(
     }
   }
   return map;
+}
+
+/** The entries of every global input, by its slot id, one per bonus on the build reading it
+ *  with an item carrying it. */
+export function globalInputReaders(
+  inputs: readonly InputEntry[],
+  bonusById: ReadonlyMap<string, EvaluatedBonus>,
+): Map<string, InputEntry[]> {
+  const map = new Map<string, InputEntry[]>();
+  for (const entry of inputs) {
+    const global = entry.bonusInput?.global;
+    if (global === undefined) continue;
+    if (!bonusById.get(entry.bonusInput!.bonusId)?.sources.length) continue;
+    const bucket = map.get(global);
+    if (bucket) bucket.push(entry);
+    else map.set(global, [entry]);
+  }
+  return map;
+}
+
+/** The note a global input's control carries on one reader's row, naming the readers on
+ *  other rows, or undefined when there are none. */
+export function sharedNote(
+  entry: InputEntry,
+  readers: ReadonlyMap<string, readonly InputEntry[]>,
+): string | undefined {
+  const own = entry.bonusInput;
+  if (own?.global === undefined) return undefined;
+  const others = [
+    ...new Set(
+      (readers.get(own.global) ?? [])
+        .filter((other) => other.slotId !== entry.slotId)
+        .map((other) => other.source),
+    ),
+  ];
+  return others.length ? `Shared with ${others.join(", ")}` : undefined;
 }
