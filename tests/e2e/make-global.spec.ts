@@ -74,9 +74,9 @@ test("making an input global shares it with the picked bonuses and keeps the bui
   await dialog.getByTestId("make-global-submit").click();
   await expect(dialog).toBeHidden();
   // The form now reads the input from the new global input.
-  await expect(page.getByTestId("bonus-input-global-summary")).toContainText(
-    "Sang",
-  );
+  await expect(
+    page.getByTestId("bonus-input-global").getByRole("combobox"),
+  ).toHaveValue("Sang");
 
   await buildRow(page, "Test catalog").locator(".nav-name").click();
   await ensureSectionExpanded(page, "gear");

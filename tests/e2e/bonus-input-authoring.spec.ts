@@ -235,13 +235,10 @@ test("an input can reference a global input defined by a flagged slot", async ({
   await page.getByTestId("new-bonus").click();
   await page.getByTestId("bonus-name-input").fill(BONUS);
   const input = await addInput(page, "song");
-  await chooseCombo(
-    input.getByTestId("bonus-input-global"),
-    "global: Played a song",
-  );
+  await chooseCombo(input.getByTestId("bonus-input-global"), "Played a song");
   await expect(input.getByTestId("bonus-input-type")).toHaveCount(0);
   await expect(input.getByTestId("bonus-input-global-summary")).toContainText(
-    "Played a song",
+    "on/off",
   );
 
   const leaf = await addInputCondition(page);
@@ -253,7 +250,7 @@ test("an input can reference a global input defined by a flagged slot", async ({
   await openEditorRow(page, BONUS);
   await expect(
     page.getByTestId("bonus-input-global").getByRole("combobox"),
-  ).toHaveValue("global: Played a song");
+  ).toHaveValue("Played a song");
   const grant = page.getByTestId("bonus-grant-row").first();
   await grant.getByLabel("Edit as JSON").click();
   const json = JSON.parse(await grant.locator("textarea").inputValue());
