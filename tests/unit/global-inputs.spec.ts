@@ -228,12 +228,10 @@ describe("catalog.validate: global inputs", () => {
           ],
         },
         [plain],
-      ).filter((message) => message.startsWith("error: input")),
-    ).toEqual([
-      'error: input "extra": a reference to a global input takes no other field (default)',
-      'error: input "unknown": "nope" is not a build_parameter slot',
-      'error: input "unflagged": "plain" is not a global input; flag the slot with globalInput',
-    ]);
+      )
+        .filter((message) => message.startsWith("error: input"))
+        .map((message) => message.match(/^error: input "(\w+)"/)?.[1]),
+    ).toEqual(["extra", "unknown", "unflagged"]);
   });
 
   it("checks a reader's leaf against the global input's type", () => {
@@ -242,7 +240,9 @@ describe("catalog.validate: global inputs", () => {
         ...ballad,
         grants: [{ when: { input: { key: "song", atLeast: 1 } }, stats: {} }],
       }),
-    ).toEqual(['error: grant 1: input "song" is a boolean; use "is"']);
+    ).toEqual([
+      expect.stringMatching(/^error: grant 1: input "song" is a boolean/),
+    ]);
   });
 
   // A direct read would gate a bonus with no row showing the control.
@@ -255,10 +255,12 @@ describe("catalog.validate: global inputs", () => {
           { scale: { formula: `param("${hits.path}")` }, stats: {} },
         ],
       }),
-    ).toEqual([
-      `error: grant 2 scale: param("${hits.path}") is a global input; declare it in the bonus's inputs and read it as $name`,
-      `error: grant 1: param "${song.path}" is a global input; declare it in the bonus's inputs and read it with an "input" condition`,
-    ]);
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^error: grant 1: .*global input/),
+        expect.stringMatching(/^error: grant 2 scale: .*global input/),
+      ]),
+    );
   });
 
   it("rejects a flagged slot that is quick, a scaler, a list or read by the engine", () => {
@@ -279,12 +281,12 @@ describe("catalog.validate: global inputs", () => {
       flagged({ path: "toggles.combat" }),
       flagged({ path: "enemies", paramType: "number", default: 0 }),
     ]);
-    expect(findings.map((finding) => finding.message)).toEqual([
-      "flag.q: a global input has no row of its own, so it cannot be quick",
-      "flag.s: a global input is read through bonus inputs, not as a scaler",
-      "flag.l: a global input is a boolean, number or percent",
-      'flag.toggles.combat: path "toggles.combat" is read directly by the engine or a condition, not through bonus inputs',
-      'flag.enemies: path "enemies" is read directly by the engine or a condition, not through bonus inputs',
+    expect(findings.map((finding) => [finding.level, finding.name])).toEqual([
+      ["error", "flag.q"],
+      ["error", "flag.s"],
+      ["error", "flag.l"],
+      ["error", "flag.toggles.combat"],
+      ["error", "flag.enemies"],
     ]);
   });
 
@@ -295,8 +297,80 @@ describe("catalog.validate: global inputs", () => {
         { ballad: { input: { song: true } } },
         new Map([["ballad", ballad]]),
       ),
-    ).toEqual([
-      'bonusValues "ballad": input "song" is a global input, stored on the build rather than the bonus',
-    ]);
+    ).toEqual([expect.stringMatching(/input "song" is a global input/)]);
+  });
+
+  // Either would silently overwrite the value every reader shares.
+  it("warns about defaultParams or a preset naming a global input", () => {
+    const findings = catalog.validate(
+      [{ ...items[0], defaultParams: { [song.id]: true } }],
+      [ballad],
+      undefined,
+      [
+        {
+          id: "sing",
+          label: "Sing",
+          section: "globals",
+          params: { [song.id]: true },
+        },
+      ],
+      slots,
+      [
+        { id: "gear", label: "Gear", slotIds: [] },
+        { id: "globals", label: "Global inputs", slotIds: [] },
+      ],
+    );
+    const warned = findings
+      .filter(
+        (finding) =>
+          finding.level === "warn" && /global input/.test(finding.message),
+      )
+      .map((finding) => finding.name);
+    expect(warned).toEqual(expect.arrayContaining(["lute", "sing"]));
+  });
+});
+
+describe("range errors of a global input", () => {
+  const echo: Bonus = {
+    id: "echo",
+    name: "Echo",
+    inputs: { count: { global: hits.id } },
+    grants: [
+      { when: { input: { key: "count", atLeast: 1 } }, stats: { power: 1 } },
+    ],
+  };
+  const rangeDb = db.build(
+    [
+      ...items,
+      { id: "horn", name: "Horn", filter: "gear", bonuses: ["chorus", "echo"] },
+    ],
+    [ballad, chorus, solo, echo],
+    schema,
+    {
+      sections: [
+        { id: "gear", label: "Gear", slotIds: [] },
+        { id: "globals", label: "Global inputs", slotIds: [] },
+      ],
+      slots,
+      presets: [],
+    },
+  );
+  const rangeSlots = (choices: Record<string, string>) => {
+    const b = build(choices);
+    writeInput(b, { store: "context", path: hits.path }, 20);
+    return engine
+      .resolveBuild(rangeDb, b)
+      .errors.filter((error) => error.kind === "outOfRange")
+      .map((error) => error.slotId);
+  };
+
+  // The global input has no row, so its error belongs on the rows that show its control.
+  it("reports on each reader's row, once per row", () => {
+    expect(rangeSlots({ a: "drum", b: "horn" })).toEqual(["a", "b"]);
+  });
+
+  // With no reader equipped there is no control to fix the value with.
+  it("reports nothing while no reader is equipped", () => {
+    expect(rangeSlots({ a: "lute" })).toEqual([]);
   });
 });

@@ -127,8 +127,7 @@ export function useSlotInputs(
 
 function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
   const own = inputsBySlot.value.get(row.id) ?? [];
-  const notes = copyNotes(row);
-  if (!own.length) return notes;
+  if (!own.length) return copyNotes(row, new Set());
 
   const index = resolvedIndex.value;
   const bonuses = index.slotBonuses.get(row.id) ?? NO_BONUSES;
@@ -161,16 +160,21 @@ function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
       },
     ];
   });
-  return [...controls, ...notes];
+  return [...controls, ...copyNotes(row, shown)];
 }
 
-/** A note for each bonus input whose bonus also comes from `row` but renders elsewhere. */
-function copyNotes(row: Slot): BuildInput[] {
+/** A note for each bonus input whose bonus also comes from `row` but renders elsewhere. A
+ *  value `row` already shows a control for, or already notes, gets no further note: a global
+ *  input read by several bonuses is one value. */
+function copyNotes(row: Slot, shown: Set<string>): BuildInput[] {
   const copies = inputCopies.value.get(row.id);
   if (!copies) return [];
   const { rows } = resolvedIndex.value;
   return copies.flatMap(({ entry, itemId }) => {
     if (!entry.bonusInput) return [];
+    const key = inputKey(entry.address);
+    if (shown.has(key)) return [];
+    shown.add(key);
     const { bonusId, name } = entry.bonusInput;
     const anchor = rows.get(entry.slotId);
     return [

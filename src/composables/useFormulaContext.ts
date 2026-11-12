@@ -59,6 +59,8 @@ export function provideFormulaContext(
 ): FormulaContext {
   const db = useEditorDb();
   const authored = computed(owner);
+  // Checks and labels read the catalog being authored, like the vocabulary. The preview below
+  // reads the active build's catalog, the one its values were resolved against.
   const ownerRef = computed(() =>
     withInputDefs(authored.value, db.value.globalInputs),
   );
@@ -110,7 +112,7 @@ export function provideFormulaContext(
       return bonusContext(
         bonus,
         resolved.result.context,
-        resolveInputValues(bonus, build, resolved.result.context.globalInputs),
+        resolveInputValues(bonus, build, engine.db.value.globalInputs),
       );
     },
   };

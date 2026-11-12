@@ -13,7 +13,8 @@ import type {
 
 export type GlobalInputs = ReadonlyMap<string, BuildParameterSlot>;
 
-const NO_GLOBALS: GlobalInputs = new Map();
+/** For an evaluation context built without a catalog, where no reference can resolve. */
+export const NO_GLOBALS: GlobalInputs = new Map();
 
 /** Whether `decl` references a global input rather than defining its own value. */
 export const isGlobalRef = (decl: InputDecl): decl is GlobalInputRef =>
@@ -74,7 +75,7 @@ const declaredCache = new WeakMap<
  *  input is left out, as the catalog check reports it. */
 export function declaredInputs(
   bonus: Pick<Bonus, "id" | "inputs">,
-  globals: GlobalInputs = NO_GLOBALS,
+  globals: GlobalInputs,
 ): DeclaredInput[] {
   const inputs = bonus.inputs;
   if (!inputs) return [];
@@ -107,7 +108,7 @@ export function declaredInputs(
 /** `bonus`'s inputs by name with references resolved, what formula checks read. */
 export function inputDefs(
   bonus: Pick<Bonus, "id" | "inputs">,
-  globals: GlobalInputs = NO_GLOBALS,
+  globals: GlobalInputs,
 ): Record<string, InputDef> {
   return Object.fromEntries(
     declaredInputs(bonus, globals).map((entry) => [entry.name, entry.def]),
@@ -122,7 +123,7 @@ export type WithInputDefs<T> = Omit<T, "inputs"> & {
 /** `owner` with its input references resolved. */
 export function withInputDefs<T extends Pick<Bonus, "id" | "inputs">>(
   owner: T,
-  globals: GlobalInputs = NO_GLOBALS,
+  globals: GlobalInputs,
 ): WithInputDefs<T> {
   return { ...owner, inputs: inputDefs(owner, globals) };
 }

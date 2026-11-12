@@ -6,7 +6,7 @@
 
 import * as conditions from "./conditions";
 import { bonusInputSpec } from "./inputs";
-import { declaredInputs, type GlobalInputs } from "./global-inputs";
+import { declaredInputs, NO_GLOBALS, type GlobalInputs } from "./global-inputs";
 import {
   evaluateFormula,
   formulaLabel,
@@ -668,13 +668,15 @@ export function bonusContext(
     self: bonus.id,
     formulas: formulaScope(bonus),
     inputs: new Map(
-      declaredInputs(bonus, ctx.globalInputs).map(({ name, def }) => {
-        const { label, format } = bonusInputSpec(def, name);
-        return [
-          name,
-          { label, format, value: inputValues[name] ?? def.default },
-        ];
-      }),
+      declaredInputs(bonus, ctx.globalInputs ?? NO_GLOBALS).map(
+        ({ name, def }) => {
+          const { label, format } = bonusInputSpec(def, name);
+          return [
+            name,
+            { label, format, value: inputValues[name] ?? def.default },
+          ];
+        },
+      ),
     ),
   };
 }
@@ -814,7 +816,7 @@ function resolveDynamicValues(
 export function resolveInputValues(
   bonus: Pick<Bonus, "id" | "inputs">,
   build: Build,
-  globals?: GlobalInputs,
+  globals: GlobalInputs,
 ): Record<string, number | boolean> {
   const out: Record<string, number | boolean> = {};
   for (const { name, def, address } of declaredInputs(bonus, globals)) {

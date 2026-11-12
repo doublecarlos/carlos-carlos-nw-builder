@@ -1,6 +1,7 @@
 // Per-slot lookups over one resolution, so a build-editor row reads its own bucket instead of
 // scanning every bonus, error and row of the build. Each index is built once per resolution.
 import type { InputEntry } from "../engine/inputs";
+import { isCarried } from "./bonus-inspector";
 import type {
   EngineError,
   EngineRow,
@@ -98,9 +99,11 @@ export function globalInputReaders(
 ): Map<string, InputEntry[]> {
   const map = new Map<string, InputEntry[]>();
   for (const entry of inputs) {
-    const global = entry.bonusInput?.global;
-    if (global === undefined) continue;
-    if (!bonusById.get(entry.bonusInput!.bonusId)?.sources.length) continue;
+    const reader = entry.bonusInput;
+    if (reader?.global === undefined) continue;
+    const bonus = bonusById.get(reader.bonusId);
+    if (!bonus || !isCarried(bonus)) continue;
+    const global = reader.global;
     const bucket = map.get(global);
     if (bucket) bucket.push(entry);
     else map.set(global, [entry]);

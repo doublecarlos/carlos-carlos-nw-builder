@@ -44,6 +44,12 @@ async function openWithReaders(page: Page, choices: Record<string, string>) {
         bonuses: ["test-chorus"],
       },
       { id: "test-plain", name: PLAIN, filter: "gear_ring" },
+      {
+        id: "test-duet",
+        name: "Test Duet Ring",
+        filter: "gear_ring",
+        bonuses: ["test-ballad", "test-chorus"],
+      },
     ],
     bonuses: [
       reader("test-ballad", "Test Ballad", "song"),
@@ -149,4 +155,53 @@ test("only showing changes keeps a reader row whose one difference is the global
   await expect(slotRow(page, "gear.ring1")).toBeVisible();
   await expect(slotRow(page, "gear.ring2")).toBeHidden();
   await expect(page.getByTestId("slot-filter-count")).toHaveText(/^\s*1\b/);
+});
+
+// One value gets one control or one note per row, however many bonuses on it read the value.
+test("a reader's own control on a row replaces the note for a copy reading the same value", async ({
+  page,
+}) => {
+  await openWithReaders(page, {
+    "gear.ring1": "test-lute",
+    "gear.ring2": "test-duet",
+  });
+  const ring2 = slotRow(page, "gear.ring2");
+  // Ring 2's own reader shows the control, so the copy of Ring 1's reader adds no note.
+  await expect(drum(page)).toBeVisible();
+  await expect(lute(page)).toBeVisible();
+  await expect(ring2.getByTestId(/^bonus-input-note-/)).toHaveCount(0);
+});
+
+test("two readers on one item give its row one control and its copy one note", async ({
+  page,
+}) => {
+  await openWithReaders(page, {
+    "gear.ring1": "test-duet",
+    "gear.ring2": "test-duet",
+  });
+  const ring1 = slotRow(page, "gear.ring1");
+  const ring2 = slotRow(page, "gear.ring2");
+  // Both readers anchor on Ring 1, which shows one control, and Ring 2 one note.
+  await expect(
+    ring1.getByTestId(/^bonus-input-test-(ballad-song|chorus-sang)$/),
+  ).toHaveCount(1);
+  await expect(ring2.getByTestId(/^bonus-input-note-/)).toHaveCount(1);
+  await expect(
+    ring2.getByTestId(/^bonus-input-test-(ballad-song|chorus-sang)$/),
+  ).toHaveCount(0);
+});
+
+// Neither has a row in the editor, so there is nowhere to land.
+test("the go-to palette offers neither the global input nor its section", async ({
+  page,
+}) => {
+  await openWithReaders(page, { "gear.ring1": "test-lute" });
+  await page.keyboard.press("ControlOrMeta+k");
+  await expect(page.getByTestId("go-to-input")).toBeFocused();
+  await expect(page.getByTestId("go-to-option-section:gear")).toBeVisible();
+  await expect(page.getByTestId(`go-to-option-section:${GLOBALS}`)).toHaveCount(
+    0,
+  );
+  await page.getByTestId("go-to-input").fill("played a song");
+  await expect(page.getByTestId(`go-to-option-slot:${SONG}`)).toHaveCount(0);
 });

@@ -36,6 +36,7 @@ import { INSIGNIA_SHAPES } from "../types";
 import { bonusStatConfigs, canStep } from "../engine/inputs";
 import {
   globalInputsOf,
+  isGlobalInputSlot,
   isGlobalRef,
   withInputDefs,
   type WithInputDefs,
@@ -1696,6 +1697,13 @@ export function validatePresets(
             name: preset.id,
             message: `preset "${preset.id}" (section "${preset.section}"): "${slotId}" belongs to section "${slot.section}"`,
           });
+        } else if (isGlobalInputSlot(slot)) {
+          findings.push({
+            level: "warn",
+            kind: "sectionPreset",
+            name: preset.id,
+            message: `preset "${preset.id}": "${slotId}" is a global input; applying the preset overwrites the value its readers share`,
+          });
         }
       }
     }
@@ -2985,6 +2993,12 @@ export function validate(
         report(
           "error",
           `defaultParams "${slotId}" is not a build_parameter slot`,
+          item.id,
+        );
+      } else if (slot.globalInput) {
+        report(
+          "warn",
+          `defaultParams "${slotId}" is a global input; picking the item overwrites the value its readers share`,
           item.id,
         );
       } else if (

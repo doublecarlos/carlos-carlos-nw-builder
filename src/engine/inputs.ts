@@ -3,6 +3,7 @@
 import {
   assignmentAddress,
   bonusStatAddress,
+  inputKey,
   itemStatAddress,
   readInput,
 } from "../lib/build-inputs";
@@ -311,20 +312,26 @@ export function rangeError(
   };
 }
 
-/** Every declared value outside its bounds. */
+/** Every declared value outside its bounds, once per slot holding it: bonuses on one row
+ *  reading the same global input give that row one error. */
 export function inputRanges(
   db: Db,
   build: Build,
   resolved: InputSource,
 ): EngineError[] {
-  return inputEntries(db, build, resolved).flatMap(
-    (entry) =>
+  const seen = new Set<string>();
+  return inputEntries(db, build, resolved).flatMap((entry) => {
+    const key = `${entry.slotId}|${inputKey(entry.address)}`;
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return (
       rangeError(
         entry.slotId,
         entry.source,
         entry.spec,
         entry.value,
         entry.address,
-      ) ?? [],
-  );
+      ) ?? []
+    );
+  });
 }

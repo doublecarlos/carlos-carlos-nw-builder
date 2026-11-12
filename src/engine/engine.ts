@@ -505,6 +505,8 @@ function parameterRanges(db: Db, resolved: ResolvedBonuses): EngineError[] {
   const errors: EngineError[] = [];
   for (const slot of db.slots) {
     if (slot.type !== "build_parameter") continue;
+    // A global input has no row: `inputRanges` reports it on each reader's.
+    if (slot.globalInput) continue;
     if (slot.paramType !== "number" && slot.paramType !== "percent") continue;
     if (slot.min === undefined && slot.max === undefined) continue;
     const value = Number(resolved.ctx.params.get(slot.path));
