@@ -12,6 +12,7 @@ import BaseInput from "../ui/BaseInput.vue";
 import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";
 import FormField from "../ui/FormField.vue";
 import IdField from "../ui/IdField.vue";
+import BonusOptionRow from "./BonusOptionRow.vue";
 import type { InputDraft } from "../../lib/bonus-draft";
 import type { GlobalInputs } from "../../engine/global-inputs";
 
@@ -26,23 +27,25 @@ const emit = defineEmits<{
   "make-global": [index: number];
 }>();
 
-/** Where an input's definition comes from: the bonus itself, or a global input. */
-const sourceOptions = computed(() => [
-  { value: "", label: "this bonus" },
-  ...[...props.globals.values()].map((slot) => ({
+/** Where an input's definition comes from: a global input, picked like a bonus by its label
+ *  or id, or the bonus itself as the empty value. */
+const globalOptions = computed(() =>
+  [...props.globals.values()].map((slot) => ({
     value: slot.id,
-    label: `global: ${slot.label}`,
+    label: slot.label,
+    search: slot.id,
   })),
-]);
+);
 
-/** What a reference reads, as the row shows it in place of the fields it does not save. */
+/** What a reference reads, in place of the fields it does not save. The picker already names
+ *  the global input, so this gives its type. */
 function globalSummary(id: string): string {
   const slot = props.globals.get(id);
   if (!slot) return `"${id}" is not a global input`;
   const type =
     typeOptions.find((option) => option.value === slot.paramType)?.label ??
     slot.paramType;
-  return `${slot.label}, ${type}. Shared with every bonus reading it.`;
+  return `${type}, shared with every bonus reading it`;
 }
 
 const typeOptions = [
@@ -108,12 +111,26 @@ const controlOptions = [
         class="max-md:w-full"
       >
         <ComboBox
-          class="w-full md:w-44"
+          class="w-full md:w-56"
           :model-value="row.global"
-          :options="sourceOptions"
+          :options="globalOptions"
+          show-empty-option
+          :closed-display="
+            !row.global
+              ? 'this bonus'
+              : globals.has(row.global)
+                ? ''
+                : row.global
+          "
+          menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
           data-testid="bonus-input-global"
           @update:model-value="(v) => (row.global = v)"
-        />
+        >
+          <template #empty>this bonus</template>
+          <template #option="{ option }">
+            <BonusOptionRow :option="option" />
+          </template>
+        </ComboBox>
       </FormField>
       <BaseButton
         v-if="canMakeGlobal && !row.global && row.name.trim()"
@@ -123,13 +140,20 @@ const controlOptions = [
         @click="emit('make-global', index)"
         >Make global</BaseButton
       >
-      <p
+      <!-- Keeps a control's border and padding so it sits level with the picker. It wraps
+           beside the picker until the row runs out of room. -->
+      <FormField
         v-if="row.global"
-        class="self-center text-muted"
-        data-testid="bonus-input-global-summary"
+        label="Reads"
+        class="max-md:w-full md:min-w-40 md:flex-1"
       >
-        {{ globalSummary(row.global) }}
-      </p>
+        <p
+          class="border-y border-transparent py-0.5 text-muted"
+          data-testid="bonus-input-global-summary"
+        >
+          {{ globalSummary(row.global) }}
+        </p>
+      </FormField>
       <template v-else>
         <!-- A phone card stacks the fields at full width, the numbers two to a line. -->
         <FormField label="Type" class="max-md:w-full">
