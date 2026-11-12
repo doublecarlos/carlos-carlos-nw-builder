@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import {
   expandSlots,
   listRowCount,
+  movedRowIndex,
+  moveListRowData,
   parseRowSlotId,
   rowSlot,
   rowSlotId,
@@ -170,5 +172,33 @@ describe("normalize", () => {
   it("coerces a nonsense count rather than carrying it through", () => {
     const build = storage.normalize({ listRows: { "misc.misc": -2.5 } });
     expect(build.listRows["misc.misc"]).toBe(0);
+  });
+});
+
+describe("moving a list row", () => {
+  it("shifts the rows between the two places by one, either way", () => {
+    expect([1, 2, 3, 4].map((i) => movedRowIndex(i, 1, 3))).toEqual([
+      3, 1, 2, 4,
+    ]);
+    expect([1, 2, 3, 4].map((i) => movedRowIndex(i, 4, 2))).toEqual([
+      1, 3, 4, 2,
+    ]);
+  });
+
+  it("re-keys only the moved list's rows", () => {
+    const build = storage.defaultBuild("B");
+    build.choices = {
+      "misc.misc#1": "a",
+      "misc.misc#2": "b",
+      "other#1": "x",
+      "misc.after": "y",
+    };
+    moveListRowData(build, "misc.misc", 2, 1);
+    expect(build.choices).toEqual({
+      "misc.misc#1": "b",
+      "misc.misc#2": "a",
+      "other#1": "x",
+      "misc.after": "y",
+    });
   });
 });

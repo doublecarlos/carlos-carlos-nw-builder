@@ -2,7 +2,7 @@
 // section from it into other builds. Each one snapshots before mutating, since the history
 // store owns the undo stack, and ends with `builds.finishEdit` (`finishBulkEdit` for several
 // builds), which empties any slot the edit made unavailable.
-import { computed, shallowRef, toRaw, watch } from "vue";
+import { computed, shallowReactive, shallowRef, toRaw, watch } from "vue";
 import * as storage from "../storage/storage";
 import * as builds from "./builds";
 import * as compare from "./compare";
@@ -32,9 +32,11 @@ import { applyChoice } from "../lib/apply-choice";
 import {
   expandSlots,
   listRowCount,
+  moveListRowData,
   parseRowSlotId,
   rowSlotId,
 } from "../lib/item-picker-list";
+import { moveKey, removeKey, rowKeys } from "../lib/list-row-keys";
 import {
   inputKey,
   storedInput,
@@ -137,12 +139,69 @@ function listRowIds(b: Build, listId: string): string[] {
   );
 }
 
+// --- list row identities ------------------------------------------------------------------
+
+const storedRowKeys = shallowReactive(new Map<string, readonly string[]>());
+let nextRowKey = 0;
+const rowKeysId = (buildId: string, listId: string) => `${buildId}
+${listId}`;
+
+/** One key per row of `slot` in `b`, following each row's content as rows move and go, for
+ *  the editor's row motion (lib/list-row-keys.ts). */
+export function listRowKeys(
+  b: Build,
+  slot: ItemPickerListSlot,
+): readonly string[] {
+  return rowKeys(
+    storedRowKeys.get(rowKeysId(b.id, slot.id)),
+    listRowCount(b, slot),
+  );
+}
+
+function setRowKeys(b: Build, listId: string, keys: readonly string[]) {
+  storedRowKeys.set(rowKeysId(b.id, listId), keys);
+}
+
+/** The list container behind a row id, with the row's 1-based index, when it is in range. */
+function listRowOf(b: Build, rowId: string) {
+  const row = parseRowSlotId(rowId);
+  const slot = row ? db.value.slotById.get(row.listId) : undefined;
+  if (!row || slot?.type !== "item_picker_list") return null;
+  const count = listRowCount(b, slot);
+  return row.index > count ? null : { slot, index: row.index, count };
+}
+
 /** Appends an empty row to an `item_picker_list`. */
 export function addListRow(slot: ItemPickerListSlot) {
   const b = builds.build.value;
   if (!b) return;
   history.snapshot("build", b.id, null, `add ${slot.label} row`, b);
+  const keys = listRowKeys(b, slot);
   b.listRows[slot.id] = listRowCount(b, slot) + 1;
+  setRowKeys(b, slot.id, [...keys, `n${++nextRowKey}`]);
+  builds.finishEdit(b.id);
+}
+
+/** Moves one row of an `item_picker_list` to row `to` (1-based, clamped to the list), the rows
+ *  between shifting by one. Each row takes its pick, magnitudes and repetition counts along. */
+export function moveListRow(rowId: string, to: number) {
+  const b = builds.build.value;
+  if (!b) return;
+  const row = listRowOf(b, rowId);
+  if (!row) return;
+  const target = Math.min(Math.max(to, 1), row.count);
+  if (target === row.index) return;
+
+  history.snapshot(
+    "build",
+    b.id,
+    null,
+    `move ${slotLabel(rowId)} to ${target}`,
+    b,
+  );
+  const keys = listRowKeys(b, row.slot);
+  moveListRowData(b, row.slot.id, row.index, target);
+  setRowKeys(b, row.slot.id, moveKey(keys, row.index, target));
   builds.finishEdit(b.id);
 }
 
@@ -154,22 +213,18 @@ export function addListRow(slot: ItemPickerListSlot) {
 export function removeListRow(rowId: string) {
   const b = builds.build.value;
   if (!b) return;
-  const row = parseRowSlotId(rowId);
-  const slot = row ? db.value.slotById.get(row.listId) : undefined;
-  if (!row || slot?.type !== "item_picker_list") return;
-  const count = listRowCount(b, slot);
-  if (row.index > count) return;
+  const row = listRowOf(b, rowId);
+  if (!row) return;
+  const { slot, count } = row;
 
   history.snapshot("build", b.id, null, `remove ${slotLabel(rowId)}`, b);
+  const keys = listRowKeys(b, slot);
   for (let index = row.index; index < count; index += 1) {
-    moveSlotData(
-      b,
-      rowSlotId(row.listId, index + 1),
-      rowSlotId(row.listId, index),
-    );
+    moveSlotData(b, rowSlotId(slot.id, index + 1), rowSlotId(slot.id, index));
   }
-  moveSlotData(b, rowSlotId(row.listId, count));
-  b.listRows[row.listId] = count - 1;
+  moveSlotData(b, rowSlotId(slot.id, count));
+  b.listRows[slot.id] = count - 1;
+  setRowKeys(b, slot.id, removeKey(keys, row.index));
   builds.finishEdit(b.id);
 }
 

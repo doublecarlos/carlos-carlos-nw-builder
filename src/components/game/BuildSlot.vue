@@ -19,6 +19,7 @@
 import ItemPickerRow from "./ItemPickerRow.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
 import NestGuide from "./NestGuide.vue";
+import DragHandle from "../ui/DragHandle.vue";
 import BuildParameterRow from "./BuildParameterRow.vue";
 import PointAssignmentRow from "./PointAssignmentRow.vue";
 import * as buildEditor from "../../stores/buildEditor";
@@ -39,6 +40,7 @@ import type {
   PointAssignmentSlot,
 } from "../../types";
 import type { SlotDiff } from "../../composables/useCompareDiff";
+import type { DragHandleProps } from "../../composables/useDragAndDrop";
 import type { NestPosition } from "../../lib/slot-parent";
 
 const props = defineProps<{
@@ -52,6 +54,10 @@ const props = defineProps<{
   isHovered: boolean;
   /** Arrow keys on this row's cursor anchor: BuildEditor moves focus to the next/previous row. */
   onArrow: (dir: 1 | -1, bySection: boolean) => void;
+  /** A row that can be reordered (an item_picker_list row): Alt+arrow moves it one step. */
+  onMove?: (dir: 1 | -1) => void;
+  /** Its grip, for the same rows. */
+  dragHandle?: DragHandleProps;
   // item_picker only -- a build_parameter row has no item of its own.
   item?: Item | null;
   statSummary?: string;
@@ -205,6 +211,8 @@ const labelId = computed(() => `slot-${props.slotDef.id}-label`);
 useCursorRowKeys(anchor, {
   // Wrappers read props at call time so they stay current across re-renders.
   onArrow: (dir, bySection) => props.onArrow(dir, bySection),
+  onMove: (dir) =>
+    props.onMove ? props.onMove(dir) : props.onArrow(dir, false),
   onEnter: () => control.value?.focus(),
   onClear: () => {
     if (props.slotDef.type === "item_picker") {
@@ -252,6 +260,13 @@ useCursorRowKeys(anchor, {
     <div
       class="flex items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5 pl-(--row-indent) [grid-column:label]"
     >
+      <DragHandle
+        v-if="dragHandle"
+        class="shrink-0"
+        tooltip="Drag to reorder, or Alt+↑/↓"
+        :data-testid="'list-drag:' + slotDef.id"
+        v-bind="dragHandle"
+      />
       <!-- A point_assignment row has no single control to point `for` at (it is a row of
            steppers, one per item), so it labels the group instead -- see `aria-labelledby`
            below. Clicking it still parks the row cursor, via this row's own `onRowClick`. -->

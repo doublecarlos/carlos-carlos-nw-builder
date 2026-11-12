@@ -10,6 +10,7 @@
 // as a result, not because this component special-cases its id.
 import BaseBadge from "../ui/BaseBadge.vue";
 import FoldChevron from "../ui/FoldChevron.vue";
+import DropIndicator from "../ui/DropIndicator.vue";
 import SectionActionsMenu from "./SectionActionsMenu.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, ref, useTemplateRef, watch } from "vue";
@@ -39,6 +40,9 @@ const props = defineProps<{
   highlightDiff: boolean;
   otherBuilds: BuildOption[];
   presets: SectionPreset[];
+  /** For a section holding reorderable rows: the drop list its body is, and where its
+   *  insertion line sits. */
+  drop?: { list: Record<string, string>; indicator: { top: string } | null };
 }>();
 
 defineEmits<{
@@ -162,14 +166,16 @@ const bodyStyle = computed(() => ({
       v-if="bodyMounted"
       v-show="expanded"
       ref="body"
-      class="bg-surface pb-2 pt-1 grid gap-x-2.5 animate-fade-in grid-cols-(--section-phone-columns) md:grid-cols-(--section-columns) [contain-intrinsic-block-size:auto_none]"
+      class="relative bg-surface pb-2 pt-1 grid gap-x-2.5 animate-fade-in grid-cols-(--section-phone-columns) md:grid-cols-(--section-columns) [contain-intrinsic-block-size:auto_none]"
       :class="[
         hasAssignments && 'md:overflow-x-auto',
         contained && '[content-visibility:auto] [overflow-clip-margin:4px]',
       ]"
       :style="bodyStyle"
       data-testid="section-body"
+      v-bind="drop?.list"
     >
+      <DropIndicator v-if="drop" :pos="drop.indicator" />
       <template v-for="slot in slots" :key="slot.id">
         <slot :slot-def="slot" :shown="shownIds.has(slot.id)" />
       </template>

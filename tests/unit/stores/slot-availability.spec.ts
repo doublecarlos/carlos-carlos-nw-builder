@@ -100,6 +100,11 @@ const MUTATIONS: Record<string, (stores: Stores) => void> = {
     stores.active().listRows[list.id] = 1;
     stores.buildEditor.removeListRow(`${list.id}#1`);
   },
+  moveListRow: (stores) => {
+    const list = slotWhere(stores, isList);
+    stores.active().listRows[list.id] = 2;
+    stores.buildEditor.moveListRow(`${list.id}#1`, 2);
+  },
   setInput: ({ buildEditor }) =>
     buildEditor.setInput({ store: "context", path: "duration" }, 10),
   setSlotDisabled: (stores) =>
@@ -174,6 +179,7 @@ const NOT_MUTATIONS = new Set([
   "renameBuild",
   "presetFromSection",
   "presetUpdatedFromSection",
+  "listRowKeys",
 ]);
 
 /** The slot that offers the retired item. */

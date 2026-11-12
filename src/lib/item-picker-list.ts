@@ -3,7 +3,7 @@
 // Rows are positional: row N of `misc.misc` is the ordinary `item_picker` slot `misc.misc#N`,
 // 1-based so the id and the rendered label agree. Everything downstream of the expansion sees
 // plain picks and knows nothing about lists.
-import { storedSlotIds } from "./slot-fields";
+import { mapSlotIds, replaceSlotData, storedSlotIds } from "./slot-fields";
 import type { SlotData } from "./slot-fields";
 import type { Build, ItemPickerListSlot, ItemPickerSlot, Slot } from "../types";
 
@@ -97,4 +97,31 @@ export function expandSlots(
     rows.push(slot);
     return rows;
   });
+}
+
+/** Where row `index` lands once row `from` is moved to `to`, every row between shifting by one
+ *  to close the gap. All 1-based. */
+export function movedRowIndex(index: number, from: number, to: number): number {
+  if (index === from) return to;
+  if (from < to && index > from && index <= to) return index - 1;
+  if (to < from && index >= to && index < from) return index + 1;
+  return index;
+}
+
+/** Moves row `from` of `listId` to `to`, carrying everything each row stores with it. */
+export function moveListRowData(
+  data: SlotData,
+  listId: string,
+  from: number,
+  to: number,
+) {
+  replaceSlotData(
+    data,
+    mapSlotIds(data, (slotId) => {
+      const row = parseRowSlotId(slotId);
+      return row?.listId === listId
+        ? rowSlotId(listId, movedRowIndex(row.index, from, to))
+        : slotId;
+    }),
+  );
 }

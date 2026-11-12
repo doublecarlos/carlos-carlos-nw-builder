@@ -883,6 +883,81 @@ describe("buildEditor item_picker_list rows", () => {
     expect(builds.build.value!.choices[row(1)]).toBeUndefined();
   });
 
+  it("moves a row, shifting the rows between and carrying what each one stores", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    for (let i = 0; i < 3; i += 1) buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(1), "ItemA");
+    buildEditor.setChoice(row(2), "ItemB");
+    buildEditor.setChoice(row(3), "ItemC");
+    buildEditor.setInput(itemStatAddress(row(1), "power"), 42);
+
+    buildEditor.moveListRow(row(1), 3);
+
+    const build = builds.build.value!;
+    expect(build.listRows[LIST]).toBe(3);
+    expect([1, 2, 3].map((i) => build.choices[row(i)])).toEqual([
+      "ItemB",
+      "ItemC",
+      "ItemA",
+    ]);
+    expect(build.values[row(3)]).toEqual({ stat: { power: 42 } });
+    expect(build.values[row(1)]).toBeUndefined();
+  });
+
+  it("undoes a move as one step", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+    buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(1), "ItemA");
+    buildEditor.setChoice(row(2), "ItemB");
+
+    buildEditor.moveListRow(row(2), 1);
+    expect(builds.build.value!.choices[row(1)]).toBe("ItemB");
+
+    buildEditor.undo();
+    expect(builds.build.value!.choices[row(1)]).toBe("ItemA");
+    expect(builds.build.value!.choices[row(2)]).toBe("ItemB");
+  });
+
+  it("clamps a move to the list and records nothing for a move in place", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+    buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(1), "ItemA");
+
+    buildEditor.moveListRow(row(1), 9);
+    expect(builds.build.value!.choices[row(2)]).toBe("ItemA");
+
+    const label = buildEditor.undoLabel.value;
+    buildEditor.moveListRow(row(2), 2);
+    expect(buildEditor.undoLabel.value).toBe(label);
+  });
+
+  // The row motion follows these keys: a moved or removed row's key must go with its content.
+  it("keeps each row's key with its content through a move and a removal", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    for (let i = 0; i < 3; i += 1) buildEditor.addListRow(slot);
+    const [a, b, c] = buildEditor.listRowKeys(builds.build.value!, slot);
+
+    buildEditor.moveListRow(row(3), 1);
+    expect(buildEditor.listRowKeys(builds.build.value!, slot)).toEqual([
+      c,
+      a,
+      b,
+    ]);
+
+    buildEditor.removeListRow(row(2));
+    expect(buildEditor.listRowKeys(builds.build.value!, slot)).toEqual([c, b]);
+  });
+
   it("ignores a row that is past the end of the list", async () => {
     const { builds, buildEditor, resolved } = await freshStores();
     const slot = resolved.db.value.slotById.get(LIST)!;

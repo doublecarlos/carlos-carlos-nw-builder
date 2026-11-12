@@ -57,6 +57,10 @@
           "keys": ["Mod+↑", "Mod+↓"],
           "description": "Jump to the previous / next section"
         },
+        {
+          "keys": ["Alt+↑", "Alt+↓"],
+          "description": "Move a list row up / down"
+        },
         { "keys": ["Enter"], "description": "Open the row's picker" },
         {
           "keys": ["Any letter"],
