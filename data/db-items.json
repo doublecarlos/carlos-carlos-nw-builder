@@ -3756,16 +3756,6 @@
     "bonuses": ["paragon-exclusive"]
   },
   {
-    "id": "enemy-type-boss",
-    "name": "Enemy: Boss",
-    "filter": "scenario_flag"
-  },
-  {
-    "id": "enemy-type-non-boss",
-    "name": "Enemy: Non Boss",
-    "filter": "scenario_flag"
-  },
-  {
     "id": "ethereal-jaunt",
     "name": "Ethereal Jaunt",
     "filter": "mount",
@@ -5416,21 +5406,6 @@
     "filter": "insignia_bonus",
     "insigniaRecipe": ["regal", "barbed", "illuminated", "enlightened"],
     "shortDescription": "Whenever you are below 30% of your Maximum Hit Points, you instantly recover 10% of your Stamina and 20% of your Maximum Hit Points. This effect can only occur once every 30 seconds."
-  },
-  {
-    "id": "location-chult",
-    "name": "Location: Chult",
-    "filter": "scenario_flag"
-  },
-  {
-    "id": "location-thay",
-    "name": "Location: Thay",
-    "filter": "scenario_flag"
-  },
-  {
-    "id": "location-wildspace",
-    "name": "Location: Wildspace",
-    "filter": "scenario_flag"
   },
   {
     "id": "loremaster",

@@ -20,7 +20,7 @@ import {
 const PLAIN_ID = "test-plain-enemy";
 const PLAIN = "Test Plain Enemy";
 const plain = {
-  [PLAIN_ID]: { id: PLAIN_ID, name: PLAIN, filter: "scenario_flag" },
+  [PLAIN_ID]: { id: PLAIN_ID, name: PLAIN, filter: "test_enemy" },
 };
 
 const SLOT_ID = "options.testPicker";
@@ -48,7 +48,7 @@ async function importOverlay(
               label: "Enemy Type",
               section: "options",
               type: "item_picker",
-              filter: "scenario_flag",
+              filter: "test_enemy",
               ...slot,
             },
           },
@@ -132,13 +132,13 @@ test.describe("disallowEmpty", () => {
 test.describe("inline repetition", () => {
   const REPEATER_ID = "test-repeating-enemy";
 
-  /** A `scenario_flag` candidate that declares an `inlineRepetition`, so picking it grows a
+  /** A `test_enemy` candidate that declares an `inlineRepetition`, so picking it grows a
    *  stepper. The slot itself says nothing about repetition -- the item's own config does. */
   const repeater = {
     [REPEATER_ID]: {
       id: REPEATER_ID,
       name: "Test Repeating Enemy",
-      filter: "scenario_flag",
+      filter: "test_enemy",
       power: 100,
       inlineRepetition: { min: 0, max: 4, default: 1 },
     },

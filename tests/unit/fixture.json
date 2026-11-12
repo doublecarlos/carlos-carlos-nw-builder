@@ -109,7 +109,6 @@
         "mounts.wayfaringCollar": "wayfaring-barbed-collar",
         "options.class": "class-warlock",
         "options.paragon": "paragon-hellbringer",
-        "options.scenario#1": "enemy-type-boss",
         "overloads.overload1": "slayer-overload",
         "overloads.overload2": "devil-s-precision",
         "raceLeveling.race": "race-aasimar",
@@ -195,6 +194,9 @@
           "consumables": true,
           "party": true,
           "procs": true
+        },
+        "globals": {
+          "boss": true
         }
       },
       "values": {
@@ -215,8 +217,7 @@
         "artifactCall.artifactCall": 26,
         "classStuff.classStuff": 3,
         "group.group": 22,
-        "misc.misc": 1,
-        "options.scenario": 1
+        "misc.misc": 1
       }
     },
     "expected": {

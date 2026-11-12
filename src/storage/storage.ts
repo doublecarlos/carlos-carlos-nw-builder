@@ -26,6 +26,12 @@ import {
   migrateListSlots,
   migrateOverlayListSlots,
 } from "./migrate-list-slots";
+import {
+  applyScenarioFlags,
+  migrateOverlayScenarioFlags,
+  migrateScenarioFlags,
+  withoutScenarioRows,
+} from "./migrate-scenario-flags";
 import pkg from "../../package.json";
 import { showNotice } from "../stores/notice";
 import type {
@@ -365,12 +371,15 @@ export function normalize(
 
   // Both migrations run over the coerced maps, and this one over all three at once: renaming a
   // pick onto its list row has to take that row's magnitudes and repetition counts with it.
-  const stored = migrateListSlots({
-    choices: migrateClassToChoice(strings(raw.choices), context),
-    values: settings.values,
-    assignments: nestedNumbers(raw.assignments, base.assignments),
-    disabledSlots: offSlots(raw.disabledSlots),
-  });
+  const scenario = migrateScenarioFlags(
+    migrateListSlots({
+      choices: migrateClassToChoice(strings(raw.choices), context),
+      values: settings.values,
+      assignments: nestedNumbers(raw.assignments, base.assignments),
+      disabledSlots: offSlots(raw.disabledSlots),
+    }),
+  );
+  const stored = scenario.stored;
 
   const normalizedContext = {
     ...base.context,
@@ -392,7 +401,9 @@ export function normalize(
       ...base.context.forte,
       ...(isPlain(context.forte) ? context.forte : {}),
     },
+    ...(isPlain(context.globals) ? { globals: { ...context.globals } } : {}),
   };
+  applyScenarioFlags(normalizedContext, scenario.flags);
   // A scaler parameter is validated rather than passed through like class/role: it multiplies
   // whole stat lines, so a `NaN` from a truncated write or hand-edited export would spread to
   // every downstream stage instead of staying in one field. Floored at 0 because a negative
@@ -437,7 +448,11 @@ export function normalize(
       settings.bonusValues,
     ),
     assignments: stored.assignments,
-    listRows: rowCounts(raw.listRows, base.listRows, stored),
+    listRows: rowCounts(
+      withoutScenarioRows(numbers(raw.listRows)),
+      base.listRows,
+      stored,
+    ),
     disabledSlots: stored.disabledSlots,
     // `context`'s pass-through fields (class/role/damageType) are not individually
     // validated -- the result is only knowable-safe by construction, not by the type
@@ -570,7 +585,9 @@ function migrateDownloaded(
 /** Coerces and migrates a stored overlay, the way a layer or a build's embedded catalog holds
  *  one. */
 export function normalizeLayerOverlay(raw: unknown): CatalogOverlay {
-  const overlay = migrateOverlayListSlots(catalog.normalizeOverlay(raw));
+  const overlay = migrateOverlayScenarioFlags(
+    migrateOverlayListSlots(catalog.normalizeOverlay(raw)),
+  );
   const sectionPresets: CatalogOverlay["sectionPresets"] = {};
   for (const [id, preset] of Object.entries(overlay.sectionPresets)) {
     sectionPresets[id] = preset ? migratePresetSettings(preset) : preset;
