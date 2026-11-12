@@ -3,6 +3,7 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { openBuilder, chooseCombo, pickerMenu } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { newInOutline, openSlotsTab } from "./support/layerEditor";
 
 const BONUS = "ZZZ Test Input Bonus";
 
@@ -206,4 +207,55 @@ test("a repeated input id is flagged", async ({ page }) => {
   await expect(page.getByTestId("bonus-input-duplicate")).toContainText(
     "stacks",
   );
+});
+
+// A global input is defined once as a flagged slot and referenced by each bonus reading it, so
+// the bonus form saves only the reference and the leaf picker reads the slot's definition.
+test("an input can reference a global input defined by a flagged slot", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addLayer(page);
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await openSlotsTab(page);
+  await newInOutline(page, "new-section");
+  await page.getByTestId("section-label-input").fill("Shared Facts");
+  await page.getByTestId("save-section").click();
+  await newInOutline(page, "new-slot");
+  await page.getByTestId("slot-label-input").fill("Played a song");
+  await chooseCombo(page.getByTestId("slot-type-input"), "boolean");
+  await page.getByTestId("slot-path-input").fill("shared.song");
+  await page.getByTestId("slot-global-input").check();
+  // A global input has no row of its own, so it cannot be quick.
+  await expect(page.getByTestId("slot-quick-input")).toHaveCount(0);
+  await page.getByTestId("save-slot").click();
+  await expect(page.getByText('Saved slot "Played a song"')).toBeVisible();
+
+  await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+  await page.getByTestId("new-bonus").click();
+  await page.getByTestId("bonus-name-input").fill(BONUS);
+  const input = await addInput(page, "song");
+  await chooseCombo(
+    input.getByTestId("bonus-input-global"),
+    "global: Played a song",
+  );
+  await expect(input.getByTestId("bonus-input-type")).toHaveCount(0);
+  await expect(input.getByTestId("bonus-input-global-summary")).toContainText(
+    "Played a song",
+  );
+
+  const leaf = await addInputCondition(page);
+  await chooseCombo(leaf.getByTestId("condition-input-key"), "Played a song");
+  await chooseCombo(leaf.getByTestId("condition-is"), "on");
+  await page.getByRole("button", { name: "Save bonus" }).click();
+
+  await openEditorRow(page, "Risky Investment");
+  await openEditorRow(page, BONUS);
+  await expect(
+    page.getByTestId("bonus-input-global").getByRole("combobox"),
+  ).toHaveValue("global: Played a song");
+  const grant = page.getByTestId("bonus-grant-row").first();
+  await grant.getByLabel("Edit as JSON").click();
+  const json = JSON.parse(await grant.locator("textarea").inputValue());
+  expect(json.when).toEqual({ input: { key: "song", is: true } });
 });

@@ -43,6 +43,7 @@ export {
   type FormulaLint,
   type FormulaSite,
   type FormulaVocabulary,
+  type InputOwner,
   type NamedScope,
 } from "./analysis";
 export {

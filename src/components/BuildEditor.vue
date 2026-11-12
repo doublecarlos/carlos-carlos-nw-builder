@@ -50,7 +50,11 @@ import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotsWithCompare } from "../lib/slot-availability";
-import { isLayoutRow, visibleRows } from "../lib/row-visibility";
+import {
+  isLayoutRow,
+  shownOutsideSection,
+  visibleRows,
+} from "../lib/row-visibility";
 import { keepArray, keepEqual, keepMap, keepSet } from "../lib/keep-identity";
 import {
   nestedParentId,
@@ -512,15 +516,6 @@ interface SectionRow extends SlotSection {
   assignmentColumns: number;
 }
 
-/** True for a slotDef that renders in the always-visible QuickOptions strip instead of its own
- * section body, and so never counts toward that section's badge/diff/unsaved state. */
-function isQuick(slotDef: Slot) {
-  return (
-    (slotDef.type === "build_parameter" || slotDef.type === "item_picker") &&
-    !!slotDef.quick
-  );
-}
-
 function rowDiffers(slotDef: Slot) {
   // Not a real editable row: expandSlots keeps the container alongside the rows it
   // generates, and it never gets an entry of its own in `rowHasDiff`'s map.
@@ -552,7 +547,10 @@ const allSlotsBySection = computed(() =>
   db.value.sections.map((section) => ({
     section,
     slots: editorSlots.value.filter(
-      (slotDef) => slotDef.section === section.id && !isQuick(slotDef),
+      // A slot shown outside its section never counts toward the section's badge, diff or
+      // unsaved state, and a section left with no field hides.
+      (slotDef) =>
+        slotDef.section === section.id && !shownOutsideSection(slotDef),
     ),
   })),
 );
@@ -1414,7 +1412,7 @@ async function runJump(target: goTo.JumpTarget) {
     await nextTick();
   }
   const section = sectionEl(sectionId);
-  // A section the filter hides stays mounted, with nowhere to land.
+  // A hidden section stays mounted, with nowhere to land.
   if (!section?.checkVisibility()) return;
   const header = section.querySelector<HTMLElement>(
     "[data-cursor-key^='header:']",

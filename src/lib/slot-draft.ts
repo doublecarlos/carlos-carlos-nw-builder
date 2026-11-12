@@ -138,6 +138,9 @@ export interface SlotDraft {
   presets: string;
   /** `number` only. Empty leaves it to the bounds: a stepper when both are set. */
   control: "" | NumberControl;
+  /** See `BuildParameterSlot.globalInput`. A global input is never quick or a scaler, so
+   *  those fields are kept only for switching back. */
+  globalInput: boolean;
   /** Empty means the parameter is not a scaler; see `BuildParameterSlot.scaler`. The filter
    *  and tag lists are comma-separated like `optionsFromTags`. */
   scalerMode: "" | Scaler["mode"];
@@ -215,6 +218,7 @@ export function buildDraft(slot: AuthoredSlot | null | undefined): SlotDraft {
     step: source.step == null ? "" : String(source.step),
     presets: (source.presets ?? []).join(", "),
     control: source.control ?? "",
+    globalInput: source.globalInput ?? false,
     scalerMode: source.scaler?.mode ?? "",
     scalerFilters: (source.scaler?.applies?.filter ?? []).join(", "),
     scalerTags: (source.scaler?.applies?.tags ?? []).join(", "),
@@ -349,7 +353,8 @@ const BUILDERS: {
       paramType: local.paramType,
       path: local.path.trim(),
     };
-    if (local.quick) slot.quick = true;
+    if (local.globalInput) slot.globalInput = true;
+    else if (local.quick) slot.quick = true;
 
     // Cast `default` by `paramType`, so a boolean param never stores the string "true".
     if (local.paramType === "boolean") {
@@ -366,7 +371,7 @@ const BUILDERS: {
       putIfSet(slot, "presets", presets);
       if (local.paramType === "number" && local.control)
         slot.control = local.control;
-      if (local.scalerMode) {
+      if (local.scalerMode && !local.globalInput) {
         const applies: NonNullable<Scaler["applies"]> = {};
         putIfSet(applies, "filter", commaList(local.scalerFilters));
         putIfSet(applies, "tags", commaList(local.scalerTags));
@@ -513,6 +518,13 @@ const CHECKS: DiffCheck<AuthoredSlot>[] = [
     JSON.stringify((old as ItemPickerSlot).stable) !==
     JSON.stringify((nw as ItemPickerSlot).stable)
       ? "edit stable settings"
+      : null,
+  (old, nw) =>
+    Boolean((old as BuildParameterSlot).globalInput) !==
+    Boolean((nw as BuildParameterSlot).globalInput)
+      ? (nw as BuildParameterSlot).globalInput
+        ? "make global input"
+        : "stop being a global input"
       : null,
   (old, nw) =>
     JSON.stringify((old as BuildParameterSlot).scaler) !==

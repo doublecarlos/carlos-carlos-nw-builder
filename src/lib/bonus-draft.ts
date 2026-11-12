@@ -48,9 +48,15 @@ import type {
   Bonus,
   StatValues,
   DynamicStatConfig,
+  InputDecl,
   InputDef,
   NumberControl,
 } from "../types";
+import {
+  globalInputDef,
+  isGlobalRef,
+  type GlobalInputs,
+} from "../engine/global-inputs";
 
 // Exactly what the form edits on a grant and a tier. Anything else would be dropped by the
 // form, so its presence forces JSON mode instead.
@@ -464,6 +470,10 @@ export interface InputDraft {
   /** Declared by the bonus when the form opened, so builds may already hold a value under
    *  `name`: the form shows it read-only. An input added since stays editable. */
   frozen: boolean;
+  /** The global input's slot id this input references, or empty when the bonus defines the
+   *  input itself. A reference saves nothing else, so the fields below are kept only for
+   *  switching back. */
+  global: string;
   type: InputDef["type"];
   label: string;
   on: boolean;
@@ -480,6 +490,7 @@ export interface InputDraft {
 export const newInput = (): InputDraft => ({
   name: "",
   frozen: false,
+  global: "",
   type: "boolean",
   label: "",
   on: false,
@@ -492,32 +503,41 @@ export const newInput = (): InputDraft => ({
 });
 
 export const inputRows = (
-  inputs: Record<string, InputDef> | undefined,
+  inputs: Record<string, InputDecl> | undefined,
 ): InputDraft[] =>
-  entriesToRows(inputs, (name, def) => ({
-    name,
-    frozen: true,
-    type: def.type,
-    label: def.label ?? "",
-    on: def.type === "boolean" && def.default === true,
-    default: def.type === "boolean" ? null : Number(def.default),
-    min: def.min ?? null,
-    max: def.max ?? null,
-    step: def.step ?? null,
-    presets: (def.presets ?? [])
-      .map((value) => (def.type === "percent" ? toPercent(value) : value))
-      .join(", "),
-    control: def.control ?? "",
-  }));
+  entriesToRows(inputs, (name, decl) =>
+    isGlobalRef(decl)
+      ? { ...newInput(), name, frozen: true, global: decl.global }
+      : definedInputRow(name, decl),
+  );
 
-/** Unnamed rows are dropped. A boolean keeps only its default and label. */
+const definedInputRow = (name: string, def: InputDef): InputDraft => ({
+  name,
+  frozen: true,
+  global: "",
+  type: def.type,
+  label: def.label ?? "",
+  on: def.type === "boolean" && def.default === true,
+  default: def.type === "boolean" ? null : Number(def.default),
+  min: def.min ?? null,
+  max: def.max ?? null,
+  step: def.step ?? null,
+  presets: (def.presets ?? [])
+    .map((value) => (def.type === "percent" ? toPercent(value) : value))
+    .join(", "),
+  control: def.control ?? "",
+});
+
+/** Unnamed rows are dropped. A boolean keeps only its default and label, and a reference
+ *  only the global input it names. */
 export const rowsToInputs = (
   rows: InputDraft[] | undefined,
-): Record<string, InputDef> =>
-  rowsToEntries(
+): Record<string, InputDecl> =>
+  rowsToEntries<InputDraft, InputDecl>(
     rows,
     (row) => row.name.trim(),
     (row) => {
+      if (row.global) return { global: row.global };
       if (row.type === "boolean") {
         const def: InputDef = { type: row.type, default: row.on };
         putIfSet(def, "label", row.label.trim());
@@ -566,14 +586,22 @@ export interface InputOption {
   type: InputDef["type"];
 }
 
-export const inputOptions = (rows: InputDraft[]): InputOption[] =>
-  rows
-    .filter((row) => row.name.trim())
-    .map((row) => ({
-      value: row.name.trim(),
-      label: row.label.trim() || row.name.trim(),
-      type: row.type,
-    }));
+/** A reference takes its label and type from the global input it names, and one naming no
+ *  global input is left out. */
+export const inputOptions = (
+  rows: InputDraft[],
+  globals: GlobalInputs = new Map(),
+): InputOption[] =>
+  rows.flatMap((row) => {
+    const name = row.name.trim();
+    if (!name) return [];
+    if (!row.global)
+      return [{ value: name, label: row.label.trim() || name, type: row.type }];
+    const slot = globals.get(row.global);
+    if (!slot) return [];
+    const def = globalInputDef(slot);
+    return [{ value: name, label: def.label ?? name, type: def.type }];
+  });
 
 /** One `Bonus.formulas` entry. */
 export interface NamedFormulaDraft extends FormulaDraft {

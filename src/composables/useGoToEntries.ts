@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { expandSlots } from "../lib/item-picker-list";
 import { slotShown } from "../lib/slot-availability";
-import { isLayoutRow } from "../lib/row-visibility";
+import { isLayoutRow, shownOutsideSection } from "../lib/row-visibility";
 import { itemLabel } from "../engine/insignia";
 import type { GoToEntry } from "../lib/go-to";
 import * as engine from "../stores/resolved";
@@ -14,8 +14,8 @@ import * as layers from "../stores/layers";
  * typed: sections, then their slots, then builds, then layers.
  *
  * The slot list mirrors what BuildEditor.vue actually renders (`allSlotsBySection`): no
- * separators or text rows, since neither is a place the cursor can land, no `quick` slot (it
- * lives in the QuickOptions strip, not in a section) and no unavailable slot. Offering a target
+ * separators or text rows, since neither is a place the cursor can land, no slot shown outside
+ * its section (a `quick` one or a global input) and no unavailable slot. Offering a target
  * the editor has no row for is worse than not offering it. For the same reason a section with
  * no field the editor shows is left out, as the editor hides it.
  */
@@ -32,13 +32,11 @@ export function useGoToEntries() {
       const slots = expandSlots(db.slots, active).filter((slotDef) =>
         slotShown(slotDef, resolved.result.hiddenSlots),
       );
-      const isQuick = (slotDef: (typeof slots)[number]) =>
-        (slotDef.type === "build_parameter" ||
-          slotDef.type === "item_picker") &&
-        !!slotDef.quick;
       const withFields = new Set(
         slots
-          .filter((slotDef) => !isLayoutRow(slotDef) && !isQuick(slotDef))
+          .filter(
+            (slotDef) => !isLayoutRow(slotDef) && !shownOutsideSection(slotDef),
+          )
           .map((slotDef) => slotDef.section),
       );
       for (const section of db.sections) {
@@ -55,7 +53,7 @@ export function useGoToEntries() {
           if (slotDef.section !== section.id) continue;
           if (isLayoutRow(slotDef) || slotDef.type === "item_picker_list")
             continue;
-          if (isQuick(slotDef)) continue;
+          if (shownOutsideSection(slotDef)) continue;
           const item = itemBySlot.get(slotDef.id);
           entries.push({
             key: `slot:${slotDef.id}`,

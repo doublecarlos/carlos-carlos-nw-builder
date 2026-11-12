@@ -20,6 +20,7 @@ import {
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import { getPath } from "../lib/build-path";
+import { globalInputsOf } from "../engine/global-inputs";
 import { copyCounts, copyCountsExcluding } from "../lib/copy-counts";
 import {
   isPreferredSlot,
@@ -310,6 +311,7 @@ export function build(
     sections: slots?.sections ?? [],
     presets: slots?.presets ?? [],
     slotById,
+    globalInputs: globalInputsOf(slotList),
     slotFor,
     bonuses,
     bonusById,

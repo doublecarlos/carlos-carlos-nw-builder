@@ -10,6 +10,7 @@ import { getPath, setPath } from "../lib/build-path";
 import { writeTypedValues, type TypedValues } from "../lib/build-inputs";
 import { parseRowSlotId } from "../lib/item-picker-list";
 import { bonusStatConfigs } from "../engine/inputs";
+import { privateInputs } from "../engine/global-inputs";
 import type {
   BonusValues,
   Build,
@@ -154,11 +155,10 @@ function seedsFor(db: Db, slotId: string, itemId: string): TypedValues {
     const seed = seeds[bonus.id];
     if (!seed) continue;
     const stats = new Set(bonusStatConfigs(bonus).map((config) => config.stat));
+    const ownInputs = new Set(privateInputs(bonus).map(([name]) => name));
     bonusValues[bonus.id] = {
       stat: pick(seed.stat, (key) => stats.has(key)),
-      input: pick(seed.input, (name) =>
-        Object.hasOwn(bonus.inputs ?? {}, name),
-      ),
+      input: pick(seed.input, (name) => ownInputs.has(name)),
     };
   }
   return { values: { [slotId]: { stat } }, bonusValues };

@@ -37,6 +37,40 @@ describe("buildDraft / toSlot round trip", () => {
     expect(roundTrip(slot)).toEqual(slot);
   });
 
+  it("round-trips the global input flag", () => {
+    const slot: BuildParameterSlot = {
+      id: "globals.song",
+      label: "Played a song",
+      section: "globals",
+      type: "build_parameter",
+      paramType: "boolean",
+      path: "globals.song",
+      default: false,
+      globalInput: true,
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
+  // A global input has no row and is read only through bonus inputs, so the form never saves
+  // the quick or scaler fields it keeps for switching back.
+  it("drops quick and scaler from a global input", () => {
+    const draft = buildDraft({
+      id: "g",
+      label: "G",
+      section: "globals",
+      type: "build_parameter",
+      paramType: "number",
+      path: "g",
+      quick: true,
+      scaler: { mode: "absolute" },
+    });
+    draft.globalInput = true;
+    const slot = toSlot(draft, { id: "g" });
+    expect(slot).toMatchObject({ globalInput: true });
+    expect(slot).not.toHaveProperty("quick");
+    expect(slot).not.toHaveProperty("scaler");
+  });
+
   it("round-trips numeric bounds and a preset list, including a 0 min", () => {
     const slot: BuildParameterSlot = {
       id: "s2",

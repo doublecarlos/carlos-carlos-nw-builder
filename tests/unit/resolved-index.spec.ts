@@ -2,9 +2,11 @@
 // bonus inputs it notes because their bonus also comes from it.
 import { describe, it, expect } from "vitest";
 import {
+  globalInputReaders,
   groupBySlot,
   indexResolved,
   inputCopiesBySlot,
+  sharedNote,
 } from "../../src/lib/resolved-index";
 import { bonusInputAddress } from "../../src/lib/build-inputs";
 import type { InputEntry } from "../../src/engine/inputs";
@@ -43,6 +45,24 @@ function bonusInput(bonusId: string, slotId: string): InputEntry {
     value: 0,
     slotId,
     source: bonusId,
+    bonusInput: { bonusId, name: "stacks" },
+  } as InputEntry;
+}
+
+/** A global input's entry on one reader, as the engine's input table lists it. */
+function globalInput(
+  bonusId: string,
+  source: string,
+  slotId = bonusId,
+): InputEntry {
+  return {
+    kind: "bonusInput",
+    address: { store: "context", path: "globals.song" },
+    spec: { type: "boolean", label: "Song" },
+    value: 0,
+    slotId,
+    source,
+    bonusInput: { bonusId, name: "song", global: "globals.song" },
   } as InputEntry;
 }
 
@@ -111,5 +131,54 @@ describe("inputCopiesBySlot", () => {
     expect(inputCopiesBySlot([bonusInput("x", "ring")], new Map()).size).toBe(
       0,
     );
+  });
+});
+
+describe("global input readers", () => {
+  const readers = (entries: InputEntry[], carried: string[]) =>
+    globalInputReaders(
+      entries,
+      new Map(carried.map((id) => [id, bonus(id, id)])),
+    );
+
+  // The note tells the player that editing this control also changes the other rows.
+  it("names the readers on other rows", () => {
+    const a = globalInput("a", "Bard Ring");
+    const b = globalInput("b", "Bard Neck");
+    const c = globalInput("c", "Bard Belt");
+    const map = readers([a, b, c], ["a", "b", "c"]);
+    expect(sharedNote(a, map)).toBe("Shared with Bard Neck, Bard Belt");
+    expect(sharedNote(b, map)).toBe("Shared with Bard Ring, Bard Belt");
+  });
+
+  // Readers on one row share that row's control, so the note names only the other rows.
+  it("leaves out a reader on the same row", () => {
+    const a = globalInput("a", "Bard Ring", "ring");
+    const b = globalInput("b", "Bard Ring Proc", "ring");
+    const c = globalInput("c", "Bard Neck", "neck");
+    const map = readers([a, b, c], ["a", "b", "c"]);
+    expect(sharedNote(a, map)).toBe("Shared with Bard Neck");
+  });
+
+  it("has no note for a lone reader or a private input", () => {
+    const a = globalInput("a", "Bard Ring");
+    expect(sharedNote(a, readers([a], ["a"]))).toBeUndefined();
+    expect(
+      sharedNote(bonusInput("x", "ring"), readers([a], ["a"])),
+    ).toBeUndefined();
+  });
+
+  // A bonus resolved only as a 0-point preview is not equipped, so it shares nothing.
+  it("leaves out a reader no item on the build carries", () => {
+    const a = globalInput("a", "Bard Ring");
+    const b = globalInput("b", "Bard Neck");
+    const map = globalInputReaders(
+      [a, b],
+      new Map([
+        ["a", bonus("a", "a")],
+        ["b", bonus("b", "b", [])],
+      ]),
+    );
+    expect(sharedNote(a, map)).toBeUndefined();
   });
 });

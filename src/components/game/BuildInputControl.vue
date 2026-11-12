@@ -2,7 +2,8 @@
 // One typed value on a build-editor row (useSlotInputs.ts's `BuildInput`), rendered by its
 // `control`: a checkbox with its label, a stepper, a typed field noting its range, or a note
 // pointing to the row that holds the control. Presets go in InputRow's slot for them, which
-// places them by layout. Writes go straight to the store by the value's address.
+// places them by layout. Writes go straight to the store by the value's address. A global
+// input's control names the other rows sharing its value under it.
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import InputRow from "../ui/InputRow.vue";
@@ -100,4 +101,11 @@ function rangeNote() {
       rangeNote()
     }}</template>
   </InputRow>
+  <p
+    v-if="input.shared && input.control !== 'note'"
+    class="text-muted"
+    :data-testid="`${input.testid}-shared`"
+  >
+    {{ input.shared }}
+  </p>
 </template>

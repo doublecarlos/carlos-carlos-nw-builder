@@ -3,6 +3,7 @@
 // item form, which seeds them when a retired item migrates.
 import { numberOrUnset } from "./draft-fields";
 import { bonusStatConfigs } from "../engine/inputs";
+import { privateInputs } from "../engine/global-inputs";
 import type {
   BonusValues,
   Db,
@@ -25,7 +26,8 @@ export interface BonusSettingGroup {
   inputs: { name: string; def: InputDef }[];
 }
 
-/** The bonuses among `bonusIds` that declare dynamic stats or inputs. */
+/** The bonuses among `bonusIds` that declare dynamic stats or inputs of their own. A global
+ *  input is stored on the build, not under the bonus, so it has no setting here. */
 export function settingGroups(
   bonusIds: Iterable<string>,
   db: Pick<Db, "bonusById">,
@@ -34,10 +36,7 @@ export function settingGroups(
     const bonus = db.bonusById.get(bonusId);
     if (!bonus) return [];
     const configs = bonusStatConfigs(bonus);
-    const inputs = Object.entries(bonus.inputs ?? {}).map(([name, def]) => ({
-      name,
-      def,
-    }));
+    const inputs = privateInputs(bonus).map(([name, def]) => ({ name, def }));
     return configs.length || inputs.length
       ? [{ bonusId, name: bonus.name ?? bonusId, configs, inputs }]
       : [];

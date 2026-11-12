@@ -20,7 +20,7 @@ import {
   duplicateFormulaNames,
   formulaOwner,
 } from "../../src/lib/bonus-draft";
-import type { Bonus, Grant } from "../../src/types";
+import type { Bonus, Grant, InputDef } from "../../src/types";
 
 describe("bonus-draft problem payload", () => {
   it("a simple problem grant round-trips through the form, not JSON", () => {
@@ -589,7 +589,9 @@ describe("bonus-draft inputs", () => {
     });
     expect(row.presets).toBe("10, 3.6");
     row.presets = "25%, 3.6";
-    expect(rowsToInputs([row]).share.presets).toEqual([0.25, 0.036]);
+    expect((rowsToInputs([row]).share as InputDef).presets).toEqual([
+      0.25, 0.036,
+    ]);
   });
 
   it("leaves a number input's presets as typed", () => {
@@ -597,7 +599,7 @@ describe("bonus-draft inputs", () => {
       stacks: { type: "number", default: 0, presets: [1, 5] },
     });
     expect(row.presets).toBe("1, 5");
-    expect(rowsToInputs([row]).stacks.presets).toEqual([1, 5]);
+    expect((rowsToInputs([row]).stacks as InputDef).presets).toEqual([1, 5]);
   });
 
   it("writes control on a number only", () => {
@@ -619,6 +621,42 @@ describe("bonus-draft inputs", () => {
   it("reports names used twice", () => {
     const rows = ["a", "b", " a "].map((name) => ({ ...newInput(), name }));
     expect(duplicateInputNames(rows)).toEqual(["a"]);
+  });
+
+  // A reference saves nothing but the slot it names, so a global input's definition lives in
+  // one place.
+  it("round-trips a reference to a global input, keeping only the slot id", () => {
+    const [row] = inputRows({ song: { global: "globals.song" } });
+    expect(row).toMatchObject({ name: "song", global: "globals.song" });
+    row.type = "number";
+    row.label = "Leftover";
+    expect(rowsToInputs([row])).toEqual({ song: { global: "globals.song" } });
+    row.global = "";
+    expect(rowsToInputs([row]).song).toMatchObject({ type: "number" });
+  });
+
+  it("offers a reference with the global input's label and type", () => {
+    const globals = new Map([
+      [
+        "globals.hits",
+        {
+          id: "globals.hits",
+          label: "Recent hits",
+          section: "globals",
+          type: "build_parameter" as const,
+          paramType: "number" as const,
+          path: "globals.hits",
+          globalInput: true,
+        },
+      ],
+    ]);
+    const rows = inputRows({
+      hits: { global: "globals.hits" },
+      gone: { global: "globals.gone" },
+    });
+    expect(inputOptions(rows, globals)).toEqual([
+      { value: "hits", label: "Recent hits", type: "number" },
+    ]);
   });
 
   it("offers named inputs with their type for the input leaf", () => {
