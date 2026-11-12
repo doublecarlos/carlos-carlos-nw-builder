@@ -1668,7 +1668,7 @@
         },
         {
           "id": "globals.enemyTier.boss",
-          "label": "Fighting a boss",
+          "label": "Enemy: Boss",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.enemyTier.boss",
@@ -1677,7 +1677,7 @@
         },
         {
           "id": "globals.enemyType.cultist",
-          "label": "Fighting cultists",
+          "label": "Enemy: Cultist",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.enemyType.cultist",
@@ -1686,7 +1686,7 @@
         },
         {
           "id": "globals.enemyType.demon",
-          "label": "Fighting demons",
+          "label": "Enemy: Demon",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.enemyType.demon",
@@ -1695,7 +1695,7 @@
         },
         {
           "id": "globals.enemyType.devil",
-          "label": "Fighting devils",
+          "label": "Enemy: Devil",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.enemyType.devil",
@@ -1704,7 +1704,7 @@
         },
         {
           "id": "globals.enemyType.dinosaur",
-          "label": "Fighting dinosaurs",
+          "label": "Enemy: Dinosaur",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.enemyType.dinosaur",
@@ -1713,7 +1713,7 @@
         },
         {
           "id": "globals.enemyType.undead",
-          "label": "Fighting undead",
+          "label": "Enemy: Undead",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.enemyType.undead",
@@ -1722,7 +1722,7 @@
         },
         {
           "id": "globals.location.chult",
-          "label": "In Chult",
+          "label": "Location: Chult",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.location.chult",
@@ -1731,7 +1731,7 @@
         },
         {
           "id": "globals.location.thay",
-          "label": "In Thay",
+          "label": "Location: Thay",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.location.thay",
@@ -1740,7 +1740,7 @@
         },
         {
           "id": "globals.location.wildspace",
-          "label": "In Wildspace",
+          "label": "Location: Wildspace",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.location.wildspace",
@@ -1749,7 +1749,7 @@
         },
         {
           "id": "globals.location.swordCoast",
-          "label": "On Sword Coast",
+          "label": "Location: Sword Coast",
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.location.swordCoast",
