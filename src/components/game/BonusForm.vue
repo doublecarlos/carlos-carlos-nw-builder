@@ -186,7 +186,7 @@ const duplicateFormulaNames = computed(() =>
 /** The bonus's inputs as the `input` condition leaf offers them, read live off the draft so a
  *  just-declared input is pickable before saving. */
 const inputOptions = computed(() =>
-  bonusDraft.inputOptions(draft.value.inputs),
+  bonusDraft.inputOptions(draft.value.inputs, props.db.globalInputs),
 );
 const duplicateInputNames = computed(() =>
   bonusDraft.duplicateInputNames(draft.value.inputs),
@@ -311,11 +311,12 @@ if (bonusDraftRegistry && props.registryId) {
       <FormSection :nested="embedded">Inputs</FormSection>
       <FormSectionDescription
         >Values the player sets on the build, on the first item carrying this
-        bonus. Can be used in formulas and in "input"
-        conditions.</FormSectionDescription
+        bonus. A global input is shared with every other bonus reading it. Can
+        be used in formulas and in "input" conditions.</FormSectionDescription
       >
       <BonusInputRowList
         :rows="draft.inputs"
+        :globals="db.globalInputs"
         @add="draft.inputs.push(bonusDraft.newInput())"
         @remove="(i) => draft.inputs.splice(i, 1)"
       />

@@ -8,6 +8,7 @@ import type {
   ConditionWhen,
   FormulaRef,
   FormulaScope,
+  InputDef,
   ScaleSteps,
 } from "../../types";
 import {
@@ -21,6 +22,12 @@ import { FORMULA_VARIABLES, FUNCTIONS, lookupCalls } from "./functions";
 import { parseFormula } from "./language";
 
 // Named references
+
+/** A bonus's inputs with references to global inputs resolved (`withInputDefs`), what the
+ *  checks reading an input's type or bounds take. */
+export interface InputOwner {
+  inputs?: Record<string, InputDef>;
+}
 
 /** The bonus declarations a `$name` resolves against. */
 export interface NamedScope {
@@ -237,7 +244,7 @@ export interface FormulaLint extends FormulaIssue {
  *  same thing. */
 export function lintFormula(
   formula: string,
-  owner: Pick<Bonus, "id" | "inputs" | "formulas">,
+  owner: Pick<Bonus, "id" | "formulas"> & InputOwner,
   vocabulary: FormulaVocabulary,
 ): FormulaLint[] {
   const inputs = owner.inputs ?? {};
@@ -356,7 +363,7 @@ export function stepValues(steps: ScaleSteps): number[] {
 export function stepsProblem(
   steps: ScaleSteps,
   formula: string,
-  owner: Pick<Bonus, "inputs" | "formulas">,
+  owner: Pick<Bonus, "formulas"> & InputOwner,
 ): string | null {
   if (!steps || typeof steps !== "object")
     return "steps must be { over, min, max, step }";
@@ -388,7 +395,7 @@ export function stepsProblem(
  *  declare no bounds. */
 export function stepsRangeWarning(
   steps: ScaleSteps,
-  owner: Pick<Bonus, "inputs">,
+  owner: InputOwner,
 ): string | null {
   const axis = stepAxis(steps.over);
   const def = axis?.kind === "input" ? owner.inputs?.[axis.name] : undefined;

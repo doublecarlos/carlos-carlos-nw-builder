@@ -124,6 +124,10 @@ export interface BuildParameterSlot {
   path: string;
   /** Shown in the always-visible QuickOptions strip instead of its section's slot list. */
   quick?: boolean;
+  /** A global input: a value several bonuses share, read through a `GlobalInputRef` in each
+   *  reader's `inputs`. The build editor shows it on the equipped readers' rows instead of a
+   *  row of its own. */
+  globalInput?: boolean;
   default?: string | number | boolean;
   options?: { value: string; label: string }[];
   /** `list` only: derive the option set from the item catalog instead of enumerating it
@@ -731,12 +735,22 @@ export interface InputDef {
   label?: string;
 }
 
+/** A bonus input defined by a `globalInput` slot, named by its id. The value is stored at the
+ *  slot's path, so every bonus referencing the slot reads the same one. */
+export interface GlobalInputRef {
+  global: string;
+}
+
+/** A bonus input as declared: its own definition, or a reference to a global input. */
+export type InputDecl = InputDef | GlobalInputRef;
+
 export interface Bonus {
   id: string;
   name?: string;
   /** Values the player sets, by name. One value per bonus per build: every copy and carrier
-   *  of the bonus reads the same one, as duplicate procs trigger together. */
-  inputs?: Record<string, InputDef>;
+   *  of the bonus reads the same one, as duplicate procs trigger together. A reference reads
+   *  a value shared with every other bonus referencing the same global input. */
+  inputs?: Record<string, InputDecl>;
   /** Formulas any formula site of this bonus reads as `$name`. */
   formulas?: Record<string, FormulaRef>;
   grants?: Grant[];
@@ -770,6 +784,8 @@ export interface Db {
   sections: SlotSection[];
   presets: SectionPreset[];
   slotById: Map<string, Slot>;
+  /** Every `globalInput` slot, by id: what a `GlobalInputRef` resolves against. */
+  globalInputs: ReadonlyMap<string, BuildParameterSlot>;
   bonuses: Bonus[];
   bonusById: Map<string, Bonus>;
   bonusMembers: Map<string, string[]>;
@@ -1070,6 +1086,8 @@ export interface EvalContext {
   /** The `self` bonus's inputs, by name, what the `input` leaf reads. Set per bonus alongside
    *  `self`. */
   inputs?: Map<string, ResolvedInput>;
+  /** Every `globalInput` slot, by id, which a bonus's input references resolve against. */
+  globalInputs?: ReadonlyMap<string, BuildParameterSlot>;
   /** The `self` bonus's named formulas and their results so far. Set per bonus alongside
    *  `self`. */
   formulas?: FormulaScope;

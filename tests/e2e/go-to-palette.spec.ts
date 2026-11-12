@@ -25,6 +25,12 @@ import {
 import { newInOutline, openSlotsTab } from "./support/layerEditor";
 import { TEST_HEAD } from "./support/testHead";
 import { importTestCatalog } from "./support/testCatalog";
+import {
+  GATED_SECTION,
+  SECTION,
+  combatToggle,
+  openWithRows,
+} from "./support/rowVisibilityCatalog";
 
 const palette = (page: Page) => page.getByTestId("go-to-palette");
 const input = (page: Page) => page.getByTestId("go-to-input");
@@ -377,5 +383,20 @@ test.describe("choosing a destination", () => {
       "data-cursor-key",
       "slot:field-notes.scribble",
     );
+  });
+
+  test("a section with no field shown is no destination, while one with fields still is", async ({
+    page,
+  }) => {
+    await openWithRows(page);
+    await openPalette(page, "test");
+    await expect(option(page, `section:${GATED_SECTION}`)).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // The editor hides a section whose fields are all unavailable, so there is nowhere to land.
+    await combatToggle(page).uncheck();
+    await openPalette(page, "test");
+    await expect(option(page, `section:${SECTION}`)).toBeVisible();
+    await expect(option(page, `section:${GATED_SECTION}`)).toBeHidden();
   });
 });

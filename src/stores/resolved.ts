@@ -7,6 +7,7 @@ import { inputEntries, type InputEntry } from "../engine/inputs";
 import { inspectorBonuses, isNearMiss } from "../lib/bonus-inspector";
 import {
   emptyIndex,
+  globalInputReaders,
   groupBySlot,
   indexResolved,
   inputCopiesBySlot,
@@ -138,4 +139,9 @@ export const inputsBySlot = computed<Map<string, InputEntry[]>>(() =>
 /** The bonus inputs each slot notes because their bonus also comes from it. */
 export const inputCopies = computed<Map<string, InputCopy[]>>(() =>
   inputCopiesBySlot(inputs.value, bonusById.value),
+);
+
+/** The bonuses on the build reading each global input, by its slot id. */
+export const globalReaders = computed<Map<string, InputEntry[]>>(() =>
+  globalInputReaders(inputs.value, bonusById.value),
 );
