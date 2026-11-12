@@ -2,6 +2,7 @@ import { computed } from "vue";
 import { expandSlots } from "../lib/item-picker-list";
 import { slotShown } from "../lib/slot-availability";
 import { isLayoutRow } from "../lib/row-visibility";
+import { isQuick } from "../lib/quick-summary";
 import { itemLabel } from "../engine/insignia";
 import type { GoToEntry } from "../lib/go-to";
 import * as engine from "../stores/resolved";
@@ -32,10 +33,6 @@ export function useGoToEntries() {
       const slots = expandSlots(db.slots, active).filter((slotDef) =>
         slotShown(slotDef, resolved.result.hiddenSlots),
       );
-      const isQuick = (slotDef: (typeof slots)[number]) =>
-        (slotDef.type === "build_parameter" ||
-          slotDef.type === "item_picker") &&
-        !!slotDef.quick;
       const withFields = new Set(
         slots
           .filter((slotDef) => !isLayoutRow(slotDef) && !isQuick(slotDef))
