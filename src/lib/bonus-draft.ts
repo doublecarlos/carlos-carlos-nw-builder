@@ -46,6 +46,7 @@ import type {
   GrantVariant,
   GrantProblem,
   Bonus,
+  BuildParameterSlot,
   StatValues,
   DynamicStatConfig,
   InputDecl,
@@ -57,6 +58,7 @@ import {
   isGlobalRef,
   type GlobalInputs,
 } from "../engine/global-inputs";
+import { globalInputSlot } from "./slot-draft";
 
 // Exactly what the form edits on a grant and a tier. Anything else would be dropped by the
 // form, so its presence forces JSON mode instead.
@@ -602,6 +604,61 @@ export const inputOptions = (
     const def = globalInputDef(slot);
     return [{ value: name, label: def.label ?? name, type: def.type }];
   });
+
+/** What "Make global" offers for one input row: the definition the global input takes over,
+ *  and the other bonuses defining an input of the same name and type, which can read it too. */
+export interface MakeGlobalOffer {
+  name: string;
+  def: InputDef;
+  others: Bonus[];
+}
+
+/** The offer for `row` of bonus `bonusId`, or null for a reference or an unnamed row. */
+export function makeGlobalOffer(
+  row: InputDraft,
+  bonusId: string,
+  bonuses: readonly Bonus[],
+): MakeGlobalOffer | null {
+  const name = row.name.trim();
+  if (!name || row.global) return null;
+  const def = rowsToInputs([row])[name] as InputDef;
+  const others = bonuses.filter((bonus) => {
+    const decl = bonus.inputs?.[name];
+    return (
+      bonus.id !== bonusId &&
+      decl !== undefined &&
+      !isGlobalRef(decl) &&
+      decl.type === def.type
+    );
+  });
+  return { name, def, others };
+}
+
+/** `bonus` reading its input `name` from the global input `slotId`. The local name stays, as
+ *  it is how a build's stored value finds its new address. */
+export const readingGlobal = (
+  bonus: Bonus,
+  name: string,
+  slotId: string,
+): Bonus => ({
+  ...bonus,
+  inputs: { ...bonus.inputs, [name]: { global: slotId } },
+});
+
+/** "Make global" as entities: a new global input defined as `def`, clear of the slot ids and
+ *  paths in `taken`, and each of `readers` reading it as `name`. */
+export function makeGlobal(
+  name: string,
+  def: InputDef,
+  readers: readonly Bonus[],
+  taken: readonly string[],
+): { slot: BuildParameterSlot; readers: Bonus[] } {
+  const slot = globalInputSlot(name, def, taken);
+  return {
+    slot,
+    readers: readers.map((bonus) => readingGlobal(bonus, name, slot.id)),
+  };
+}
 
 /** One `Bonus.formulas` entry. */
 export interface NamedFormulaDraft extends FormulaDraft {

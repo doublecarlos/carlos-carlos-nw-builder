@@ -19,7 +19,10 @@ import {
   rowsToNamedFormulas,
   duplicateFormulaNames,
   formulaOwner,
+  makeGlobal,
+  makeGlobalOffer,
 } from "../../src/lib/bonus-draft";
+import { globalInputDef } from "../../src/engine/global-inputs";
 import type { Bonus, Grant, InputDef } from "../../src/types";
 
 describe("bonus-draft problem payload", () => {
@@ -713,5 +716,56 @@ describe("bonus-draft diffLabel", () => {
     expect(label(base, { ...base, excludes: ["x", "y"] })).toBe(
       "add excludes (2)",
     );
+  });
+});
+
+describe("make global", () => {
+  const hitsDef: InputDef = {
+    type: "number",
+    default: 2,
+    min: 0,
+    max: 10,
+    label: "Recent hits",
+  };
+  const defining = (id: string, def: InputDef): Bonus => ({
+    id,
+    name: id,
+    inputs: { hits: def },
+    grants: [],
+  });
+  const bonuses = [
+    defining("own", hitsDef),
+    defining("same", { type: "number", default: 0 }),
+    defining("other-type", { type: "boolean", default: false }),
+    { id: "reader", inputs: { hits: { global: "globals.hits" } }, grants: [] },
+  ];
+
+  // Only an input that could share one value is offered: same name, same type, not already
+  // a reference.
+  it("offers the other bonuses defining an input of the same name and type", () => {
+    const [row] = inputRows({ hits: hitsDef });
+    const offer = makeGlobalOffer(row, "own", bonuses);
+    expect(offer?.def).toEqual(hitsDef);
+    expect(offer?.others.map((bonus) => bonus.id)).toEqual(["same"]);
+  });
+
+  it("offers nothing for a reference or an unnamed row", () => {
+    const [ref] = inputRows({ hits: { global: "globals.hits" } });
+    expect(makeGlobalOffer(ref, "reader", bonuses)).toBeNull();
+    expect(makeGlobalOffer(newInput(), "own", bonuses)).toBeNull();
+  });
+
+  // The global input reads as the input did, and each reader keeps the local name, which is
+  // what moves a build's stored value onto the new path.
+  it("defines the global input as the input was and keeps the local name", () => {
+    const made = makeGlobal("hits", hitsDef, bonuses.slice(0, 2), [
+      "globals.recent-hits",
+    ]);
+    expect(made.slot).toMatchObject({ globalInput: true, section: "globals" });
+    expect(made.slot.id).not.toBe("globals.recent-hits");
+    expect(made.slot.path).toBe(made.slot.id);
+    expect(globalInputDef(made.slot)).toEqual(hitsDef);
+    for (const bonus of made.readers)
+      expect(bonus.inputs).toEqual({ hits: { global: made.slot.id } });
   });
 });

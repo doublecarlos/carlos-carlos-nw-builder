@@ -2,7 +2,7 @@
 // Editing form for one bonus. Hybrid approach:
 // - Existing bonuses (source != null): live edits, changes emit immediately
 // - New bonuses (source == null): explicit Save button, draft until name is finalized
-import { computed, inject, onMounted, onUnmounted } from "vue";
+import { computed, inject, onMounted, onUnmounted, shallowRef } from "vue";
 import BonusRows from "./BonusRows.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
@@ -21,10 +21,11 @@ import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import BonusOptionRow from "./BonusOptionRow.vue";
 import BonusInputRowList from "./BonusInputRowList.vue";
+import MakeGlobalDialog from "./MakeGlobalDialog.vue";
 import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
 import { inputFormulaClashes, namedCycles } from "../../engine/formula";
-import type { Bonus, BonusOption, Db } from "../../types";
+import type { Bonus, BonusOption, Db, InputDef } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -67,6 +68,9 @@ const props = withDefaults(
     collapsed?: boolean;
     /** Whether the header bar's inert area raises `toggle`, see DraftFormBar.vue. */
     toggleable?: boolean;
+    /** Whether a saved bonus's own inputs offer "Make global", which the host writes as one
+     *  layer edit (`make-global`). */
+    canMakeGlobal?: boolean;
   }>(),
   {
     source: null,
@@ -84,6 +88,7 @@ const props = withDefaults(
     canDelete: true,
     collapsed: false,
     toggleable: false,
+    canMakeGlobal: false,
   },
 );
 
@@ -99,6 +104,9 @@ const emit = defineEmits<{
   toggle: [];
   /** A "Granted by" member link was clicked: open that item in the editor. */
   "open-item": [itemId: string];
+  /** "Make global" was confirmed on input `name`: a new global input defined as `def`, read
+   *  by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
+  "make-global": [payload: { name: string; def: InputDef; readers: Bonus[] }];
 }>();
 
 function computeId(local: bonusDraft.BonusDraft): string {
@@ -191,6 +199,36 @@ const inputOptions = computed(() =>
 const duplicateInputNames = computed(() =>
   bonusDraft.duplicateInputNames(draft.value.inputs),
 );
+
+/** The open "Make global" offer, or null. */
+const makeGlobal = shallowRef<bonusDraft.MakeGlobalOffer | null>(null);
+
+function offerMakeGlobal(index: number) {
+  if (!props.source) return;
+  makeGlobal.value = bonusDraft.makeGlobalOffer(
+    draft.value.inputs[index],
+    props.source.id,
+    props.db.bonuses,
+  );
+}
+
+function confirmMakeGlobal(otherIds: string[]) {
+  const offer = makeGlobal.value;
+  if (!offer) return;
+  let bonus: Bonus;
+  try {
+    bonus = toBonus(draft.value);
+  } catch (err: unknown) {
+    error.value = `A grant has invalid JSON: ${err instanceof Error ? err.message : String(err)}`;
+    return;
+  }
+  const others = offer.others.filter((other) => otherIds.includes(other.id));
+  emit("make-global", {
+    name: offer.name,
+    def: offer.def,
+    readers: [bonus, ...others],
+  });
+}
 
 defineExpose({ draft, dirty });
 
@@ -317,8 +355,17 @@ if (bonusDraftRegistry && props.registryId) {
       <BonusInputRowList
         :rows="draft.inputs"
         :globals="db.globalInputs"
+        :can-make-global="canMakeGlobal && Boolean(source)"
         @add="draft.inputs.push(bonusDraft.newInput())"
         @remove="(i) => draft.inputs.splice(i, 1)"
+        @make-global="offerMakeGlobal"
+      />
+      <MakeGlobalDialog
+        v-if="makeGlobal"
+        :name="makeGlobal.name"
+        :others="makeGlobal.others"
+        @confirm="confirmMakeGlobal"
+        @close="makeGlobal = null"
       />
       <p
         v-if="duplicateInputNames.length"
