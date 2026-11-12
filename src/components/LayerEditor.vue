@@ -84,8 +84,12 @@ import {
   type ItemListFilter,
 } from "../lib/item-list-filter";
 import { editorDb } from "../lib/editor-db";
-import { makeGlobal } from "../lib/bonus-draft";
-import { GLOBAL_INPUTS_SECTION } from "../lib/slot-draft";
+import type { MakeGlobalScope } from "../lib/bonus-draft";
+import {
+  makeGlobalOverlay,
+  shadowedEntries,
+  type MakeGlobalRequest,
+} from "../lib/make-global";
 import { viewportKind } from "../lib/shell-layout";
 import { layerEditorLayout, viewOf } from "../lib/layer-editor-layout";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
@@ -98,7 +102,6 @@ import type {
   Bonus,
   BonusOption,
   FilterDef,
-  InputDef,
   SectionPreset,
   Slot,
   SlotSection,
@@ -1212,40 +1215,25 @@ const onUpdateBonusTop = ({
   label: string;
 }) => updateEntry("bonuses", id, bonus, label);
 
-/** "Make global" from the bonus form: the new global input, its section when the catalog has
- *  none, and every converted reader land in this layer as one undo step, so builds move their
- *  stored values in one pass with every reader known. */
-function onMakeGlobal({
-  name,
-  def,
-  readers,
-}: {
-  name: string;
-  def: InputDef;
-  readers: Bonus[];
-}) {
-  const taken = [
-    ...allocatableIds.value.slots,
-    ...db.value.slots.flatMap((slot) =>
-      slot.type === "build_parameter" ? [slot.path] : [],
-    ),
-  ];
-  const made = makeGlobal(name, def, readers, taken);
-  let next = overlay.value;
-  if (!db.value.sections.some((section) => section.id === made.slot.section))
-    next = catalog.upsert(
-      next,
-      "sections",
-      GLOBAL_INPUTS_SECTION.id,
-      GLOBAL_INPUTS_SECTION,
-    );
-  next = catalog.upsert(next, "slots", made.slot.id, made.slot);
-  for (const bonus of made.readers)
-    next = catalog.upsert(next, "bonuses", bonus.id, bonus);
-  commit(null, `Make input "${name}" global`, next);
-  const count = made.readers.length;
+/** Where "Make global" writes, for the bonus form to say which bonuses it would copy in and
+ *  which a higher layer overrides. */
+const makeGlobalScope = computed<MakeGlobalScope>(() => ({
+  inLayer: new Set(Object.keys(overlay.value.bonuses)),
+  shadowedBy: shadowedEntries(layers.layers.value, props.layer.id, "bonuses"),
+}));
+
+/** "Make global" from the bonus form, as one undo step. */
+function onMakeGlobal(request: MakeGlobalRequest) {
+  const { overlay: next } = makeGlobalOverlay(
+    overlay.value,
+    db.value,
+    allocatableIds.value.slots,
+    request,
+  );
+  commit(null, `Make input "${request.name}" global`, next);
+  const count = request.readers.length;
   showNotice(
-    `Made “${name}” a global input, read by ${count} bonus${count === 1 ? "" : "es"}`,
+    `Made “${request.name}” a global input, read by ${count} bonus${count === 1 ? "" : "es"}`,
   );
 }
 
@@ -1898,7 +1886,7 @@ onUnmounted(() => {
           :tags="tagList"
           :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds.bonuses"
-          can-make-global
+          :make-global-scope="makeGlobalScope"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
           @make-global="onMakeGlobal"

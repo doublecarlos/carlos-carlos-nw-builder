@@ -25,7 +25,8 @@ import MakeGlobalDialog from "./MakeGlobalDialog.vue";
 import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
 import { inputFormulaClashes, namedCycles } from "../../engine/formula";
-import type { Bonus, BonusOption, Db, InputDef } from "../../types";
+import type { Bonus, BonusOption, Db } from "../../types";
+import type { MakeGlobalRequest } from "../../lib/make-global";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -68,9 +69,9 @@ const props = withDefaults(
     collapsed?: boolean;
     /** Whether the header bar's inert area raises `toggle`, see DraftFormBar.vue. */
     toggleable?: boolean;
-    /** Whether a saved bonus's own inputs offer "Make global", which the host writes as one
-     *  layer edit (`make-global`). */
-    canMakeGlobal?: boolean;
+    /** Where "Make global" writes. When set, a saved bonus's own inputs offer it, and the host
+     *  writes the result as one layer edit (`make-global`). */
+    makeGlobalScope?: bonusDraft.MakeGlobalScope | null;
   }>(),
   {
     source: null,
@@ -88,7 +89,7 @@ const props = withDefaults(
     canDelete: true,
     collapsed: false,
     toggleable: false,
-    canMakeGlobal: false,
+    makeGlobalScope: null,
   },
 );
 
@@ -106,7 +107,7 @@ const emit = defineEmits<{
   "open-item": [itemId: string];
   /** "Make global" was confirmed on input `name`: a new global input defined as `def`, read
    *  by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
-  "make-global": [payload: { name: string; def: InputDef; readers: Bonus[] }];
+  "make-global": [payload: MakeGlobalRequest];
 }>();
 
 function computeId(local: bonusDraft.BonusDraft): string {
@@ -204,25 +205,23 @@ const duplicateInputNames = computed(() =>
 const makeGlobal = shallowRef<bonusDraft.MakeGlobalOffer | null>(null);
 
 function offerMakeGlobal(index: number) {
-  if (!props.source) return;
+  if (!props.source || !props.makeGlobalScope) return;
   makeGlobal.value = bonusDraft.makeGlobalOffer(
     draft.value.inputs[index],
     props.source.id,
     props.db.bonuses,
+    props.makeGlobalScope,
   );
 }
 
 function confirmMakeGlobal(otherIds: string[]) {
   const offer = makeGlobal.value;
-  if (!offer) return;
-  let bonus: Bonus;
-  try {
-    bonus = toBonus(draft.value);
-  } catch (err: unknown) {
-    error.value = `A grant has invalid JSON: ${err instanceof Error ? err.message : String(err)}`;
-    return;
-  }
-  const others = offer.others.filter((other) => otherIds.includes(other.id));
+  // Written as drafted, so it passes the same checks as a save.
+  const bonus = offer && checkedBonus();
+  if (!offer || !bonus) return;
+  const others = offer.others
+    .filter((other) => otherIds.includes(other.bonus.id))
+    .map((other) => other.bonus);
   emit("make-global", {
     name: offer.name,
     def: offer.def,
@@ -232,27 +231,32 @@ function confirmMakeGlobal(otherIds: string[]) {
 
 defineExpose({ draft, dirty });
 
-function save() {
+/** The draft as a bonus, or null with `error` saying why it cannot be written yet: no name,
+ *  a half-drawn condition `toBonus` would drop, or a grant's invalid JSON. */
+function checkedBonus(): Bonus | null {
   error.value = "";
-  const name = draft.value.name.trim();
-  if (!name) {
+  if (!draft.value.name.trim()) {
     error.value = "The bonus needs a name.";
-    return;
+    return null;
   }
   if (
     !draft.value.grants.every((grant) => bonusDraft.grantWhenIsComplete(grant))
   ) {
     error.value =
       "A grant has an unfinished condition; fill in its value or remove the condition before saving.";
-    return;
+    return null;
   }
-  let bonus: Bonus;
   try {
-    bonus = toBonus(draft.value);
+    return toBonus(draft.value);
   } catch (err: unknown) {
     error.value = `A grant has invalid JSON: ${err instanceof Error ? err.message : String(err)}`;
-    return;
+    return null;
   }
+}
+
+function save() {
+  const bonus = checkedBonus();
+  if (!bonus) return;
   emit("save", { id: bonus.id, bonus });
 }
 
@@ -355,7 +359,7 @@ if (bonusDraftRegistry && props.registryId) {
       <BonusInputRowList
         :rows="draft.inputs"
         :globals="db.globalInputs"
-        :can-make-global="canMakeGlobal && Boolean(source)"
+        :can-make-global="Boolean(makeGlobalScope && source)"
         @add="draft.inputs.push(bonusDraft.newInput())"
         @remove="(i) => draft.inputs.splice(i, 1)"
         @make-global="offerMakeGlobal"

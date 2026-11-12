@@ -278,6 +278,7 @@ function trashBuild(id: string): RowPlacement | null {
 function restoreBuild(id: string, placement: RowPlacement): boolean {
   const item = trash.takeById("build", id);
   if (!item) return false;
+  syncStored(item);
   addBuild(item, placement);
   return true;
 }

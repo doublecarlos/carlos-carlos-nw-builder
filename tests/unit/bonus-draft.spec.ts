@@ -19,10 +19,8 @@ import {
   rowsToNamedFormulas,
   duplicateFormulaNames,
   formulaOwner,
-  makeGlobal,
   makeGlobalOffer,
 } from "../../src/lib/bonus-draft";
-import { globalInputDef } from "../../src/engine/global-inputs";
 import type { Bonus, Grant, InputDef } from "../../src/types";
 
 describe("bonus-draft problem payload", () => {
@@ -719,7 +717,7 @@ describe("bonus-draft diffLabel", () => {
   });
 });
 
-describe("make global", () => {
+describe("make global offer", () => {
   const hitsDef: InputDef = {
     type: "number",
     default: 2,
@@ -739,33 +737,38 @@ describe("make global", () => {
     defining("other-type", { type: "boolean", default: false }),
     { id: "reader", inputs: { hits: { global: "globals.hits" } }, grants: [] },
   ];
+  const scope = { inLayer: new Set<string>(), shadowedBy: new Map() };
 
   // Only an input that could share one value is offered: same name, same type, not already
   // a reference.
   it("offers the other bonuses defining an input of the same name and type", () => {
     const [row] = inputRows({ hits: hitsDef });
-    const offer = makeGlobalOffer(row, "own", bonuses);
+    const offer = makeGlobalOffer(row, "own", bonuses, scope);
     expect(offer?.def).toEqual(hitsDef);
-    expect(offer?.others.map((bonus) => bonus.id)).toEqual(["same"]);
+    expect(offer?.others.map((other) => other.bonus.id)).toEqual(["same"]);
+  });
+
+  // The dialog says what converting does: copy a bonus in, or nothing under a higher layer.
+  it("marks a bonus from elsewhere as copied, and one a higher layer overrides", () => {
+    const [row] = inputRows({ hits: hitsDef });
+    const inLayer = makeGlobalOffer(row, "own", bonuses, {
+      inLayer: new Set(["same"]),
+      shadowedBy: new Map(),
+    });
+    expect(inLayer?.others[0]).toEqual({ bonus: bonuses[1], copied: false });
+    const shadowed = makeGlobalOffer(row, "own", bonuses, {
+      inLayer: new Set(),
+      shadowedBy: new Map([["same", "Top"]]),
+    });
+    expect(shadowed?.others[0]).toMatchObject({
+      copied: true,
+      shadowedBy: "Top",
+    });
   });
 
   it("offers nothing for a reference or an unnamed row", () => {
     const [ref] = inputRows({ hits: { global: "globals.hits" } });
-    expect(makeGlobalOffer(ref, "reader", bonuses)).toBeNull();
-    expect(makeGlobalOffer(newInput(), "own", bonuses)).toBeNull();
-  });
-
-  // The global input reads as the input did, and each reader keeps the local name, which is
-  // what moves a build's stored value onto the new path.
-  it("defines the global input as the input was and keeps the local name", () => {
-    const made = makeGlobal("hits", hitsDef, bonuses.slice(0, 2), [
-      "globals.recent-hits",
-    ]);
-    expect(made.slot).toMatchObject({ globalInput: true, section: "globals" });
-    expect(made.slot.id).not.toBe("globals.recent-hits");
-    expect(made.slot.path).toBe(made.slot.id);
-    expect(globalInputDef(made.slot)).toEqual(hitsDef);
-    for (const bonus of made.readers)
-      expect(bonus.inputs).toEqual({ hits: { global: made.slot.id } });
+    expect(makeGlobalOffer(ref, "reader", bonuses, scope)).toBeNull();
+    expect(makeGlobalOffer(newInput(), "own", bonuses, scope)).toBeNull();
   });
 });

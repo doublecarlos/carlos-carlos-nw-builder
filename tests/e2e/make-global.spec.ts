@@ -6,6 +6,7 @@ import {
   ensureSectionExpanded,
   openBuilder,
   slotRow,
+  undoButton,
 } from "./support/app";
 import { buildRow, layerRow } from "./support/nav";
 import { importTestCatalog } from "./support/testCatalog";
@@ -84,4 +85,18 @@ test("making an input global shares it with the picked bonuses and keeps the bui
   await expect(drum(page)).toBeChecked();
   await drum(page).uncheck();
   await expect(lute(page)).not.toBeChecked();
+  await drum(page).check();
+
+  // Undoing the layer edit demotes the input: each reader gets the shared value as its own.
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
+  await expect(page.getByTestId("bonus-input-global-summary")).toBeVisible();
+  await undoButton(page).click();
+  await expect(page.getByTestId("bonus-input-make-global")).toBeVisible();
+  await buildRow(page, "Test catalog").locator(".nav-name").click();
+  await ensureSectionExpanded(page, "gear");
+  await expect(lute(page)).toBeChecked();
+  await expect(drum(page)).toBeChecked();
+  // Private again: setting one leaves the other alone.
+  await lute(page).uncheck();
+  await expect(drum(page)).toBeChecked();
 });

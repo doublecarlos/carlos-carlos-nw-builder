@@ -67,10 +67,11 @@ async function freshStores() {
   const history = await import("../../../src/stores/history");
   const layers = await import("../../../src/stores/layers");
   const storage = await import("../../../src/storage/storage");
+  const navHistory = await import("../../../src/stores/navHistory");
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
-  return { builds, buildEditor, history, layers, storage };
+  return { builds, buildEditor, history, layers, storage, navHistory };
 }
 
 /** One build in the pool, synced against a layer holding `overlay`. */
@@ -147,6 +148,21 @@ describe("an undo restore", () => {
   });
 });
 
+describe("undoing a delete", () => {
+  // The build sat in the trash while the catalog changed, so it missed that sync.
+  it("migrates a build the catalog promoted an input of while it was deleted", async () => {
+    const { builds, layers, navHistory, layerId, id } =
+      await withLayer(privateOverlay());
+    builds.get(id)!.bonusValues = structuredClone(privateValue);
+    builds.deleteBuild(id);
+    layers.updateOverlay(layerId, promotedOverlay());
+    await nextTick();
+    navHistory.undo();
+    expect(songAt(builds.get(id))).toBe(true);
+    expect(builds.get(id)!.bonusValues).toEqual({});
+  });
+});
+
 describe("an import", () => {
   // The snapshot moves too, or the import reads as changed since its download at once.
   it("migrates the build and its downloaded snapshot alike", async () => {
@@ -165,41 +181,91 @@ describe("an import", () => {
   });
 });
 
+/** Boots the stores from a backend holding `builds` and `layers`, the layers in that order.
+ *  `before` runs on the fresh stores first. */
+async function boot(
+  stored: (storage: typeof import("../../../src/storage/storage")) => {
+    builds: Build[];
+    overlays: CatalogOverlay[];
+  },
+  before?: (stores: {
+    layers: typeof import("../../../src/stores/layers");
+  }) => Promise<void>,
+) {
+  vi.resetModules();
+  const { installWindowShim } = await import("./window-shim");
+  installWindowShim();
+  const idb = await import("../../../src/storage/idb");
+  const storage = await import("../../../src/storage/storage");
+  const { builds: storedBuilds, overlays } = stored(storage);
+  const storedLayers = overlays.map((overlay, index) => ({
+    ...storage.defaultLayer(`L${index}`),
+    overlay,
+  }));
+  const backend: Backend = {
+    get: async (store) =>
+      store === "meta"
+        ? {
+            buildOrder: storedBuilds.map((b) => b.id),
+            folders: [],
+            layerOrder: storedLayers.map((l) => l.id),
+            lastSelection: null,
+          }
+        : null,
+    getAll: async (store) =>
+      store === "builds"
+        ? storedBuilds
+        : store === "layers"
+          ? storedLayers
+          : [],
+    put: async () => {},
+    remove: async () => {},
+  };
+  idb.setBackend(backend);
+  const bootstrap = await import("../../../src/stores/bootstrap");
+  const builds = await import("../../../src/stores/builds");
+  const layers = await import("../../../src/stores/layers");
+  await before?.({ layers });
+  await bootstrap.hydrate();
+  await nextTick();
+  return { builds, id: storedBuilds[0].id };
+}
+
 describe("a load", () => {
   it("migrates a stored build against its stored layers", async () => {
-    vi.resetModules();
-    const { installWindowShim } = await import("./window-shim");
-    installWindowShim();
-    const idb = await import("../../../src/storage/idb");
-    const storage = await import("../../../src/storage/storage");
-    const stored = {
-      ...storage.defaultBuild("Stored"),
-      bonusValues: privateValue,
-    };
-    const layer = {
-      ...storage.defaultLayer("L"),
-      overlay: promotedOverlay(),
-    };
-    const backend: Backend = {
-      get: async (store) =>
-        store === "meta"
-          ? {
-              buildOrder: [stored.id],
-              folders: [],
-              layerOrder: [layer.id],
-              lastSelection: null,
-            }
-          : null,
-      getAll: async (store) =>
-        store === "builds" ? [stored] : store === "layers" ? [layer] : [],
-      put: async () => {},
-      remove: async () => {},
-    };
-    idb.setBackend(backend);
-    const bootstrap = await import("../../../src/stores/bootstrap");
-    const builds = await import("../../../src/stores/builds");
-    await bootstrap.hydrate();
-    expect(songAt(builds.get(stored.id))).toBe(true);
-    expect(builds.get(stored.id)!.bonusValues).toEqual({});
+    const { builds, id } = await boot((storage) => ({
+      builds: [
+        { ...storage.defaultBuild("Stored"), bonusValues: privateValue },
+      ],
+      overlays: [promotedOverlay()],
+    }));
+    expect(songAt(builds.get(id))).toBe(true);
+    expect(builds.get(id)!.bonusValues).toEqual({});
+  });
+
+  // Loading is not a catalog change: whatever catalog the stores held before the load, the
+  // pool was not in line with it, so nothing demotes.
+  it("does not demote against the catalog held before the load", async () => {
+    const { builds, id } = await boot(
+      (storage) => ({
+        builds: [
+          {
+            ...storage.defaultBuild("Stored"),
+            context: {
+              ...storage.defaultBuild().context,
+              zzglobals: { song: true },
+            } as Build["context"],
+          },
+        ],
+        overlays: [privateOverlay()],
+      }),
+      async ({ layers }) => {
+        const layer = layers.createLayer("Before");
+        layers.updateOverlay(layer.id, promotedOverlay());
+        await nextTick();
+      },
+    );
+    expect(songAt(builds.get(id))).toBe(true);
+    expect(builds.get(id)!.bonusValues).toEqual({});
   });
 });

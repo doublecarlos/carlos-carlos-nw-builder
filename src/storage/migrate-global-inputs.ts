@@ -17,6 +17,7 @@ import {
   writeInput,
 } from "../lib/build-inputs";
 import { expandSlots } from "../lib/item-picker-list";
+import { isDisabled } from "../lib/slot-toggle";
 import { isGlobalRef } from "../engine/global-inputs";
 import type {
   Build,
@@ -117,8 +118,22 @@ export function demotionMoves(prev: Db, next: Db): InputMove[] {
   });
 }
 
+const transitionCache = new WeakMap<Db, WeakMap<Db, InputMove[]>>();
+
+/** Demotions from `prev` to `next`, then every promotion in `next`. Cached per pair, as one
+ *  catalog change syncs every stored build. */
+function transitionMoves(prev: Db, next: Db): InputMove[] {
+  let byNext = transitionCache.get(prev);
+  if (!byNext) transitionCache.set(prev, (byNext = new WeakMap()));
+  const cached = byNext.get(next);
+  if (cached) return cached;
+  const moves = [...demotionMoves(prev, next), ...promotionMoves(next)];
+  byNext.set(next, moves);
+  return moves;
+}
+
 /** Each bonus held by `build`'s picks, by the place of the first slot holding it: the order in
- *  which disagreeing sources are preferred. */
+ *  which disagreeing sources are preferred. A switched-off slot holds nothing. */
 function equippedRank(db: Db, build: BuildSnapshot): Map<string, number> {
   const rank = new Map<string, number>();
   const hold = (itemId: string | undefined) => {
@@ -128,6 +143,7 @@ function equippedRank(db: Db, build: BuildSnapshot): Map<string, number> {
       if (!rank.has(bonus.id)) rank.set(bonus.id, rank.size);
   };
   for (const slot of expandSlots(db.slots, build)) {
+    if (isDisabled(build, slot)) continue;
     if (slot.type === "item_picker") hold(build.choices[slot.id]);
     else if (slot.type === "point_assignment")
       for (const [itemId, count] of Object.entries(
@@ -196,10 +212,8 @@ export function applyMoves(
  * since its download. True when anything changed.
  */
 export function migrateGlobalInputs(db: Db, build: Build, prev?: Db): boolean {
-  const moves = [
-    ...(prev && prev !== db ? demotionMoves(prev, db) : []),
-    ...promotionMoves(db),
-  ];
+  const moves =
+    prev && prev !== db ? transitionMoves(prev, db) : promotionMoves(db);
   if (!moves.length) return false;
   const snapshot = build.downloaded?.snapshot;
   const changed = applyMoves(db, build, moves);

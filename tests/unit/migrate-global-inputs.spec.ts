@@ -69,6 +69,7 @@ const gear = (id: string): Slot => ({
   section: "gear",
   type: "item_picker",
   filter: "gear",
+  toggleable: true,
 });
 
 function catalogWith(bonuses: Bonus[], extra: Slot[] = []): Db {
@@ -153,6 +154,17 @@ describe("promotion", () => {
     );
     migrateGlobalInputs(promotedDb, b);
     expect(b.context).toEqual({ globals: { song: true } });
+  });
+
+  // A switched-off pick is out of the calculation, so its reader is not the one the player saw.
+  it("passes over a reader in a switched-off slot", () => {
+    const b = build(
+      { a: "drum", b: "lute" },
+      { ballad: sung(false), chorus: sung(true) },
+    );
+    b.disabledSlots = { a: true };
+    migrateGlobalInputs(promotedDb, b);
+    expect(b.context).toEqual({ globals: { song: false } });
   });
 
   it("falls back to catalog order when no reader is equipped", () => {
