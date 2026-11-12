@@ -1300,3 +1300,58 @@ describe("seeding from the composed catalog", () => {
     expect(builds.build.value!.choices[SLOT]).toBe(ITEM);
   });
 });
+
+// The active build is a reactive store value, and moving a retired id stored in a parameter
+// clones the build's context, which a proxy cannot be.
+describe("applyRetiredItems", () => {
+  it("moves a retired id stored in a parameter of the live build", async () => {
+    const stores = await freshStores();
+    const layer = stores.layers.createLayer("Flavours");
+    stores.layers.updateOverlay(layer.id, {
+      items: {
+        "old-flavour": {
+          id: "old-flavour",
+          name: "Old",
+          filter: "test_flavour",
+          replacedBy: "new-flavour",
+        },
+        "new-flavour": {
+          id: "new-flavour",
+          name: "New",
+          filter: "test_flavour",
+        },
+      },
+      bonuses: {},
+      sectionPresets: {},
+      slots: {
+        "options.testFlavour": {
+          id: "options.testFlavour",
+          label: "Flavour",
+          section: "options",
+          type: "build_parameter",
+          paramType: "list",
+          path: "test.flavour",
+          default: "",
+          optionsFrom: { filter: "test_flavour" },
+        },
+      },
+      sections: {},
+      filters: {},
+    });
+    const build = storage.defaultBuild("Flavoured");
+    (build.context as unknown as Record<string, unknown>).test = {
+      flavour: "old-flavour",
+    };
+    stores.builds.replaceActive(build);
+
+    stores.buildEditor.applyRetiredItems();
+
+    expect(
+      (
+        stores.builds.build.value!.context as unknown as {
+          test: { flavour: string };
+        }
+      ).test.flavour,
+    ).toBe("new-flavour");
+  });
+});
