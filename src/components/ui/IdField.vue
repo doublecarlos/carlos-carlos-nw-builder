@@ -4,7 +4,8 @@
 // an id is generator-assigned (catalog.ts's `nextId`) at first save and never user-edited
 // afterwards, so there is nothing here to type into, only to read and copy.
 //
-// Ids run long, so the field is capped and truncates, and a click copies the whole id.
+// Ids run long, so the field has a fixed width a caller can override and truncates, keeping its
+// row steady from entry to entry. A click copies the whole id.
 import { computed } from "vue";
 import FormField from "./FormField.vue";
 import BaseTooltip from "./BaseTooltip.vue";
@@ -39,11 +40,11 @@ async function copy() {
 </script>
 
 <template>
-  <FormField :label="label">
+  <FormField :label="label" class="w-48">
     <BaseTooltip tappable :text="tooltip">
       <button
         type="button"
-        class="flex w-full max-w-48 cursor-pointer items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-left text-muted @max-md:max-w-none"
+        class="flex w-full cursor-pointer items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-left text-muted"
         data-testid="item-id-copy"
         :disabled="!id"
         @click="copy"
