@@ -376,8 +376,16 @@ const {
 } = useHoverCard<HoverPosition>(
   tooltip,
   ({ slotId, itemId }) => itemForHover(slotId, itemId) !== null,
-  { disabled: viewport.coarsePointer },
+  // No card while dragging either: one opening over the rows would take the drop.
+  { disabled: () => viewport.coarsePointer.value || !!dragSource.value },
 );
+
+// A drag started from a row with an item drops the card it opened or has pending.
+watch(dragSource, (source) => {
+  if (!source) return;
+  onRowLeave();
+  if (!pinned.value) closeCard();
+});
 
 /** The row whose item the sheet shows, opened from that row's info button. The touch stand-in
  *  for the hover card, which a tap never opens. */

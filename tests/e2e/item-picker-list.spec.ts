@@ -13,7 +13,7 @@ import {
 } from "./support/app";
 import { shippedSlotLabel } from "./support/shippedData";
 import { storedBuilds } from "./support/storage";
-import { dragOnto } from "./support/dragDrop";
+import { beginDrag, dragOnto } from "./support/dragDrop";
 import { importTestCatalog } from "./support/testCatalog";
 
 const LIST = "misc.misc";
@@ -98,6 +98,20 @@ test("dragging a row by its grip moves its pick there", async ({ page }) => {
   );
 
   await expect.poll(() => picks(page, 3)).toEqual(["", "", MISC_ITEM.name]);
+});
+
+// A hover card left over the rows would take the drop, so a drag closes it.
+test("starting a drag closes the row's hover card", async ({ page }) => {
+  await openWithMiscItem(page);
+  await addListRows(page, LIST, 2);
+  await chooseItem(page, row(1), MISC_ITEM.name);
+  const card = page.getByTestId("item-card");
+  await slotRow(page, row(1)).getByText(`${LABEL} 1`).hover();
+  await expect(card).toBeVisible();
+
+  const drag = await beginDrag(page.getByTestId(`list-drag:${row(1)}`));
+  await expect(card).toBeHidden();
+  await drag.end();
 });
 
 // Alt+arrow is the keyboard's way to reorder, and the cursor stays on the row it moved.
