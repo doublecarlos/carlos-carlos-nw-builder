@@ -196,7 +196,9 @@
           "procs": true
         },
         "globals": {
-          "boss": true
+          "enemyTier": {
+            "boss": true
+          }
         }
       },
       "values": {

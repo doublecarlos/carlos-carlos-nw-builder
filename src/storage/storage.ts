@@ -369,8 +369,9 @@ export function normalize(
 
   const settings = migrateSettings(raw.values, raw.bonusValues);
 
-  // Both migrations run over the coerced maps, and this one over all three at once: renaming a
-  // pick onto its list row has to take that row's magnitudes and repetition counts with it.
+  // Three chained passes over the coerced maps: the class onto its pick, the retired fixed
+  // slots onto list rows, then the scenario flag rows onto global inputs. The last two take
+  // all three maps at once, so a moved pick keeps its magnitudes and repetition counts.
   const scenario = migrateScenarioFlags(
     migrateListSlots({
       choices: migrateClassToChoice(strings(raw.choices), context),
@@ -401,7 +402,11 @@ export function normalize(
       ...base.context.forte,
       ...(isPlain(context.forte) ? context.forte : {}),
     },
-    ...(isPlain(context.globals) ? { globals: { ...context.globals } } : {}),
+    // Global inputs nest under `globals` and are written in place by the migrations, so the
+    // branch is copied whole rather than shared with the input.
+    ...(isPlain(context.globals)
+      ? { globals: structuredClone(context.globals) }
+      : {}),
   };
   applyScenarioFlags(normalizedContext, scenario.flags);
   // A scaler parameter is validated rather than passed through like class/role: it multiplies

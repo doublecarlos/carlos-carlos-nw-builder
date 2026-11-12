@@ -53,7 +53,7 @@ describe("scenario flag migration", () => {
   it("keeps a value the context already stores", () => {
     const build = flagged(
       { "options.scenario#1": "enemy-type-boss" },
-      { context: { globals: { boss: false } } },
+      { context: { globals: { enemyTier: { boss: false } } } },
     );
     expect(getPath(build.context, FLAG_PATHS["enemy-type-boss"]!)).toBe(false);
   });
@@ -63,10 +63,16 @@ describe("scenario flag migration", () => {
     expect(storage.normalize(once)).toEqual(once);
   });
 
-  it("leaves the input untouched", () => {
-    const context = { globals: { thay: false } };
-    flagged({ "options.scenario#1": "location-thay" }, { context });
-    expect(context.globals.thay).toBe(false);
+  // The flag lands beside a stored sibling, in a copy of the nested objects they share.
+  it("does not mutate the stored build", () => {
+    const context = { globals: { location: { chult: true } } };
+    const build = flagged(
+      { "options.scenario#1": "location-thay" },
+      { context },
+    );
+    expect(getPath(build.context, FLAG_PATHS["location-thay"]!)).toBe(true);
+    expect(getPath(build.context, FLAG_PATHS["location-chult"]!)).toBe(true);
+    expect(context).toEqual({ globals: { location: { chult: true } } });
   });
 
   // `sameContent` compares the live build with its downloaded snapshot, so both migrate.

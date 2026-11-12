@@ -1667,47 +1667,47 @@
           "globalInput": true
         },
         {
-          "id": "globals.boss",
+          "id": "globals.enemyTier.boss",
           "label": "Fighting a boss",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.boss",
+          "path": "globals.enemyTier.boss",
           "default": false,
           "globalInput": true
         },
         {
-          "id": "globals.chult",
+          "id": "globals.location.chult",
           "label": "In Chult",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.chult",
+          "path": "globals.location.chult",
           "default": false,
           "globalInput": true
         },
         {
-          "id": "globals.thay",
+          "id": "globals.location.thay",
           "label": "In Thay",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.thay",
+          "path": "globals.location.thay",
           "default": false,
           "globalInput": true
         },
         {
-          "id": "globals.wildspace",
+          "id": "globals.location.wildspace",
           "label": "In Wildspace",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.wildspace",
+          "path": "globals.location.wildspace",
           "default": false,
           "globalInput": true
         },
         {
-          "id": "globals.swordCoast",
+          "id": "globals.location.swordCoast",
           "label": "On Sword Coast",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.swordCoast",
+          "path": "globals.location.swordCoast",
           "default": false,
           "globalInput": true
         }

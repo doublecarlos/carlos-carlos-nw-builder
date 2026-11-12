@@ -622,6 +622,23 @@ describe("scaler parameters", () => {
     nested(copy).encounterDamage = 0.5;
     expect(nested(source).encounterDamage).toBe(0);
   });
+
+  // Global inputs nest under `globals` and the migrations write them in place, so a duplicate
+  // sharing that branch would change its source too.
+  it("duplicate does not share the nested global inputs with its source", () => {
+    const source = storage.normalize({
+      context: { globals: { location: { thay: true } } },
+    });
+    const copy = storage.duplicate(source);
+    const location = (build: Build) =>
+      (
+        build.context as unknown as {
+          globals: { location: Record<string, boolean> };
+        }
+      ).globals.location;
+    location(copy).thay = false;
+    expect(location(source).thay).toBe(true);
+  });
 });
 
 // Occurrence counts were retired for bonus inputs. A build's counts move onto those inputs,

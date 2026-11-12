@@ -15,11 +15,11 @@ const RETIRED_LIST = "options.scenario";
 /** The global input path each flag item became. Frozen: a record of what shipped, not a view
  *  of `data/slots.json`. The Non-boss flag maps to nothing, as the Boss flag off says it. */
 export const FLAG_PATHS: Record<string, string | null> = {
-  "enemy-type-boss": "globals.boss",
+  "enemy-type-boss": "globals.enemyTier.boss",
   "enemy-type-non-boss": null,
-  "location-chult": "globals.chult",
-  "location-thay": "globals.thay",
-  "location-wildspace": "globals.wildspace",
+  "location-chult": "globals.location.chult",
+  "location-thay": "globals.location.thay",
+  "location-wildspace": "globals.location.wildspace",
 };
 
 const isRetiredRow = (slotId: string) =>

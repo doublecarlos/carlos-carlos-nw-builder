@@ -416,7 +416,7 @@
     "name": "Batiri's Wisdom",
     "inputs": {
       "boss": {
-        "global": "globals.boss"
+        "global": "globals.enemyTier.boss"
       }
     },
     "grants": [
@@ -869,7 +869,7 @@
     "name": "Compy's Instincts",
     "inputs": {
       "chult": {
-        "global": "globals.chult"
+        "global": "globals.location.chult"
       }
     },
     "grants": [
@@ -2111,7 +2111,7 @@
     "name": "M28 Voidtouched Set",
     "inputs": {
       "wildspace": {
-        "global": "globals.wildspace"
+        "global": "globals.location.wildspace"
       }
     },
     "grants": [
@@ -2141,6 +2141,7 @@
         }
       },
       {
+        "name": "Outside Wildspace",
         "when": {
           "enemies": {
             "exactly": 1
@@ -2357,7 +2358,7 @@
     "name": "M31 Critical Empowerment",
     "inputs": {
       "thay": {
-        "global": "globals.thay"
+        "global": "globals.location.thay"
       }
     },
     "grants": [
@@ -2521,7 +2522,7 @@
     "name": "M31 Thayan Predator",
     "inputs": {
       "thay": {
-        "global": "globals.thay"
+        "global": "globals.location.thay"
       }
     },
     "grants": [
@@ -6984,7 +6985,7 @@
     "name": "Sword Coast Tactician",
     "inputs": {
       "active": {
-        "global": "globals.swordCoast"
+        "global": "globals.location.swordCoast"
       }
     },
     "grants": [
