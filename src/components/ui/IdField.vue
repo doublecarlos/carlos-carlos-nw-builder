@@ -43,7 +43,7 @@ async function copy() {
     <BaseTooltip tappable :text="tooltip">
       <button
         type="button"
-        class="flex w-full max-w-48 cursor-copy items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-left text-muted @max-md:max-w-none"
+        class="flex w-full max-w-48 cursor-pointer items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-left text-muted @max-md:max-w-none"
         data-testid="item-id-copy"
         :disabled="!id"
         @click="copy"
