@@ -19,6 +19,8 @@ import {
   rowsToNamedFormulas,
   duplicateFormulaNames,
   formulaOwner,
+  makeGlobalOffer,
+  canMakeGlobal,
 } from "../../src/lib/bonus-draft";
 import type { Bonus, Grant, InputDef } from "../../src/types";
 
@@ -713,5 +715,73 @@ describe("bonus-draft diffLabel", () => {
     expect(label(base, { ...base, excludes: ["x", "y"] })).toBe(
       "add excludes (2)",
     );
+  });
+});
+
+describe("make global offer", () => {
+  const hitsDef: InputDef = {
+    type: "number",
+    default: 2,
+    min: 0,
+    max: 10,
+    label: "Recent hits",
+  };
+  const defining = (id: string, def: InputDef): Bonus => ({
+    id,
+    name: id,
+    inputs: { hits: def },
+    grants: [],
+  });
+  const bonuses = [
+    defining("own", hitsDef),
+    defining("same", { type: "number", default: 0 }),
+    defining("other-type", { type: "boolean", default: false }),
+    { id: "reader", inputs: { hits: { global: "globals.hits" } }, grants: [] },
+  ];
+  const scope = { inLayer: new Set<string>(), shadowedBy: new Map() };
+
+  // Only an input that could share one value is offered: same name, same type, not already
+  // a reference.
+  it("offers the other bonuses defining an input of the same name and type", () => {
+    const [row] = inputRows({ hits: hitsDef });
+    const offer = makeGlobalOffer(row, "own", bonuses, scope);
+    expect(offer?.def).toEqual(hitsDef);
+    expect(offer?.others.map((other) => other.bonus.id)).toEqual(["same"]);
+  });
+
+  // The dialog says what converting does: copy a bonus in, or nothing under a higher layer.
+  it("marks a bonus from elsewhere as copied, and one a higher layer overrides", () => {
+    const [row] = inputRows({ hits: hitsDef });
+    const inLayer = makeGlobalOffer(row, "own", bonuses, {
+      inLayer: new Set(["same"]),
+      shadowedBy: new Map(),
+    });
+    expect(inLayer?.others[0]).toEqual({ bonus: bonuses[1], copied: false });
+    const shadowed = makeGlobalOffer(row, "own", bonuses, {
+      inLayer: new Set(),
+      shadowedBy: new Map([["same", "Top"]]),
+    });
+    expect(shadowed?.others[0]).toMatchObject({
+      copied: true,
+      shadowedBy: "Top",
+    });
+  });
+
+  // Converting a bonus a higher layer overrides would change nothing in the engine.
+  it("is not offered on a bonus a higher layer overrides", () => {
+    expect(canMakeGlobal(scope, "own")).toBe(true);
+    expect(
+      canMakeGlobal(
+        { inLayer: new Set(), shadowedBy: new Map([["own", "Top"]]) },
+        "own",
+      ),
+    ).toBe(false);
+    expect(canMakeGlobal(null, "own")).toBe(false);
+  });
+
+  it("offers nothing for a reference or an unnamed row", () => {
+    const [ref] = inputRows({ hits: { global: "globals.hits" } });
+    expect(makeGlobalOffer(ref, "reader", bonuses, scope)).toBeNull();
+    expect(makeGlobalOffer(newInput(), "own", bonuses, scope)).toBeNull();
   });
 });
