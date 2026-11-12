@@ -888,6 +888,32 @@
     ]
   },
   {
+    "id": "cultist-stats",
+    "name": "Cultist Stats",
+    "inputs": {
+      "cultist": {
+        "global": "globals.enemyType.cultist"
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "cultist",
+            "is": true
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.01,
+          "incoming_damage": -0.01
+        },
+        "scale": {
+          "formula": "occurrences()"
+        }
+      }
+    ]
+  },
+  {
     "id": "cunning-hunter",
     "name": "Cunning Hunter",
     "grants": [
@@ -1023,6 +1049,45 @@
     ]
   },
   {
+    "id": "demonic-stats",
+    "name": "Demonic Stats",
+    "inputs": {
+      "demon": {
+        "global": "globals.enemyType.demon"
+      },
+      "devil": {
+        "global": "globals.enemyType.devil"
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "any": [
+            {
+              "input": {
+                "key": "demon",
+                "is": true
+              }
+            },
+            {
+              "input": {
+                "key": "devil",
+                "is": true
+              }
+            }
+          ]
+        },
+        "stats": {
+          "outgoing_damage": 0.01,
+          "incoming_damage": -0.01
+        },
+        "scale": {
+          "formula": "occurrences()"
+        }
+      }
+    ]
+  },
+  {
     "id": "diamond-blessing-damage",
     "name": "Diamond Blessing",
     "grants": [
@@ -1067,6 +1132,32 @@
             }
           }
         ]
+      }
+    ]
+  },
+  {
+    "id": "dino-stats",
+    "name": "Dino Stats",
+    "inputs": {
+      "dinosaur": {
+        "global": "globals.enemyType.dinosaur"
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "dinosaur",
+            "is": true
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.01,
+          "incoming_damage": -0.01
+        },
+        "scale": {
+          "formula": "occurrences()"
+        }
       }
     ]
   },
@@ -5630,6 +5721,32 @@
           "enemy_defense": -0.05,
           "enemy_awareness": -0.05,
           "enemy_crit_avoid": -0.05
+        }
+      }
+    ]
+  },
+  {
+    "id": "necrotic-mastery-stats",
+    "name": "Necrotic Mastery Stats",
+    "inputs": {
+      "undead": {
+        "global": "globals.enemyType.undead"
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "undead",
+            "is": true
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.01,
+          "incoming_damage": -0.01
+        },
+        "scale": {
+          "formula": "occurrences()"
         }
       }
     ]
