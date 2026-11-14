@@ -70,7 +70,6 @@ const emit = defineEmits<{ error: [message: string] }>();
 const props = withDefaults(
   defineProps<{
     store: BonusDraftStore;
-    tags?: string[];
     /** Every known bonus, for the occurrence-condition picker. */
     bonusOptions?: BonusOption[];
     /** The bonus's own inputs, for the `input` condition leaf. */
@@ -82,7 +81,6 @@ const props = withDefaults(
     nested?: boolean;
   }>(),
   {
-    tags: () => [],
     bonusOptions: () => [],
     inputOptions: () => [],
     registryId: "",

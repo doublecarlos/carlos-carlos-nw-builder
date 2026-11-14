@@ -152,7 +152,7 @@ test.describe("at the narrowest width", () => {
       .getByTestId("picker-option")
       .filter({ hasText: /^equipped$/ })
       .tap();
-    await fields.locator("input[list=nw-tags]").fill("aura");
+    await fields.getByTestId("condition-tag").fill("aura");
     await done(page).tap();
     await expect(summaries(tree)).toHaveText(['1× item tagged "aura"']);
     await expect(tree.getByTestId("condition-summary")).not.toHaveAttribute(
