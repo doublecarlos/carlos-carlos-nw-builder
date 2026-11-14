@@ -30,7 +30,7 @@ const sections: {
   readFileSync(path.join(dataDir, "slots.json"), "utf-8"),
 ).sections;
 
-/** What a shipped slot's row is called, from data/slots.json -- the same reason
+/** What a shipped slot's row is called, from data/slots.json, for the same reason
  *  `shippedItemName` exists. A slot without a label reads its category's, as the app does. */
 export function shippedSlotLabel(slotId: string): string {
   const slot = sections

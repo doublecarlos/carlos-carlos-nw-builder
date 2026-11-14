@@ -17,7 +17,7 @@ export interface SummaryNames {
   bonusNames: Map<string, string>;
   itemNames: Map<string, string>;
   /** Every labeled tag's label, by tag. */
-  tagLabels?: Map<string, string>;
+  tagLabels?: ReadonlyMap<string, string>;
   /** Every build parameter's label, by its path. */
   paramLabels: Map<string, string>;
   inputs: readonly InputOption[];

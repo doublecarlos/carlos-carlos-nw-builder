@@ -16,6 +16,7 @@ import {
   checkSlotParent,
   validateSlotDefaults,
 } from "../data/catalog";
+import { LABELED_SLOT_TYPES, categoryLabel } from "../data/db";
 import {
   LEAF_TYPES,
   rowsToWhen,
@@ -97,24 +98,16 @@ export function nounOf(type: Slot["type"]): string {
   return type === "build_parameter" ? "parameter" : "slot";
 }
 
-/** Types that render their label. A parameter needs its own; the others can read their
- *  category's instead. Separators and text slots render none. */
-const LABELED_TYPES: readonly Slot["type"][] = [
-  "build_parameter",
-  "item_picker",
-  "item_picker_list",
-  "point_assignment",
-];
-
 /** The category label a draft would read when its own label is blank, or undefined when it
  *  has none: a parameter, a slot selecting by tags, or an unlabeled category. */
-export function categoryLabel(local: SlotDraft, db: Db): string | undefined {
-  if (local.type === "build_parameter" || !LABELED_TYPES.includes(local.type))
-    return undefined;
-  if (local.type !== "point_assignment" && local.selectorSource === "tags")
-    return undefined;
-  const filter = local.filter.trim();
-  return db.filters.find((def) => def.id === filter)?.label || undefined;
+export function draftCategoryLabel(
+  local: SlotDraft,
+  db: Db,
+): string | undefined {
+  const byTags =
+    local.type !== "point_assignment" && local.selectorSource === "tags";
+  const filter = byTags ? undefined : local.filter.trim();
+  return categoryLabel(local.type, filter, db.filterLabels);
 }
 
 export interface SlotDraft {
@@ -595,9 +588,9 @@ export function slotSaveError(
   const noun = nounOf(local.type);
   if (!local.section) return `The ${noun} needs a section.`;
   if (
-    LABELED_TYPES.includes(local.type) &&
+    LABELED_SLOT_TYPES.includes(local.type) &&
     !local.label.trim() &&
-    !categoryLabel(local, db)
+    !draftCategoryLabel(local, db)
   )
     return local.type === "build_parameter"
       ? `The ${noun} needs a label.`

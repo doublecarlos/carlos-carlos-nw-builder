@@ -676,7 +676,7 @@ for (const target of keyTargets) {
       >
         <X />
       </IconButton>
-      <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
+      <!-- Sits in the same right-hand gutter the input's padding reserves: the only hint
          this text input is actually a fixed-choice dropdown. -->
       <span
         v-else-if="!readonly"

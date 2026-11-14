@@ -23,7 +23,7 @@ export function itemBadges(item: Item, tags: readonly TagDef[]): ItemBadge[] {
     return [
       {
         tag,
-        label: def.badge.label || def.label || tag,
+        label: def.badge.label?.trim() || def.label?.trim() || tag,
         tone: def.badge.tone,
       },
     ];

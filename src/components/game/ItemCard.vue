@@ -131,8 +131,8 @@ const replacement = computed(
 /** What kind of item this is: its category's label, else the slot it sits in. */
 const categoryLabel = computed(
   () =>
-    props.db?.filters.find((filter) => filter.id === props.item.filter)
-      ?.label || props.slotLabel,
+    (props.item.filter && props.db?.filterLabels.get(props.item.filter)) ||
+    props.slotLabel,
 );
 
 /** Facts the item's tags carry, such as a companion power's roles. */

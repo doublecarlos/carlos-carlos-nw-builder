@@ -21,8 +21,13 @@ const FILTER_LABEL = "Test Trinket Label";
 const TAG = "test:charm";
 const TAG_LABEL = "Test Charm Label";
 
-/** Imports a layer declaring a labeled test filter and one item in it, then opens the layer. */
-async function openLabeledLayer(page: Page) {
+/** A second labeled filter whose id sorts before `FILTER` and whose label contains its label. */
+const LONGER_FILTER = "test_a_trinket";
+const LONGER_FILTER_LABEL = `${FILTER_LABEL} plus`;
+
+/** Imports a layer declaring a labeled test filter and one item in it, then opens the layer.
+ *  `withLonger` also declares `LONGER_FILTER`. */
+async function openLabeledLayer(page: Page, withLonger = false) {
   await openBuilder(page);
   await importText(
     page,
@@ -39,7 +44,12 @@ async function openLabeledLayer(page: Page) {
         },
         bonuses: {},
         sectionPresets: {},
-        filters: { [FILTER]: { id: FILTER, label: FILTER_LABEL } },
+        filters: {
+          [FILTER]: { id: FILTER, label: FILTER_LABEL },
+          ...(withLonger && {
+            [LONGER_FILTER]: { id: LONGER_FILTER, label: LONGER_FILTER_LABEL },
+          }),
+        },
         tags: { [TAG]: { id: TAG, label: TAG_LABEL } },
       },
     }),
@@ -69,6 +79,43 @@ test("the item form's filter picker finds a labeled filter by its label", async 
   await input.blur();
   await expect(input).toHaveValue(FILTER_LABEL);
   await expect(comboBoxValueId(input)).toHaveText(FILTER);
+});
+
+// Enter and blur on a typed exact label, in any case, commit the same option, not an earlier
+// row whose text also matches nor a new category.
+test("a filter's exact label picks that filter over a longer match on Enter or blur", async ({
+  page,
+}) => {
+  await openLabeledLayer(page, true);
+  await page.getByTestId("new-item").click();
+
+  const input = page.getByTestId("item-filter-input");
+  await input.fill(FILTER_LABEL);
+  await expect(
+    page.getByRole("option", { name: LONGER_FILTER_LABEL }),
+  ).toBeVisible();
+  await input.press("Enter");
+  await expect(comboBoxValueId(input)).toHaveText(FILTER);
+
+  await input.fill(FILTER_LABEL.toLowerCase());
+  await expect(page.getByRole("option", { name: /new$/ })).toHaveCount(0);
+  await input.press("Enter");
+  await expect(comboBoxValueId(input)).toHaveText(FILTER);
+
+  await input.fill(FILTER_LABEL.toLowerCase());
+  await input.blur();
+  await expect(comboBoxValueId(input)).toHaveText(FILTER);
+});
+
+// Rows lead with the label, so the list reads in label order rather than id order.
+test("the Vocabulary tab sorts categories by label", async ({ page }) => {
+  await openLabeledLayer(page, true);
+  await page.getByTestId("tab-vocabulary").click();
+  await page.locator(".editor-search").fill(FILTER_LABEL);
+
+  await expect(
+    page.locator(".editor-row").getByTestId("option-row-id"),
+  ).toHaveText([FILTER, LONGER_FILTER]);
 });
 
 test("the Vocabulary tab lists a labeled filter by its label", async ({
@@ -103,6 +150,25 @@ test("the item form's tag picker finds a labeled tag by label and by id", async 
   await expect(page.getByRole("option", { name: /new$/ })).toHaveCount(0);
   await query.press("Enter");
   await expect(field).toContainText(tag.label);
+});
+
+// Declaring a tag in the Vocabulary tab and then tagging items with it is the usual order, so
+// the item form offers a declared tag no item carries yet.
+test("the item form's tag picker offers a declared tag no item carries", async ({
+  page,
+}) => {
+  await openLabeledLayer(page);
+  await page.getByTestId("new-item").click();
+
+  const field = page.getByTestId("item-tags-input");
+  const query = field.getByTestId("token-query");
+  await query.fill(TAG_LABEL);
+  await expect(page.getByRole("option", { name: /new$/ })).toHaveCount(0);
+  await query.press("Enter");
+  await expect(field.getByTestId("token-chip")).toHaveAttribute(
+    "data-value",
+    TAG,
+  );
 });
 
 /** Starts a new bonus in the labeled layer with one grant gated by an `equipped` leaf. */

@@ -392,7 +392,7 @@ describe("catalog.validateScalerTargets", () => {
       ["warn", "gear.mountBolster"],
       ["warn", "gear.companionBolster"],
     ]);
-    expect(findings[0].message).toMatch(/filter "test_mount"/);
+    expect(findings[0].message).toMatch(/category "test_mount"/);
     expect(findings[1].message).toMatch(/tag "bolstered_companion"/);
   });
 

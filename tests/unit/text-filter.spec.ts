@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { matchesQuery, filterAndRank } from "../../src/lib/text-filter";
+import {
+  matchesQuery,
+  filterAndRank,
+  exactMatch,
+} from "../../src/lib/text-filter";
 
 describe("matchesQuery", () => {
   it("matches a plain substring", () => {
@@ -81,6 +85,31 @@ describe("filterAndRank", () => {
     );
     // No label contains the query, so nothing lists: the value only ranks.
     expect(byLabel).toEqual([]);
+  });
+
+  // Typing an option's exact label must land on that option's row, so Enter commits the
+  // same option a blur would.
+  it("ranks earlier exact keys first, and exactMatch names the same entry", () => {
+    const categories = [
+      { value: "gear_head_cosmetic", label: "Head cosmetic" },
+      { value: "head", label: "Head piece" },
+      { value: "gear_head", label: "Head" },
+    ];
+    const keys = (option: { value: string; label: string }) => [
+      option.label,
+      option.value,
+    ];
+    const ranked = filterAndRank(
+      categories,
+      "head",
+      (option) => [option.value, option.label],
+      keys,
+    ).map((option) => option.value);
+    expect(ranked).toEqual(["gear_head", "head", "gear_head_cosmetic"]);
+    expect(exactMatch(categories, "head", keys)?.value).toBe("gear_head");
+    expect(exactMatch(categories, " HEAD PIECE ", keys)?.value).toBe("head");
+    expect(exactMatch(categories, "hea", keys)).toBeUndefined();
+    expect(exactMatch(categories, "", keys)).toBeUndefined();
   });
 
   it("an empty query lists everything unranked", () => {

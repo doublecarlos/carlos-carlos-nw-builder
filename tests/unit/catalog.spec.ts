@@ -774,7 +774,7 @@ describe("catalog.validate: point_assignment-referenced items", () => {
       findings.some(
         (f) =>
           f.name === "boon-tier1-power" &&
-          /no filter|matches no slot/.test(f.message),
+          /no category|matches no slot/.test(f.message),
       ),
     ).toBe(false);
   });
@@ -782,7 +782,7 @@ describe("catalog.validate: point_assignment-referenced items", () => {
   it("an item with no filter at all is still an error, same as any other item", () => {
     const items = [{ id: "orphan", name: "Orphan", filter: "" }];
     const findings = catalog.validate(items, []);
-    expect(findings.some((f) => /no filter/.test(f.message))).toBe(true);
+    expect(findings.some((f) => /no category/.test(f.message))).toBe(true);
   });
 
   it("the shipped 'boon_tier1' filter is not also claimed by an item_picker slot", () => {
@@ -1309,7 +1309,9 @@ describe("catalog.validate: an item in no slot is still flagged", () => {
       [],
     );
     expect(
-      findings.some((f) => f.name === "orphan" && /no filter/.test(f.message)),
+      findings.some(
+        (f) => f.name === "orphan" && /no category/.test(f.message),
+      ),
     ).toBe(true);
   });
 });

@@ -14,7 +14,7 @@
 // its row rather than offer it as "new".
 import { computed, useId, useTemplateRef, watch } from "vue";
 import { onClickOutside, onKeyStroke } from "@vueuse/core";
-import { filterAndRank } from "../../lib/text-filter";
+import { exactMatch, filterAndRank } from "../../lib/text-filter";
 import { useMenuNavigation } from "../../composables/useMenuNavigation";
 import { useFormFieldControl } from "../../composables/useFormField";
 import { useOcrPaste } from "../../composables/useOcrPaste";
@@ -82,6 +82,9 @@ const { open, query, highlight, pointAt } = useMenuNavigation({
   onHighlightChange: () => menu.value?.scrollToHighlighted(),
 });
 
+/** The keys typed text names an option by exactly, in priority order. */
+const exactKeys = (option: ComboBoxOption) => [option.label, option.value];
+
 const suggestions = computed(() => {
   if (!open.value) return [];
   const chosen = new Set(model.value);
@@ -89,18 +92,17 @@ const suggestions = computed(() => {
     props.options.filter((option) => !chosen.has(option.value)),
     query.value,
     (option) => [option.value, option.label, option.search ?? ""],
-    (option) => option.value,
+    exactKeys,
   ).slice(0, MAX_SUGGESTIONS);
 });
 
-/** The typed text offered as its own entry, when it is genuinely new. Text matching an
- *  option's label names that option, so it is not offered as new. */
+/** The typed text offered as its own entry, when it is genuinely new. Text naming an option
+ *  exactly, by label or value and ignoring case, names that option, so it is not offered. */
 const freeValue = computed(() => {
   const value = query.value.trim();
   if (!props.allowFree || !value) return "";
   if (model.value.includes(value)) return "";
-  if (props.options.some((option) => option.label === value)) return "";
-  return optionByValue.value.has(value) ? "" : value;
+  return exactMatch(props.options, value, exactKeys) ? "" : value;
 });
 
 const entries = computed<ComboBoxOption[]>(() =>

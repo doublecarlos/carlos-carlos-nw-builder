@@ -161,23 +161,47 @@ export function filterFieldsOf(filters: FilterDef[]): FilterFieldsMap {
   return out;
 }
 
-/** A lookup from filter id to its label, for the filters that have one. */
-export function filterLabelLookup(
-  filters: readonly FilterDef[],
-): (filter: string | undefined) => string | undefined {
+/** Each declared label by id, trimmed, leaving out a blank one so it reads as unlabeled. */
+export function labelMap(
+  defs: readonly { id: string; label?: string }[],
+): Map<string, string> {
   const labels = new Map<string, string>();
-  for (const filter of filters)
-    if (filter.label) labels.set(filter.id, filter.label);
-  return (filter) => (filter === undefined ? undefined : labels.get(filter));
+  for (const def of defs) {
+    const label = def.label?.trim();
+    if (label) labels.set(def.id, label);
+  }
+  return labels;
+}
+
+/** Slot types that render a label. A parameter needs its own; the others can read their
+ *  category's instead. Separators and text slots render none. */
+export const LABELED_SLOT_TYPES: readonly AuthoredSlot["type"][] = [
+  "build_parameter",
+  "item_picker",
+  "item_picker_list",
+  "point_assignment",
+];
+
+/** The category label a slot of `type` selecting `filter` reads when its own label is blank,
+ *  or undefined when it reads none. */
+export function categoryLabel(
+  type: AuthoredSlot["type"],
+  filter: string | undefined,
+  filterLabels: ReadonlyMap<string, string>,
+): string | undefined {
+  if (type === "build_parameter" || !LABELED_SLOT_TYPES.includes(type))
+    return undefined;
+  return filter ? filterLabels.get(filter) : undefined;
 }
 
 /** The label a slot reads as: its own, else its category's, else its id. */
 export function slotLabel(
   slot: AuthoredSlot,
-  labelOf: (filter: string | undefined) => string | undefined,
+  filterLabels: ReadonlyMap<string, string>,
 ): string {
   if (slot.label) return slot.label;
-  return labelOf("filter" in slot ? slot.filter : undefined) ?? slot.id;
+  const filter = "filter" in slot ? slot.filter : undefined;
+  return categoryLabel(slot.type, filter, filterLabels) ?? slot.id;
 }
 
 const filledSlots = new WeakMap<AuthoredSlot, Slot>();
@@ -196,16 +220,18 @@ function filled(slot: AuthoredSlot, label: string): Slot {
 function resolveSlot(
   slot: AuthoredSlot,
   items: Item[],
-  labelOf: (filter: string | undefined) => string | undefined,
+  filterLabels: ReadonlyMap<string, string>,
 ): Slot {
   if (slot.type === "build_parameter" && slot.optionsFrom)
     return {
       ...slot,
-      label: slotLabel(slot, labelOf),
+      label: slotLabel(slot, filterLabels),
       options: resolvedOptions(slot, items),
     };
   if (slot.type === "separator" || slot.type === "text") return slot;
-  return slot.label ? (slot as Slot) : filled(slot, slotLabel(slot, labelOf));
+  return slot.label
+    ? (slot as Slot)
+    : filled(slot, slotLabel(slot, filterLabels));
 }
 
 export function build(
@@ -255,9 +281,9 @@ export function build(
   // `options` array and never has to know whether it was authored inline or derived.
   // `authoredSlots` keeps the pre-resolution form for the write side -- see `Db`.
   const authoredSlots = slots?.slots ?? [];
-  const labelOf = filterLabelLookup(filters);
+  const filterLabels = labelMap(filters);
   const slotList = authoredSlots.map((slot) =>
-    resolveSlot(slot, items, labelOf),
+    resolveSlot(slot, items, filterLabels),
   );
   const slotById = new Map<string, Slot>(
     slotList.map((slot) => [slot.id, slot]),
@@ -293,6 +319,8 @@ export function build(
     duplicates,
     filters,
     tags: [...tags].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)),
+    filterLabels,
+    tagLabels: labelMap(tags),
     filterDefaults,
     filterFields,
 

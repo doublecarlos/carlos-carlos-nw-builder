@@ -270,6 +270,53 @@ describe("normalizeOverlay and the overlay shape", () => {
     expect(ids).toContain(shippedClass.id);
   });
 
+  // The old class slot picked any `class` tagged item, so one no other slot picks stays in the
+  // Class picker. One another slot picks, by category or by tag, keeps its category, and so
+  // does one marked `no_category`.
+  it("moves a class tagged item no other slot picks to the class category", () => {
+    const item = (id: string, filter?: string, tags: string[] = []) => ({
+      id,
+      name: id,
+      ...(filter && { filter }),
+      tags: ["class", ...tags],
+      bonuses: [],
+    });
+    const picker = (
+      id: string,
+      select: { filter?: string; tags?: string[] },
+    ) => ({
+      id,
+      type: "item_picker",
+      section: "gear",
+      ...select,
+    });
+    const normalized = catalog.normalizeOverlay({
+      items: {
+        own: item("own", "my_classes"),
+        bare: item("bare"),
+        byFilter: item("byFilter", "test_picked"),
+        byTag: item("byTag", "test_unpicked", ["test:picked"]),
+        none: item("none", catalog.NO_CATEGORY),
+      },
+      slots: {
+        "gear.test_filter": picker("gear.test_filter", {
+          filter: "test_picked",
+        }),
+        "gear.test_tag": picker("gear.test_tag", { tags: ["test:picked"] }),
+      },
+    });
+    expect(normalized.items.own?.filter).toBe("class");
+    expect(normalized.items.bare?.filter).toBe("class");
+    expect(normalized.items.byFilter?.filter).toBe("test_picked");
+    expect(normalized.items.byTag?.filter).toBe("test_unpicked");
+    expect(normalized.items.none?.filter).toBe(catalog.NO_CATEGORY);
+    const ids = catalog
+      .makeDb([normalized])
+      .forSlot("options.class")
+      .map((entry) => entry.id);
+    expect(ids).toContain("own");
+  });
+
   it("gives a section entry without slotIds an empty list and drops a bad sectionOrder", () => {
     const normalized = catalog.normalizeOverlay({
       sections: { extra: { id: "extra", label: "Extra" } },

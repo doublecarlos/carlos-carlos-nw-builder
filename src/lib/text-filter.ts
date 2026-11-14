@@ -23,19 +23,62 @@ export function matchesQuery(
   return words.every((word) => text.includes(word));
 }
 
+/** How well `entry` names `typed` (already trimmed and lower case): the index of its first
+ *  key equal to it ignoring case, or `MAX_SAFE_INTEGER` when none is. */
+function exactRank<T>(
+  entry: T,
+  typed: string,
+  exact: (entry: T) => string | string[],
+): number {
+  const index = [exact(entry)]
+    .flat()
+    .findIndex((key) => key.toLowerCase() === typed);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
 /**
- * `matchesQuery` over a list, with an entry whose `value` equals the query moved to the front
- * so a pasted id lands on its own row. Stable otherwise. `value` need not be in `haystack`.
+ * The entry typed text names exactly, ignoring case, by the same priority `filterAndRank`
+ * ranks with, so a field can commit typed text as the row it would put first.
+ */
+export function exactMatch<T>(
+  entries: readonly T[],
+  query: string,
+  exact: (entry: T) => string | string[],
+): T | undefined {
+  const typed = query.trim().toLowerCase();
+  if (!typed) return undefined;
+  let best: T | undefined;
+  let bestRank = Number.MAX_SAFE_INTEGER;
+  for (const entry of entries) {
+    const rank = exactRank(entry, typed, exact);
+    if (rank < bestRank) {
+      best = entry;
+      bestRank = rank;
+    }
+  }
+  return best;
+}
+
+/**
+ * `matchesQuery` over a list, with an entry whose exact key equals the query moved to the
+ * front so a pasted id lands on its own row. `exact` lists an entry's keys by priority: an
+ * entry matching on an earlier key ranks ahead of one matching on a later key. Stable
+ * otherwise. The keys need not be in `haystack`.
  */
 export function filterAndRank<T>(
   entries: T[],
   query: string,
   haystack: (entry: T) => string | string[],
-  value: (entry: T) => string,
+  exact: (entry: T) => string | string[],
 ): T[] {
   const typed = query.trim().toLowerCase();
-  const isExact = (entry: T) => value(entry).toLowerCase() === typed;
-  return entries
-    .filter((entry) => matchesQuery(haystack(entry), query))
-    .sort((a, b) => Number(isExact(b)) - Number(isExact(a)));
+  const listed = entries.filter((entry) =>
+    matchesQuery(haystack(entry), query),
+  );
+  if (!typed) return listed;
+  const rank = (entry: T) => exactRank(entry, typed, exact);
+  return listed
+    .map((entry) => ({ entry, rank: rank(entry) }))
+    .sort((a, b) => a.rank - b.rank)
+    .map(({ entry }) => entry);
 }

@@ -591,3 +591,28 @@ describe("Db views over the filter list", () => {
     expect(built.filterDefaults).toEqual({});
   });
 });
+
+// Every picker, list and condition reads labels from these maps, so a blank label counts as
+// unlabeled the same way everywhere, as validation already treats it.
+describe("Db label maps", () => {
+  it("trims labels and leaves out a blank one", () => {
+    const built = db.build(
+      [],
+      [],
+      NW_SCHEMA,
+      { slots: [], sections: [] },
+      [
+        { id: "padded", label: "  Padded  " },
+        { id: "blank", label: "   " },
+      ],
+      [
+        { id: "tag:padded", label: " Padded tag " },
+        { id: "tag:blank", label: " " },
+      ],
+    );
+    expect(built.filterLabels.get("padded")).toBe("Padded");
+    expect(built.filterLabels.has("blank")).toBe(false);
+    expect(built.tagLabels.get("tag:padded")).toBe("Padded tag");
+    expect(built.tagLabels.has("tag:blank")).toBe(false);
+  });
+});

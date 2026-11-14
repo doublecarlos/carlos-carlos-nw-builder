@@ -180,13 +180,12 @@ const comparesPercent = computed(() => {
 
 /** Every known tag, read by its label where it has one. Free text still names a tag no item
  *  carries yet. */
-const tagOptions = computed(() => {
-  const labels = new Map(db.value.tags.map((tag) => [tag.id, tag.label]));
-  return knownTags(db.value).map((tag) => ({
+const tagOptions = computed(() =>
+  knownTags(db.value).map((tag) => ({
     value: tag,
-    label: labels.get(tag)?.trim() || tag,
-  }));
-});
+    label: db.value.tagLabels.get(tag) ?? tag,
+  })),
+);
 
 /** The name doubles as search text, as a bonus picker's id does. */
 const searchableInputs = computed(() =>
