@@ -4,6 +4,7 @@
 // is covered in tests/unit/stores/maintainer.spec.ts, the only place it can be observed.
 import { test, expect, type Page } from "@playwright/test";
 import { addLayer, layerRow } from "./support/nav";
+import { shippedFilters } from "./support/shippedData";
 
 /** Boots the app at `url` and steps past the landing screen. `openBuilder` starts with its own
  *  `goto("/")`, which would throw away the query string these tests arrive on. A fresh context
@@ -117,11 +118,11 @@ test("the vocabulary.json tab carries the per-filter declarations", async ({
   const output = page.getByTestId("layer-export").locator("textarea");
   await expect(output).not.toHaveValue("Loading…");
 
+  // An untouched layer exports the shipped declarations as they are written in the file.
   const { filters } = JSON.parse(await output.inputValue()) as {
-    filters: Record<string, { defaultMaxCopies?: number; fields?: string[] }>;
+    filters: Record<string, unknown>;
   };
-  expect(filters.artifact).toEqual({ defaultMaxCopies: 1 });
-  expect(filters.insignia?.fields).toContain("insigniaShape");
+  expect(filters).toEqual(shippedFilters());
 });
 
 test("?maintainer=0 puts the data-file tabs away and leaves the URL", async ({
