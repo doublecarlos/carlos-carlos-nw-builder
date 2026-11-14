@@ -201,32 +201,30 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
     }
   }
   // Class items once had the `build_param_linked_item` category and the class slot selected
-  // them by the `class` tag. Both now use the `class` category, so a `class` tagged item in a
-  // category no slot picks moves there too.
-  const picked = slotSelectorFilters([
+  // them by the `class` tag. Both now use the `class` category, so a `class` tagged item no
+  // other slot picks, by category or by tag, moves there too.
+  const knownSlots = [
     ...(NW_SLOTS.slots ?? []),
     ...Object.values(overlay.slots).filter((slot) => slot !== null),
-  ]);
-  const unpicked = (filter: string | undefined) =>
-    !filter || (filter !== NO_CATEGORY && !picked.has(filter));
+  ];
+  const pickedFilters = slotSelectorFilters(knownSlots);
+  const pickedTags = new Set(
+    knownSlots.flatMap((slot) =>
+      (slot.type === "item_picker" || slot.type === "item_picker_list") &&
+      slot.id !== "options.class"
+        ? (slot.tags ?? [])
+        : [],
+    ),
+  );
+  const unpickedClassItem = (item: Item) =>
+    item.tags?.includes("class") &&
+    !item.tags.some((tag) => pickedTags.has(tag)) &&
+    (!item.filter ||
+      (item.filter !== NO_CATEGORY && !pickedFilters.has(item.filter)));
   for (const [id, item] of Object.entries(overlay.items)) {
     if (!item) continue;
-    if (
-      item.filter === "build_param_linked_item" ||
-      (item.tags?.includes("class") && unpicked(item.filter))
-    )
+    if (item.filter === "build_param_linked_item" || unpickedClassItem(item))
       overlay.items[id] = { ...item, filter: "class" };
-  }
-  // A category named with `build_param` or `hidden` once kept an item no slot picks from
-  // warning. `no_category` says that now.
-  for (const [id, item] of Object.entries(overlay.items)) {
-    const filter = item?.filter;
-    if (
-      filter &&
-      unpicked(filter) &&
-      (filter.includes("build_param") || filter.includes("hidden"))
-    )
-      overlay.items[id] = { ...item, filter: NO_CATEGORY };
   }
   const classSlot = overlay.slots["options.class"];
   if (
@@ -2531,9 +2529,7 @@ export function validateTags(
   bonuses: Bonus[],
   slots: AuthoredSlot[],
 ): LintFinding[] {
-  const labeled = new Set(
-    tags.filter((tag) => tag.label?.trim()).map((tag) => tag.id),
-  );
+  const labeled = db.labelMap(tags);
   const used = usedTags(items, bonuses, slots);
   const findings: LintFinding[] = [];
   for (const tag of tags) {

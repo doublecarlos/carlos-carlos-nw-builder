@@ -265,7 +265,10 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
           <OptionRow
             v-if="row.kind === 'filter' || row.kind === 'tag'"
             class="editor-row-name flex-1"
-            :option="{ value: row.name, label: row.def?.label || row.name }"
+            :option="{
+              value: row.name,
+              label: row.def?.label?.trim() || row.name,
+            }"
           />
           <span
             v-else

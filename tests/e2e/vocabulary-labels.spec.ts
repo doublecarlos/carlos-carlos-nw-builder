@@ -81,9 +81,9 @@ test("the item form's filter picker finds a labeled filter by its label", async 
   await expect(comboBoxValueId(input)).toHaveText(FILTER);
 });
 
-// Enter on a typed exact label commits the option a blur would, not an earlier row whose text
-// also matches.
-test("Enter on a filter's exact label picks that filter over a longer match", async ({
+// Enter and blur on a typed exact label, in any case, commit the same option, not an earlier
+// row whose text also matches nor a new category.
+test("a filter's exact label picks that filter over a longer match on Enter or blur", async ({
   page,
 }) => {
   await openLabeledLayer(page, true);
@@ -95,6 +95,15 @@ test("Enter on a filter's exact label picks that filter over a longer match", as
     page.getByRole("option", { name: LONGER_FILTER_LABEL }),
   ).toBeVisible();
   await input.press("Enter");
+  await expect(comboBoxValueId(input)).toHaveText(FILTER);
+
+  await input.fill(FILTER_LABEL.toLowerCase());
+  await expect(page.getByRole("option", { name: /new$/ })).toHaveCount(0);
+  await input.press("Enter");
+  await expect(comboBoxValueId(input)).toHaveText(FILTER);
+
+  await input.fill(FILTER_LABEL.toLowerCase());
+  await input.blur();
   await expect(comboBoxValueId(input)).toHaveText(FILTER);
 });
 

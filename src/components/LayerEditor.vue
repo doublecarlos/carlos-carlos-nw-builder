@@ -655,8 +655,9 @@ const filterable = (row: EditorRow): FilterableRow =>
     : {
         // A filter or tag is found by its label as well as its id.
         name:
-          (row.kind === "filter" || row.kind === "tag") && row.def?.label
-            ? `${row.def.label} ${row.name}`
+          (row.kind === "filter" || row.kind === "tag") &&
+          row.def?.label?.trim()
+            ? `${row.def.label.trim()} ${row.name}`
             : row.name,
         filter: row.filter,
         status: row.status,

@@ -10,9 +10,10 @@
 // Tab commits the typed text itself.
 //
 // Options are `{ value, label }` and a row is an OptionRow, so a labeled value is found by its
-// label or its value. Typed text equal to a label ranks that option first and commits it, so
-// Enter, Tab and blur agree. The closed field shows the value, or with `showValue` its label with the
-// value after it, small and muted, as ComboBox does.
+// label or its value. Typed text naming an option exactly, by label first and ignoring case,
+// ranks that option first and commits it, so Enter, Tab and blur agree. The closed field
+// shows the value, or with `showValue` its label with the value after it, small and muted, as
+// ComboBox does.
 //
 // An untyped open highlights the current value, so Enter or Tab through the field keeps it.
 // `showEmptyOption` adds an "- empty -" row on that open, the keyboard way to clear the
@@ -22,7 +23,7 @@
 import { X } from "@lucide/vue";
 import { computed, watch, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
-import { filterAndRank } from "../../lib/text-filter";
+import { exactMatch, filterAndRank } from "../../lib/text-filter";
 import { useMenuNavigation } from "../../composables/useMenuNavigation";
 import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
@@ -69,26 +70,23 @@ const { open, query, highlight, close, pointAt } = useMenuNavigation({
   onHighlightChange: () => menu.value?.scrollToHighlighted(),
 });
 
+/** The keys typed text names an option by exactly, in priority order. */
+const exactKeys = (option: ComboBoxOption) => [option.label, option.value];
+
 const suggestions = computed(() => {
   if (!open.value) return [];
   return filterAndRank(
     props.options,
     query.value,
     (option) => [option.value, option.label, option.search ?? ""],
-    (option) => [option.label, option.value],
+    exactKeys,
   ).slice(0, MAX_SUGGESTIONS);
 });
 
-/** Offering the typed text itself as a "new" entry when it isn't already a known option. */
+/** Offering the typed text itself as a "new" entry when it names no known option. */
 const freeValue = computed(() => {
   const value = query.value.trim();
-  if (
-    !value ||
-    props.options.some(
-      (option) => option.value === value || option.label === value,
-    )
-  )
-    return "";
+  if (!value || exactMatch(props.options, value, exactKeys)) return "";
   return value;
 });
 
@@ -121,9 +119,9 @@ const shownPlaceholder = computed(() =>
   open.value && model.value ? closedText.value : props.placeholder,
 );
 
-/** Typed text naming an option by its label commits that option's value. */
+/** Typed text naming an option exactly commits that option's value. */
 const valueOf = (text: string) =>
-  props.options.find((option) => option.label === text.trim())?.value ?? text;
+  exactMatch(props.options, text, exactKeys)?.value ?? text;
 
 /** The "- empty -" row, told apart by its value: no option or typed text commits as "". */
 const EMPTY: ComboBoxOption = { value: "", label: "- empty -" };

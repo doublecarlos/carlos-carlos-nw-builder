@@ -270,58 +270,51 @@ describe("normalizeOverlay and the overlay shape", () => {
     expect(ids).toContain(shippedClass.id);
   });
 
-  // The old class slot picked any `class` tagged item, so one in a category of its own stays
-  // in the Class picker. One in a category a slot picks keeps it.
-  it("moves a class tagged item in a category no slot picks to the class category", () => {
-    const item = (id: string, filter: string) => ({
+  // The old class slot picked any `class` tagged item, so one no other slot picks stays in the
+  // Class picker. One another slot picks, by category or by tag, keeps its category, and so
+  // does one marked `no_category`.
+  it("moves a class tagged item no other slot picks to the class category", () => {
+    const item = (id: string, filter?: string, tags: string[] = []) => ({
       id,
       name: id,
-      filter,
-      tags: ["class"],
+      ...(filter && { filter }),
+      tags: ["class", ...tags],
       bonuses: [],
+    });
+    const picker = (
+      id: string,
+      select: { filter?: string; tags?: string[] },
+    ) => ({
+      id,
+      type: "item_picker",
+      section: "gear",
+      ...select,
     });
     const normalized = catalog.normalizeOverlay({
       items: {
         own: item("own", "my_classes"),
-        picked: item("picked", "artifact"),
+        bare: item("bare"),
+        byFilter: item("byFilter", "test_picked"),
+        byTag: item("byTag", "test_unpicked", ["test:picked"]),
+        none: item("none", catalog.NO_CATEGORY),
+      },
+      slots: {
+        "gear.test_filter": picker("gear.test_filter", {
+          filter: "test_picked",
+        }),
+        "gear.test_tag": picker("gear.test_tag", { tags: ["test:picked"] }),
       },
     });
     expect(normalized.items.own?.filter).toBe("class");
-    expect(normalized.items.picked?.filter).toBe("artifact");
+    expect(normalized.items.bare?.filter).toBe("class");
+    expect(normalized.items.byFilter?.filter).toBe("test_picked");
+    expect(normalized.items.byTag?.filter).toBe("test_unpicked");
+    expect(normalized.items.none?.filter).toBe(catalog.NO_CATEGORY);
     const ids = catalog
       .makeDb([normalized])
       .forSlot("options.class")
       .map((entry) => entry.id);
     expect(ids).toContain("own");
-  });
-
-  // A category named with `build_param` or `hidden` once silenced "matches no slot"; such
-  // an item moves to `no_category`, which says the same, unless a slot picks its category.
-  it("moves an item in an old unpickable category to no_category", () => {
-    const item = (id: string, filter: string) => ({
-      id,
-      name: id,
-      filter,
-      bonuses: [],
-    });
-    const normalized = catalog.normalizeOverlay({
-      items: {
-        param: item("param", "build_param_mount"),
-        hidden: item("hidden", "hidden_extras"),
-        listed: item("listed", "hidden_listed"),
-      },
-      slots: {
-        "gear.listed": {
-          id: "gear.listed",
-          type: "item_picker",
-          section: "gear",
-          filter: "hidden_listed",
-        },
-      },
-    });
-    expect(normalized.items.param?.filter).toBe(catalog.NO_CATEGORY);
-    expect(normalized.items.hidden?.filter).toBe(catalog.NO_CATEGORY);
-    expect(normalized.items.listed?.filter).toBe("hidden_listed");
   });
 
   it("gives a section entry without slotIds an empty list and drops a bad sectionOrder", () => {
