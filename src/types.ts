@@ -837,13 +837,21 @@ export interface CatalogOverlay {
   sections: Record<string, SlotSection | null>;
   /** Per-filter metadata. A tombstone reverts the category to the defaults. */
   filters: Record<string, FilterDef | null>;
+  /** Per-tag metadata. A tombstone reverts the tag to the defaults. */
+  tags: Record<string, TagDef | null>;
   /** Full section order. Unlisted ids follow in base order; a later layer's list replaces
    * an earlier one. */
   sectionOrder?: string[];
 }
 
 export type CatalogGroup =
-  "items" | "bonuses" | "sectionPresets" | "slots" | "sections" | "filters";
+  | "items"
+  | "bonuses"
+  | "sectionPresets"
+  | "slots"
+  | "sections"
+  | "filters"
+  | "tags";
 
 export interface LintFinding {
   level: "error" | "warn";

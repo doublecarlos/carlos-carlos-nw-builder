@@ -26,8 +26,9 @@ describe("layerEditorUi store", () => {
       preset: "",
       slot: "",
       sectionId: "",
-      slotsGroup: "",
+      lastGroup: {},
       filter: "",
+      tag: "",
       status: "",
       q: "",
       itemFilter: { quality: "", category: "", hideRetired: true },
@@ -51,24 +52,24 @@ describe("layerEditorUi store", () => {
     expect(a.item).toBe("item-1");
   });
 
-  it("remembers the Filters tab's own selection", () => {
-    const state = getState("layer-filters");
-    state.section = "filters";
-    state.filter = "gear_ring";
-    expect(getState("layer-filters")).toMatchObject({
-      section: "filters",
-      filter: "gear_ring",
+  it("remembers the Vocabulary tab's own selection", () => {
+    const state = getState("layer-vocabulary");
+    state.section = "vocabulary";
+    state.tag = "gem:jade";
+    expect(getState("layer-vocabulary")).toMatchObject({
+      section: "vocabulary",
+      tag: "gem:jade",
     });
   });
 
-  it("remembers which of the Slots tab's three groups it last showed", () => {
+  it("remembers the group each multi-group tab last showed", () => {
     const state = getState("layer-slots");
     state.section = "slots";
-    state.slotsGroup = "sections";
+    state.lastGroup = { slots: "sections", vocabulary: "tags" };
     state.sectionId = "gear";
     expect(getState("layer-slots")).toMatchObject({
       section: "slots",
-      slotsGroup: "sections",
+      lastGroup: { slots: "sections", vocabulary: "tags" },
       sectionId: "gear",
     });
   });

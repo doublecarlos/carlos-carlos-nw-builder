@@ -289,6 +289,7 @@ describe("catalog.referencedOverlay: slots travel with a build", () => {
       authoredSlots: slots,
       sections: [],
       filters: [],
+      tags: [],
     }) as unknown as Db;
 
   it("carries an overlay-added param even though no choice references it", () => {

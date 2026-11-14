@@ -64,6 +64,14 @@ async function newInSlotsTab(
   await expect(form(page)).toBeVisible();
 }
 
+/** Opens a new filter or tag draft from the Vocabulary tab's "New" menu. */
+async function newInVocabularyTab(page: Page, what: "new-filter" | "new-tag") {
+  await page.getByTestId("tab-vocabulary").tap();
+  await page.getByTestId("new-vocabulary-entry").tap();
+  await page.getByTestId(what).tap();
+  await expect(form(page)).toBeVisible();
+}
+
 /** Picks an option of the ComboBox with `testid` under `scope`. */
 async function pick(
   page: Page,
@@ -280,9 +288,14 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
 
     test("filter form", async ({ page }) => {
       await openNewLayer(page);
-      await page.getByTestId("tab-filters").tap();
-      await page.getByTestId("new-filter").tap();
+      await newInVocabularyTab(page, "new-filter");
       expect(await offenders(form(page)), "filter").toEqual([]);
+    });
+
+    test("tag form", async ({ page }) => {
+      await openNewLayer(page);
+      await newInVocabularyTab(page, "new-tag");
+      expect(await offenders(form(page)), "tag").toEqual([]);
     });
 
     test("preset form", async ({ page }) => {

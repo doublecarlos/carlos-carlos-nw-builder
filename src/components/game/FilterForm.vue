@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Editing form for one filter's metadata: the copy cap and the item field groups. An existing
+// Editing form for one filter's metadata: its label, the copy cap and the item field groups. An existing
 // entry live-edits; a new one is a draft until Save. Draft logic lives in lib/filter-draft.ts.
 //
 // Also opens on a category with no declaration yet: `fixedId` names it for the first save.
@@ -134,6 +134,15 @@ function save() {
         />
       </FormField>
       <IdField :id="displayId" label="Id" :existing="namesCategory" />
+      <FormField label="Label">
+        <BaseInput
+          v-model="draft.label"
+          class="w-full"
+          type="text"
+          placeholder="the id itself"
+          data-testid="filter-label-input"
+        />
+      </FormField>
       <FormField label="Default max copies">
         <BaseInput
           v-model.number="draft.defaultMaxCopies"

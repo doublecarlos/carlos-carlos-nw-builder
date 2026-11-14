@@ -229,6 +229,7 @@ describe("buildEditor.applyInputFromCompare on bonus inputs", () => {
     slots: {},
     sections: {},
     filters: {},
+    tags: {},
   };
 
   /** Fresh stores with the ring's layer already in place. */
@@ -566,6 +567,7 @@ describe("buildEditor.presetFromSection", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     });
     const { buildEditor } = stores;
     buildEditor.setChoice("gear.ring1", "test-proc-ring");
@@ -1255,6 +1257,7 @@ describe("seeding from the composed catalog", () => {
     },
     sections: {},
     filters: {},
+    tags: {},
   };
 
   /** Fresh stores with the layer already in place, so the composed db has the slot before

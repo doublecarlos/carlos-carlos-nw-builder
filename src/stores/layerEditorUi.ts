@@ -5,7 +5,7 @@
 // URL (its own corner of the query string, cleared on unmount to keep a build's URL clean),
 // but a fresh mount needs *something* to fall back on once that URL is gone. Field names
 // mirror the route params so either can be the source. Only one of `slot`/`preset`/`sectionId`
-// is set at a time; `slotsGroup` is the Slots tab group last shown. `view` is the phone's
+// is set at a time; `lastGroup` is the group each multi-group tab last showed. `view` is the phone's
 // master-detail half last shown, which the route itself decides while the editor is mounted;
 // like the rest of this record it lasts the session.
 import { reactive, readonly, shallowRef } from "vue";
@@ -25,8 +25,10 @@ export interface LayerEditorUiState {
   preset: string;
   slot: string;
   sectionId: string;
-  slotsGroup: string;
+  /** The group last shown, by tab, for the tabs that host several. */
+  lastGroup: Record<string, string>;
   filter: string;
+  tag: string;
   status: string;
   q: string;
   /** The Items tab's quality, category and retired filters, never in the URL. */
@@ -42,8 +44,9 @@ function defaults(): LayerEditorUiState {
     preset: "",
     slot: "",
     sectionId: "",
-    slotsGroup: "",
+    lastGroup: {},
     filter: "",
+    tag: "",
     status: "",
     q: "",
     itemFilter: defaultItemListFilter(),
@@ -107,7 +110,6 @@ export function openItem(itemId: string) {
   Object.assign(getState(layer.id), {
     section: "items",
     item: itemId,
-    slotsGroup: "",
     view: "detail",
   });
   pendingReveal = layer.id;

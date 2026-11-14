@@ -47,6 +47,7 @@ const emptyOverlay = (): CatalogOverlay => ({
   slots: {},
   sections: {},
   filters: {},
+  tags: {},
 });
 
 const preset = (fields: Partial<SectionPreset> = {}): SectionPreset => ({

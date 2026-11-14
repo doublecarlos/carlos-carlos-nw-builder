@@ -103,8 +103,10 @@ const emit = defineEmits<{
   "delete-bonus": [id: string];
   "update-bonus": [payload: { id: string; bonus: Bonus }];
   "open-item": [itemId: string];
-  /** Opens this item's category in the Filters tab. */
+  /** Opens this item's category in the Vocabulary tab. */
   "open-filter": [filter: string];
+  /** Opens one of this item's tags in the Vocabulary tab, to give it a label. */
+  "open-tag": [tag: string];
   "tooltip-import": [];
 }>();
 
@@ -143,6 +145,16 @@ function computeId(local: ItemDraft): string {
  * honored as a fallback, so an overlay declaring the older param-based shape keeps working.
  * Blank values are dropped either way; "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
+/** This saved item's tags with no label yet, each linked to its form. A new item's draft would
+ *  be discarded by the jump, so it offers none until saved. */
+const unlabeledTags = computed(() => {
+  if (!props.source) return [];
+  const labeled = new Set(
+    props.db.tags.filter((tag) => tag.label?.trim()).map((tag) => tag.id),
+  );
+  return draft.value.tags.filter((tag) => !labeled.has(tag));
+});
+
 /** Each known tag, read by its declared label where it has one, else by itself. */
 const tagOptions = computed(() => {
   const labels = new Map(props.db.tags.map((tag) => [tag.id, tag.label]));
@@ -657,6 +669,7 @@ function showsGroup(group: FieldGroup): boolean {
         <TokenInput
           v-model="draft.tags"
           :options="tagOptions"
+          show-value
           placeholder="Add a tag…"
           data-testid="item-tags-input"
         >
@@ -664,6 +677,20 @@ function showsGroup(group: FieldGroup): boolean {
             <OptionRow :option="option" />
           </template>
         </TokenInput>
+        <p
+          v-if="unlabeledTags.length"
+          class="text-muted"
+          data-testid="unlabeled-tags"
+        >
+          No label yet:
+          <template v-for="(tag, index) in unlabeledTags" :key="tag">
+            <BaseLink
+              data-testid="label-tag-link"
+              @click="$emit('open-tag', tag)"
+              >{{ tag }}</BaseLink
+            >{{ index < unlabeledTags.length - 1 ? ", " : "" }}
+          </template>
+        </p>
       </FormField>
     </FormGrid>
 
