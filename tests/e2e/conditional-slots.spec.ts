@@ -81,7 +81,7 @@ test.describe("weapon mods", () => {
 
     await expect(slotRow(page, MOD_SLOT)).toHaveCount(0);
     await expect(page.getByTestId("app-header")).toContainText(
-      "Cleared Mainhand mod",
+      "Cleared Main-hand mod",
     );
     expect(await statTexts(page)).toEqual(withoutMod);
 

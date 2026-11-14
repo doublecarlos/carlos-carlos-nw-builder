@@ -38,7 +38,7 @@ import type {
   TrashEntry,
   ItemHistory,
   Db,
-  Slot,
+  AuthoredSlot,
 } from "../types";
 
 const OVERLAY_KEY = "nw:catalog-overlay";
@@ -164,7 +164,7 @@ export const newId = (prefix = "b") =>
  * `?? slot.default` fallback for a build the app itself produced.
  */
 export function seededDefaults(
-  slots: Slot[],
+  slots: AuthoredSlot[],
   db: Db,
 ): Pick<Build, "context" | "choices" | "assignments" | "listRows"> {
   const root: { context: Record<string, unknown> } = { context: {} };

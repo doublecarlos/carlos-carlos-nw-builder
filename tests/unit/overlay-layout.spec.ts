@@ -20,6 +20,7 @@ import type {
   Item,
   ItemPickerSlot,
   SectionPreset,
+  AuthoredSlot,
   Slot,
   SlotSection,
   TagDef,
@@ -44,7 +45,7 @@ const picker = (id: string, sectionId: string): ItemPickerSlot => ({
   filter: "custom_filter",
 });
 
-const idsIn = (slots: Slot[], sectionId: string) =>
+const idsIn = (slots: AuthoredSlot[], sectionId: string) =>
   slots.filter((slot) => slot.section === sectionId).map((slot) => slot.id);
 
 /** The shipped Options section and its member ids, in file order. */
@@ -397,7 +398,7 @@ describe("catalog.referencedOverlay: layout travels with a build", () => {
     ]);
     const overlay = catalog.referencedOverlay(
       testDb({
-        slots: composed.slots,
+        slots: composed.slots as Slot[],
         authoredSlots: composed.slots,
         sections: composed.sections,
         filters: composed.filters,
@@ -445,7 +446,7 @@ describe("catalog.referencedOverlay: layout travels with a build", () => {
     ]);
     const overlay = catalog.referencedOverlay(
       testDb({
-        slots: composed.slots,
+        slots: composed.slots as Slot[],
         authoredSlots: composed.slots,
         sections: composed.sections,
       }),

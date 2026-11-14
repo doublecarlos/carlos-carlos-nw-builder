@@ -34,6 +34,7 @@ import type {
   Schema,
   SlotsData,
   Slot,
+  AuthoredSlot,
   Db,
   BonusCandidate,
   Build,
@@ -160,6 +161,53 @@ export function filterFieldsOf(filters: FilterDef[]): FilterFieldsMap {
   return out;
 }
 
+/** A lookup from filter id to its label, for the filters that have one. */
+export function filterLabelLookup(
+  filters: readonly FilterDef[],
+): (filter: string | undefined) => string | undefined {
+  const labels = new Map<string, string>();
+  for (const filter of filters)
+    if (filter.label) labels.set(filter.id, filter.label);
+  return (filter) => (filter === undefined ? undefined : labels.get(filter));
+}
+
+/** The label a slot reads as: its own, else its category's, else its id. */
+export function slotLabel(
+  slot: AuthoredSlot,
+  labelOf: (filter: string | undefined) => string | undefined,
+): string {
+  if (slot.label) return slot.label;
+  return labelOf("filter" in slot ? slot.filter : undefined) ?? slot.id;
+}
+
+const filledSlots = new WeakMap<AuthoredSlot, Slot>();
+
+/** `slot` with `label` filled in. The same object for the same authored slot and label, so a
+ *  slot keeps its identity across rebuilds and a prop compared by identity stays unchanged. */
+function filled(slot: AuthoredSlot, label: string): Slot {
+  const cached = filledSlots.get(slot);
+  if (cached?.label === label) return cached;
+  const next = { ...slot, label } as Slot;
+  filledSlots.set(slot, next);
+  return next;
+}
+
+/** `slot` as `Db` serves it: a derived option set resolved and the label filled in. */
+function resolveSlot(
+  slot: AuthoredSlot,
+  items: Item[],
+  labelOf: (filter: string | undefined) => string | undefined,
+): Slot {
+  if (slot.type === "build_parameter" && slot.optionsFrom)
+    return {
+      ...slot,
+      label: slotLabel(slot, labelOf),
+      options: resolvedOptions(slot, items),
+    };
+  if (slot.type === "separator" || slot.type === "text") return slot;
+  return slot.label ? (slot as Slot) : filled(slot, slotLabel(slot, labelOf));
+}
+
 export function build(
   items: Item[],
   bonuses: Bonus[] = [],
@@ -207,10 +255,9 @@ export function build(
   // `options` array and never has to know whether it was authored inline or derived.
   // `authoredSlots` keeps the pre-resolution form for the write side -- see `Db`.
   const authoredSlots = slots?.slots ?? [];
+  const labelOf = filterLabelLookup(filters);
   const slotList = authoredSlots.map((slot) =>
-    slot.type === "build_parameter" && slot.optionsFrom
-      ? { ...slot, options: resolvedOptions(slot, items) }
-      : slot,
+    resolveSlot(slot, items, labelOf),
   );
   const slotById = new Map<string, Slot>(
     slotList.map((slot) => [slot.id, slot]),

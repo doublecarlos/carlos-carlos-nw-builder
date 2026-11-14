@@ -167,7 +167,7 @@ function save() {
         class="flex items-baseline gap-2"
       >
         <BaseLink @click="emit('openSlot', slot.id)">{{
-          slot.label || slot.id
+          db.slotById.get(slot.id)?.label || slot.id
         }}</BaseLink>
         <span class="text-muted">{{ slot.type }}</span>
       </li>

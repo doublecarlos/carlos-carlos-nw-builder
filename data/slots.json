@@ -7,14 +7,12 @@
       "slots": [
         {
           "id": "options.class",
-          "label": "Class",
           "type": "item_picker",
           "filter": "class",
           "hidePreview": true
         },
         {
           "id": "options.paragon",
-          "label": "Paragon",
           "type": "item_picker",
           "filter": "paragon"
         },
@@ -281,7 +279,6 @@
         },
         {
           "id": "options.scenario",
-          "label": "Flags",
           "type": "item_picker_list",
           "filter": "scenario_flag",
           "defaultRows": 0
@@ -342,7 +339,6 @@
       "slots": [
         {
           "id": "raceLeveling.race",
-          "label": "Race",
           "type": "item_picker",
           "filter": "race"
         },
@@ -410,7 +406,6 @@
       "slots": [
         {
           "id": "gear.head",
-          "label": "Head",
           "type": "item_picker",
           "filter": "gear_head"
         },
@@ -435,7 +430,6 @@
         },
         {
           "id": "gear.armor",
-          "label": "Armor",
           "type": "item_picker",
           "filter": "gear_armor"
         },
@@ -460,7 +454,6 @@
         },
         {
           "id": "gear.arms",
-          "label": "Arms",
           "type": "item_picker",
           "filter": "gear_arms"
         },
@@ -485,13 +478,12 @@
         },
         {
           "id": "gear.mainhand",
-          "label": "Weapon Mainhand",
           "type": "item_picker",
           "filter": "gear_weapon_mainhand"
         },
         {
           "id": "gear.mainhandMod",
-          "label": "Mainhand mod",
+          "label": "Main-hand mod",
           "type": "item_picker",
           "filter": "modification_mainhand",
           "parent": "gear.mainhand",
@@ -503,13 +495,12 @@
         },
         {
           "id": "gear.offhand",
-          "label": "Weapon Offhand",
           "type": "item_picker",
           "filter": "gear_weapon_offhand"
         },
         {
           "id": "gear.offhandMod1",
-          "label": "Offhand Mod 1",
+          "label": "Off-hand mod 1",
           "type": "item_picker",
           "filter": "modification_offhand_static",
           "parent": "gear.offhand",
@@ -521,7 +512,7 @@
         },
         {
           "id": "gear.offhandMod2",
-          "label": "Offhand Mod 2",
+          "label": "Off-hand mod 2",
           "type": "item_picker",
           "filter": "modification_offhand_dynamic",
           "parent": "gear.offhand",
@@ -533,7 +524,6 @@
         },
         {
           "id": "gear.boots",
-          "label": "Boots",
           "type": "item_picker",
           "filter": "gear_boots"
         },
@@ -562,7 +552,6 @@
         },
         {
           "id": "gear.neck",
-          "label": "Neck",
           "type": "item_picker",
           "filter": "gear_neck"
         },
@@ -601,7 +590,6 @@
         },
         {
           "id": "gear.waist",
-          "label": "Waist",
           "type": "item_picker",
           "filter": "gear_waist"
         },
@@ -614,13 +602,11 @@
         },
         {
           "id": "gear.shirt",
-          "label": "Shirt",
           "type": "item_picker",
           "filter": "gear_shirt"
         },
         {
           "id": "gear.pants",
-          "label": "Pants",
           "type": "item_picker",
           "filter": "gear_pants"
         }
@@ -633,56 +619,48 @@
       "slots": [
         {
           "id": "buffs.eventFood",
-          "label": "Event Food",
           "type": "item_picker",
           "filter": "consumable_event_food",
           "toggleable": true
         },
         {
           "id": "buffs.elixir",
-          "label": "Elixir",
           "type": "item_picker",
           "filter": "consumable_elixir",
           "toggleable": true
         },
         {
           "id": "buffs.potion",
-          "label": "Potion",
           "type": "item_picker",
           "filter": "consumable_potion",
           "toggleable": true
         },
         {
           "id": "buffs.food",
-          "label": "Food",
           "type": "item_picker",
           "filter": "consumable_food",
           "toggleable": true
         },
         {
           "id": "buffs.trinket",
-          "label": "Trinket",
           "type": "item_picker",
           "filter": "trinket",
           "toggleable": true
         },
         {
           "id": "buffs.eventItem",
-          "label": "Event Item",
           "type": "item_picker",
           "filter": "consumable_event_item",
           "toggleable": true
         },
         {
           "id": "buffs.blessing",
-          "label": "Blessing",
           "type": "item_picker",
           "filter": "consumable_blessing",
           "toggleable": true
         },
         {
           "id": "baselineAndAttributes.attributesCampfireBuff",
-          "label": "Campfire Buff",
           "type": "item_picker",
           "filter": "attributes_campfire",
           "toggleable": true
@@ -752,13 +730,11 @@
         },
         {
           "id": "enchantments.combatOffense",
-          "label": "Strike Enchantment",
           "type": "item_picker",
           "filter": "combat_enchant_offense"
         },
         {
           "id": "enchantments.combatDefense",
-          "label": "Guard Enchantment",
           "type": "item_picker",
           "filter": "combat_enchant_defense"
         },
@@ -1014,7 +990,6 @@
         },
         {
           "id": "companions.companion",
-          "label": "Companion",
           "type": "item_picker",
           "filter": "companion"
         },
@@ -1130,13 +1105,11 @@
         },
         {
           "id": "mounts.mountCombat",
-          "label": "Mount Combat Power",
           "type": "item_picker",
           "filter": "mount_combat"
         },
         {
           "id": "mounts.mountEquip",
-          "label": "Mount Equip Power",
           "type": "item_picker",
           "filter": "mount_equip"
         },
@@ -1146,31 +1119,26 @@
         },
         {
           "id": "mounts.sturdyCollar",
-          "label": "Sturdy Collar",
           "type": "item_picker",
           "filter": "sturdy_collar"
         },
         {
           "id": "mounts.supportiveCollar",
-          "label": "Supportive Collar",
           "type": "item_picker",
           "filter": "supportive_collar"
         },
         {
           "id": "mounts.wayfaringCollar",
-          "label": "Wayfaring Collar",
           "type": "item_picker",
           "filter": "wayfaring_collar"
         },
         {
           "id": "mounts.unifiedCollar",
-          "label": "Unified Collar",
           "type": "item_picker",
           "filter": "unified_collar"
         },
         {
           "id": "mounts.practicalCollar",
-          "label": "Practical Collar",
           "type": "item_picker",
           "filter": "pratical_collar"
         }
@@ -1539,7 +1507,6 @@
       "slots": [
         {
           "id": "group.group",
-          "label": "Group buff",
           "type": "item_picker_list",
           "filter": "group_buff",
           "defaultRows": 0,
@@ -1590,7 +1557,6 @@
       "slots": [
         {
           "id": "artifactCall.artifactCall",
-          "label": "Artifact call buff",
           "type": "item_picker_list",
           "filter": "artifact_call",
           "defaultRows": 0,

@@ -4,7 +4,7 @@
 // against the layout the game showed that character's class, and those layouts differ per class.
 // Any complete seating is equivalent, since nothing the engine evaluates can see slot ids.
 import gameImportJson from "../../data/game-import.json";
-import type { Db, Item, Slot } from "../types";
+import type { AuthoredSlot, Db, Item } from "../types";
 import type { DemoItem } from "./demo-snapshot";
 
 export interface GameBagEntry {
@@ -328,7 +328,7 @@ export function placeBag(
 /** Every value-holding slot no bag entry names, which the report renders as `notInDemo`.
  *  The class and race slots are excluded because they import from the character rather
  *  than a bag, a stable bonus row because it derives from the insignia. */
-export function notInDemoSlotIds(slots: Slot[]): string[] {
+export function notInDemoSlotIds(slots: AuthoredSlot[]): string[] {
   const named = new Set<string>(
     Object.values(REQUIRED_SLOT_IDS).map((entry) => entry.id),
   );
@@ -420,7 +420,7 @@ export interface GameImportLintFinding {
  */
 export function validateGameBags(
   bags: GameBagEntry[],
-  slots: Slot[],
+  slots: AuthoredSlot[],
 ): GameImportLintFinding[] {
   const findings: GameImportLintFinding[] = [];
   const knownSlotIds = new Set(slots.map((slot) => slot.id));
@@ -546,7 +546,7 @@ export function validateValueMap(
  */
 export function validateNotInDemoReasons(
   reasons: NotInDemoReasonEntry[],
-  slots: Slot[],
+  slots: AuthoredSlot[],
   sections: { id: string }[],
 ): GameImportLintFinding[] {
   const findings: GameImportLintFinding[] = [];

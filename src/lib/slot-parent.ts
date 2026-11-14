@@ -1,9 +1,9 @@
 // Nested slots. An `item_picker` naming a `parent` renders right after that slot, indented
 // under it, and is unavailable while the parent is unavailable or empty.
-import type { Slot } from "../types";
+import type { AuthoredSlot } from "../types";
 
 /** The id a slot names as its `parent`, or undefined for a top-level one. */
-export function parentOf(slot: Slot): string | undefined {
+export function parentOf(slot: AuthoredSlot): string | undefined {
   return slot.type === "item_picker" ? slot.parent : undefined;
 }
 
@@ -11,7 +11,10 @@ export function parentOf(slot: Slot): string | undefined {
  * Whether `slot` nests under `parent`: a top-level `item_picker` of the same section. A slot
  * whose parent fails this stays where it is authored, and lint reports it.
  */
-export function nestsUnder(slot: Slot, parent: Slot | undefined): boolean {
+export function nestsUnder(
+  slot: AuthoredSlot,
+  parent: AuthoredSlot | undefined,
+): boolean {
   return (
     !!parent &&
     parent.id !== slot.id &&
@@ -23,8 +26,8 @@ export function nestsUnder(slot: Slot, parent: Slot | undefined): boolean {
 
 /** The id of the parent `slot` actually nests under, looked up in `byId`. */
 export function nestedParentId(
-  slot: Slot,
-  byId: ReadonlyMap<string, Slot>,
+  slot: AuthoredSlot,
+  byId: ReadonlyMap<string, AuthoredSlot>,
 ): string | undefined {
   const parentId = parentOf(slot);
   return parentId && nestsUnder(slot, byId.get(parentId))
@@ -36,8 +39,10 @@ export function nestedParentId(
  * One section's `ordered` slots with every nested slot moved right after its parent, children
  * keeping their relative order.
  */
-export function groupUnderParents<T extends Slot>(ordered: T[]): T[] {
-  const byId = new Map<string, Slot>(ordered.map((slot) => [slot.id, slot]));
+export function groupUnderParents<T extends AuthoredSlot>(ordered: T[]): T[] {
+  const byId = new Map<string, AuthoredSlot>(
+    ordered.map((slot) => [slot.id, slot]),
+  );
   const children = new Map<string, T[]>();
   for (const slot of ordered) {
     const parentId = nestedParentId(slot, byId);
@@ -62,7 +67,7 @@ export function groupUnderParents<T extends Slot>(ordered: T[]): T[] {
  * own nested slots, and a nested slot stays among its siblings.
  */
 export function stepIndex(
-  members: Slot[],
+  members: AuthoredSlot[],
   slotId: string,
   delta: 1 | -1,
 ): number | null {

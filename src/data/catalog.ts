@@ -75,6 +75,8 @@ import type {
   ParamCondition,
   LintFinding,
   Slot,
+  Authored,
+  AuthoredSlot,
   SlotSection,
   StableRole,
   SectionPreset,
@@ -92,7 +94,13 @@ import { outOfRangeErrorMessage } from "../lib/format";
 
 /** Any entry an overlay group holds. */
 export type CatalogEntry =
-  Item | Bonus | SectionPreset | Slot | SlotSection | FilterDef | TagDef;
+  | Item
+  | Bonus
+  | SectionPreset
+  | AuthoredSlot
+  | SlotSection
+  | FilterDef
+  | TagDef;
 
 export const emptyOverlay = (): CatalogOverlay => ({
   items: {},
@@ -258,19 +266,22 @@ function orderSections(
  * members), then its other members, each nested slot pulled right after its parent. Slots of
  * a missing section go last, so the engine and lint still see them.
  */
-function layoutSlots(slots: Slot[], sections: SlotSection[]): Slot[] {
-  const members = new Map<string, Slot[]>();
+function layoutSlots(
+  slots: AuthoredSlot[],
+  sections: SlotSection[],
+): AuthoredSlot[] {
+  const members = new Map<string, AuthoredSlot[]>();
   for (const slot of slots) {
     const list = members.get(slot.section);
     if (list) list.push(slot);
     else members.set(slot.section, [slot]);
   }
-  const out: Slot[] = [];
+  const out: AuthoredSlot[] = [];
   for (const section of sections) {
     const own = members.get(section.id) ?? [];
     members.delete(section.id);
     const ownById = new Map(own.map((slot) => [slot.id, slot]));
-    const ordered: Slot[] = [];
+    const ordered: AuthoredSlot[] = [];
     for (const id of section.slotIds) {
       const slot = ownById.get(id);
       if (!slot) continue;
@@ -486,7 +497,7 @@ export function revert(
  *  since a moved slot is written back into the overlay as-is. */
 export interface SlotLayout {
   sections: SlotSection[];
-  slots: Slot[];
+  slots: AuthoredSlot[];
 }
 
 /** `layout`'s members of `sectionId`, in render order. */
@@ -509,12 +520,12 @@ const withAt = (ids: string[], id: string, index: number) => {
  * snaps to its start when moving up, else to its end.
  */
 function groupIndex(
-  slot: Slot,
+  slot: AuthoredSlot,
   group: string[],
   before: string[],
   rest: string[],
   index: number,
-  byId: Map<string, Slot>,
+  byId: Map<string, AuthoredSlot>,
 ) {
   const from = before.indexOf(slot.id);
   const movingUp = from !== -1 && index < from;
@@ -616,7 +627,7 @@ export function moveSection(
  *  option when deleting a section, like `unlinkBonus`. */
 export function removeSectionMembers(
   overlay: CatalogOverlay,
-  slots: Slot[],
+  slots: AuthoredSlot[],
   presets: SectionPreset[],
   sectionId: string,
 ): CatalogOverlay {
@@ -850,7 +861,7 @@ function checkParamCondition(
   spec: ParamCondition | undefined,
   path: string,
   report: (level: "error" | "warn", message: string) => void,
-  paramSlots: Map<string, BuildParameterSlot>,
+  paramSlots: Map<string, Authored<BuildParameterSlot>>,
 ) {
   if (!spec || typeof spec !== "object" || !spec.key) {
     report("error", `${path}: param condition has no "key"`);
@@ -945,7 +956,7 @@ function checkConditions(
   when: ConditionWhen | undefined,
   path: string,
   report: (level: "error" | "warn", message: string) => void,
-  paramSlots: Map<string, BuildParameterSlot>,
+  paramSlots: Map<string, Authored<BuildParameterSlot>>,
   inputs: Record<string, InputDef> = {},
 ) {
   if (!when || typeof when !== "object") return;
@@ -1264,7 +1275,7 @@ export function checkBounds(
   return null;
 }
 
-export function validateSlots(slots: Slot[]): LintFinding[] {
+export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
   const findings: LintFinding[] = [];
   const seenPaths = new Map<string, string>();
   for (const slot of slots) {
@@ -1448,7 +1459,9 @@ const CLEARABLE_SLOT_TYPES: readonly Slot["type"][] = [
 
 /** `slots` as a lookup that also answers for the row ids an `item_picker_list` expands into --
  *  db.ts's `slotFor`, for the validators, which have a slot list but no `Db`. */
-function slotResolver(slots: Slot[]): (slotId: string) => Slot | undefined {
+function slotResolver(
+  slots: AuthoredSlot[],
+): (slotId: string) => AuthoredSlot | undefined {
   const byId = new Map(slots.map((slot) => [slot.id, slot]));
   return (slotId) => {
     const authored = byId.get(slotId);
@@ -1468,7 +1481,7 @@ function slotResolver(slots: Slot[]): (slotId: string) => Slot | undefined {
  */
 export function validateSections(
   sections: SlotSection[],
-  slots: Slot[],
+  slots: AuthoredSlot[],
   sectionOrder?: readonly string[],
 ): LintFinding[] {
   const findings: LintFinding[] = [];
@@ -1591,7 +1604,7 @@ export function bonusValuesProblems(
  */
 export function validatePresets(
   presets: SectionPreset[],
-  slots: Slot[],
+  slots: AuthoredSlot[],
   sections: SlotSection[] = NW_SLOTS.sections ?? [],
   bonuses?: Bonus[],
 ): LintFinding[] {
@@ -1721,7 +1734,7 @@ const SCHEMA_BACKED_PARAM_PATHS: Record<string, "role" | "statKey"> = {
  * "- none -" row every one of these slots carries.
  */
 export function validateParamSchema(
-  slots: Slot[],
+  slots: AuthoredSlot[],
   schema: Schema = NW_SCHEMA,
 ): LintFinding[] {
   const findings: LintFinding[] = [];
@@ -1757,7 +1770,7 @@ export function validateParamSchema(
  * (dropping the condition too) is the author's call.
  */
 export function validateParamReaders(
-  slots: Slot[],
+  slots: AuthoredSlot[],
   bonuses: Bonus[],
 ): LintFinding[] {
   const livePaths = new Set(
@@ -1885,11 +1898,14 @@ export const BONUS_ONLY_LEAVES: Record<string, string> = {
 export interface AvailabilityRefs {
   items: Item[];
   bonuses: Bonus[];
-  slots: Slot[];
+  slots: AuthoredSlot[];
 }
 
 /** Whether `item` is one of `slot`'s candidates, resolved as `Db.forSlot` does. */
-function offeredBy(slot: ItemPickerSlot | ItemPickerListSlot, item: Item) {
+function offeredBy(
+  slot: Authored<ItemPickerSlot> | Authored<ItemPickerListSlot>,
+  item: Item,
+) {
   return slot.tags?.length
     ? (item.tags ?? []).some((tag) => slot.tags!.includes(tag))
     : item.filter === slot.filter;
@@ -1901,7 +1917,7 @@ function offeredBy(slot: ItemPickerSlot | ItemPickerListSlot, item: Item) {
  * nothing, and a condition the slot's own pick can meet.
  */
 export function checkSlotAvailability(
-  slot: Slot,
+  slot: AuthoredSlot,
   refs: AvailabilityRefs,
 ): string[] {
   const when = (slot as { availableWhen?: ConditionWhen }).availableWhen;
@@ -1917,7 +1933,7 @@ export function checkSlotAvailability(
       `${slot.id}: a slot with availableWhen cannot have a default; it would refill the slot while hidden`,
     );
 
-  const paramSlots = new Map<string, BuildParameterSlot>();
+  const paramSlots = new Map<string, Authored<BuildParameterSlot>>();
   for (const other of refs.slots)
     if (other.type === "build_parameter") paramSlots.set(other.path, other);
   checkConditions(
@@ -1977,7 +1993,7 @@ export function checkSlotAvailability(
 function metByPick(
   when: ConditionWhen,
   items: Item[],
-  slot: ItemPickerSlot | ItemPickerListSlot,
+  slot: Authored<ItemPickerSlot> | Authored<ItemPickerListSlot>,
 ): boolean {
   const own = items.filter((item) => offeredBy(slot, item));
   let met = false;
@@ -2005,7 +2021,10 @@ function metByPick(
  * that is missing, not a top-level `item_picker` of the same section, and a parent condition
  * the slot's own pick can meet. A parent cannot be nested itself.
  */
-export function checkSlotParent(slot: Slot, refs: AvailabilityRefs): string[] {
+export function checkSlotParent(
+  slot: AuthoredSlot,
+  refs: AvailabilityRefs,
+): string[] {
   const parentId = (slot as { parent?: string }).parent;
   if (parentId === undefined) return [];
   if (slot.type !== "item_picker")
@@ -2071,7 +2090,7 @@ export function validateSlotAvailability(
  * Split out of `validateSlots` because it is the one slot rule needing the item list too.
  */
 export function validateSlotDefaults(
-  slots: Slot[],
+  slots: AuthoredSlot[],
   items: Item[],
 ): LintFinding[] {
   const findings: LintFinding[] = [];
@@ -2234,7 +2253,7 @@ function endOfChain(byId: Map<string, Item>, start: Item): Item | undefined {
 
 /** Rows that could hold `item` at once: one per `item_picker` offering it, unbounded for an
  *  `item_picker_list` or a `point_assignment`. Resolves candidates as `Db.forSlot` does. */
-function rowsOffering(item: Item, slots: Slot[]): number {
+function rowsOffering(item: Item, slots: AuthoredSlot[]): number {
   let rows = 0;
   for (const slot of slots) {
     if (slot.type === "item_picker" || slot.type === "item_picker_list") {
@@ -2262,7 +2281,7 @@ function rowsOffering(item: Item, slots: Slot[]): number {
  */
 export function validateMaxCopies(
   items: Item[],
-  slots: Slot[] = NW_SLOTS?.slots ?? [],
+  slots: AuthoredSlot[] = NW_SLOTS?.slots ?? [],
   filterDefaults: FilterDefaultsMap = db.filterDefaultsOf(NW_FILTERS),
 ): LintFinding[] {
   const findings: LintFinding[] = [];
@@ -2320,7 +2339,7 @@ export function validateFilterFields(
 }
 
 /** Every filter a slot selects by, including a list param's `optionsFrom.filter`. */
-function slotSelectorFilters(slots: Slot[]): Set<string> {
+function slotSelectorFilters(slots: AuthoredSlot[]): Set<string> {
   const filters = new Set<string>();
   for (const slot of slots) {
     if (slot.type === "build_parameter") {
@@ -2336,7 +2355,7 @@ function slotSelectorFilters(slots: Slot[]): Set<string> {
  * Every category the catalog uses: items' `filter` plus every filter a slot selects by. A
  * declaration in data/vocabulary.json is optional metadata on top of these.
  */
-export function usedFilters(items: Item[], slots: Slot[]): Set<string> {
+export function usedFilters(items: Item[], slots: AuthoredSlot[]): Set<string> {
   const used = slotSelectorFilters(slots);
   for (const item of items) if (item.filter) used.add(item.filter);
   return used;
@@ -2349,7 +2368,7 @@ export function usedFilters(items: Item[], slots: Slot[]): Set<string> {
 export function validateFilters(
   filters: FilterDef[],
   items: Item[],
-  slots: Slot[],
+  slots: AuthoredSlot[],
 ): LintFinding[] {
   const used = usedFilters(items, slots);
   return filters
@@ -2359,6 +2378,37 @@ export function validateFilters(
       kind: "filter" as const,
       name: filter.id,
       message: `category "${filter.id}" is declared, but no item or slot uses it`,
+    }));
+}
+
+/** Slot types that show a label in the build editor. */
+const LABELED_SLOT_TYPES: readonly AuthoredSlot["type"][] = [
+  "build_parameter",
+  "item_picker",
+  "item_picker_list",
+  "point_assignment",
+];
+
+/** Warns on a slot with neither a label nor a labeled category, since it would read as its id. */
+export function validateSlotLabels(
+  slots: AuthoredSlot[],
+  filters: FilterDef[],
+): LintFinding[] {
+  const labeled = new Set(
+    filters.filter((filter) => filter.label).map((filter) => filter.id),
+  );
+  return slots
+    .filter(
+      (slot) =>
+        LABELED_SLOT_TYPES.includes(slot.type) &&
+        !slot.label &&
+        !("filter" in slot && slot.filter && labeled.has(slot.filter)),
+    )
+    .map((slot) => ({
+      level: "warn" as const,
+      kind: "slot" as const,
+      name: slot.id,
+      message: `${slot.id}: has no label and no labeled category, so it reads as its id`,
     }));
 }
 
@@ -2374,7 +2424,10 @@ function conditionTags(when: ConditionWhen | undefined, out: Set<string>) {
  * Every tag a rule tests: `equipped` condition leaves in bonuses and slots, and `tagged()`
  * reads in bonus formulas. These read as their label wherever the rule is explained.
  */
-export function testedTags(bonuses: Bonus[], slots: Slot[]): Set<string> {
+export function testedTags(
+  bonuses: Bonus[],
+  slots: AuthoredSlot[],
+): Set<string> {
   const tags = new Set<string>();
   for (const slot of slots)
     if ("availableWhen" in slot) conditionTags(slot.availableWhen, tags);
@@ -2399,7 +2452,7 @@ export function testedTags(bonuses: Bonus[], slots: Slot[]): Set<string> {
 export function usedTags(
   items: Item[],
   bonuses: Bonus[],
-  slots: Slot[],
+  slots: AuthoredSlot[],
 ): Set<string> {
   const used = testedTags(bonuses, slots);
   for (const item of items) for (const tag of item.tags ?? []) used.add(tag);
@@ -2437,7 +2490,7 @@ export function validateTags(
   tags: TagDef[],
   items: Item[],
   bonuses: Bonus[],
-  slots: Slot[],
+  slots: AuthoredSlot[],
 ): LintFinding[] {
   const labeled = new Set(
     tags.filter((tag) => tag.label?.trim()).map((tag) => tag.id),
@@ -2479,7 +2532,7 @@ export function validateTags(
  * category would otherwise leave its items silently unscaled.
  */
 export function validateScalerTargets(
-  slots: Slot[],
+  slots: AuthoredSlot[],
   items: Item[],
 ): LintFinding[] {
   const filters = new Set(items.map((item) => item.filter));
@@ -2511,7 +2564,7 @@ export function validateScalerTargets(
  * `ENGINE_PARAM_PATHS`, `REQUIRED_SLOT_IDS` and every id `data/game-import.json` names.
  */
 export function validateRequiredSlots(
-  slots: Slot[],
+  slots: AuthoredSlot[],
   sections: SlotSection[],
 ): LintFinding[] {
   const findings: LintFinding[] = [];
@@ -2579,7 +2632,7 @@ export const STABLE_ROLE_FILTER: Record<StableRole, string> = {
 /**
  * Why code outside the catalog needs this slot, or null. Lets the editor warn before a delete.
  */
-export function requiredSlotReason(slot: Slot): string | null {
+export function requiredSlotReason(slot: AuthoredSlot): string | null {
   if (slot.type === "build_parameter") {
     const reader = ENGINE_PARAM_PATHS[slot.path];
     if (reader)
@@ -2600,7 +2653,7 @@ export function requiredSlotReason(slot: Slot): string | null {
  * wrong filter all leave the resolver quietly doing nothing rather than failing.
  */
 export function validateStableSlots(
-  slots: Slot[] = NW_SLOTS?.slots ?? [],
+  slots: AuthoredSlot[] = NW_SLOTS?.slots ?? [],
 ): LintFinding[] {
   const findings: LintFinding[] = [];
   const report = (name: string, message: string) =>
@@ -2695,7 +2748,7 @@ export function validate(
   bonuses: Bonus[],
   schema: Schema = NW_SCHEMA,
   presets: SectionPreset[] = NW_SLOTS.presets ?? [],
-  slots: Slot[] = NW_SLOTS?.slots ?? [],
+  slots: AuthoredSlot[] = NW_SLOTS?.slots ?? [],
   sections: SlotSection[] = NW_SLOTS?.sections ?? [],
   filters: FilterDef[] = NW_FILTERS,
   sectionOrder?: readonly string[],
@@ -2717,6 +2770,7 @@ export function validate(
     ...validateStableSlots(slots),
     ...validateFilterFields(db.filterFieldsOf(filters)),
     ...validateFilters(filters, items, slots),
+    ...validateSlotLabels(slots, filters),
     ...validateTags(tags, items, bonuses, slots),
     ...validateScalerTargets(slots, items),
     ...validateRequiredSlots(slots, sections),
@@ -2788,8 +2842,8 @@ export function validate(
   });
   const seenIds = new Set();
   const gameIdOwners = new Map<string, Set<string>>();
-  const paramSlots = new Map<string, BuildParameterSlot>();
-  const paramSlotsById = new Map<string, BuildParameterSlot>();
+  const paramSlots = new Map<string, Authored<BuildParameterSlot>>();
+  const paramSlotsById = new Map<string, Authored<BuildParameterSlot>>();
   for (const slot of allSlots) {
     if (slot.type === "build_parameter") {
       paramSlots.set(slot.path, slot);

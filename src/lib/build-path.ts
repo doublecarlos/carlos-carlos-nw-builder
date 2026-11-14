@@ -6,7 +6,7 @@
 //
 // `setPath` deletes the leaf key on an empty-string/undefined value rather than storing it.
 
-import type { BuildParameterSlot, Slot } from "../types";
+import type { AuthoredSlot } from "../types";
 
 export function getPath(root: unknown, path: string): unknown {
   let node: unknown = root;
@@ -36,12 +36,12 @@ export function setPath(root: unknown, path: string, value: unknown): void {
 /** The `build_parameter` slot whose `path` is exactly `path` (relative to `context`) -- e.g.
  * `findParamSlot(NW_SLOTS.slots, 'class')`. Shared lookup for the two call sites (catalog.ts's
  * validator, ItemForm.vue's class checkboxes) that both need "the class slot" specifically. */
-export function findParamSlot(
-  slots: Slot[],
+export function findParamSlot<S extends AuthoredSlot>(
+  slots: readonly S[],
   path: string,
-): BuildParameterSlot | undefined {
+): Extract<S, { type: "build_parameter" }> | undefined {
   return slots.find(
-    (slot): slot is BuildParameterSlot =>
+    (slot): slot is Extract<S, { type: "build_parameter" }> =>
       slot.type === "build_parameter" && slot.path === path,
   );
 }

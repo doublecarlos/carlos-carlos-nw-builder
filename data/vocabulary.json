@@ -165,11 +165,11 @@
       "fields": ["allowedClass"]
     },
     "gear_weapon_mainhand": {
-      "label": "Mainhand weapon",
+      "label": "Main-hand weapon",
       "fields": ["allowedClass"]
     },
     "gear_weapon_offhand": {
-      "label": "Offhand weapon",
+      "label": "Off-hand weapon",
       "fields": ["allowedClass"]
     },
     "group_buff": {
@@ -238,15 +238,15 @@
       "fields": ["allowedClass"]
     },
     "modification_mainhand": {
-      "label": "Mainhand modification",
+      "label": "Main-hand modification",
       "fields": ["allowedClass"]
     },
     "modification_offhand_dynamic": {
-      "label": "Offhand modification (ranged)",
+      "label": "Off-hand modification (ranged)",
       "fields": ["allowedClass"]
     },
     "modification_offhand_static": {
-      "label": "Offhand modification (fixed)",
+      "label": "Off-hand modification (fixed)",
       "fields": ["allowedClass"]
     },
     "mount": {
@@ -321,10 +321,10 @@
       "label": "Artifact head"
     },
     "artifact:m32-mainhand": {
-      "label": "M32+ artifact mainhand"
+      "label": "M32+ artifact main-hand"
     },
     "artifact:m32-offhand": {
-      "label": "M32+ artifact offhand"
+      "label": "M32+ artifact off-hand"
     },
     "artifact:m34-armor": {
       "label": "M34+ artifact armor"
@@ -339,10 +339,10 @@
       "label": "M34+ artifact head"
     },
     "artifact:mainhand": {
-      "label": "Artifact mainhand"
+      "label": "Artifact main-hand"
     },
     "artifact:offhand": {
-      "label": "Artifact offhand"
+      "label": "Artifact off-hand"
     },
     "boon:prereq-advanced": {
       "label": "Boon point toward advanced boons"

@@ -26,6 +26,13 @@ const labels = (query: string, limit?: number) =>
   rankEntries(CATALOG, query, limit).map((e) => e.label);
 
 describe("rankEntries", () => {
+  it("finds a hyphenated label typed without the hyphen", () => {
+    const entries = [entry("slot", "Off-hand mod 1", "Gear")];
+    expect(rankEntries(entries, "offhand").map((e) => e.label)).toEqual([
+      "Off-hand mod 1",
+    ]);
+  });
+
   it("keeps everything, in order, for an empty query", () => {
     expect(labels("")).toEqual(CATALOG.map((e) => e.label));
     expect(labels("   ")).toEqual(CATALOG.map((e) => e.label));

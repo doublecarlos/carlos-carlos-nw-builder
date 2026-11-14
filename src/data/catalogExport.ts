@@ -17,7 +17,7 @@ import type {
   Grant,
   GrantTier,
   GrantVariant,
-  Slot,
+  AuthoredSlot,
   SectionPreset,
   SlotSection,
   FilterDef,
@@ -331,7 +331,7 @@ const FILTER_KEYS = ["label", "defaultMaxCopies", "fields"] as const;
 const TAG_KEYS = ["label", "badge"] as const;
 const BADGE_KEYS = ["label", "tone"] as const;
 
-function canonicalSlot(slot: Slot) {
+function canonicalSlot(slot: AuthoredSlot) {
   const out = orderKeys(slot, SLOT_KEYS);
   if (out.type === "build_parameter") {
     if (out.options)
@@ -359,7 +359,7 @@ function canonicalPreset(preset: SectionPreset) {
  */
 export function toSlotsFile(
   sections: SlotSection[],
-  slots: Slot[],
+  slots: AuthoredSlot[],
   presets: SectionPreset[],
 ): string {
   const body = {

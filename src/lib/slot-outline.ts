@@ -7,7 +7,8 @@ import * as catalog from "../data/catalog";
 import { keepsRow, type FilterableRow } from "./entry-list-filter";
 import { defaultItemListFilter } from "./item-list-filter";
 import { nestedParentId } from "./slot-parent";
-import type { CatalogOverlay, Db, SectionPreset, Slot } from "../types";
+import { filterLabelLookup, slotLabel } from "../data/db";
+import type { AuthoredSlot, CatalogOverlay, Db, SectionPreset } from "../types";
 import type { EntryStatus } from "../data/catalog";
 
 export type OutlineKind = "section" | "slot" | "sectionPreset";
@@ -35,15 +36,24 @@ export interface OutlineGroup {
 /** Slots whose `section` does not exist. `compose` still renders them last, and lint reports them. */
 export const ORPHAN_LABEL = "No section";
 
-/** A slot's row name: its label, a text slot's text, or else its id. */
-const slotName = (slot: Slot) =>
-  slot.label || (slot.type === "text" ? slot.text : "") || slot.id;
+type LabelOf = (filter: string | undefined) => string | undefined;
 
-const slotRow = (slot: Slot, db: Db, overlay: CatalogOverlay): OutlineRow => {
+/** A slot's row name: its label or its category's, a text slot's text, or else its id. */
+const slotName = (slot: AuthoredSlot, labelOf: LabelOf) =>
+  slot.type === "text" && !slot.label
+    ? slot.text || slot.id
+    : slotLabel(slot, labelOf);
+
+const slotRow = (
+  slot: AuthoredSlot,
+  db: Db,
+  overlay: CatalogOverlay,
+  labelOf: LabelOf,
+): OutlineRow => {
   const row: OutlineRow = {
     key: slot.id,
     kind: "slot",
-    name: slotName(slot),
+    name: slotName(slot, labelOf),
     detail: slot.type,
     status: catalog.statusOf(overlay, "slots", slot.id),
   };
@@ -107,14 +117,15 @@ export function buildOutline(db: Db, overlay: CatalogOverlay): OutlineGroup[] {
   };
   const bucket = (sectionId: string) => groups.get(sectionId) ?? orphans;
 
+  const labelOf = filterLabelLookup(db.filters);
   for (const slot of db.authoredSlots)
-    bucket(slot.section).slots.push(slotRow(slot, db, overlay));
+    bucket(slot.section).slots.push(slotRow(slot, db, overlay, labelOf));
   for (const id of catalog.tombstoneIds(overlay, "slots")) {
     const base = shipped.slots.find((slot) => slot.id === id);
     bucket(base?.section ?? "").slots.push({
       key: id,
       kind: "slot",
-      name: base ? slotName(base) : id,
+      name: base ? slotName(base, labelOf) : id,
       detail: base?.type ?? "",
       status: "removed",
     });

@@ -2,6 +2,10 @@
 // whitespace so "cel ame" matches "Celestial Amethyst" -- each word must appear somewhere in
 // the haystack, but the words don't need to be adjacent or in order.
 
+/** Lower case with hyphens dropped, so "offhand", "off-hand" and "off hand" find each other. */
+export const searchText = (text: string) =>
+  text.toLowerCase().replace(/-/g, "");
+
 /**
  * True when every whitespace-separated word in `query` is a case-insensitive substring of
  * `haystack`. `haystack` may be a list of fields (e.g. a label and a stat summary) -- a query
@@ -11,11 +15,11 @@ export function matchesQuery(
   haystack: string | string[],
   query: string,
 ): boolean {
-  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const words = searchText(query.trim()).split(/\s+/).filter(Boolean);
   if (words.length === 0) return true;
-  const text = (
-    Array.isArray(haystack) ? haystack.join(" ") : haystack
-  ).toLowerCase();
+  const text = searchText(
+    Array.isArray(haystack) ? haystack.join(" ") : haystack,
+  );
   return words.every((word) => text.includes(word));
 }
 

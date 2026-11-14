@@ -5,7 +5,13 @@
 // plain picks and knows nothing about lists.
 import { mapSlotIds, replaceSlotData, storedSlotIds } from "./slot-fields";
 import type { SlotData } from "./slot-fields";
-import type { Build, ItemPickerListSlot, ItemPickerSlot, Slot } from "../types";
+import type {
+  Authored,
+  Build,
+  ItemPickerListSlot,
+  ItemPickerSlot,
+  Slot,
+} from "../types";
 
 /** Separates a container id from its row number. Not `.`, which already separates a section
  * from its slot. */
@@ -33,13 +39,17 @@ export function listRowCount(
   return build?.listRows?.[slot.id] ?? slot.defaultRows ?? 0;
 }
 
-const rowSlots = new WeakMap<ItemPickerListSlot, Map<number, ItemPickerSlot>>();
+const rowSlots = new WeakMap<
+  Authored<ItemPickerListSlot>,
+  Map<number, ItemPickerSlot>
+>();
 
 /** One row of `slot`, as the ordinary `item_picker` slot every consumer downstream sees. The
  *  same object for the same container and row, so a row keeps its identity across builds and
- *  edits and a prop compared by identity stays unchanged. */
+ *  edits and a prop compared by identity stays unchanged. A container without a label, as the
+ *  validators see it, names its rows by its id. */
 export function rowSlot(
-  slot: ItemPickerListSlot,
+  slot: Authored<ItemPickerListSlot>,
   index: number,
 ): ItemPickerSlot {
   let rows = rowSlots.get(slot);
@@ -49,10 +59,13 @@ export function rowSlot(
   return row;
 }
 
-function newRowSlot(slot: ItemPickerListSlot, index: number): ItemPickerSlot {
+function newRowSlot(
+  slot: Authored<ItemPickerListSlot>,
+  index: number,
+): ItemPickerSlot {
   return {
     id: rowSlotId(slot.id, index),
-    label: `${slot.label} ${index}`,
+    label: `${slot.label ?? slot.id} ${index}`,
     section: slot.section,
     type: "item_picker",
     ...(slot.filter ? { filter: slot.filter } : {}),
