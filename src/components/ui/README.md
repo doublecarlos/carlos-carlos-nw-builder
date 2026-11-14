@@ -68,6 +68,7 @@ ordinary one.
 | SegmentedControl                          | "Pick exactly one of a few options"; its segments wrap onto more lines when one row does not fit                                                               |
 | TabButton / TabStrip                      | A row of tabs, each drawn as its own button rather than joined to the panel below                                                                              |
 | ThemeToggle                               | System -> Light -> Dark cycle button                                                                                                                           |
+| ToneBadge                                 | Outlined label chip in a `--badge-*` tone, for a fact about what it sits on; not clickable                                                                     |
 | TokenInput                                | Token/chip input with autocomplete and optional free text; `fromImage` reads a pasted screenshot into a token; `showValue` adds a labeled chip's id            |
 
 `BaseInput`/`BaseTextarea` do not fit a genuinely novel control - `OcrTextField` and

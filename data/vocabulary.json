@@ -359,6 +359,27 @@
     "companion_of_the_hall:celestial": {
       "label": "Celestial Companion of the Hall power"
     },
+    "companion_power:defense": {
+      "label": "Defense companion power",
+      "badge": {
+        "label": "Defense",
+        "tone": "blue"
+      }
+    },
+    "companion_power:offense": {
+      "label": "Offense companion power",
+      "badge": {
+        "label": "Offense",
+        "tone": "orange"
+      }
+    },
+    "companion_power:utility": {
+      "label": "Utility companion power",
+      "badge": {
+        "label": "Utility",
+        "tone": "green"
+      }
+    },
     "exclusive:arbiter": {
       "label": "Arbiter paragon feat"
     },

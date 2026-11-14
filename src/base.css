@@ -56,6 +56,19 @@
   --quality-mythic: oklch(from var(--quality-game-mythic) 0.6 c h);
   --quality-celestial: var(--quality-game-celestial);
 
+  /* Tag badge tones (ToneBadge), named by hue. Most borrow a game quality hue so a badge looks
+   * like the game without naming a quality. Lightness keeps small text near 4.5:1 on the
+   * surface, so each theme sets its own. */
+  --badge-red: oklch(0.52 0.19 27);
+  --badge-orange: oklch(from var(--quality-game-legendary) 0.52 c h);
+  --badge-yellow: oklch(0.52 0.11 85);
+  --badge-green: oklch(from var(--quality-game-uncommon) 0.52 c h);
+  --badge-teal: oklch(from var(--quality-game-mythic) 0.52 c h);
+  --badge-blue: oklch(from var(--quality-game-rare) 0.52 c h);
+  --badge-purple: oklch(from var(--quality-game-epic) 0.52 c h);
+  --badge-magenta: oklch(from var(--quality-game-celestial) 0.52 c h);
+  --badge-gray: var(--muted);
+
   --shadow-color: rgb(15 23 42 / 0.1);
   --shadow-color-soft: rgb(15 23 42 / 0.1);
   --scrim: rgb(0 0 0 / 0.3);
@@ -95,6 +108,15 @@
   --quality-legendary: var(--quality-game-legendary);
   --quality-mythic: var(--quality-game-mythic);
   --quality-celestial: var(--quality-game-celestial);
+
+  --badge-red: oklch(0.74 0.15 25);
+  --badge-orange: oklch(from var(--quality-game-legendary) 0.74 c h);
+  --badge-yellow: oklch(0.82 0.14 90);
+  --badge-green: oklch(from var(--quality-game-uncommon) 0.74 c h);
+  --badge-teal: oklch(from var(--quality-game-mythic) 0.74 c h);
+  --badge-blue: oklch(from var(--quality-game-rare) 0.74 c h);
+  --badge-purple: oklch(from var(--quality-game-epic) 0.74 c h);
+  --badge-magenta: oklch(from var(--quality-game-celestial) 0.74 c h);
 
   /* Black shadows vanish on a dark ground, so overlays lean on a deeper scrim and a visible
    * rim (--line-strong) instead of the near-invisible drop shadow. */

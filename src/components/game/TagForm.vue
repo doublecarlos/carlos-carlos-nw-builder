@@ -1,14 +1,17 @@
 <script setup lang="ts">
-// Editing form for one item tag's metadata: its label. An existing entry live-edits; a new one
+// Editing form for one item tag's metadata: its label and the badge it puts on item cards. An existing entry live-edits; a new one
 // is a draft until Save. Draft logic lives in lib/tag-draft.ts.
 //
 // Also opens on a tag in use with no declaration yet: `fixedId` names it for the first save.
 import { computed } from "vue";
 import BaseInput from "../ui/BaseInput.vue";
+import ComboBox from "../ui/ComboBox.vue";
 import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import IdField from "../ui/IdField.vue";
+import ToneBadge from "../ui/ToneBadge.vue";
+import { TONE_OPTIONS } from "../../lib/tag-badges";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import {
   buildDraft,
@@ -84,6 +87,13 @@ const itemCount = computed(
   () => props.db.itemsByTag.get(displayId.value)?.length ?? 0,
 );
 
+const toneOptions = [{ value: "", label: "- none -" }, ...TONE_OPTIONS];
+
+/** What the badge reads with no text of its own. */
+const badgePlaceholder = computed(
+  () => draft.value.label.trim() || displayId.value || "the tag label",
+);
+
 function save() {
   error.value = "";
   const id = tagId(draft.value);
@@ -135,6 +145,34 @@ function save() {
           type="text"
           placeholder="the tag itself"
           data-testid="tag-label-input"
+        />
+      </FormField>
+      <FormField
+        label="Badge tone"
+        hint="A badge on every item card with this tag"
+      >
+        <ComboBox
+          class="w-36"
+          data-testid="tag-badge-tone"
+          :options="toneOptions"
+          :model-value="draft.badgeTone"
+          @update:model-value="(v) => (draft.badgeTone = v)"
+        >
+          <template #option="{ option }">
+            <ToneBadge v-if="option.value" :tone="option.value">{{
+              option.label
+            }}</ToneBadge>
+            <template v-else>{{ option.label }}</template>
+          </template>
+        </ComboBox>
+      </FormField>
+      <FormField v-if="draft.badgeTone" label="Badge label">
+        <BaseInput
+          v-model="draft.badgeLabel"
+          class="w-full"
+          type="text"
+          :placeholder="badgePlaceholder"
+          data-testid="tag-badge-label-input"
         />
       </FormField>
     </FormGrid>

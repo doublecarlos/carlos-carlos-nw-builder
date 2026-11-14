@@ -1,12 +1,14 @@
 // A spec whose items are incidental imports its own small catalog, so renaming or retuning a
 // shipped item never breaks it. Ids and names should read as test data ("test-..."/"Test ...").
 import type { Page } from "@playwright/test";
-import type { Bonus, Item } from "../../../src/types";
+import type { Bonus, Item, TagDef } from "../../../src/types";
 import { confirmImport, importText } from "./app";
 
 export interface TestCatalog {
   items?: Item[];
   bonuses?: Bonus[];
+  /** Tag declarations, as data/vocabulary.json's `tags` section would hold them. */
+  tags?: TagDef[];
   /** Picks for the imported build, by slot id. */
   choices?: Record<string, string>;
   /** Name of the imported build. */
@@ -17,6 +19,7 @@ export interface TestCatalog {
 export function testCatalogText({
   items = [],
   bonuses = [],
+  tags = [],
   choices = {},
   name = "Test catalog",
 }: TestCatalog): string {
@@ -27,6 +30,9 @@ export function testCatalogText({
       items: Object.fromEntries(items.map((item) => [item.id, item])),
       bonuses: Object.fromEntries(bonuses.map((bonus) => [bonus.id, bonus])),
       sectionPresets: {},
+      ...(tags.length && {
+        tags: Object.fromEntries(tags.map((tag) => [tag.id, tag])),
+      }),
     },
   });
 }

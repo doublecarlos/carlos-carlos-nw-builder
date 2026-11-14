@@ -532,6 +532,28 @@ describe("catalogExport.toVocabularyFile", () => {
     });
   });
 
+  // Writeback must keep a badge whole, label before tone, as the file is hand-read.
+  it("writes a tag's badge with its label before its tone", () => {
+    const text = catalogExport.toVocabularyFile(
+      [],
+      [
+        {
+          id: "role",
+          badge: { tone: "orange", label: "Offense" },
+          label: "Role",
+        },
+      ],
+    );
+    const tags = (JSON.parse(text) as { tags: Record<string, unknown> }).tags;
+    expect(tags).toEqual({
+      role: { label: "Role", badge: { label: "Offense", tone: "orange" } },
+    });
+    expect(Object.keys((tags.role as { badge: object }).badge)).toEqual([
+      "label",
+      "tone",
+    ]);
+  });
+
   it("sorts the entries by id whatever order the list arrived in", () => {
     const filters: FilterDef[] = [
       { id: "mount", fields: ["insigniaSlots"] },

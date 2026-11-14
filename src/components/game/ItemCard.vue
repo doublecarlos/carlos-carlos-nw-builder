@@ -31,6 +31,7 @@ import {
 } from "../../engine/insignia";
 import { composeFactor, scaledStat } from "../../engine/scaling";
 import { qualityColor, toneStyle } from "../../lib/item-quality";
+import { itemBadges } from "../../lib/tag-badges";
 import type {
   Item,
   Db,
@@ -51,6 +52,7 @@ import BaseLink from "../ui/BaseLink.vue";
 import DescriptionText from "../ui/DescriptionText.vue";
 import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
+import ToneBadge from "../ui/ToneBadge.vue";
 import StatRows from "./StatRows.vue";
 
 const props = withDefaults(
@@ -132,6 +134,9 @@ const categoryLabel = computed(
     props.db?.filters.find((filter) => filter.id === props.item.filter)
       ?.label || props.slotLabel,
 );
+
+/** Facts the item's tags carry, such as a companion power's roles. */
+const badges = computed(() => itemBadges(props.item, props.db?.tags ?? []));
 
 const scale = computed(() => composeFactor(props.scalers));
 
@@ -314,6 +319,19 @@ const rows = computed(() =>
         data-testid="item-card-category"
       >
         {{ categoryLabel }}
+      </div>
+      <div
+        v-if="badges.length"
+        class="mb-1 flex flow-wrap gap-1"
+        data-testid="item-card-badges"
+      >
+        <ToneBadge
+          v-for="badge in badges"
+          :key="badge.tag"
+          :tone="badge.tone"
+          :data-tag="badge.tag"
+          >{{ badge.label }}</ToneBadge
+        >
       </div>
       <!-- The one fact on this card the player has to act on, so it outweighs the stats. -->
       <div

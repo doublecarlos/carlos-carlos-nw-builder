@@ -27,6 +27,7 @@ import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
 import { isQuality } from "../lib/item-quality";
+import { isBadgeTone } from "../lib/tag-badges";
 import {
   replacementBonusValuesOf,
   replacementIdOf,
@@ -39,7 +40,7 @@ import {
   parentOf,
 } from "../lib/slot-parent";
 import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
-import { INSIGNIA_SHAPES } from "../types";
+import { BADGE_TONES, INSIGNIA_SHAPES } from "../types";
 import { bonusStatConfigs, canStep } from "../engine/inputs";
 import {
   formulaSites,
@@ -2429,7 +2430,8 @@ export function knownTags(catalogDb: Db): string[] {
 
 /**
  * Warns about a tested tag with no label, which would read as raw tag text in an unmet
- * condition, and about a declared tag nothing uses, likely a leftover or a typo.
+ * condition, and about a declared tag nothing uses, likely a leftover or a typo. Rejects a
+ * badge with an unknown tone, which would render with no color.
  */
 export function validateTags(
   tags: TagDef[],
@@ -2442,6 +2444,15 @@ export function validateTags(
   );
   const used = usedTags(items, bonuses, slots);
   const findings: LintFinding[] = [];
+  for (const tag of tags) {
+    if (!tag.badge || isBadgeTone(tag.badge.tone)) continue;
+    findings.push({
+      level: "error",
+      kind: "tag",
+      name: tag.id,
+      message: `tag "${tag.id}" has a badge tone "${tag.badge.tone}", which is not one of ${BADGE_TONES.join(", ")}`,
+    });
+  }
   for (const tag of [...testedTags(bonuses, slots)].sort()) {
     if (labeled.has(tag)) continue;
     findings.push({
