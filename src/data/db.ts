@@ -4,7 +4,14 @@
 // need. Pure: no DOM, no fetch. `build()` takes items/bonuses/schema/slots/filters as plain
 // arguments so catalog.ts can hand it a composed (base + overlay) catalog instead.
 
-import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS, NW_FILTERS } from "./data";
+import {
+  NW_ITEMS,
+  NW_BONUSES,
+  NW_SCHEMA,
+  NW_SLOTS,
+  NW_FILTERS,
+  NW_TAGS,
+} from "./data";
 import {
   replacementBonusValuesOf,
   replacementIdOf,
@@ -31,6 +38,7 @@ import type {
   BonusCandidate,
   Build,
   FilterDef,
+  TagDef,
   FilterDefaultsMap,
   FilterFieldsMap,
 } from "../types";
@@ -158,6 +166,7 @@ export function build(
   schema: Schema,
   slots: SlotsData,
   filters: FilterDef[] = [],
+  tags: TagDef[] = [],
 ): Db {
   const filterDefaults = filterDefaultsOf(filters);
   const filterFields = filterFieldsOf(filters);
@@ -236,6 +245,7 @@ export function build(
     itemByGameId,
     duplicates,
     filters,
+    tags: [...tags].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)),
     filterDefaults,
     filterFields,
 
@@ -333,7 +343,7 @@ export function build(
 /** Convenience for tests/tooling: build from the statically-imported data (src/data.ts), no
  * `window` required. */
 export const fromData = () =>
-  build(NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS, NW_FILTERS);
+  build(NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS, NW_FILTERS, NW_TAGS);
 
 /**
  * The value this build currently publishes at `path`, from whatever it has equipped

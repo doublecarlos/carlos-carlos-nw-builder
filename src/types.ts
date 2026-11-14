@@ -336,12 +336,23 @@ export interface SectionPreset {
  * an undeclared category gets the defaults. */
 export interface FilterDef {
   id: string;
+  /** How the category reads to a person. Without one the id is shown. */
+  label?: string;
   /** Copies of one member a build may hold, unless the item sets its own `maxCopies`. 0 means
    * uncapped. */
   defaultMaxCopies?: number;
   /** The item fields the category is authored with. A field no filter names is offered
    * everywhere; once named, only to the filters that name it. */
   fields?: string[];
+}
+
+/** What `data/vocabulary.json` says about one item tag. A tag nothing declares gets the
+ * defaults, so a declaration is optional metadata. */
+export interface TagDef {
+  id: string;
+  /** A noun phrase naming the items that carry the tag (`Cobalt enchantment`), read in
+   * conditions and pickers. Without one the raw tag is shown. */
+  label?: string;
 }
 
 /** The `defaultMaxCopies` half of a `FilterDef`, as `Db.filterDefaults` keys it. */
@@ -787,6 +798,8 @@ export interface Db {
   duplicates: string[];
   /** The filter list the db was built from, as `makeDb` handed it over. */
   filters: FilterDef[];
+  /** Declared tag metadata, sorted by id. */
+  tags: TagDef[];
   /** `defaultMaxCopies` by filter, derived from `filters`. */
   filterDefaults: FilterDefaultsMap;
   /** `fields` by filter, derived from `filters`. */
@@ -836,7 +849,8 @@ export interface LintFinding {
   level: "error" | "warn";
   message: string;
   name?: string;
-  kind: "item" | "bonus" | "sectionPreset" | "slot" | "section" | "filter";
+  kind:
+    "item" | "bonus" | "sectionPreset" | "slot" | "section" | "filter" | "tag";
 }
 
 // --- builds (storage.ts) ---------------------------------------------------------------------
@@ -1060,6 +1074,8 @@ export interface EvalContext {
   bonusNames: Map<string, string>;
   /** Same for item ids, so an `equipped: { item }` leaf reads as the item's name. */
   itemNames: Map<string, string>;
+  /** Labels of the tags that declare one, so a tag test reads as the items it names. */
+  tagLabels?: Map<string, string>;
   /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
    *  the `param` leaf reads. Built once by bonus.ts's `collect()`. */
   params: Map<string, string | number | boolean>;

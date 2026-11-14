@@ -89,11 +89,13 @@ const suggestions = computed(() => {
   ).slice(0, MAX_SUGGESTIONS);
 });
 
-/** The typed text offered as its own entry, when it is genuinely new. */
+/** The typed text offered as its own entry, when it is genuinely new. Text matching an
+ *  option's label names that option, so it is not offered as new. */
 const freeValue = computed(() => {
   const value = query.value.trim();
   if (!props.allowFree || !value) return "";
   if (model.value.includes(value)) return "";
+  if (props.options.some((option) => option.label === value)) return "";
   return optionByValue.value.has(value) ? "" : value;
 });
 

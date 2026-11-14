@@ -14,7 +14,14 @@
 // Nothing here touches the DOM or the engine. `makeDb` hands the composed arrays to the
 // existing `db.build`, so the engine cannot tell the difference.
 
-import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS, NW_FILTERS } from "./data";
+import {
+  NW_ITEMS,
+  NW_BONUSES,
+  NW_SCHEMA,
+  NW_SLOTS,
+  NW_FILTERS,
+  NW_TAGS,
+} from "./data";
 import * as db from "./db";
 import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
@@ -76,6 +83,7 @@ import type {
   Db,
   Build,
   FilterDef,
+  TagDef,
   FilterDefaultsMap,
   FilterFieldsMap,
 } from "../types";
@@ -305,6 +313,8 @@ export function compose(
     slots: layoutSlots([...group("slots").values()], sections),
     sections,
     filters: [...group("filters").values()].sort(byId),
+    // Tags are not an overlay group yet, so every layer reads the shipped declarations.
+    tags: NW_TAGS,
   };
 }
 
@@ -312,7 +322,7 @@ export function compose(
 export function makeDb(
   overlays: readonly (CatalogOverlay | null | undefined)[] = [],
 ) {
-  const { items, bonuses, sectionPresets, slots, sections, filters } =
+  const { items, bonuses, sectionPresets, slots, sections, filters, tags } =
     compose(overlays);
   return db.build(
     items,
@@ -320,6 +330,7 @@ export function makeDb(
     NW_SCHEMA,
     { sections, slots, presets: sectionPresets },
     filters,
+    tags,
   );
 }
 
@@ -2348,6 +2359,96 @@ export function validateFilters(
     }));
 }
 
+/** Every tag an `equipped` leaf of `when` tests. */
+function conditionTags(when: ConditionWhen | undefined, out: Set<string>) {
+  eachLeaf(when, (key, spec) => {
+    const tag = key === "equipped" ? (spec as { tag?: unknown }).tag : null;
+    if (typeof tag === "string" && tag) out.add(tag);
+  });
+}
+
+/**
+ * Every tag a rule tests: `equipped` condition leaves in bonuses and slots, and `tagged()`
+ * reads in bonus formulas. These read as their label wherever the rule is explained.
+ */
+export function testedTags(bonuses: Bonus[], slots: Slot[]): Set<string> {
+  const tags = new Set<string>();
+  for (const slot of slots)
+    if ("availableWhen" in slot) conditionTags(slot.availableWhen, tags);
+  for (const bonus of bonuses) {
+    for (const grant of bonus.grants ?? []) {
+      conditionTags(grant.when, tags);
+      for (const variant of grant.variants ?? [])
+        conditionTags(variant.when, tags);
+    }
+    for (const { ref } of formulaSites(bonus)) {
+      if (typeof ref?.formula !== "string") continue;
+      for (const tag of parseFormula(ref.formula).reads.tags) tags.add(tag);
+    }
+  }
+  return tags;
+}
+
+/**
+ * Every tag the catalog uses: items' `tags`, every tag a slot selects or scales by, and every
+ * tag a rule tests. A declaration in data/vocabulary.json is optional metadata on top of these.
+ */
+export function usedTags(
+  items: Item[],
+  bonuses: Bonus[],
+  slots: Slot[],
+): Set<string> {
+  const used = testedTags(bonuses, slots);
+  for (const item of items) for (const tag of item.tags ?? []) used.add(tag);
+  for (const slot of slots) {
+    const selected =
+      slot.type === "build_parameter"
+        ? [
+            ...(slot.optionsFrom?.tags ?? []),
+            ...(slot.scaler?.applies?.tags ?? []),
+          ]
+        : "tags" in slot
+          ? (slot.tags ?? [])
+          : [];
+    for (const tag of selected) used.add(tag);
+  }
+  return used;
+}
+
+/**
+ * Warns about a tested tag with no label, which would read as raw tag text in an unmet
+ * condition, and about a declared tag nothing uses, likely a leftover or a typo.
+ */
+export function validateTags(
+  tags: TagDef[],
+  items: Item[],
+  bonuses: Bonus[],
+  slots: Slot[],
+): LintFinding[] {
+  const labeled = new Set(
+    tags.filter((tag) => tag.label?.trim()).map((tag) => tag.id),
+  );
+  const used = usedTags(items, bonuses, slots);
+  const findings: LintFinding[] = [];
+  for (const tag of [...testedTags(bonuses, slots)].sort()) {
+    if (labeled.has(tag)) continue;
+    findings.push({
+      level: "warn",
+      kind: "tag",
+      message: `tag "${tag}" is tested by a condition but has no label; it reads as the raw tag`,
+    });
+  }
+  for (const tag of tags) {
+    if (used.has(tag.id)) continue;
+    findings.push({
+      level: "warn",
+      kind: "tag",
+      message: `tag "${tag.id}" is declared, but no item, slot or condition uses it`,
+    });
+  }
+  return findings;
+}
+
 /**
  * Warns about a scaler whose `applies` names a filter or tag no item carries. A renamed
  * category would otherwise leave its items silently unscaled.
@@ -2573,6 +2674,7 @@ export function validate(
   sections: SlotSection[] = NW_SLOTS?.sections ?? [],
   filters: FilterDef[] = NW_FILTERS,
   sectionOrder?: readonly string[],
+  tags: TagDef[] = NW_TAGS,
 ): LintFinding[] {
   const findings: LintFinding[] = [
     ...validateSlots(slots),
@@ -2590,6 +2692,7 @@ export function validate(
     ...validateStableSlots(slots),
     ...validateFilterFields(db.filterFieldsOf(filters)),
     ...validateFilters(filters, items, slots),
+    ...validateTags(tags, items, bonuses, slots),
     ...validateScalerTargets(slots, items),
     ...validateRequiredSlots(slots, sections),
   ];

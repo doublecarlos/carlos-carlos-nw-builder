@@ -12,6 +12,7 @@ import type {
   SlotsData,
   Slot,
   FilterDef,
+  TagDef,
   SectionPreset,
   Item,
   Bonus,
@@ -69,20 +70,23 @@ function deriveSlots(raw: typeof rawSlots): SlotsData {
 }
 
 /**
- * Turns the id-keyed `filters` section of `data/vocabulary.json` into a list of entities with their id inside, like
- * items. Sorted by id, the same order the file is written in.
+ * Turns one id-keyed section of `data/vocabulary.json` into a list of entities with their id
+ * inside, like items. Sorted by id, the same order the file is written in.
  */
-function deriveFilters(
-  raw: Record<string, Omit<FilterDef, "id">>,
-): FilterDef[] {
+function deriveSection<T extends { id: string }>(
+  raw: Record<string, Omit<T, "id">>,
+): T[] {
   return Object.keys(raw)
     .sort()
-    .map((id) => ({ id, ...raw[id] }));
+    .map((id) => ({ id, ...raw[id] }) as T);
 }
 
 export const NW_SCHEMA: Schema = deriveSchema(rawSchema);
 export const NW_SLOTS: SlotsData = deriveSlots(rawSlots);
-export const NW_FILTERS: FilterDef[] = deriveFilters(rawVocabulary.filters);
+export const NW_FILTERS: FilterDef[] = deriveSection<FilterDef>(
+  rawVocabulary.filters,
+);
+export const NW_TAGS: TagDef[] = deriveSection<TagDef>(rawVocabulary.tags);
 export const NW_ITEMS: Item[] = rawItems;
 export const NW_BONUSES: Bonus[] = rawBonuses as Bonus[];
 

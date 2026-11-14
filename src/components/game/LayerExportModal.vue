@@ -72,7 +72,8 @@ const DATA_FILES: readonly DataFileTab[] = [
   {
     tab: "vocabulary",
     file: "vocabulary.json",
-    render: (exporter, composed) => exporter.toVocabularyFile(composed.filters),
+    render: (exporter, composed) =>
+      exporter.toVocabularyFile(composed.filters, composed.tags),
   },
 ];
 

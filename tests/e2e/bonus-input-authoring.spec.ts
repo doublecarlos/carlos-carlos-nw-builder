@@ -47,7 +47,7 @@ test("a boolean input gates a grant and survives reopening", async ({
   // The id sits under the label, as a bonus's id does.
   const key = leaf.getByTestId("condition-input-key");
   await key.getByTestId("picker-input").click();
-  await expect(pickerMenu(key).getByTestId("bonus-option-id")).toHaveText(
+  await expect(pickerMenu(key).getByTestId("option-row-id")).toHaveText(
     "procActive",
   );
   await pickerMenu(key).getByText("Proc", { exact: true }).click();

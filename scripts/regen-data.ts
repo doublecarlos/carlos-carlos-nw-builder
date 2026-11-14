@@ -14,7 +14,7 @@ const dataDir = path.join(
 );
 
 // No overlays: this regenerates the base catalog, in the same order the export drawer uses.
-const { items, bonuses, sectionPresets, slots, sections, filters } =
+const { items, bonuses, sectionPresets, slots, sections, filters, tags } =
   catalog.compose([]);
 
 writeFileSync(
@@ -31,5 +31,5 @@ writeFileSync(
 );
 writeFileSync(
   path.join(dataDir, "vocabulary.json"),
-  catalogExport.toVocabularyFile(filters),
+  catalogExport.toVocabularyFile(filters, tags),
 );

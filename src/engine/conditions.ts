@@ -257,9 +257,13 @@ const LEAVES: Record<
     const wanted = range.exactly ?? range.atLeast ?? 1;
     if (s.tag != null) {
       const have = taggedCount(ctx, s.tag);
+      // A tag label already names the items, so it reads like an item name does.
+      const tagLabel = ctx.tagLabels?.get(s.tag);
       return {
         ok: inRange(have, range),
-        label: `${wanted}× ${plural(wanted, "item")} tagged "${s.tag}"`,
+        label: tagLabel
+          ? `${wanted}× ${tagLabel}`
+          : `${wanted}× ${plural(wanted, "item")} tagged "${s.tag}"`,
         detail: `you have ${have}`,
         need: { kind: "tag", tag: s.tag },
       };

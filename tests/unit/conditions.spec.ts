@@ -143,6 +143,23 @@ function testBuild(context: Record<string, unknown>): Build {
   };
 }
 
+// Conditions have no Db, so a tag's declared label has to reach them through the context.
+describe("bonus.ts collect() carries tag labels", () => {
+  it("a declared label is in the context and an unlabeled tag is not", () => {
+    const tagged = db.build(
+      [],
+      [],
+      emptySchema,
+      testSlots,
+      [],
+      [{ id: "gem:cobalt", label: "Cobalt enchantment" }, { id: "gem:opal" }],
+    );
+    const { ctx: builtCtx } = bonus.collect(tagged, testBuild({}));
+    expect(builtCtx.tagLabels?.get("gem:cobalt")).toBe("Cobalt enchantment");
+    expect(builtCtx.tagLabels?.has("gem:opal")).toBe(false);
+  });
+});
+
 describe("bonus.ts collect() populates EvalContext.params", () => {
   it("a param the build has never set reads its slot default, not undefined", () => {
     const { ctx: builtCtx } = bonus.collect(testDb, testBuild({}));
@@ -479,6 +496,20 @@ describe("conditions.ts equipped leaf labels", () => {
       explain({ equipped: { tag: "gem:amethyst", atLeast: 3 } }, c).unmet[0]
         .label,
     ).toBe('3× items tagged "gem:amethyst"');
+  });
+
+  // A tag label names the items carrying the tag, so it reads like an item name.
+  it("a labeled tag reads by its label, an unlabeled one by the raw tag", () => {
+    const c = ctx(
+      {},
+      { tagLabels: new Map([["gem:cobalt", "Cobalt enchantment"]]) },
+    );
+    expect(explain({ equipped: { tag: "gem:cobalt" } }, c).unmet[0].label).toBe(
+      "1× Cobalt enchantment",
+    );
+    expect(explain({ equipped: { tag: "gem:opal" } }, c).unmet[0].label).toBe(
+      '1× item tagged "gem:opal"',
+    );
   });
 
   it("an item is shown by its display name", () => {

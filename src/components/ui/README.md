@@ -56,6 +56,7 @@ ordinary one.
 | OcrHint                                   | Marks a field that reads pasted screenshots                                                                                                                    |
 | OcrStatus                                 | The busy and failure overlays under a field that reads pasted screenshots                                                                                      |
 | OcrTextField                              | A description field that also OCRs a pasted screenshot into it                                                                                                 |
+| OptionRow                                 | Label with its id under it, for pickers over named ids                                                                                                         |
 | PaletteInput                              | GoToPalette's own combobox-trigger search field                                                                                                                |
 | PanelHead                                 | A panel's own internal section heading (not BasePanel's header slot)                                                                                           |
 | PinButton                                 | A hover card's header button: pins the card, then closes it once pinned                                                                                        |

@@ -85,6 +85,7 @@ export interface Collected {
 interface CatalogNames {
   bonusNames: Map<string, string>;
   itemNames: Map<string, string>;
+  tagLabels: Map<string, string>;
   paramLabels: Map<string, string>;
 }
 
@@ -103,11 +104,15 @@ function catalogNames(db: Db): CatalogNames {
   for (const item of db.items) {
     if (item.name) itemNames.set(item.id, item.name);
   }
+  const tagLabels = new Map<string, string>();
+  for (const tag of db.tags) {
+    if (tag.label) tagLabels.set(tag.id, tag.label);
+  }
   const paramLabels = new Map<string, string>();
   for (const slot of db.slots) {
     if (slot.type === "build_parameter") paramLabels.set(slot.path, slot.label);
   }
-  const names = { bonusNames, itemNames, paramLabels };
+  const names = { bonusNames, itemNames, tagLabels, paramLabels };
   namesCache.set(db, names);
   return names;
 }

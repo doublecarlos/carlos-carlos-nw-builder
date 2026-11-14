@@ -10,6 +10,7 @@ import { CirclePlus, RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
+import OptionRow from "../ui/OptionRow.vue";
 import ItemListFilters from "./ItemListFilters.vue";
 import LayerListHeader from "./LayerListHeader.vue";
 import type { Item, Bonus, FilterDef } from "../../types";
@@ -181,7 +182,13 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         :aria-current="row.key === selectedKey ? 'true' : undefined"
         @click="onRowClick(row)"
       >
+        <OptionRow
+          v-if="row.kind === 'filter'"
+          class="editor-row-name flex-1"
+          :option="{ value: row.name, label: row.def?.label || row.name }"
+        />
         <span
+          v-else
           class="editor-row-name min-w-0 flex-1 truncate text-(--tone)"
           :style="
             row.kind === 'item' ? toneStyle(row.item?.quality) : undefined
