@@ -20,6 +20,12 @@ describe("buildDraft / toFilter round trip", () => {
     expect(toFilter(buildDraft(filter), ctx(filter.id))).toEqual(filter);
   });
 
+  // Saving a labeled filter must not drop the label it was declared with.
+  it("round-trips a label", () => {
+    const filter: FilterDef = { id: "gear_ring", label: "Ring" };
+    expect(toFilter(buildDraft(filter), ctx(filter.id))).toEqual(filter);
+  });
+
   it("round-trips a multi-field group", () => {
     const filter: FilterDef = {
       id: "insignia",
@@ -66,6 +72,7 @@ describe("buildDraft / toFilter round trip", () => {
   it("builds an empty draft for a category with no declaration", () => {
     expect(buildDraft(null)).toEqual({
       name: "",
+      label: "",
       defaultMaxCopies: null,
       groups: [],
       otherFields: [],

@@ -21,6 +21,7 @@ import type {
   SectionPreset,
   SlotSection,
   FilterDef,
+  TagDef,
   Schema,
   StatValues,
 } from "../types";
@@ -326,7 +327,8 @@ const PRESET_KEYS = [
   "bonusValues",
   "clears",
 ] as const;
-const FILTER_KEYS = ["defaultMaxCopies", "fields"] as const;
+const FILTER_KEYS = ["label", "defaultMaxCopies", "fields"] as const;
+const TAG_KEYS = ["label"] as const;
 
 function canonicalSlot(slot: Slot) {
   const out = orderKeys(slot, SLOT_KEYS);
@@ -381,21 +383,30 @@ export function toSlotsFile(
   return `${JSON.stringify(body, null, 2)}\n`;
 }
 
+/** An id-keyed section, keys sorted by id in code-unit order. */
+function keyedById<T extends { id: string }>(
+  entries: T[],
+  canonical: (entry: T) => Omit<T, "id">,
+): Record<string, Omit<T, "id">> {
+  const byId = new Map(entries.map((entry) => [entry.id, entry]));
+  const out: Record<string, Omit<T, "id">> = {};
+  for (const id of [...byId.keys()].sort()) out[id] = canonical(byId.get(id)!);
+  return out;
+}
+
 /**
  * Regenerates `data/vocabulary.json`. Each section is keyed and sorted by id in code-unit
  * order, matching how `data.ts` reads it, and each filter's `fields` are sorted the same way.
  */
-export function toVocabularyFile(filters: FilterDef[]): string {
-  const byId = new Map(filters.map((filter) => [filter.id, filter]));
-  const body: { filters: Record<string, Omit<FilterDef, "id">> } = {
-    filters: {},
+export function toVocabularyFile(filters: FilterDef[], tags: TagDef[]): string {
+  const body = {
+    filters: keyedById(filters, ({ id: _id, ...filter }) =>
+      orderKeys(
+        { ...filter, fields: filter.fields && [...filter.fields].sort() },
+        FILTER_KEYS,
+      ),
+    ),
+    tags: keyedById(tags, ({ id: _id, ...tag }) => orderKeys(tag, TAG_KEYS)),
   };
-  for (const id of [...byId.keys()].sort()) {
-    const { id: _id, ...filter } = byId.get(id)!;
-    body.filters[id] = orderKeys(
-      { ...filter, fields: filter.fields && [...filter.fields].sort() },
-      FILTER_KEYS,
-    );
-  }
   return `${JSON.stringify(body, null, 2)}\n`;
 }

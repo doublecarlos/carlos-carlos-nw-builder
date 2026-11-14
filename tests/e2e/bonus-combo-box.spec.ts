@@ -88,7 +88,7 @@ test("rows lead with the name and carry the id, and 'this bonus' heads the untyp
   const options = menuOptions(page);
   await expect(options.first()).toHaveText("this bonus");
   const aardvark = options.filter({ hasText: "Aardvark Pick" });
-  await expect(aardvark.getByTestId("bonus-option-id")).toHaveText(LONG_ID);
+  await expect(aardvark.getByTestId("option-row-id")).toHaveText(LONG_ID);
 });
 
 test("typing an exact id lists that bonus first and picks it by id", async ({
@@ -124,7 +124,7 @@ test("the item form's attach picker lists bonuses by name with their id", async 
   await attach.fill("aardvark");
   const options = menuOptions(page);
   await expect(options).toHaveCount(1);
-  await expect(options.first().getByTestId("bonus-option-id")).toHaveText(
+  await expect(options.first().getByTestId("option-row-id")).toHaveText(
     LONG_ID,
   );
 });
@@ -145,7 +145,7 @@ test("the excludes editor offers the same name-and-id rows, by id or name, and n
   await query.fill("pick");
   const options = menuOptions(page);
   await expect(options).toHaveCount(2);
-  await expect(options.first().getByTestId("bonus-option-id")).toHaveText(
+  await expect(options.first().getByTestId("option-row-id")).toHaveText(
     LONG_ID,
   );
 

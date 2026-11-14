@@ -7,6 +7,7 @@ import {
   NW_ITEMS,
   NW_BONUSES,
   NW_FILTERS,
+  NW_TAGS,
 } from "../../src/data/data";
 import type {
   Bonus,
@@ -17,6 +18,7 @@ import type {
   SectionPreset,
   SlotSection,
   FilterDef,
+  TagDef,
 } from "../../src/types";
 
 describe("catalogExport.toItemsFile", () => {
@@ -513,7 +515,7 @@ describe("catalogExport.toSlotsFile", () => {
 describe("catalogExport.toVocabularyFile", () => {
   const filtersOf = (filters: FilterDef[]) =>
     (
-      JSON.parse(catalogExport.toVocabularyFile(filters)) as {
+      JSON.parse(catalogExport.toVocabularyFile(filters, [])) as {
         filters: Record<string, Record<string, unknown>>;
       }
     ).filters;
@@ -522,10 +524,11 @@ describe("catalogExport.toVocabularyFile", () => {
     const filters: FilterDef[] = [
       { id: "insignia_bonus", defaultMaxCopies: 3, fields: ["insigniaRecipe"] },
     ];
-    expect(JSON.parse(catalogExport.toVocabularyFile(filters))).toEqual({
+    expect(JSON.parse(catalogExport.toVocabularyFile(filters, []))).toEqual({
       filters: {
         insignia_bonus: { defaultMaxCopies: 3, fields: ["insigniaRecipe"] },
       },
+      tags: {},
     });
   });
 
@@ -552,7 +555,7 @@ describe("catalogExport.toVocabularyFile", () => {
       },
       { id: "bare" },
     ];
-    const text = catalogExport.toVocabularyFile(filters);
+    const text = catalogExport.toVocabularyFile(filters, []);
     expect(text).not.toContain("null");
     expect(filtersOf(filters)).toEqual({
       artifact: { defaultMaxCopies: 1 },
@@ -561,16 +564,21 @@ describe("catalogExport.toVocabularyFile", () => {
     });
   });
 
-  it("writes defaultMaxCopies before fields, with fields sorted", () => {
+  it("writes label, then defaultMaxCopies, then fields, with fields sorted", () => {
     const filters: FilterDef[] = [
       {
         fields: ["preferredVariant", "insigniaShape"],
         defaultMaxCopies: 1,
         id: "x",
+        label: "X gear",
       },
     ];
     const parsed = filtersOf(filters);
-    expect(Object.keys(parsed.x)).toEqual(["defaultMaxCopies", "fields"]);
+    expect(Object.keys(parsed.x)).toEqual([
+      "label",
+      "defaultMaxCopies",
+      "fields",
+    ]);
     expect(parsed.x.fields).toEqual(["insigniaShape", "preferredVariant"]);
     expect(filters[0].fields).toEqual(["preferredVariant", "insigniaShape"]);
   });
@@ -580,10 +588,23 @@ describe("catalogExport.toVocabularyFile", () => {
       new URL("../../data/vocabulary.json", import.meta.url),
       "utf8",
     );
-    const text = catalogExport.toVocabularyFile(NW_FILTERS);
+    const text = catalogExport.toVocabularyFile(NW_FILTERS, NW_TAGS);
     expect(JSON.stringify(JSON.parse(text))).toBe(
       JSON.stringify(JSON.parse(raw)),
     );
+  });
+
+  // Tags are a section of their own beside filters, keyed and sorted the same way.
+  it("keys each tag by id under `tags`, sorted by id", () => {
+    const tags: TagDef[] = [
+      { id: "gem:ruby", label: "Ruby enchantment" },
+      { id: "gem:jade" },
+    ];
+    const parsed = JSON.parse(catalogExport.toVocabularyFile([], tags)) as {
+      tags: Record<string, unknown>;
+    };
+    expect(Object.keys(parsed.tags)).toEqual(["gem:jade", "gem:ruby"]);
+    expect(parsed.tags["gem:ruby"]).toEqual({ label: "Ruby enchantment" });
   });
 
   it("round-trips the real shipped data", () => {

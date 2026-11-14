@@ -9,7 +9,7 @@
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import BonusComboBox from "./BonusComboBox.vue";
-import BonusOptionRow from "./BonusOptionRow.vue";
+import OptionRow from "../ui/OptionRow.vue";
 import FormField from "../ui/FormField.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
@@ -261,7 +261,7 @@ const searchableInputs = computed(() =>
         @update:model-value="changeInputKey"
       >
         <template #option="{ option }">
-          <BonusOptionRow :option="option" />
+          <OptionRow :option="option" />
         </template>
       </ComboBox>
     </FormField>

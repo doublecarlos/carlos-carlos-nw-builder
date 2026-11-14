@@ -12,13 +12,16 @@ import {
 import { REQUIRED_SLOT_IDS } from "../../src/lib/demo-slots";
 import type {
   Build,
+  Bonus,
   CatalogOverlay,
   Db,
   FilterDef,
+  Item,
   ItemPickerSlot,
   SectionPreset,
   Slot,
   SlotSection,
+  TagDef,
 } from "../../src/types";
 
 const overlayWith = (parts: Partial<CatalogOverlay>): CatalogOverlay => ({
@@ -548,6 +551,64 @@ describe("catalog.validateFilters", () => {
         [{ id: "custom_filter" }],
         [],
         [picker("a.one", "a")],
+      ),
+    ).toEqual([]);
+  });
+});
+
+// A tested tag reads as raw tag text in an unmet condition until it has a label, and a
+// declaration nothing uses is likely a leftover. Small catalog, so shipped data can change.
+describe("catalog.validateTags", () => {
+  const ring: Item = { id: "ring", name: "Ring", tags: ["gem:jade"] };
+  const gated: Bonus = {
+    id: "gated",
+    grants: [
+      { when: { equipped: { tag: "gem:cobalt" } }, stats: {} },
+      { scale: { formula: 'tagged("gem:opal")' }, stats: {} },
+    ],
+  };
+  const messages = (tags: TagDef[]) =>
+    catalog.validateTags(tags, [ring], [gated], []).map((f) => f.message);
+
+  it("warns on each tag a condition or formula tests with no label", () => {
+    const findings = messages([{ id: "gem:cobalt" }]);
+    expect(findings).toHaveLength(2);
+    expect(findings[0]).toMatch(/"gem:cobalt".*no label/);
+    expect(findings[1]).toMatch(/"gem:opal".*no label/);
+  });
+
+  it("is quiet once every tested tag is labeled", () => {
+    expect(
+      messages([
+        { id: "gem:cobalt", label: "Cobalt enchantment" },
+        { id: "gem:opal", label: "Opal enchantment" },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("warns on a declared tag nothing uses, but not on one only an item carries", () => {
+    const findings = messages([
+      { id: "gem:cobalt", label: "Cobalt enchantment" },
+      { id: "gem:opal", label: "Opal enchantment" },
+      { id: "gem:jade" },
+      { id: "gem:typo" },
+    ]);
+    expect(findings).toEqual([expect.stringMatching(/"gem:typo".*declared/)]);
+  });
+
+  it("counts a slot's availableWhen and selector tags as uses", () => {
+    const slot: ItemPickerSlot = {
+      ...picker("a.one", "a"),
+      filter: undefined,
+      tags: ["picked"],
+      availableWhen: { equipped: { tag: "gate" } },
+    };
+    expect(
+      catalog.validateTags(
+        [{ id: "picked" }, { id: "gate", label: "Gate item" }],
+        [],
+        [],
+        [slot],
       ),
     ).toEqual([]);
   });

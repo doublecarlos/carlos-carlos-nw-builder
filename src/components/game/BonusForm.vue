@@ -19,7 +19,7 @@ import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
-import BonusOptionRow from "./BonusOptionRow.vue";
+import OptionRow from "../ui/OptionRow.vue";
 import BonusInputRowList from "./BonusInputRowList.vue";
 import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
@@ -398,7 +398,7 @@ if (bonusDraftRegistry && props.registryId) {
         placeholder="Bonus to suppress…"
       >
         <template #option="{ option }">
-          <BonusOptionRow :option="option" />
+          <OptionRow :option="option" />
         </template>
       </TokenInput>
     </div>

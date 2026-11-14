@@ -7,6 +7,7 @@ import ItemBonuses from "./ItemBonuses.vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import CreatableComboBox from "../ui/CreatableComboBox.vue";
+import OptionRow from "../ui/OptionRow.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import StatValueInput from "./StatValueInput.vue";
 import StatRowList from "./StatRowList.vue";
@@ -142,10 +143,24 @@ function computeId(local: ItemDraft): string {
  * honored as a fallback, so an overlay declaring the older param-based shape keeps working.
  * Blank values are dropped either way; "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
-/** A tag is its own label. */
-const tagOptions = computed(() =>
-  props.tags.map((tag) => ({ value: tag, label: tag })),
-);
+/** Each known tag, read by its declared label where it has one, else by itself. */
+const tagOptions = computed(() => {
+  const labels = new Map(props.db.tags.map((tag) => [tag.id, tag.label]));
+  return props.tags.map((tag) => ({
+    value: tag,
+    label: labels.get(tag) || tag,
+  }));
+});
+/** Each known filter, likewise. */
+const filterOptions = computed(() => {
+  const labels = new Map(
+    props.db.filters.map((filter) => [filter.id, filter.label]),
+  );
+  return props.filters.map((filter) => ({
+    value: filter,
+    label: labels.get(filter) || filter,
+  }));
+});
 /** `replacedBy` candidates. This item is left out: a self-reference is a lint error. */
 const replacementOptions = computed(() => [
   { value: "", label: "- not replaced -" },
@@ -595,7 +610,7 @@ function showsGroup(group: FieldGroup): boolean {
       <FormField label="Filter (category)">
         <CreatableComboBox
           v-model="draft.filter"
-          :options="filters"
+          :options="filterOptions"
           testid="item-filter-input"
         />
         <BaseLink
@@ -644,7 +659,11 @@ function showsGroup(group: FieldGroup): boolean {
           :options="tagOptions"
           placeholder="Add a tag…"
           data-testid="item-tags-input"
-        />
+        >
+          <template #option="{ option }">
+            <OptionRow :option="option" />
+          </template>
+        </TokenInput>
       </FormField>
     </FormGrid>
 

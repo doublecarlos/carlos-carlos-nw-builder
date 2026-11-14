@@ -271,7 +271,9 @@ function describeReadAs(
     case "tagged":
       return {
         kind: read.kind,
-        label: `tagged "${arg}"`,
+        label: ctx.tagLabels?.has(arg)
+          ? `${ctx.tagLabels.get(arg)} equipped`
+          : `tagged "${arg}"`,
         text: formatNumber(value),
       };
     default:

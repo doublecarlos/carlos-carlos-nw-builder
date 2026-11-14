@@ -379,8 +379,12 @@ const activeGroup = computed<EditorGroup>(() => {
   return groups[0] ?? "items";
 });
 
-/** Maps the singular row/lint kind ("sectionPreset") to its plural overlay group name. */
-const GROUP_OF_KIND: Record<LintFinding["kind"], EditorGroup> = {
+/** Maps the singular row/lint kind ("sectionPreset") to its plural overlay group name. Tags
+ *  have no editor group, so a tag finding opens nothing. */
+const GROUP_OF_KIND: Record<
+  Exclude<LintFinding["kind"], "tag">,
+  EditorGroup
+> = {
   item: "items",
   bonus: "bonuses",
   filter: "filters",
@@ -567,7 +571,15 @@ const filterable = (row: EditorRow): FilterableRow =>
         ...row,
         retired: row.item ? isRetired(db.value, row.item.id) : false,
       }
-    : { name: row.name, filter: row.filter, status: row.status };
+    : {
+        // A filter is found by its label as well as its id.
+        name:
+          row.kind === "filter" && row.def?.label
+            ? `${row.def.label} ${row.name}`
+            : row.name,
+        filter: row.filter,
+        status: row.status,
+      };
 
 const filtered = computed(() =>
   rows.value.filter((row) => keepsRow(listFilters.value, filterable(row))),
@@ -768,6 +780,7 @@ const findings = computed(() =>
     db.value.sections,
     db.value.filters,
     overlay.value.sectionOrder,
+    db.value.tags,
   ),
 );
 
@@ -1179,7 +1192,7 @@ async function jumpTo(group: EditorGroup, id: string) {
 /** Jump to whatever a validation finding points at. Findings carry `kind` precisely so this
  * doesn't have to guess from the id/name shape. */
 function selectFinding(finding: LintFinding) {
-  if (!finding.name) return;
+  if (!finding.name || finding.kind === "tag") return;
   jumpTo(GROUP_OF_KIND[finding.kind], finding.name);
 }
 

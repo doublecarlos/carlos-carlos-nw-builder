@@ -3,7 +3,7 @@
 // (ItemBonuses.vue), and naming which bonus an occurrence condition (ConditionRows.vue) or a
 // tier (BonusRows.vue) counts.
 //
-// A row is a BonusOptionRow (name, id under it). A query matches either; ComboBox itself
+// A row is an OptionRow (name, id under it). A query matches either; ComboBox itself
 // leads with a row whose id is exactly what was typed.
 //
 // `self` is for the occurrence pickers, where the bonus being edited is the usual target: it
@@ -12,7 +12,7 @@
 // it sits in, which a not-yet-saved one does not have.
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
-import BonusOptionRow from "./BonusOptionRow.vue";
+import OptionRow from "../ui/OptionRow.vue";
 import type { BonusOption } from "../../types";
 
 const props = withDefaults(
@@ -56,7 +56,7 @@ const closedDisplay = computed(() =>
   >
     <template #empty>this bonus</template>
     <template #option="{ option }">
-      <BonusOptionRow :option="option" />
+      <OptionRow :option="option" />
     </template>
   </ComboBox>
 </template>

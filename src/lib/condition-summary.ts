@@ -16,6 +16,8 @@ import type { InputOption } from "./bonus-draft";
 export interface SummaryNames {
   bonusNames: Map<string, string>;
   itemNames: Map<string, string>;
+  /** Every labeled tag's label, by tag. */
+  tagLabels?: Map<string, string>;
   /** Every build parameter's label, by its path. */
   paramLabels: Map<string, string>;
   inputs: readonly InputOption[];
@@ -43,6 +45,7 @@ export function summaryContext(names: SummaryNames): EvalContext {
     bonusOccurrences: new Map(),
     bonusNames: names.bonusNames,
     itemNames: names.itemNames,
+    tagLabels: names.tagLabels,
     params: new Map([...names.paramLabels.keys()].map((path) => [path, 0])),
     paramLabels: names.paramLabels,
     scalers: new Map(),

@@ -17,6 +17,8 @@ export interface FilterDraft {
   /** The typed name of a new declaration, turned into an id by `nextFilterId`. Empty for an
    *  existing entry. */
   name: string;
+  /** How the category reads to a person; empty shows the id. */
+  label: string;
   defaultMaxCopies: number | string | null;
   /** Checked `FIELD_GROUPS` entries, as plain strings for the checkbox binding. */
   groups: string[];
@@ -55,6 +57,7 @@ export function buildDraft(filter: FilterDef | null | undefined): FilterDraft {
   }
   return {
     name: "",
+    label: filter?.label ?? "",
     defaultMaxCopies: filter?.defaultMaxCopies ?? null,
     groups,
     otherFields: [...claimed],
@@ -65,6 +68,7 @@ export function buildDraft(filter: FilterDef | null | undefined): FilterDraft {
 export function hasContent(local: FilterDraft): boolean {
   return Boolean(
     local.name.trim() ||
+    local.label.trim() ||
     local.groups.length ||
     local.otherFields.length ||
     hasValue(local.defaultMaxCopies),
@@ -81,6 +85,7 @@ export function toFilter(
   ctx: FilterDraftContext,
 ): FilterDef {
   const filter: FilterDef = { id: ctx.id };
+  putIfSet(filter, "label", local.label.trim() || undefined);
   // A typed 0 means uncapped, so only an empty value omits the cap.
   putIfSet(filter, "defaultMaxCopies", numberOrUnset(local.defaultMaxCopies));
   const checked = new Set(local.groups);
@@ -95,6 +100,8 @@ export function toFilter(
 }
 
 const CHECKS: DiffCheck<FilterDef>[] = [
+  (old, nw) =>
+    old.label !== nw.label ? `edit label → ${nw.label ?? "(none)"}` : null,
   (old, nw) =>
     old.defaultMaxCopies !== nw.defaultMaxCopies
       ? `edit default max copies → ${nw.defaultMaxCopies ?? "(none)"}`

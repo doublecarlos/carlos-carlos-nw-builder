@@ -7,6 +7,9 @@
 // already-filled field still browses the full option list) and the committed `model` once
 // closed. Unlike ComboBox, committing isn't limited to picking a listed option -- typing
 // something new and blurring or pressing Enter/Tab commits the typed text itself.
+//
+// Options are `{ value, label }` and a row is an OptionRow, so a labeled value is found by its
+// label or its value. The field itself holds the value.
 import { computed, watch, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { filterAndRank } from "../../lib/text-filter";
@@ -14,12 +17,14 @@ import { useMenuNavigation } from "../../composables/useMenuNavigation";
 import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
+import OptionRow from "./OptionRow.vue";
+import type { ComboBoxOption } from "./ComboBox.vue";
 
 const MAX_SUGGESTIONS = 40;
 
 const props = withDefaults(
   defineProps<{
-    options?: string[];
+    options?: ComboBoxOption[];
     placeholder?: string;
     testid?: string;
   }>(),
@@ -47,20 +52,32 @@ const suggestions = computed(() => {
   return filterAndRank(
     props.options,
     query.value,
-    (option) => option,
-    (option) => option,
+    (option) => [option.value, option.label, option.search ?? ""],
+    (option) => option.value,
   ).slice(0, MAX_SUGGESTIONS);
 });
 
 /** Offering the typed text itself as a "new" entry when it isn't already a known option. */
 const freeValue = computed(() => {
   const value = query.value.trim();
-  if (!value || props.options.includes(value)) return "";
+  if (
+    !value ||
+    props.options.some(
+      (option) => option.value === value || option.label === value,
+    )
+  )
+    return "";
   return value;
 });
 
-const entries = computed(() =>
-  freeValue.value ? [freeValue.value, ...suggestions.value] : suggestions.value,
+/** Typed text naming an option by its label commits that option's value. */
+const valueOf = (text: string) =>
+  props.options.find((option) => option.label === text.trim())?.value ?? text;
+
+const entries = computed<ComboBoxOption[]>(() =>
+  freeValue.value
+    ? [{ value: freeValue.value, label: freeValue.value }, ...suggestions.value]
+    : suggestions.value,
 );
 
 // Same accessible-combobox wiring as ComboBox.vue: focus stays on the input while `highlight`
@@ -77,7 +94,7 @@ watch(entries, () => {
 });
 
 function commit(value: string) {
-  model.value = value.trim();
+  model.value = valueOf(value).trim();
   close();
 }
 
@@ -106,7 +123,7 @@ onKeyStroke(
   (event) => {
     if (!open.value) return;
     const picked = entries.value[highlight.value];
-    const value = picked ?? query.value;
+    const value = picked?.value ?? query.value;
     if (!value.trim()) return;
     if (event.key === "Enter") event.preventDefault();
     commit(value);
@@ -142,19 +159,16 @@ onKeyStroke(
       <ComboBoxMenuRow
         v-for="(entry, index) in entries"
         :id="optionId(index)"
-        :key="entry"
+        :key="entry.value"
         :highlighted="index === highlight"
-        :selected="entry === model"
-        @mousedown.prevent="commit(entry)"
+        :selected="entry.value === model"
+        @mousedown.prevent="commit(entry.value)"
         @mousemove="pointAt($event, index)"
       >
         <span class="flex items-center gap-2">
+          <span class="min-w-0 flex-1"><OptionRow :option="entry" /></span>
           <span
-            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
-            >{{ entry }}</span
-          >
-          <span
-            v-if="entry === freeValue"
+            v-if="entry.value === freeValue"
             class="ml-auto rounded bg-ok/25 px-1.5 text-ok"
             >new</span
           >

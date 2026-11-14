@@ -28,6 +28,11 @@ export function useConditionSummaryContext(
     return summaryContext({
       bonusNames: new Map(bonuses.map((bonus) => [bonus.value, bonus.label])),
       itemNames: new Map(db.value.items.map((item) => [item.id, item.name])),
+      tagLabels: new Map(
+        db.value.tags.flatMap((tag) =>
+          tag.label ? [[tag.id, tag.label]] : [],
+        ),
+      ),
       paramLabels: new Map(
         db.value.slots
           .filter(

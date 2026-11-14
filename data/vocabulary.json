@@ -158,5 +158,178 @@
     "scenario_flag": {
       "defaultMaxCopies": 1
     }
+  },
+  "tags": {
+    "artifact:armor": {
+      "label": "Artifact armor"
+    },
+    "artifact:arms": {
+      "label": "Artifact arms"
+    },
+    "artifact:boots": {
+      "label": "Artifact boots"
+    },
+    "artifact:head": {
+      "label": "Artifact head"
+    },
+    "artifact:m32-mainhand": {
+      "label": "M32+ artifact mainhand"
+    },
+    "artifact:m32-offhand": {
+      "label": "M32+ artifact offhand"
+    },
+    "artifact:m34-armor": {
+      "label": "M34+ artifact armor"
+    },
+    "artifact:m34-arms": {
+      "label": "M34+ artifact arms"
+    },
+    "artifact:m34-boots": {
+      "label": "M34+ artifact boots"
+    },
+    "artifact:m34-head": {
+      "label": "M34+ artifact head"
+    },
+    "artifact:mainhand": {
+      "label": "Artifact mainhand"
+    },
+    "artifact:offhand": {
+      "label": "Artifact offhand"
+    },
+    "boon:prereq-advanced": {
+      "label": "Boon point toward advanced boons"
+    },
+    "boon:prereq-tier-2": {
+      "label": "Boon point toward tier 2"
+    },
+    "boon:prereq-tier-3": {
+      "label": "Boon point toward tier 3"
+    },
+    "boon:prereq-tier-4": {
+      "label": "Boon point toward tier 4"
+    },
+    "companion_of_the_hall:celestial": {
+      "label": "Celestial Companion of the Hall power"
+    },
+    "exclusive:arbiter": {
+      "label": "Arbiter paragon feat"
+    },
+    "exclusive:arcanist": {
+      "label": "Arcanist paragon feat"
+    },
+    "exclusive:blademaster": {
+      "label": "Blademaster paragon feat"
+    },
+    "exclusive:devout": {
+      "label": "Devout paragon feat"
+    },
+    "exclusive:dreadnought": {
+      "label": "Dreadnought paragon feat"
+    },
+    "exclusive:hellbringer": {
+      "label": "Hellbringer paragon feat"
+    },
+    "exclusive:minstrel": {
+      "label": "Minstrel paragon feat"
+    },
+    "exclusive:sentinel": {
+      "label": "Sentinel paragon feat"
+    },
+    "exclusive:songblade": {
+      "label": "Songblade paragon feat"
+    },
+    "exclusive:soulweaver": {
+      "label": "Soulweaver paragon feat"
+    },
+    "exclusive:thaumaturge": {
+      "label": "Thaumaturge paragon feat"
+    },
+    "exclusive:vanguard": {
+      "label": "Vanguard paragon feat"
+    },
+    "gem:amethyst": {
+      "label": "Amethyst enchantment"
+    },
+    "gem:ammolite": {
+      "label": "Ammolite enchantment"
+    },
+    "gem:aquamarine": {
+      "label": "Aquamarine enchantment"
+    },
+    "gem:bloodstone": {
+      "label": "Bloodstone enchantment"
+    },
+    "gem:citrine": {
+      "label": "Citrine enchantment"
+    },
+    "gem:cobalt": {
+      "label": "Cobalt enchantment"
+    },
+    "gem:diamond": {
+      "label": "Diamond enchantment"
+    },
+    "gem:fire_agate": {
+      "label": "Fire Agate enchantment"
+    },
+    "gem:jade": {
+      "label": "Jade enchantment"
+    },
+    "gem:opal": {
+      "label": "Opal enchantment"
+    },
+    "gem:rubellite_tourmaline": {
+      "label": "Rubellite Tourmaline enchantment"
+    },
+    "gem:ruby": {
+      "label": "Ruby enchantment"
+    },
+    "level_attr:12": {
+      "label": "Level 12 ability score pick"
+    },
+    "level_attr:14": {
+      "label": "Level 14 ability score pick"
+    },
+    "level_attr:18": {
+      "label": "Level 18 ability score pick"
+    },
+    "level_attr:20": {
+      "label": "Level 20 ability score pick"
+    },
+    "level_attr:3": {
+      "label": "Level 3 ability score pick"
+    },
+    "level_attr:6": {
+      "label": "Level 6 ability score pick"
+    },
+    "race": {
+      "label": "Race"
+    },
+    "race-ability-score": {
+      "label": "Race ability score pick"
+    },
+    "race-ability:2-cha": {
+      "label": "Race allowing +2 CHA"
+    },
+    "race-ability:2-con": {
+      "label": "Race allowing +2 CON"
+    },
+    "race-ability:2-dex": {
+      "label": "Race allowing +2 DEX"
+    },
+    "race-ability:2-int": {
+      "label": "Race allowing +2 INT"
+    },
+    "race-ability:2-str": {
+      "label": "Race allowing +2 STR"
+    },
+    "race-ability:2-wis": {
+      "label": "Race allowing +2 WIS"
+    },
+    "race-ability:3": {
+      "label": "Race allowing a +3 pick"
+    },
+    "race-ability:two-picks": {
+      "label": "Race allowing two picks"
+    }
   }
 }
