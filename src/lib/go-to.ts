@@ -4,7 +4,7 @@
 // row is the one you meant: typing "gear" has to put the Gear *section* above the eight gear
 // slots whose detail line merely mentions it, and `matchesQuery` alone -- which only answers
 // yes/no -- cannot say that.
-import { matchesQuery } from "./text-filter";
+import { matchesQuery, searchText } from "./text-filter";
 
 export type GoToKind = "section" | "slot" | "build" | "layer";
 
@@ -33,9 +33,9 @@ const KIND_RANK: Record<GoToKind, number> = {
 
 /** Lower is better; `null` drops the entry. The tiers are ordered by how much of the label the
  *  query accounts for, strongest first, with the whitespace-splitting `matchesQuery` last so
- *  "off mod" still reaches "Offhand Mod 1" without outranking a real prefix hit. */
+ *  "off mod" still reaches "Off-hand mod 1" without outranking a real prefix hit. */
 function scoreOf(entry: GoToEntry, query: string): number | null {
-  const label = entry.label.toLowerCase();
+  const label = searchText(entry.label);
   if (label === query) return 0;
   if (label.startsWith(query)) return 1;
   if (label.split(/\s+/).some((word) => word.startsWith(query))) return 2;
@@ -56,7 +56,7 @@ export function rankEntries(
   query: string,
   limit = 40,
 ): GoToEntry[] {
-  const trimmed = query.trim().toLowerCase();
+  const trimmed = searchText(query.trim());
   if (!trimmed) return entries.slice(0, limit);
   return entries
     .map((entry, index) => ({ entry, index, score: scoreOf(entry, trimmed) }))

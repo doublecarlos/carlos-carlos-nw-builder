@@ -79,7 +79,7 @@ test("filtering to a nested slot keeps its parent as context", async ({
   page,
 }) => {
   await openArtifactMainhand(page);
-  await slotFilterInput(page).fill("Mainhand mod");
+  await slotFilterInput(page).fill("Main-hand mod");
 
   await expect(slotRow(page, "gear.mainhandMod")).toBeVisible();
   await expect(slotRow(page, "gear.mainhand")).toBeVisible();

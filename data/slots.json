@@ -483,7 +483,7 @@
         },
         {
           "id": "gear.mainhandMod",
-          "label": "Mainhand mod",
+          "label": "Main-hand mod",
           "type": "item_picker",
           "filter": "modification_mainhand",
           "parent": "gear.mainhand",
@@ -500,7 +500,7 @@
         },
         {
           "id": "gear.offhandMod1",
-          "label": "Offhand Mod 1",
+          "label": "Off-hand mod 1",
           "type": "item_picker",
           "filter": "modification_offhand_static",
           "parent": "gear.offhand",
@@ -512,7 +512,7 @@
         },
         {
           "id": "gear.offhandMod2",
-          "label": "Offhand Mod 2",
+          "label": "Off-hand mod 2",
           "type": "item_picker",
           "filter": "modification_offhand_dynamic",
           "parent": "gear.offhand",

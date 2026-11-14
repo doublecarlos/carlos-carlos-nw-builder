@@ -7,6 +7,13 @@ describe("matchesQuery", () => {
     expect(matchesQuery("Celestial Amethyst", "xyz")).toBe(false);
   });
 
+  // Labels spell compounds with a hyphen ("Off-hand"); a query typed either way still finds them.
+  it("ignores hyphens on both sides", () => {
+    expect(matchesQuery("Off-hand weapon", "offhand")).toBe(true);
+    expect(matchesQuery("Off-hand weapon", "off-hand")).toBe(true);
+    expect(matchesQuery("Offhand weapon", "off-hand")).toBe(true);
+  });
+
   it("is case-insensitive", () => {
     expect(matchesQuery("Celestial Amethyst", "CEL")).toBe(true);
   });
