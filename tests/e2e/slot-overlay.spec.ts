@@ -145,6 +145,35 @@ test("an item picker created in a layer offers its filter's items", async ({
   await expect(row).toContainText("Spare Ring");
 });
 
+// A slot left unlabeled reads its category's label, so it need not repeat it.
+test("an unlabeled item picker reads its category's label", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [{ id: "test-band-1", name: "Test Band One", filter: "test_band" }],
+    filters: [{ id: "test_band", label: "Test Band" }],
+  });
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
+  await openSlotsTab(page);
+
+  await newInOutline(page, "new-slot");
+  await chooseCombo(page.getByTestId("slot-kind-input"), "item picker");
+  await chooseOptionsSection(page);
+  await page.getByTestId("slot-filter-input").fill("test_band");
+  await expect(page.getByTestId("slot-label-input")).toHaveAttribute(
+    "placeholder",
+    "Test Band",
+  );
+  await page.getByTestId("save-slot").click();
+  await expect(page.getByTestId("slot-error")).toBeHidden();
+
+  await backToBuild(page);
+  const row = slotRow(page, "options.test-band");
+  await expect(row).toBeVisible();
+  await expect(row).toContainText("Test Band");
+});
+
 test("an item picker's default seeds a new build and comes back on clear", async ({
   page,
 }) => {

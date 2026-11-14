@@ -24,6 +24,7 @@ import { useEditorDraft } from "../../composables/useEditorDraft";
 import { resolvedOptions } from "../../lib/param-options";
 import {
   buildDraft,
+  categoryLabel,
   hasContent,
   toSlot,
   diffLabel,
@@ -40,11 +41,11 @@ import {
 } from "../../lib/slot-draft";
 import type { ConditionRow } from "../../engine/condition-draft";
 import type {
+  AuthoredSlot,
   BonusOption,
   BuildParameterSlot,
   Db,
   Item,
-  Slot,
   StableRole,
 } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
@@ -52,9 +53,9 @@ import type { EntryStatus } from "../../data/catalog";
 const props = withDefaults(
   defineProps<{
     /** The slot being edited, or null for a brand-new one. */
-    source?: Slot | null;
+    source?: AuthoredSlot | null;
     /** Seeds a new draft from an existing slot, for "Duplicate". Ignored once `source` is set. */
-    duplicateFrom?: Slot | null;
+    duplicateFrom?: AuthoredSlot | null;
     /** The section a new slot lands in, from the outline's selection. */
     defaultSection?: string;
     status?: EntryStatus;
@@ -72,15 +73,15 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  "update:slot": [payload: { slot: Slot; label: string }];
-  save: [payload: { slot: Slot }];
+  "update:slot": [payload: { slot: AuthoredSlot; label: string }];
+  save: [payload: { slot: AuthoredSlot }];
   delete: [];
   duplicate: [];
   revert: [];
 }>();
 
 function computeId(local: SlotDraft): string {
-  const label = local.label.trim();
+  const label = local.label.trim() || categoryLabel(local, props.db) || "";
   // Separators and text slots have no label, so `nextSlotId` falls back to a per-type stem.
   if (!label && local.type !== "separator" && local.type !== "text") return "";
   return catalog.nextSlotId(
@@ -100,9 +101,9 @@ function slotId(local: SlotDraft): string {
 const isNew = computed(() => !props.source);
 
 const { draft, error, dirty, displayId } = useEditorDraft<
-  Slot,
+  AuthoredSlot,
   SlotDraft,
-  Slot
+  AuthoredSlot
 >({
   source: () => props.source,
   isNew,
@@ -123,6 +124,9 @@ const { draft, error, dirty, displayId } = useEditorDraft<
   },
   draftNoun: "slot",
 });
+
+/** What a blank label reads as: the category's label. */
+const inheritedLabel = computed(() => categoryLabel(draft.value, props.db));
 
 defineExpose({ draft, dirty });
 
@@ -257,7 +261,7 @@ function save() {
   <div>
     <DraftFormBar
       :noun="noun"
-      :title="draft.label || `New ${noun}`"
+      :title="draft.label || inheritedLabel || `New ${noun}`"
       :status="status"
       :dirty="dirty"
       :is-new="isNew"
@@ -289,6 +293,7 @@ function save() {
           v-model="draft.label"
           class="w-full"
           type="text"
+          :placeholder="inheritedLabel"
           data-testid="slot-label-input"
         />
       </FormField>
@@ -316,7 +321,7 @@ function save() {
           :options="SLOT_TYPE_OPTIONS"
           :readonly="!isNew"
           data-testid="slot-kind-input"
-          @update:model-value="(v) => (draft.type = v as Slot['type'])"
+          @update:model-value="(v) => (draft.type = v as AuthoredSlot['type'])"
         />
       </FormField>
     </FormGrid>

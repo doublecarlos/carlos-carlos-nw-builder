@@ -4,7 +4,7 @@
 // and catalog.ts's `allowedClass` lint calls it with a bare item array and no `Db` in reach.
 // One implementation so the two can never disagree about what the option set is.
 
-import type { BuildParameterSlot, Item } from "../types";
+import type { Authored, BuildParameterSlot, Item } from "../types";
 
 export type ParamOption = { value: string; label: string };
 
@@ -44,7 +44,7 @@ export function optionsFromItems(
  * that should also *bring* the item is an `item_picker` with `Item.publishes`.
  */
 export function resolvedOptions(
-  slot: BuildParameterSlot,
+  slot: Authored<BuildParameterSlot>,
   items: Item[],
 ): ParamOption[] | undefined {
   if (!slot.optionsFrom) return slot.options;

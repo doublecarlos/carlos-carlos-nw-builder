@@ -385,6 +385,29 @@ describe("slotSaveError", () => {
     );
   });
 
+  // A slot can lean on its category's label instead of repeating it; a parameter has none.
+  it("accepts a blank label on a slot whose category has a label", () => {
+    const labeled = db.build(items, [], NW_SCHEMA, slotsData, [
+      { id: "gear_ring", label: "Ring" },
+    ]);
+    const draft = draftOf({
+      label: "",
+      type: "item_picker",
+      filter: "gear_ring",
+    });
+    expect(slotSaveError(draft, labeled, "x")).toBeNull();
+    expect(toSlot(draft, { id: "x" })).not.toHaveProperty("label");
+  });
+
+  it("still wants a label when the category has none", () => {
+    const draft = draftOf({
+      label: "",
+      type: "item_picker",
+      filter: "gear_ring",
+    });
+    expect(slotSaveError(draft, testDb, "x")).toMatch(/needs a label/);
+  });
+
   it("does not want a label on a separator", () => {
     expect(
       slotSaveError(draftOf({ label: "", type: "separator" }), testDb, "x"),

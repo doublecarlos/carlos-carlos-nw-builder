@@ -8,7 +8,13 @@ import {
   nestedParentId,
   stepIndex,
 } from "../../src/lib/slot-parent";
-import type { Item, ItemPickerSlot, Slot, SlotSection } from "../../src/types";
+import type {
+  AuthoredSlot,
+  Item,
+  ItemPickerSlot,
+  Slot,
+  SlotSection,
+} from "../../src/types";
 
 const picker = (
   id: string,
@@ -28,7 +34,7 @@ const section = (slotIds: string[]): SlotSection => ({
   slotIds,
 });
 
-const ids = (slots: Slot[]) => slots.map((slot) => slot.id);
+const ids = (slots: AuthoredSlot[]) => slots.map((slot) => slot.id);
 
 // a, p (children c1, c2), b, q (child d1)
 const a = picker("a");

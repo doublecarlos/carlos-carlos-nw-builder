@@ -4,6 +4,7 @@
 import { closest } from "../../lib/edit-distance";
 import type {
   Bonus,
+  Authored,
   BuildParameterSlot,
   ConditionWhen,
   FormulaRef,
@@ -218,7 +219,7 @@ export function perSourceScaleWarning(
 /** What a formula may look up, resolved against a catalog. */
 export interface FormulaVocabulary {
   /** Every build parameter, by path. */
-  params: Map<string, BuildParameterSlot>;
+  params: ReadonlyMap<string, Authored<BuildParameterSlot>>;
   bonusIds: Set<string>;
   itemIds: Set<string>;
   tags: Set<string>;

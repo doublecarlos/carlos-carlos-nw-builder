@@ -14,6 +14,7 @@ import type {
   CatalogOverlay,
   Db,
   Schema,
+  AuthoredSlot,
   Slot,
 } from "../../src/types";
 
@@ -281,7 +282,7 @@ describe("catalog.referencedOverlay: slots travel with a build", () => {
   /** Minimal Db -- `referencedOverlay` only reaches for `get`, `bonusById` and the slot
    * lists, and reads the *authored* one so a derived option set is never frozen into a
    * download. Nothing here uses `optionsFrom`, so the two lists are the same. */
-  const testDb = (slots: Slot[]): Db =>
+  const testDb = (slots: AuthoredSlot[]): Db =>
     ({
       get: () => null,
       bonusById: new Map(),

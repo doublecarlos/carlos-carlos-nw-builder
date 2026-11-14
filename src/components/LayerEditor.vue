@@ -65,7 +65,7 @@ import {
   Upload,
 } from "@lucide/vue";
 import * as catalog from "../data/catalog";
-import { isRetired } from "../data/db";
+import { filterLabelLookup, isRetired, slotLabel } from "../data/db";
 import { showNotice } from "../stores/notice";
 import { navigation } from "../lib/navigation";
 import type { Route, RoutePatch } from "../lib/route-model";
@@ -99,7 +99,7 @@ import type {
   FilterDef,
   TagDef,
   SectionPreset,
-  Slot,
+  AuthoredSlot,
   SlotSection,
   LintFinding,
   Layer,
@@ -312,7 +312,7 @@ const GROUPS: Record<EditorGroup, GroupDef> = {
     noun: "slot",
     existsIn: (db, id) => db.slotById.has(id),
     labelIn: (db, id) => {
-      const slot = db.authoredSlots.find((candidate) => candidate.id === id);
+      const slot = db.slotById.get(id);
       return slot ? slot.label || slot.id : null;
     },
     createNew: () => newSlot(),
@@ -458,7 +458,11 @@ const duplicateBonusSeed = ref<Bonus | null>(null);
 /** Same one-shot handoff as `newItemSeed`, from BuildSection's "Create new from current". */
 const newPresetSeed = layerEditorUi.takeNewPresetSeed();
 const duplicatePresetSeed = ref<SectionPreset | null>(newPresetSeed);
-const duplicateSlotSeed = ref<Slot | null>(null);
+const duplicateSlotSeed = ref<AuthoredSlot | null>(null);
+
+/** How a slot reads in notices and history: its label, else its category's, else its id. */
+const slotName = (slot: AuthoredSlot) =>
+  slotLabel(slot, filterLabelLookup(db.value.filters));
 /** The section the outline's "New" menu named, read once by the blank draft it opens. */
 const newEntrySection = ref("");
 
@@ -721,7 +725,7 @@ const selectedPreset = computed(() => {
   );
 });
 
-const selectedSlot = computed<Slot | null>(
+const selectedSlot = computed<AuthoredSlot | null>(
   () =>
     db.value.authoredSlots.find(
       (candidate) => candidate.id === selectedBySection.slots,
@@ -1168,7 +1172,7 @@ async function duplicateSlot() {
   newItemCounter.value++;
   writeRoute(newDraftParams("slots"));
   showNotice(
-    `Duplicating "${slot.label || slot.id}". Edit and save to create a copy.`,
+    `Duplicating "${slotName(slot)}". Edit and save to create a copy.`,
   );
 }
 
@@ -1380,9 +1384,9 @@ const onUpdatePreset = ({
 const onDeletePreset = () => deleteEntry("sectionPresets");
 const onRevertPreset = () => revertEntry("sectionPresets");
 
-const onSaveSlot = ({ slot }: { slot: Slot }) =>
-  saveEntry("slots", slot.id, slot, slot.label || slot.id);
-const onUpdateSlot = ({ slot, label }: { slot: Slot; label: string }) =>
+const onSaveSlot = ({ slot }: { slot: AuthoredSlot }) =>
+  saveEntry("slots", slot.id, slot, slotName(slot));
+const onUpdateSlot = ({ slot, label }: { slot: AuthoredSlot; label: string }) =>
   updateEntry("slots", slot.id, slot, label);
 const onDeleteSlot = () => deleteEntry("slots");
 const onRevertSlot = () => revertEntry("slots");

@@ -25,6 +25,8 @@ import {
   type ConditionRow,
 } from "../engine/condition-draft";
 import type {
+  Authored,
+  AuthoredSlot,
   BuildParameterSlot,
   ConditionWhen,
   Db,
@@ -95,13 +97,25 @@ export function nounOf(type: Slot["type"]): string {
   return type === "build_parameter" ? "parameter" : "slot";
 }
 
-/** Types that render their label, so it is required. Separators and text slots don't. */
+/** Types that render their label. A parameter needs its own; the others can read their
+ *  category's instead. Separators and text slots render none. */
 const LABELED_TYPES: readonly Slot["type"][] = [
   "build_parameter",
   "item_picker",
   "item_picker_list",
   "point_assignment",
 ];
+
+/** The category label a draft would read when its own label is blank, or undefined when it
+ *  has none: a parameter, a slot selecting by tags, or an unlabeled category. */
+export function categoryLabel(local: SlotDraft, db: Db): string | undefined {
+  if (local.type === "build_parameter" || !LABELED_TYPES.includes(local.type))
+    return undefined;
+  if (local.type !== "point_assignment" && local.selectorSource === "tags")
+    return undefined;
+  const filter = local.filter.trim();
+  return db.filters.find((def) => def.id === filter)?.label || undefined;
+}
 
 export interface SlotDraft {
   type: Slot["type"];
@@ -178,7 +192,7 @@ type SlotFields = Partial<
     Omit<TextSlot, "type">
 >;
 
-export function buildDraft(slot: Slot | null | undefined): SlotDraft {
+export function buildDraft(slot: AuthoredSlot | null | undefined): SlotDraft {
   const source = (slot ?? {}) as SlotFields;
   const representable = whenIsRepresentable(source.availableWhen);
   return {
@@ -331,7 +345,7 @@ const BUILDERS: {
   [T in Slot["type"]]: (
     local: SlotDraft,
     common: SlotCommon,
-  ) => Extract<Slot, { type: T }>;
+  ) => Extract<AuthoredSlot, { type: T }>;
 } = {
   build_parameter: (local, common) => {
     const slot: BuildParameterSlot = {
@@ -384,12 +398,12 @@ const BUILDERS: {
     return slot;
   },
   item_picker: (local, common) => {
-    const slot: ItemPickerSlot = {
+    const slot: Authored<ItemPickerSlot> = {
       id: common.id,
-      label: common.label,
       section: common.section,
       type: "item_picker",
     };
+    putIfSet(slot, "label", common.label);
     putSelector(slot, local);
     putIfSet(slot, "default", local.itemDefault.trim());
     putIfSet(slot, "availableWhen", availableWhenOf(local));
@@ -406,12 +420,12 @@ const BUILDERS: {
     return slot;
   },
   item_picker_list: (local, common) => {
-    const slot: ItemPickerListSlot = {
+    const slot: Authored<ItemPickerListSlot> = {
       id: common.id,
-      label: common.label,
       section: common.section,
       type: "item_picker_list",
     };
+    putIfSet(slot, "label", common.label);
     putSelector(slot, local);
     putIfSet(slot, "defaultRows", number(local.defaultRows));
     if (local.toggleable) slot.toggleable = true;
@@ -419,13 +433,13 @@ const BUILDERS: {
     return slot;
   },
   point_assignment: (local, common) => {
-    const slot: PointAssignmentSlot = {
+    const slot: Authored<PointAssignmentSlot> = {
       id: common.id,
-      label: common.label,
       section: common.section,
       type: "point_assignment",
       filter: local.filter.trim(),
     };
+    putIfSet(slot, "label", common.label);
     return slot;
   },
   separator: (_local, common) => {
@@ -449,7 +463,7 @@ const BUILDERS: {
   },
 };
 
-export function toSlot(local: SlotDraft, ctx: SlotDraftContext): Slot {
+export function toSlot(local: SlotDraft, ctx: SlotDraftContext): AuthoredSlot {
   const common: SlotCommon = {
     id: ctx.id,
     section: local.section,
@@ -458,9 +472,14 @@ export function toSlot(local: SlotDraft, ctx: SlotDraftContext): Slot {
   return BUILDERS[local.type](local, common);
 }
 
-const CHECKS: DiffCheck<Slot>[] = [
+const CHECKS: DiffCheck<AuthoredSlot>[] = [
   (old, nw) => (old.type !== nw.type ? `edit type to "${nw.type}"` : null),
-  (old, nw) => (old.label !== nw.label ? `edit label to "${nw.label}"` : null),
+  (old, nw) =>
+    old.label === nw.label
+      ? null
+      : nw.label === undefined
+        ? "clear label"
+        : `edit label to "${nw.label}"`,
   (old, nw) =>
     old.section !== nw.section ? `move to section "${nw.section}"` : null,
   (old, nw) =>
@@ -537,7 +556,10 @@ export function parentOptions(
           slot.id !== ownId &&
           !slot.parent,
       )
-      .map((slot) => ({ value: slot.id, label: slot.label || slot.id })),
+      .map((slot) => ({
+        value: slot.id,
+        label: db.slotById.get(slot.id)?.label || slot.id,
+      })),
   ];
 }
 
@@ -572,8 +594,14 @@ export function slotSaveError(
 ): string | null {
   const noun = nounOf(local.type);
   if (!local.section) return `The ${noun} needs a section.`;
-  if (LABELED_TYPES.includes(local.type) && !local.label.trim())
-    return `The ${noun} needs a label.`;
+  if (
+    LABELED_TYPES.includes(local.type) &&
+    !local.label.trim() &&
+    !categoryLabel(local, db)
+  )
+    return local.type === "build_parameter"
+      ? `The ${noun} needs a label.`
+      : `The ${noun} needs a label, or an item category that has one.`;
 
   if (local.type === "build_parameter") {
     if (!local.path.trim()) return "The parameter needs a path.";

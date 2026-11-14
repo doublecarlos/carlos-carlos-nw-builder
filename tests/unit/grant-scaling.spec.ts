@@ -27,7 +27,7 @@ import type {
   Item,
   ItemPickerSlot,
   BuildParameterSlot,
-  Slot,
+  AuthoredSlot,
   Schema,
   SlotsData,
 } from "../../src/types";
@@ -348,7 +348,7 @@ describe("stacking on top of a scaled grant", () => {
 });
 
 describe("catalog.validate: scale formulas", () => {
-  const scaleFindings = (slots: Slot[], bonuses: Bonus[]) =>
+  const scaleFindings = (slots: AuthoredSlot[], bonuses: Bonus[]) =>
     catalog
       .validate([], bonuses, schema, [], slots, [], [])
       .filter((f) => f.kind === "bonus" && /scale/.test(f.message));
@@ -508,7 +508,7 @@ describe("grantRows for a scaled grant", () => {
         buildWith({ "gear.ring1": "flat-ring" }, share(0.4)),
         "flat-scaled",
       ),
-      slotsData.slots,
+      testDb.slots,
     );
     expect(row.stats).toEqual([
       {
@@ -528,7 +528,7 @@ describe("grantRows for a scaled grant", () => {
         buildWith({ "gear.ring1": "flat-ring" }, share(0)),
         "flat-scaled",
       ),
-      slotsData.slots,
+      testDb.slots,
     );
     expect(row.active).toBe(false);
     expect(row.stats?.[0]).toEqual({
@@ -558,7 +558,7 @@ describe("grantRows for a scaled grant", () => {
   it("gives no note to an unscaled grant", () => {
     const [row] = grantRows(
       entryOf(buildWith({ "gear.ring1": "plain-ring" }, share(0.4)), "plain"),
-      slotsData.slots,
+      testDb.slots,
     );
     expect(row.scaled).toBe(false);
     expect(row.stats?.[0]).not.toHaveProperty("note");
@@ -573,7 +573,7 @@ describe("grantRows for a scaled grant", () => {
         ),
         "stacked-scaled",
       ),
-      slotsData.slots,
+      testDb.slots,
     );
     expect(row.stats).toEqual([
       {
@@ -592,7 +592,7 @@ describe("grantRows for a scaled grant", () => {
       }),
       "tier-scaled",
     );
-    const [row] = grantRows(entry, slotsData.slots);
+    const [row] = grantRows(entry, testDb.slots);
     expect(row.tiers?.map((tier) => [tier.stats[0], tier.active])).toEqual([
       [
         {
@@ -627,7 +627,7 @@ describe("grantRows for a scaled grant", () => {
         buildWith({ "gear.ring1": "variant-ring" }, share(0.4)),
         "variant-scaled",
       ),
-      slotsData.slots,
+      testDb.slots,
     );
     expect(row.variants?.map((v) => [v.stats[0], v.active])).toEqual([
       [
@@ -677,7 +677,7 @@ describe("grantRows for a scaled grant", () => {
           buildWith({ "gear.ring1": "plain-tier-ring" }),
         )
         .bonuses.find((b) => b.bonusId === "plain-tier")!,
-      slotsData.slots,
+      testDb.slots,
     );
     expect(row.tiers?.[0].stats[0]).toEqual({
       key: "outgoing_damage",
@@ -691,7 +691,7 @@ describe("grantRows for a scaled grant", () => {
       buildWith({ "gear.ring1": "gated-ring" }, share(0.4)),
       "gated-scaled",
     );
-    const [row] = grantRows(entry, slotsData.slots);
+    const [row] = grantRows(entry, testDb.slots);
     expect(row.active).toBe(false);
     expect(row.stats).toEqual([
       {
@@ -714,7 +714,7 @@ describe("grantRows for a scaled grant", () => {
       testDb.get("flat-ring")!,
       [entry],
       new Map(),
-      slotsData.slots,
+      testDb.slots,
     );
     expect(row.grants[0].stats?.[0].note).toEqual([
       { text: "15.00% x 0.00% " },
@@ -759,7 +759,7 @@ describe("scaleNote", () => {
     expect(scalers).toHaveLength(1);
     // The raw item level, not the floored scaled one, times the resolved multiplier. Grouped
     // through `int` so the expectation does not depend on the machine's locale.
-    expect(scaleNote(1750, "il", scalers, withBolster.slots)).toEqual([
+    expect(scaleNote(1750, "il", scalers, mountDb.slots)).toEqual([
       { text: `${int(1750)} x 225.00% ` },
       { text: "Mount bolster", slotId: "gear.mountBolster" },
     ]);
@@ -774,7 +774,7 @@ describe("scaleNote", () => {
       0.15,
       "outgoing_damage",
       [grant.scale!],
-      withBolster.slots,
+      mountDb.slots,
     );
     expect(note).toEqual(noteAt40("15.00%"));
   });
@@ -792,7 +792,7 @@ describe("scaleNote", () => {
       100,
       "power",
       [...activeScalersFor(ctx, mount), grant.scale!],
-      withBolster.slots,
+      mountDb.slots,
     );
     expect(note).toEqual([
       { text: "100 x 225.00% " },

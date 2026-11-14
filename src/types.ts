@@ -298,6 +298,18 @@ export type Slot =
   | SeparatorSlot
   | TextSlot;
 
+/** A slot variant as authored in `data/slots.json` or a layer: `label` may be left out, and
+ *  `Db` then fills it from the slot's category label, else its id. */
+export type Authored<S extends Slot> = Omit<S, "label"> & { label?: string };
+
+/** Any authored slot. Everything that writes a slot back out keeps this shape, so a filled
+ *  label never lands in the data. */
+export type AuthoredSlot = Slot extends infer S
+  ? S extends Slot
+    ? Authored<S>
+    : never
+  : never;
+
 /** A named set of defaults for one section, authored alongside it in `data/slots.json` (see
  * `deriveSlots` in data.ts, which injects `section` the same way it does for a `Slot`). Applying
  * one (buildEditor.ts's `applyPreset`) is a merge, not a replace: only the slots/items a field
@@ -426,7 +438,7 @@ export interface StableSlotRef {
 
 export interface SlotsData {
   sections: SlotSection[];
-  slots: Slot[];
+  slots: AuthoredSlot[];
   /** Optional: several unit-test fixtures build a minimal `SlotsData` with no presets of
    * their own, and `db.ts`'s `build()` already defaults a missing one to `[]`. */
   presets?: SectionPreset[];
@@ -803,7 +815,7 @@ export interface Db {
    * `validateSlots` (whose `options` XOR `optionsFrom` rule only means anything pre-resolution)
    * and `referencedOverlay` (which would otherwise see every derived slot as differing from
    * base and embed a frozen copy of it into every download). */
-  authoredSlots: Slot[];
+  authoredSlots: AuthoredSlot[];
   sections: SlotSection[];
   presets: SectionPreset[];
   slotById: Map<string, Slot>;
@@ -857,7 +869,7 @@ export interface CatalogOverlay {
   sectionPresets: Record<string, SectionPreset | null>;
   /** Any `Slot` variant. `section` sets membership; order within it is the section's
    * `slotIds`, and a slot it does not list renders after the section's base slots. */
-  slots: Record<string, Slot | null>;
+  slots: Record<string, AuthoredSlot | null>;
   /** Whole `SlotSection` entries, `slotIds` included, so a reorder is an ordinary edit. */
   sections: Record<string, SlotSection | null>;
   /** Per-filter metadata. A tombstone reverts the category to the defaults. */
