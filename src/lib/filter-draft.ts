@@ -113,5 +113,5 @@ const CHECKS: DiffCheck<FilterDef>[] = [
 ];
 
 export function diffLabel(oldJson: string, newJson: string): string {
-  return fieldDiffLabel(CHECKS, oldJson, newJson, "edit filter");
+  return fieldDiffLabel(CHECKS, oldJson, newJson, "edit category");
 }

@@ -582,7 +582,7 @@ export function slotSaveError(
       return `Path "${local.path.trim()}" is already used by ${clash}; the two would silently share one value.`;
   }
   if (local.type === "point_assignment" && !local.filter.trim())
-    return "The slot needs an item filter.";
+    return "The slot needs an item category.";
   if (local.type === "text" && !local.text.trim())
     return "The slot needs some text.";
   if (local.type === "item_picker" || local.type === "item_picker_list") {
@@ -590,7 +590,7 @@ export function slotSaveError(
       local.selectorSource === "tags"
         ? commaList(local.tags).length > 0
         : Boolean(local.filter.trim());
-    if (!hasSelector) return "The slot needs an item filter or tags.";
+    if (!hasSelector) return "The slot needs an item category or tags.";
   }
   if (local.type === "item_picker" || local.type === "item_picker_list") {
     if (local.whenMode === "json") {

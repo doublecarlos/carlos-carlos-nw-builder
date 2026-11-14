@@ -64,7 +64,7 @@ test("an item with no cap of its own is held to its filter's", async ({
   await expect(page.getByTestId("item-max-copies")).toHaveValue("");
   await expect(page.getByTestId("item-max-copies")).toHaveAttribute(
     "placeholder",
-    "1 for this filter",
+    "1 for this category",
   );
 
   await openBuild(page);

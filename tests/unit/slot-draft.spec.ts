@@ -400,7 +400,7 @@ describe("slotSaveError", () => {
   it("wants a selector on an item picker", () => {
     expect(
       slotSaveError(draftOf({ type: "item_picker" }), testDb, "x"),
-    ).toMatch(/needs an item filter or tags/);
+    ).toMatch(/needs an item category or tags/);
   });
 
   it("blocks a default that is not one of the slot's own candidates", () => {

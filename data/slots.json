@@ -9,7 +9,7 @@
           "id": "options.class",
           "label": "Class",
           "type": "item_picker",
-          "tags": ["class"],
+          "filter": "class",
           "hidePreview": true
         },
         {

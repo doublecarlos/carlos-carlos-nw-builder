@@ -271,7 +271,7 @@ function replacementOf(value: unknown): ItemReplacement | null {
 const CHECKS: DiffCheck<Item>[] = [
   (old, nw) => (old.name !== nw.name ? `edit name → "${nw.name}"` : null),
   (old, nw) =>
-    old.filter !== nw.filter ? `edit filter → "${nw.filter}"` : null,
+    old.filter !== nw.filter ? `edit category → "${nw.filter}"` : null,
   (old, nw) =>
     old.quality !== nw.quality
       ? `edit quality → ${nw.quality ?? "(none)"}`

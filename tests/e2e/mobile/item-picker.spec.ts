@@ -4,6 +4,7 @@
 // the picker their width instead of a stat summary, and "New item" stands in for Ctrl+click.
 import { test, expect, type Page } from "@playwright/test";
 import {
+  comboBoxValueId,
   chooseItem,
   openBuilder,
   pickerInput,
@@ -215,7 +216,9 @@ test("New item opens the layer editor on an item seeded for the row", async ({
 
   await expect(pickerScreen(page)).toHaveCount(0);
   await expect(page.getByTestId("item-name-input")).toHaveValue("");
-  await expect(page.getByTestId("item-filter-input")).toHaveValue("gear_boots");
+  await expect(
+    comboBoxValueId(page.getByTestId("item-filter-input")),
+  ).toHaveText("gear_boots");
 });
 
 test("the stat filter opens full-screen too, without New item", async ({

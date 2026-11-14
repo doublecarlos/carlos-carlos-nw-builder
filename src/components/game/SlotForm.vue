@@ -444,7 +444,7 @@ function save() {
         </FormField>
         <template v-if="draft.scalerMode">
           <FormField
-            label="Scaled item filters"
+            label="Scaled item categories"
             hint="comma-separated; every item in these categories"
           >
             <BaseInput
@@ -498,7 +498,7 @@ function save() {
           </FormField>
           <FormField
             v-if="draft.optionsSource === 'filter'"
-            label="Item filter"
+            label="Item category"
             hint="one option per item in this category"
           >
             <BaseInput
@@ -578,7 +578,7 @@ function save() {
       </FormField>
       <FormField
         v-if="draft.selectorSource === 'filter'"
-        label="Item filter"
+        label="Item category"
         hint="every item in this category"
       >
         <BaseInput
@@ -605,7 +605,7 @@ function save() {
 
     <!-- point_assignment: one row per matching item, so only a filter makes sense ---------- -->
     <FormGrid v-if="fields.has('filter')" class="mb-2">
-      <FormField label="Item filter" hint="one row per item in this category">
+      <FormField label="Item category" hint="one row per item in this category">
         <BaseInput
           v-model="draft.filter"
           class="w-full"

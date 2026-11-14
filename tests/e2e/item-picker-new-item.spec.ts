@@ -2,6 +2,7 @@
 // its options, opening the layer editor on a new item seeded for the row.
 import { test, expect } from "@playwright/test";
 import {
+  comboBoxValueId,
   openBuilder,
   slotRow,
   pickerInput,
@@ -23,7 +24,9 @@ test("New item opens the layer editor on an item seeded for the row", async ({
 
   await expect(page.getByTestId("picker-menu")).toHaveCount(0);
   await expect(page.getByTestId("item-name-input")).toHaveValue("");
-  await expect(page.getByTestId("item-filter-input")).toHaveValue("gear_boots");
+  await expect(
+    comboBoxValueId(page.getByTestId("item-filter-input")),
+  ).toHaveText("gear_boots");
 });
 
 test("a picker with nothing to seed offers no New item", async ({ page }) => {

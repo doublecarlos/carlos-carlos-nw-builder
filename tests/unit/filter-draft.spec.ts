@@ -149,6 +149,6 @@ describe("diffLabel", () => {
   });
 
   it("falls back when nothing recognizable changed", () => {
-    expect(label({ id: "a" }, { id: "b" })).toBe("edit filter");
+    expect(label({ id: "a" }, { id: "b" })).toBe("edit category");
   });
 });

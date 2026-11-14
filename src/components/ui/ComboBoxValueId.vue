@@ -9,7 +9,7 @@ defineProps<{ label: string; value: string }>();
 <template>
   <div
     aria-hidden="true"
-    class="pointer-events-none absolute inset-y-0 left-0 flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-pre border border-transparent py-0.5 pl-1.5"
+    class="pointer-events-none absolute inset-y-0 left-0 flex min-w-0 items-baseline gap-1.5 overflow-hidden whitespace-pre border border-transparent py-0.5 pl-1.5"
   >
     <span class="invisible max-w-full shrink-0 overflow-hidden">{{
       label

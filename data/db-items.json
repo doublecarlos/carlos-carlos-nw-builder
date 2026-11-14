@@ -2993,14 +2993,13 @@
   {
     "id": "class-barbarian",
     "name": "Barbarian",
-    "filter": "build_param_linked_item",
+    "filter": "class",
     "str": 18,
     "con": 14,
     "dex": 14,
     "int": 8,
     "wis": 10,
     "cha": 10,
-    "tags": ["class"],
     "bonuses": ["baseline-character", "baseline-enemy-stats"],
     "publishes": {
       "class": "barbarian"
@@ -3009,14 +3008,13 @@
   {
     "id": "class-bard",
     "name": "Bard",
-    "filter": "build_param_linked_item",
+    "filter": "class",
     "str": 13,
     "con": 13,
     "dex": 12,
     "int": 8,
     "wis": 10,
     "cha": 18,
-    "tags": ["class"],
     "bonuses": [
       "baseline-character",
       "baseline-enemy-stats",
@@ -3031,7 +3029,7 @@
   {
     "id": "class-cleric",
     "name": "Cleric",
-    "filter": "build_param_linked_item",
+    "filter": "class",
     "str": 10,
     "con": 10,
     "dex": 10,
@@ -3052,7 +3050,6 @@
         "default": 0.1
       }
     ],
-    "tags": ["class"],
     "bonuses": ["baseline-character", "baseline-enemy-stats"],
     "publishes": {
       "class": "cleric"
@@ -3061,14 +3058,13 @@
   {
     "id": "class-fighter",
     "name": "Fighter",
-    "filter": "build_param_linked_item",
+    "filter": "class",
     "str": 16,
     "con": 16,
     "dex": 14,
     "int": 8,
     "wis": 10,
     "cha": 10,
-    "tags": ["class"],
     "bonuses": [
       "baseline-character",
       "baseline-enemy-stats",
@@ -3083,8 +3079,7 @@
   {
     "id": "class-paladin",
     "name": "Paladin Placeholer",
-    "filter": "build_param_linked_item",
-    "tags": ["class"],
+    "filter": "class",
     "bonuses": ["baseline-character", "baseline-enemy-stats"],
     "publishes": {
       "class": "paladin"
@@ -3093,8 +3088,7 @@
   {
     "id": "class-ranger",
     "name": "Ranger Placeholer",
-    "filter": "build_param_linked_item",
-    "tags": ["class"],
+    "filter": "class",
     "bonuses": ["baseline-character", "baseline-enemy-stats"],
     "publishes": {
       "class": "ranger"
@@ -3103,8 +3097,7 @@
   {
     "id": "class-rogue",
     "name": "Rogue Placeholer",
-    "filter": "build_param_linked_item",
-    "tags": ["class"],
+    "filter": "class",
     "bonuses": ["baseline-character", "baseline-enemy-stats"],
     "publishes": {
       "class": "rogue"
@@ -3113,14 +3106,13 @@
   {
     "id": "class-warlock",
     "name": "Warlock",
-    "filter": "build_param_linked_item",
+    "filter": "class",
     "str": 8,
     "con": 14,
     "dex": 12,
     "int": 16,
     "wis": 8,
     "cha": 16,
-    "tags": ["class"],
     "bonuses": [
       "baseline-character",
       "baseline-enemy-stats",
@@ -3134,14 +3126,13 @@
   {
     "id": "class-wizard",
     "name": "Wizard",
-    "filter": "build_param_linked_item",
+    "filter": "class",
     "str": 8,
     "con": 10,
     "dex": 12,
     "int": 18,
     "wis": 14,
     "cha": 12,
-    "tags": ["class"],
     "bonuses": [
       "baseline-character",
       "baseline-enemy-stats",

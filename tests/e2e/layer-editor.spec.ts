@@ -3,6 +3,7 @@
 // its effect on the build's resolved stats after switching back.
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import {
+  comboBoxValueId,
   openBuilder,
   chooseItem,
   setItemFilter,
@@ -132,9 +133,9 @@ test.describe("Ctrl+click on a slot row", () => {
     ).toBeVisible();
     // A brand-new item, narrowed to what that slot can hold.
     await expect(page.getByTestId("item-name-input")).toHaveValue("");
-    await expect(page.getByTestId("item-filter-input")).toHaveValue(
-      "gear_boots",
-    );
+    await expect(
+      comboBoxValueId(page.getByTestId("item-filter-input")),
+    ).toHaveText("gear_boots");
   });
 
   test("Ctrl+click twice on different slots targets the same layer the second time", async ({
