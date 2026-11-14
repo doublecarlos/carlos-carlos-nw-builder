@@ -4,12 +4,15 @@
 // as TokenInput, but for one scalar field (e.g. an item's filter) instead of a tag list.
 //
 // Like ComboBox, the field shows a live `query` while open (starting blank, so focusing an
-// already-filled field still browses the full option list) and the committed `model` once
-// closed. Unlike ComboBox, committing isn't limited to picking a listed option -- typing
+// already-filled field still browses the full option list, with the current pick as its
+// placeholder) and the committed `model` once closed. Unlike ComboBox, committing isn't limited to picking a listed option -- typing
 // something new and blurring or pressing Enter/Tab commits the typed text itself.
 //
 // Options are `{ value, label }` and a row is an OptionRow, so a labeled value is found by its
 // label or its value. The field itself holds the value.
+//
+// An untyped open highlights the current value, so Enter or Tab through the field keeps it.
+// `showEmptyOption` adds an "- empty -" row on that open, the way to clear the field.
 import { computed, watch, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { filterAndRank } from "../../lib/text-filter";
@@ -27,11 +30,14 @@ const props = withDefaults(
     options?: ComboBoxOption[];
     placeholder?: string;
     testid?: string;
+    /** Offer "- empty -" as the first row of an untyped open, to clear the field. */
+    showEmptyOption?: boolean;
   }>(),
   {
     options: () => [],
     placeholder: "",
     testid: undefined,
+    showEmptyOption: false,
   },
 );
 
@@ -70,15 +76,29 @@ const freeValue = computed(() => {
   return value;
 });
 
+/** While open, the current pick stands in as the placeholder, read like a value and shown as
+ *  the closed field shows it. */
+const shownPlaceholder = computed(() =>
+  open.value && model.value ? model.value : props.placeholder,
+);
+
 /** Typed text naming an option by its label commits that option's value. */
 const valueOf = (text: string) =>
   props.options.find((option) => option.label === text.trim())?.value ?? text;
 
-const entries = computed<ComboBoxOption[]>(() =>
-  freeValue.value
-    ? [{ value: freeValue.value, label: freeValue.value }, ...suggestions.value]
-    : suggestions.value,
-);
+/** The "- empty -" row, told apart by its value: no option or typed text commits as "". */
+const EMPTY: ComboBoxOption = { value: "", label: "- empty -" };
+
+const entries = computed<ComboBoxOption[]>(() => {
+  if (freeValue.value)
+    return [
+      { value: freeValue.value, label: freeValue.value },
+      ...suggestions.value,
+    ];
+  if (props.showEmptyOption && open.value && !query.value.trim())
+    return [EMPTY, ...suggestions.value];
+  return suggestions.value;
+});
 
 // Same accessible-combobox wiring as ComboBox.vue: focus stays on the input while `highlight`
 // moves, so the active row is named by `aria-activedescendant` rather than focused.
@@ -86,12 +106,20 @@ const listboxId = useId();
 const optionId = (index: number) => `${listboxId}-option-${index}`;
 const menuOpen = computed(() => open.value && entries.value.length > 0);
 const activeDescendant = computed(() =>
-  menuOpen.value ? optionId(highlight.value) : undefined,
+  menuOpen.value && highlight.value >= 0
+    ? optionId(highlight.value)
+    : undefined,
 );
 
-watch(entries, () => {
-  highlight.value = 0;
-});
+/** Typed text leads with its best match; an untyped open rests on the current value, or on
+ *  nothing when it is not listed, so Enter and Tab never replace it unasked. */
+function resetHighlight() {
+  highlight.value = query.value.trim()
+    ? 0
+    : entries.value.findIndex((entry) => entry.value === model.value);
+}
+
+watch(entries, resetHighlight);
 
 function commit(value: string) {
   model.value = valueOf(value).trim();
@@ -101,13 +129,18 @@ function commit(value: string) {
 function onFocus() {
   open.value = true;
   query.value = "";
-  highlight.value = 0;
+  resetHighlight();
+}
+
+/** Picking a row closes the menu but keeps focus, so a click on the field reopens it. */
+function onClick() {
+  if (!open.value) onFocus();
 }
 
 function onInput(event: Event) {
   query.value = (event.target as HTMLInputElement).value;
   open.value = true;
-  highlight.value = 0;
+  resetHighlight();
 }
 
 /** A typed-but-uncommitted query is saved on blur (matching plain-input expectations --
@@ -123,10 +156,9 @@ onKeyStroke(
   (event) => {
     if (!open.value) return;
     const picked = entries.value[highlight.value];
-    const value = picked?.value ?? query.value;
-    if (!value.trim()) return;
+    if (!picked && !query.value.trim()) return;
     if (event.key === "Enter") event.preventDefault();
-    commit(value);
+    commit(picked ? picked.value : query.value);
   },
   { target: input },
 );
@@ -139,6 +171,7 @@ onKeyStroke(
       ref="input"
       :aria-describedby="describedBy"
       class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      :class="model ? 'placeholder:text-text' : 'placeholder:text-muted'"
       type="text"
       role="combobox"
       aria-autocomplete="list"
@@ -148,9 +181,10 @@ onKeyStroke(
       autocomplete="off"
       spellcheck="false"
       :value="open ? query : model"
-      :placeholder="placeholder"
+      :placeholder="shownPlaceholder"
       :data-testid="testid"
       @focus="onFocus"
+      @click="onClick"
       @input="onInput"
       @blur="onBlur"
     />
@@ -160,15 +194,19 @@ onKeyStroke(
         v-for="(entry, index) in entries"
         :id="optionId(index)"
         :key="entry.value"
+        :muted="entry === EMPTY"
         :highlighted="index === highlight"
         :selected="entry.value === model"
         @mousedown.prevent="commit(entry.value)"
         @mousemove="pointAt($event, index)"
       >
         <span class="flex items-center gap-2">
-          <span class="min-w-0 flex-1"><OptionRow :option="entry" /></span>
+          <span v-if="entry === EMPTY">{{ entry.label }}</span>
+          <span v-else class="min-w-0 flex-1"
+            ><OptionRow :option="entry"
+          /></span>
           <span
-            v-if="entry.value === freeValue"
+            v-if="freeValue && entry.value === freeValue"
             class="ml-auto rounded bg-ok/25 px-1.5 text-ok"
             >new</span
           >

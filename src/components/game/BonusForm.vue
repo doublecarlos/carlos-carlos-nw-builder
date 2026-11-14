@@ -41,7 +41,6 @@ const props = withDefaults(
     db: Db;
     /** Every known bonus id, for id-collision avoidance. */
     allBonusIds?: string[];
-    tags?: string[];
     /** Every known bonus, for `excludes` and the "which bonus does this tier/condition count"
      *  pickers. */
     bonusOptions?: BonusOption[];
@@ -73,7 +72,6 @@ const props = withDefaults(
     duplicateFrom: null,
     status: "base",
     allBonusIds: () => [],
-    tags: () => [],
     bonusOptions: () => [],
     allocatableIds: () => [],
     fixedId: null,
@@ -352,7 +350,6 @@ if (bonusDraftRegistry && props.registryId) {
       <!-- Owns its own "Grants" heading, since the heading's fold controls act on its cards. -->
       <BonusRows
         :store="draftStore"
-        :tags="tags"
         :bonus-options="bonusOptions"
         :input-options="inputOptions"
         :registry-id="registryId"

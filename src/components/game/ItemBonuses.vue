@@ -55,7 +55,6 @@ const props = withDefaults(
     db: Db;
     /** Every known bonus id, for id-collision avoidance. */
     allBonusIds?: string[];
-    tags?: string[];
     /** Every known bonus, for "attach an existing bonus" and the pickers in each form. */
     bonusOptions?: BonusOption[];
     /** Every existing bonus id, for collision-free id allocation. */
@@ -66,7 +65,6 @@ const props = withDefaults(
     itemName: "",
     itemId: undefined,
     allBonusIds: () => [],
-    tags: () => [],
     bonusOptions: () => [],
     allocatableIds: () => [],
   },
@@ -312,7 +310,6 @@ function nudgeBonus(index: number, delta: -1 | 1) {
           :registry-id="slot.key"
           :db="db"
           :all-bonus-ids="allBonusIds"
-          :tags="tags"
           :bonus-options="bonusOptions"
           :allocatable-ids="props.allocatableIds"
           :current-item-id="itemId"

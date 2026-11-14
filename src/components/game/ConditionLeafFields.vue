@@ -8,6 +8,7 @@
 // deeply, so an edit is live the moment it is made.
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
+import CreatableComboBox from "../ui/CreatableComboBox.vue";
 import BonusComboBox from "./BonusComboBox.vue";
 import OptionRow from "../ui/OptionRow.vue";
 import FormField from "../ui/FormField.vue";
@@ -23,6 +24,7 @@ import {
   type ConditionRow,
 } from "../../engine/condition-draft";
 import { conditionTypeLabel, leafLayout } from "../../lib/condition-fields";
+import { knownTags } from "../../data/catalog";
 import type { BonusOption, BuildParameterSlot } from "../../types";
 import type { InputOption } from "../../lib/bonus-draft";
 
@@ -175,6 +177,16 @@ const comparesPercent = computed(() => {
   return paramSlotFor(key)?.paramType === "percent";
 });
 
+/** Every known tag, read by its label where it has one. Free text still names a tag no item
+ *  carries yet. */
+const tagOptions = computed(() => {
+  const labels = new Map(db.value.tags.map((tag) => [tag.id, tag.label]));
+  return knownTags(db.value).map((tag) => ({
+    value: tag,
+    label: labels.get(tag)?.trim() || tag,
+  }));
+});
+
 /** The name doubles as search text, as a bonus picker's id does. */
 const searchableInputs = computed(() =>
   props.inputOptions.map((option) => ({ ...option, search: option.value })),
@@ -205,9 +217,15 @@ const searchableInputs = computed(() =>
         @update:model-value="(v) => (row.bonus = v)"
       />
     </FormField>
-    <FormField v-else-if="field === 'tag'" label="Tag" :class="fieldClass"
-      ><BaseInput v-model="row.tag" class="w-full" type="text" list="nw-tags"
-    /></FormField>
+    <FormField v-else-if="field === 'tag'" label="Tag" :class="fieldClass">
+      <CreatableComboBox
+        v-model="row.tag"
+        :class="width('w-56')"
+        :options="tagOptions"
+        testid="condition-tag"
+        show-empty-option
+      />
+    </FormField>
     <FormField
       v-else-if="field === 'item'"
       label="Or exact item id"

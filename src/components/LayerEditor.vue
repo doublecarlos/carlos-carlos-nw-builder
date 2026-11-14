@@ -288,8 +288,8 @@ const GROUPS: Record<EditorGroup, GroupDef> = {
     tab: "vocabulary",
     routerKey: "tag",
     noun: "tag",
-    existsIn: (db, id) => tagNames(db).includes(id),
-    labelIn: (db, id) => (tagNames(db).includes(id) ? id : null),
+    existsIn: (db, id) => catalog.knownTags(db).includes(id),
+    labelIn: (db, id) => (catalog.knownTags(db).includes(id) ? id : null),
     rowsFrom: tagRowsFrom,
     createNew: () => newEntry("tags"),
   },
@@ -579,27 +579,13 @@ function filterRowsFrom(catalogDb: Db, ovl: CatalogOverlay): FilterRow[] {
   );
 }
 
-/** Every tag the editor knows: the declared ones plus every one in use. */
-function tagNames(catalogDb: Db): string[] {
-  return [
-    ...new Set<string>([
-      ...catalogDb.tags.map((tag) => tag.id),
-      ...catalog.usedTags(
-        catalogDb.items,
-        catalogDb.bonuses,
-        catalogDb.authoredSlots,
-      ),
-    ]),
-  ].sort();
-}
-
 /** One row per tag, the way `filterRowsFrom` lists categories. */
 function tagRowsFrom(catalogDb: Db, ovl: CatalogOverlay): TagRow[] {
   const declared = new Map(catalogDb.tags.map((tag) => [tag.id, tag]));
   const tombstones = catalog.tombstoneIds(ovl, "tags");
   const removed = new Set(tombstones);
   return editorRows<string, TagRow>(
-    tagNames(catalogDb).filter((name) => !removed.has(name)),
+    catalog.knownTags(catalogDb).filter((name) => !removed.has(name)),
     (name) => ({
       key: name,
       name,
@@ -860,7 +846,7 @@ const allocatableIds = computed(() => {
 
 /** Every tag a new declaration must not repeat: known here or named by any layer. */
 const takenTags = computed(() => [
-  ...new Set([...tagNames(db.value), ...allocatableIds.value.tags]),
+  ...new Set([...catalog.knownTags(db.value), ...allocatableIds.value.tags]),
 ]);
 
 const findings = computed(() =>
@@ -1976,7 +1962,6 @@ onUnmounted(() => {
           :status="selectedStatus"
           :db="db"
           :all-bonus-ids="allBonusIds"
-          :tags="tagList"
           :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds.bonuses"
           @save="onSaveBonusTop"

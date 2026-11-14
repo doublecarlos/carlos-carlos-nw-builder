@@ -2420,6 +2420,16 @@ export function usedTags(
   return used;
 }
 
+/** Every tag a catalog knows, sorted: the declared ones plus every one in use. */
+export function knownTags(catalogDb: Db): string[] {
+  return [
+    ...new Set<string>([
+      ...catalogDb.tags.map((tag) => tag.id),
+      ...usedTags(catalogDb.items, catalogDb.bonuses, catalogDb.authoredSlots),
+    ]),
+  ].sort();
+}
+
 /**
  * Warns about a tested tag with no label, which would read as raw tag text in an unmet
  * condition, and about a declared tag nothing uses, likely a leftover or a typo.

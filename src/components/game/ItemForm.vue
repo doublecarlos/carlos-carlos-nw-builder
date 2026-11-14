@@ -624,6 +624,7 @@ function showsGroup(group: FieldGroup): boolean {
           v-model="draft.filter"
           :options="filterOptions"
           testid="item-filter-input"
+          show-empty-option
         />
         <BaseLink
           v-if="draft.filter.trim()"
@@ -659,10 +660,6 @@ function showsGroup(group: FieldGroup): boolean {
         />
       </FormField>
     </FormGrid>
-
-    <datalist id="nw-tags">
-      <option v-for="t in tags" :key="t" :value="t"></option>
-    </datalist>
 
     <FormGrid v-if="showsGroup('tags')" class="mb-2" data-testid="group-tags">
       <FormField label="Tags" class="min-w-80 flex-1">
@@ -985,7 +982,6 @@ function showsGroup(group: FieldGroup): boolean {
         :item-id="source?.id"
         :db="db"
         :all-bonus-ids="allBonusIds"
-        :tags="tags"
         :bonus-options="bonusOptions"
         :allocatable-ids="props.allocatableBonusIds"
         @save-bonus="$emit('save-bonus', $event)"
