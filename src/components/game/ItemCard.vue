@@ -58,6 +58,7 @@ const props = withDefaults(
     item: Item;
     /** Resolved bonus entries this item takes part in, from `result.bonuses`. */
     bonuses?: EvaluatedBonus[];
+    /** Names the item above its stats when its category has no label. */
     slotLabel?: string;
     /** The catalog, for what the card cannot read off the item alone: its replacement, its
      *  effective copy cap, its stable reach, and which unmet conditions a slot could supply. */
@@ -123,6 +124,13 @@ const emit = defineEmits<{
 /** What this item would be swapped for, when the card has a catalog to ask. */
 const replacement = computed(
   () => props.db?.replacementFor(props.item.id) ?? null,
+);
+
+/** What kind of item this is: its category's label, else the slot it sits in. */
+const categoryLabel = computed(
+  () =>
+    props.db?.filters.find((filter) => filter.id === props.item.filter)
+      ?.label || props.slotLabel,
 );
 
 const scale = computed(() => composeFactor(props.scalers));
@@ -300,8 +308,12 @@ const rows = computed(() =>
       />
     </BaseCardHeader>
     <BaseCardBody>
-      <div v-if="slotLabel" class="mb-1 text-muted">
-        {{ slotLabel }}
+      <div
+        v-if="categoryLabel"
+        class="mb-1 text-muted"
+        data-testid="item-card-category"
+      >
+        {{ categoryLabel }}
       </div>
       <!-- The one fact on this card the player has to act on, so it outweighs the stats. -->
       <div

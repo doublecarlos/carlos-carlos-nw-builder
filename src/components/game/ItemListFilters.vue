@@ -4,12 +4,13 @@
 import { computed } from "vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import ComboBox from "../ui/ComboBox.vue";
+import OptionRow from "../ui/OptionRow.vue";
 import { QUALITIES } from "../../lib/item-quality";
 import type { ItemListFilter } from "../../lib/item-list-filter";
 
 const props = defineProps<{
   /** Every category the editor knows, sorted. */
-  categories: string[];
+  categories: { value: string; label: string }[];
 }>();
 
 const filter = defineModel<ItemListFilter>({ required: true });
@@ -21,10 +22,7 @@ const qualityOptions = [
 
 const categoryOptions = computed(() => [
   { value: "", label: "any category" },
-  ...props.categories.map((category) => ({
-    value: category,
-    label: category,
-  })),
+  ...props.categories,
 ]);
 
 function set<K extends keyof ItemListFilter>(key: K, value: ItemListFilter[K]) {
@@ -47,8 +45,13 @@ function set<K extends keyof ItemListFilter>(key: K, value: ItemListFilter[K]) {
         :model-value="filter.category"
         :options="categoryOptions"
         data-testid="item-list-category"
+        show-value
         @update:model-value="(v) => set('category', v)"
-      />
+      >
+        <template #option="{ option }">
+          <OptionRow :option="option" />
+        </template>
+      </ComboBox>
     </div>
     <BaseCheckbox
       inline

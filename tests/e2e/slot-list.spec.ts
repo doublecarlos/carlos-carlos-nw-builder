@@ -4,6 +4,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import type { Item } from "../../src/types";
 import {
+  comboBoxValueId,
   parkCursorOnRow,
   openBuilder,
   headerRow,
@@ -137,9 +138,9 @@ test.describe("row click behavior", () => {
 
     await expect(page.getByTestId("builder-content")).toBeHidden();
     await expect(page.getByTestId("item-name-input")).toHaveValue("");
-    await expect(page.getByTestId("item-filter-input")).toHaveValue(
-      "gear_head",
-    );
+    await expect(
+      comboBoxValueId(page.getByTestId("item-filter-input")),
+    ).toHaveText("gear_head");
   });
 
   test("Ctrl+click on an empty tag-selected slot pre-fills the draft's tags as well", async ({
@@ -158,9 +159,9 @@ test.describe("row click behavior", () => {
     await expect(page.getByTestId("item-tags-input")).toContainText(
       "companion_power:offense",
     );
-    await expect(page.getByTestId("item-filter-input")).toHaveValue(
-      "companion_power",
-    );
+    await expect(
+      comboBoxValueId(page.getByTestId("item-filter-input")),
+    ).toHaveText("companion_power");
   });
 
   test("the pre-filled draft is one-shot: coming back to the layer opens a blank one", async ({
@@ -170,9 +171,9 @@ test.describe("row click behavior", () => {
     await slotRow(page, "gear.head")
       .locator(".slot-label")
       .click({ modifiers: ["Control"] });
-    await expect(page.getByTestId("item-filter-input")).toHaveValue(
-      "gear_head",
-    );
+    await expect(
+      comboBoxValueId(page.getByTestId("item-filter-input")),
+    ).toHaveText("gear_head");
 
     // Back to the build, then into the same layer again -- the seed belonged to that one jump,
     // so the second visit gets an ordinary blank draft.

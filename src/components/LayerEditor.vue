@@ -277,7 +277,7 @@ const GROUPS: Record<EditorGroup, GroupDef> = {
     group: "filters",
     tab: "vocabulary",
     routerKey: "filter",
-    noun: "filter",
+    noun: "category",
     existsIn: (db, id) => filterNames(db).includes(id),
     labelIn: (db, id) => (filterNames(db).includes(id) ? id : null),
     rowsFrom: filterRowsFrom,
@@ -485,12 +485,13 @@ function editorRows<E, R extends EditorRow>(
 }
 
 function itemRowsFrom(catalogDb: Db, ovl: CatalogOverlay): ItemRow[] {
+  const labels = new Map(catalogDb.filters.map((def) => [def.id, def.label]));
   return editorRows<Item, ItemRow>(
     catalogDb.items,
     (item) => ({
       key: item.id,
       name: item.name,
-      filter: item.filter ?? "",
+      filter: (item.filter && labels.get(item.filter)) || item.filter || "",
       item,
       status: catalog.statusOf(ovl, "items", item.id),
       kind: "item",
@@ -632,6 +633,10 @@ const filterable = (row: EditorRow): FilterableRow =>
   row.kind === "item"
     ? {
         ...row,
+        // The column shows the category's label; its id finds the item too.
+        filter: row.item?.filter
+          ? `${row.filter} ${row.item.filter}`
+          : row.filter,
         retired: row.item ? isRetired(db.value, row.item.id) : false,
       }
     : {
@@ -778,6 +783,14 @@ const selectedStatus = computed(() => {
 
 /** The item form's category choices, the same list the Vocabulary tab shows. */
 const filters = computed<string[]>(() => filterNames(db.value));
+/** The Items tab's category choices, read by label where a category has one. */
+const categoryOptions = computed(() => {
+  const labels = new Map(db.value.filters.map((def) => [def.id, def.label]));
+  return filters.value.map((id) => ({
+    value: id,
+    label: labels.get(id) || id,
+  }));
+});
 
 /** Every known bonus id, for id-collision avoidance and the `excludes` vocabulary. */
 const allBonusIds = computed<string[]>(() =>
@@ -1901,7 +1914,7 @@ onUnmounted(() => {
           :scroll-key="`${props.layer.id}:${tab}`"
           class="min-w-0 flex-1"
           :rows="filtered"
-          :categories="filters"
+          :categories="categoryOptions"
           :section="tab"
           :selected-key="selectedKey"
           :selected-kind="activeKind"

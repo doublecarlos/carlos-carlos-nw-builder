@@ -1699,12 +1699,8 @@ export function validatePresets(
   return findings;
 }
 
-/** A filter naming convention for items that are equipped without going through any slot's
- *  picker (e.g. resolved directly off a build_parameter, or intentionally hidden) -- these
- *  are expected to match no slot, so the "matches no slot" warning would just be noise. */
-function isUnpickableFilter(filter: string): boolean {
-  return filter.includes("build_param") || filter.includes("hidden");
-}
+/** The category of an item no slot is meant to pick, so "matches no slot" skips it. */
+export const NO_CATEGORY = "no_category";
 
 // Engine-coupled list params whose option set is fixed by data/schema.json, not by the slot.
 // `schema.json` is not overlayable, so an option the schema does not know resolves through a
@@ -2314,7 +2310,7 @@ export function validateFilterFields(
         level: "error",
         kind: "item",
         message:
-          `filter "${filter}" claims field "${field}", which is not an item field; ` +
+          `category "${filter}" claims field "${field}", which is not an item field; ` +
           "no form group answers to it, so the entry does nothing",
       });
     }
@@ -2347,6 +2343,7 @@ export function usedFilters(items: Item[], slots: Slot[]): Set<string> {
 
 /**
  * Warns about a declared filter that nothing uses, likely a leftover or a typo.
+ * `NO_CATEGORY` is declared for its label before any item needs it, so it never warns.
  */
 export function validateFilters(
   filters: FilterDef[],
@@ -2355,12 +2352,12 @@ export function validateFilters(
 ): LintFinding[] {
   const used = usedFilters(items, slots);
   return filters
-    .filter((filter) => !used.has(filter.id))
+    .filter((filter) => !used.has(filter.id) && filter.id !== NO_CATEGORY)
     .map((filter) => ({
       level: "warn" as const,
       kind: "filter" as const,
       name: filter.id,
-      message: `filter "${filter.id}" is declared, but no item or slot uses it`,
+      message: `category "${filter.id}" is declared, but no item or slot uses it`,
     }));
 }
 
@@ -2873,11 +2870,11 @@ export function validate(
         );
       }
     } else if (!slotFilters.has(item.filter)) {
-      if (!matchesPickerTag && !isUnpickableFilter(item.filter)) {
+      if (!matchesPickerTag && item.filter !== NO_CATEGORY) {
         report(
           "warn",
-          `filter "${item.filter}" matches no slot, so nothing can equip it ` +
-            `(name it with "build_param" or "hidden" to silence this)`,
+          `category "${item.filter}" matches no slot, so nothing can equip it ` +
+            `(use "${NO_CATEGORY}" for an item no slot picks)`,
           item.id,
         );
       }

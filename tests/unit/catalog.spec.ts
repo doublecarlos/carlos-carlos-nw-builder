@@ -959,28 +959,32 @@ describe("catalog.validate: filters not meant to be picked directly", () => {
     ).toBe(true);
   });
 
-  it("a filter naming 'build_param' is exempt from the 'matches no slot' warning", () => {
+  // An item no slot picks says so with this one category instead of tripping the warning.
+  it("the no_category category is exempt from the 'matches no slot' warning", () => {
+    const items = [
+      { id: "unslotted", name: "Unslotted", filter: catalog.NO_CATEGORY },
+    ];
+    const findings = catalog.validate(items, []);
+    expect(findings.some((f) => f.name === "unslotted")).toBe(false);
+  });
+
+  it("only the exact no_category name is exempt", () => {
     const items = [
       { id: "param-item", name: "Param Item", filter: "some_build_param_x" },
     ];
     const findings = catalog.validate(items, []);
-    expect(findings.some((f) => f.name === "param-item")).toBe(false);
+    expect(
+      findings.some(
+        (f) => f.name === "param-item" && /matches no slot/.test(f.message),
+      ),
+    ).toBe(true);
   });
 
-  it("a filter naming 'hidden' is exempt from the 'matches no slot' warning", () => {
-    const items = [
-      { id: "hidden-item", name: "Hidden Item", filter: "internal_hidden" },
-    ];
-    const findings = catalog.validate(items, []);
-    expect(findings.some((f) => f.name === "hidden-item")).toBe(false);
-  });
-
-  it("the 'matches no slot' warning explains the naming convention that silences it", () => {
+  it("the 'matches no slot' warning names the category that silences it", () => {
     const items = [{ id: "stray", name: "Stray", filter: "totally_unknown" }];
     const findings = catalog.validate(items, []);
     const finding = findings.find((f) => f.name === "stray");
-    expect(finding?.message).toMatch(/build_param/);
-    expect(finding?.message).toMatch(/hidden/);
+    expect(finding?.message).toContain(catalog.NO_CATEGORY);
   });
 });
 

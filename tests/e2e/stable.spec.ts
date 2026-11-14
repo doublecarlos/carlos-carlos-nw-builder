@@ -3,6 +3,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import {
+  comboBoxValueId,
   openBuilder,
   ensureSectionExpanded,
   slotRow,
@@ -748,7 +749,9 @@ test("the reference's new mount button opens a mount draft in the layer editor",
   await expect(page.getByTestId("stable-browser")).toHaveCount(0);
   await expect(page.getByTestId("builder-content")).toBeHidden();
   await expect(page.getByTestId("item-name-input")).toHaveValue("");
-  await expect(page.getByTestId("item-filter-input")).toHaveValue("mount");
+  await expect(
+    comboBoxValueId(page.getByTestId("item-filter-input")),
+  ).toHaveText("mount");
 });
 
 test("the reference's new bonus button replaces the draft in an editor already open", async ({
@@ -757,14 +760,16 @@ test("the reference's new bonus button replaces the draft in an editor already o
   await openBuilder(page);
   await openReference(page);
   await page.getByTestId("stable-new-mount").click();
-  await expect(page.getByTestId("item-filter-input")).toHaveValue("mount");
+  await expect(
+    comboBoxValueId(page.getByTestId("item-filter-input")),
+  ).toHaveText("mount");
 
   await openReference(page);
   await page.getByTestId("stable-new-bonus").click();
 
-  await expect(page.getByTestId("item-filter-input")).toHaveValue(
-    "insignia_bonus",
-  );
+  await expect(
+    comboBoxValueId(page.getByTestId("item-filter-input")),
+  ).toHaveText("insignia_bonus");
 });
 
 test("cancelling the discard keeps the open draft and seeds nothing", async ({
@@ -780,7 +785,9 @@ test("cancelling the discard keeps the open draft and seeds nothing", async ({
   await page.getByTestId("confirm-cancel").click();
 
   await expect(page.getByTestId("item-name-input")).toHaveValue("Draft Mount");
-  await expect(page.getByTestId("item-filter-input")).toHaveValue("mount");
+  await expect(
+    comboBoxValueId(page.getByTestId("item-filter-input")),
+  ).toHaveText("mount");
 
   // Nothing left pending for the next visit either.
   await page.locator(".nav-row--build .nav-name").first().click();

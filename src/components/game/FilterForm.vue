@@ -82,7 +82,7 @@ const { draft, error, dirty, displayId } = useEditorDraft<
     sourceId: () => props.source?.id,
     computeId,
   },
-  draftNoun: "filter",
+  draftNoun: "category",
 });
 
 defineExpose({ draft, dirty });
@@ -99,7 +99,7 @@ function save() {
   error.value = "";
   const id = filterId(draft.value);
   if (!id) {
-    error.value = "The filter needs a name.";
+    error.value = "The category needs a name.";
     return;
   }
   emit("save", { filter: toFilter(draft.value, { id }) });
@@ -109,8 +109,8 @@ function save() {
 <template>
   <div>
     <DraftFormBar
-      noun="filter"
-      :title="displayId || 'New filter'"
+      noun="category"
+      :title="displayId || 'New category'"
       :status="status"
       :dirty="dirty"
       :is-new="isNew"
@@ -161,8 +161,8 @@ function save() {
 
     <FormSection>Item fields</FormSection>
     <FormSectionDescription>
-      Fields the item form shows for this category. Fields that no filter claims
-      show on every item.
+      Fields the item form shows for this category. Fields that no category
+      claims show on every item.
     </FormSectionDescription>
     <div class="mb-2 flex flow-wrap gap-x-4 gap-y-1">
       <BaseCheckbox

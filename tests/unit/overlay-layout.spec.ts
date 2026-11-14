@@ -582,6 +582,13 @@ describe("catalog.validateFilters", () => {
       ),
     ).toEqual([]);
   });
+
+  // The category for an item no slot picks is declared for its label, used or not.
+  it("does not warn on an unused no_category", () => {
+    expect(
+      catalog.validateFilters([{ id: catalog.NO_CATEGORY }], [], []),
+    ).toEqual([]);
+  });
 });
 
 // A tested tag reads as raw tag text in an unmet condition until it has a label, and a

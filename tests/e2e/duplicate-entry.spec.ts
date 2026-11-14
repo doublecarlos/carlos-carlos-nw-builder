@@ -2,7 +2,7 @@
 // editable draft pre-filled from the selected entry, saved only on explicit confirmation --
 // never overwrites the original, and Save mints a fresh id since the name is still taken.
 import { test, expect } from "@playwright/test";
-import { openBuilder, setItemFilter } from "./support/app";
+import { comboBoxValueId, openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const ITEM_NAME = "ZZZ Test Duplicate Item";
@@ -32,7 +32,9 @@ test("duplicating an item opens a pre-filled draft that saves as a separate item
   // A brand-new draft, pre-filled from the original -- not yet saved, and the original is
   // still the only row in the list.
   await expect(page.getByTestId("item-name-input")).toHaveValue(ITEM_NAME);
-  await expect(page.getByTestId("item-filter-input")).toHaveValue("gear_head");
+  await expect(
+    comboBoxValueId(page.getByTestId("item-filter-input")),
+  ).toHaveText("gear_head");
   await expect(page.getByRole("button", { name: "Save item" })).toBeVisible();
   await expect(page.locator(".editor-row", { hasText: ITEM_NAME })).toHaveCount(
     1,

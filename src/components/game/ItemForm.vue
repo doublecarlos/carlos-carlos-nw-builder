@@ -215,7 +215,7 @@ function slotForDefaultParam(slotId: string): BuildParameterSlot | undefined {
 const maxCopiesHint = computed(() => {
   const fallback =
     props.db.filterDefaults[draft.value.filter.trim()]?.defaultMaxCopies;
-  return fallback === undefined ? "unlimited" : `${fallback} for this filter`;
+  return fallback === undefined ? "unlimited" : `${fallback} for this category`;
 });
 
 /** The id `toItem` writes: the source's own once one exists, otherwise whatever `computeId`
@@ -245,7 +245,7 @@ function save() {
     return;
   }
   if (!item.filter) {
-    error.value = "The item needs a filter, or no slot can hold it.";
+    error.value = "The item needs a category, or no slot can hold it.";
     return;
   }
   emit("save", { item });
@@ -619,7 +619,7 @@ function showsGroup(group: FieldGroup): boolean {
         />
       </FormField>
       <IdField :id="displayId" label="Id" :existing="Boolean(source)" />
-      <FormField label="Filter (category)">
+      <FormField label="Category">
         <CreatableComboBox
           v-model="draft.filter"
           :options="filterOptions"
@@ -631,7 +631,7 @@ function showsGroup(group: FieldGroup): boolean {
           v-if="draft.filter.trim()"
           data-testid="edit-filter-link"
           @click="$emit('open-filter', draft.filter.trim())"
-          >edit filter</BaseLink
+          >edit category</BaseLink
         >
       </FormField>
       <FormField label="Quality">

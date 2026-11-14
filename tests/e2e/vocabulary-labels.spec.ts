@@ -8,6 +8,10 @@ import {
   pickerMenu,
   comboBoxClear,
   comboBoxValueId,
+  hoverForCard,
+  slotRow,
+  pickerAside,
+  pickerInput,
 } from "./support/app";
 import { layerRow } from "./support/nav";
 import { shippedLabeledTag } from "./support/shippedData";
@@ -224,4 +228,113 @@ test("an equipped condition's tag picker clears with its clear button", async ({
   await grant.getByLabel("Edit as JSON").click();
   const json = await grant.locator("textarea").inputValue();
   expect(JSON.parse(json).when).toBeUndefined();
+});
+
+const RING_SLOT = "gear.ring1";
+
+/** Equips a test ring whose `gear_ring` category this layer redefines as `ringFilter`. */
+async function equipRingWithCategory(
+  page: Page,
+  ringFilter: { id: string; label?: string },
+) {
+  await openBuilder(page);
+  await importText(
+    page,
+    JSON.stringify({
+      name: "Test ring category",
+      choices: { [RING_SLOT]: "test-category-ring" },
+      catalog: {
+        items: {
+          "test-category-ring": {
+            id: "test-category-ring",
+            name: "Test Category Ring",
+            filter: "gear_ring",
+          },
+        },
+        bonuses: {},
+        sectionPresets: {},
+        filters: { gear_ring: ringFilter },
+      },
+    }),
+  );
+  await confirmImport(page);
+  await expect(page.getByTestId("app-header")).toContainText(/imported/i);
+}
+
+// The hover card says what kind of item it is by the item's own category, so the same ring
+// reads the same in any slot.
+test("the item card names a labeled item category", async ({ page }) => {
+  await equipRingWithCategory(page, {
+    id: "gear_ring",
+    label: "Test Ring Category",
+  });
+  await hoverForCard(page, slotRow(page, RING_SLOT).locator(".slot-label"));
+  await expect(page.getByTestId("item-card-category")).toHaveText(
+    "Test Ring Category",
+  );
+});
+
+// The card reads the category off the item, so a picker's preview card names it too.
+test("the item picker's preview card names a labeled item category", async ({
+  page,
+}) => {
+  await equipRingWithCategory(page, {
+    id: "gear_ring",
+    label: "Test Ring Category",
+  });
+  const row = slotRow(page, RING_SLOT);
+  await pickerInput(row).click();
+  await pickerMenu(row)
+    .getByTestId("picker-option")
+    .filter({ hasText: "Test Category Ring" })
+    .hover();
+  const card = pickerAside(row).getByTestId("item-card");
+  await expect(card.getByTestId("item-card-name")).toHaveText(
+    "Test Category Ring",
+  );
+  await expect(card.getByTestId("item-card-category")).toHaveText(
+    "Test Ring Category",
+  );
+});
+
+// An unlabeled category would read as a raw id, so the card names the slot instead.
+test("the item card falls back to the slot label for an unlabeled category", async ({
+  page,
+}) => {
+  await equipRingWithCategory(page, { id: "gear_ring" });
+  const slotLabel = slotRow(page, RING_SLOT).locator(".slot-label");
+  await hoverForCard(page, slotLabel);
+  await expect(page.getByTestId("item-card-category")).toHaveText(
+    (await slotLabel.innerText()).trim(),
+  );
+});
+
+test("the Items tab's category list reads a labeled category by its label", async ({
+  page,
+}) => {
+  await openLabeledLayer(page);
+  const combo = page.getByTestId("item-list-category");
+  await combo.getByTestId("picker-input").fill("Trinket Label");
+  const row = pickerMenu(combo).getByRole("option", { name: FILTER_LABEL });
+  await expect(row.getByTestId("option-row-id")).toHaveText(FILTER);
+  await row.click();
+  await expect(
+    page.locator(".editor-row", { hasText: "Test Trinket" }),
+  ).toBeVisible();
+});
+
+// The Items list names each item's category by label, and the id still finds it.
+test("the Items list shows an item's category label and finds it by label or id", async ({
+  page,
+}) => {
+  await openLabeledLayer(page);
+  const row = page.locator(".editor-row", { hasText: "Test Trinket" });
+  const search = page.locator(".editor-search");
+
+  await search.fill(FILTER_LABEL);
+  await expect(row.getByTestId("editor-row-secondary")).toHaveText(
+    FILTER_LABEL,
+  );
+  await search.fill(FILTER);
+  await expect(row).toBeVisible();
 });

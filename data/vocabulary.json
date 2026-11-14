@@ -1,162 +1,310 @@
 {
   "filters": {
     "artifact": {
+      "label": "Artifact",
       "defaultMaxCopies": 1
     },
     "artifact_call": {
+      "label": "Artifact call buff",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
+    "attributes_campfire": {
+      "label": "Campfire buff"
+    },
     "boon_tier1": {
+      "label": "Tier 1 boon",
       "fields": ["inlineRepetition"]
     },
     "boon_tier2": {
+      "label": "Tier 2 boon",
       "fields": ["inlineRepetition"]
     },
     "boon_tier3": {
+      "label": "Tier 3 boon",
       "fields": ["inlineRepetition"]
     },
     "boon_tier4": {
+      "label": "Tier 4 boon",
       "fields": ["inlineRepetition"]
     },
     "boon_tier_advanced": {
+      "label": "Advanced boon",
       "fields": ["inlineRepetition"]
     },
     "boon_tier_master": {
+      "label": "Master boon",
       "fields": ["inlineRepetition"]
     },
-    "build_param_linked_item": {
+    "class": {
+      "label": "Class",
       "fields": ["publishes"]
     },
     "class_feat": {
+      "label": "Class feat",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
     "class_stuff": {
+      "label": "Class mechanic",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
+    "combat_enchant_defense": {
+      "label": "Guard enchantment"
+    },
+    "combat_enchant_offense": {
+      "label": "Strike enchantment"
+    },
+    "companion": {
+      "label": "Companion"
+    },
+    "companion_enchantment": {
+      "label": "Companion enchantment"
+    },
+    "companion_enhancement": {
+      "label": "Companion enhancement"
+    },
+    "companion_equip": {
+      "label": "Companion equipment"
+    },
     "companion_power": {
+      "label": "Companion power",
       "defaultMaxCopies": 1
     },
+    "consumable_blessing": {
+      "label": "Blessing"
+    },
+    "consumable_elixir": {
+      "label": "Elixir"
+    },
+    "consumable_event_food": {
+      "label": "Event food"
+    },
+    "consumable_event_item": {
+      "label": "Event item"
+    },
+    "consumable_food": {
+      "label": "Food"
+    },
+    "consumable_potion": {
+      "label": "Potion"
+    },
+    "enchantment_bonus": {
+      "label": "Bonus enchantment"
+    },
+    "enchantment_defense": {
+      "label": "Defense enchantment"
+    },
+    "enchantment_offense": {
+      "label": "Offense enchantment"
+    },
+    "enchantment_utility": {
+      "label": "Utility enchantment"
+    },
     "feat1": {
+      "label": "Tier 1 feat",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
     "feat2": {
+      "label": "Tier 2 feat",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
     "feat3": {
+      "label": "Tier 3 feat",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
     "feat4": {
+      "label": "Tier 4 feat",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
     "feat5": {
+      "label": "Tier 5 feat",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
     "gear_armor": {
+      "label": "Armor",
       "fields": ["allowedClass"]
     },
     "gear_arms": {
+      "label": "Arms",
       "fields": ["allowedClass"]
     },
     "gear_boots": {
+      "label": "Boots",
       "fields": ["allowedClass"]
     },
     "gear_head": {
+      "label": "Head",
       "fields": ["allowedClass"]
     },
     "gear_neck": {
+      "label": "Neck",
       "fields": ["allowedClass"]
     },
     "gear_pants": {
+      "label": "Pants",
       "fields": ["allowedClass"]
     },
     "gear_ring": {
+      "label": "Ring",
       "defaultMaxCopies": 1,
       "fields": ["allowedClass"]
     },
     "gear_shirt": {
+      "label": "Shirt",
       "fields": ["allowedClass"]
     },
     "gear_waist": {
+      "label": "Waist",
       "fields": ["allowedClass"]
     },
     "gear_weapon_mainhand": {
+      "label": "Mainhand weapon",
       "fields": ["allowedClass"]
     },
     "gear_weapon_offhand": {
+      "label": "Offhand weapon",
       "fields": ["allowedClass"]
     },
     "group_buff": {
+      "label": "Group buff",
       "defaultMaxCopies": 1
     },
+    "guild_boon_def": {
+      "label": "Guild defense boon"
+    },
+    "guild_boon_off": {
+      "label": "Guild offense boon"
+    },
+    "guild_boon_util": {
+      "label": "Guild utility boon"
+    },
     "insignia": {
+      "label": "Insignia",
       "fields": ["insigniaShape", "preferredVariant"]
     },
     "insignia_bonus": {
+      "label": "Insignia bonus",
       "defaultMaxCopies": 3,
       "fields": ["insigniaRecipe"]
     },
     "leveling_cha": {
+      "label": "CHA leveling bonus",
       "fields": ["inlineRepetition"]
     },
     "leveling_con": {
+      "label": "CON leveling bonus",
       "fields": ["inlineRepetition"]
     },
     "leveling_dex": {
+      "label": "DEX leveling bonus",
       "fields": ["inlineRepetition"]
     },
     "leveling_int": {
+      "label": "INT leveling bonus",
       "fields": ["inlineRepetition"]
     },
     "leveling_str": {
+      "label": "STR leveling bonus",
       "fields": ["inlineRepetition"]
     },
     "leveling_wis": {
+      "label": "WIS leveling bonus",
       "fields": ["inlineRepetition"]
     },
+    "misc": {
+      "label": "Miscellaneous bonus"
+    },
     "modification_armor": {
+      "label": "Armor modification",
       "fields": ["allowedClass"]
     },
     "modification_arms": {
+      "label": "Arms modification",
       "fields": ["allowedClass"]
     },
     "modification_boots": {
+      "label": "Boots modification",
       "fields": ["allowedClass"]
     },
     "modification_head": {
+      "label": "Head modification",
       "fields": ["allowedClass"]
     },
     "modification_mainhand": {
+      "label": "Mainhand modification",
       "fields": ["allowedClass"]
     },
     "modification_offhand_dynamic": {
+      "label": "Offhand modification (ranged)",
       "fields": ["allowedClass"]
     },
     "modification_offhand_static": {
+      "label": "Offhand modification (fixed)",
       "fields": ["allowedClass"]
     },
     "mount": {
+      "label": "Mount",
       "defaultMaxCopies": 1,
       "fields": ["insigniaSlots"]
     },
+    "mount_combat": {
+      "label": "Mount combat power"
+    },
+    "mount_equip": {
+      "label": "Mount equip power"
+    },
+    "no_category": {
+      "label": "No category"
+    },
+    "overload": {
+      "label": "Overload enchantment"
+    },
     "paragon": {
+      "label": "Paragon path",
       "fields": ["allowedClass", "defaultParams"]
     },
+    "pratical_collar": {
+      "label": "Practical collar"
+    },
     "race": {
+      "label": "Race",
       "defaultMaxCopies": 1
     },
     "race_attributes": {
+      "label": "Race ability score",
       "defaultMaxCopies": 1
     },
+    "reinforcement_armor_kit": {
+      "label": "Armor reinforcement kit"
+    },
+    "reinforcement_jewel": {
+      "label": "Reinforcement jewel"
+    },
     "scenario_flag": {
+      "label": "Scenario flag",
       "defaultMaxCopies": 1
+    },
+    "sturdy_collar": {
+      "label": "Sturdy collar"
+    },
+    "supportive_collar": {
+      "label": "Supportive collar"
+    },
+    "trinket": {
+      "label": "Trinket"
+    },
+    "unified_collar": {
+      "label": "Unified collar"
+    },
+    "wayfaring_collar": {
+      "label": "Wayfaring collar"
     }
   },
   "tags": {

@@ -13,7 +13,7 @@ defineProps<{ option: Pick<ComboBoxOption, "value" | "label"> }>();
       {{ option.label }}
     </div>
     <div
-      v-if="option.value !== option.label"
+      v-if="option.value && option.value !== option.label"
       class="overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted"
       data-testid="option-row-id"
     >

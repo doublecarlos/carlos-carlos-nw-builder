@@ -28,6 +28,7 @@ import {
 export interface ItemRow {
   key: string;
   name: string;
+  /** The secondary column: the item's category, by label where it has one. */
   filter: string;
   item: Item | null;
   status: EntryStatus;
@@ -75,7 +76,7 @@ const props = defineProps<{
   statusFilterOptions: { value: string; label: string }[];
   hasUnsavedDraft: (row: EditorRow) => boolean;
   /** The Items tab's category choices. */
-  categories: string[];
+  categories: { value: string; label: string }[];
   /** Names this list's remembered scroll position, per layer and tab. */
   scrollKey: string;
 }>();
@@ -113,7 +114,7 @@ const CHROME: Record<string, SectionChrome> = {
     createTestId: "new-vocabulary-entry",
     searchPlaceholder: "Filter the vocabulary…",
     groups: [
-      { kind: "filter", heading: "Filters", createLabel: "New filter" },
+      { kind: "filter", heading: "Categories", createLabel: "New category" },
       { kind: "tag", heading: "Tags", createLabel: "New tag" },
     ],
   },
@@ -288,7 +289,9 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
             @click.stop="emit('restore', row)"
             ><RotateCcw />restore</BaseButton
           >
-          <span v-else class="text-muted">{{ row.filter }}</span>
+          <span v-else class="text-muted" data-testid="editor-row-secondary">{{
+            row.filter
+          }}</span>
         </div>
       </template>
       <p v-if="!rows.length" class="p-2 text-muted">Nothing matches.</p>

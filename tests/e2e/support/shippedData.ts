@@ -51,9 +51,10 @@ export function shippedItemNamesByTag(tag: string): string[] {
     .sort((a, b) => a.localeCompare(b));
 }
 
-const vocabulary: { tags: Record<string, { label?: string }> } = JSON.parse(
-  readFileSync(path.join(dataDir, "vocabulary.json"), "utf-8"),
-);
+const vocabulary: {
+  filters: Record<string, unknown>;
+  tags: Record<string, { label?: string }>;
+} = JSON.parse(readFileSync(path.join(dataDir, "vocabulary.json"), "utf-8"));
 
 /** Any shipped tag that declares a label, so a spec about label display names none. */
 export function shippedLabeledTag(): { id: string; label: string } {
@@ -61,4 +62,9 @@ export function shippedLabeledTag(): { id: string; label: string } {
     if (label) return { id, label };
   }
   throw new Error("No shipped tag declares a label");
+}
+
+/** The `filters` section of data/vocabulary.json, as written in the file. */
+export function shippedFilters(): Record<string, unknown> {
+  return vocabulary.filters;
 }

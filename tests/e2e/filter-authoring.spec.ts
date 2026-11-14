@@ -1,13 +1,13 @@
 // End-to-end coverage for the filters in the layer editor's Vocabulary tab: authoring a
 // category's copy cap and field groups, including categories that have no declaration yet.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, setItemFilter } from "./support/app";
+import { comboBoxValueId, openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { TEST_HEAD } from "./support/testHead";
 import { importTestCatalog } from "./support/testCatalog";
 
-/** A category items carry with no declaration of its own in data/vocabulary.json. */
-const UNDECLARED = "overload";
+/** A category the test item carries with no declaration anywhere. */
+const UNDECLARED = "test_undeclared";
 
 /** Creates a layer, selects it, and opens the Vocabulary tab. */
 async function openFiltersTab(page: Page) {
@@ -39,7 +39,14 @@ async function openFilter(page: Page, name: string) {
 test("a category with no declaration lists its items and can be given metadata", async ({
   page,
 }) => {
-  await openFiltersTab(page);
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      { id: "test-undeclared", name: "Test Undeclared", filter: UNDECLARED },
+    ],
+  });
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
+  await page.getByTestId("tab-vocabulary").click();
 
   const row = filterRow(page, UNDECLARED).first();
   await page.locator(".editor-search").fill(UNDECLARED);
@@ -75,7 +82,7 @@ test("a shipped filter's cap reaches the item form's blank-field hint", async ({
   await setItemFilter(page, "gear_ring");
   await expect(page.getByTestId("item-max-copies")).toHaveAttribute(
     "placeholder",
-    "3 for this filter",
+    "3 for this category",
   );
 });
 
@@ -130,7 +137,9 @@ test("the item form's edit-filter link opens that category", async ({
 
   await page.locator(".editor-search").fill(TEST_HEAD.name);
   await page.locator(".editor-row").first().click();
-  await expect(page.getByTestId("item-filter-input")).toHaveValue("gear_head");
+  await expect(
+    comboBoxValueId(page.getByTestId("item-filter-input")),
+  ).toHaveText("gear_head");
 
   await page.getByTestId("edit-filter-link").click();
   await expect(page.getByTestId("filter-default-max-copies")).toBeVisible();

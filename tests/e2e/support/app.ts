@@ -293,7 +293,13 @@ export async function setItemFilter(page: Page, filter: string) {
   const input = page.getByTestId("item-filter-input");
   await input.fill(filter);
   await input.blur();
-  await expect(input).toHaveValue(filter);
+  // A labeled category reads as its label with the id beside it, an unlabeled one as the id.
+  const id = comboBoxValueId(input);
+  await expect
+    .poll(async () =>
+      (await id.count()) ? id.innerText() : input.inputValue(),
+    )
+    .toBe(filter);
 }
 
 /** Flips one row of the build editor's "Picker options" menu, then closes it. The menu stays
