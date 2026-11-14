@@ -125,7 +125,8 @@ const isMultiValue = computed(() =>
 const paramKeyOptions = computed(() =>
   paramSlots.value.map((slot) => ({
     value: slot.path,
-    label: `${slot.label} (${slot.path})`,
+    label: slot.label,
+    search: slot.path,
   })),
 );
 
@@ -224,6 +225,7 @@ const searchableInputs = computed(() =>
         :options="tagOptions"
         testid="condition-tag"
         show-empty-option
+        show-value
       />
     </FormField>
     <FormField
@@ -255,10 +257,16 @@ const searchableInputs = computed(() =>
         :model-value="row.key"
         :options="paramKeyOptions"
         placeholder="- parameter -"
+        show-value
+        menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
         :phone-screen="stacked"
         screen-label="Parameter"
         @update:model-value="changeParamKey"
-      />
+      >
+        <template #option="{ option }">
+          <OptionRow :option="option" />
+        </template>
+      </ComboBox>
     </FormField>
     <FormField
       v-else-if="field === 'inputKey'"
@@ -270,6 +278,7 @@ const searchableInputs = computed(() =>
         data-testid="condition-input-key"
         :model-value="row.key"
         :options="searchableInputs"
+        show-value
         :placeholder="
           inputOptions.length ? '- input -' : '- no inputs declared -'
         "

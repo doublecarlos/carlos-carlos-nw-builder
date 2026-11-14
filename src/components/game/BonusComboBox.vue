@@ -3,8 +3,9 @@
 // (ItemBonuses.vue), and naming which bonus an occurrence condition (ConditionRows.vue) or a
 // tier (BonusRows.vue) counts.
 //
-// A row is an OptionRow (name, id under it). A query matches either; ComboBox itself
-// leads with a row whose id is exactly what was typed.
+// A row is an OptionRow (name, id under it), and the closed box reads the name with the id
+// beside it. A query matches either; ComboBox itself leads with a row whose id is exactly what
+// was typed.
 //
 // `self` is for the occurrence pickers, where the bonus being edited is the usual target: it
 // offers "this bonus" as the first row and as what an empty value reads as, the data's own
@@ -49,6 +50,7 @@ const closedDisplay = computed(() =>
     :options="searchable"
     :placeholder="placeholder"
     :show-empty-option="self"
+    show-value
     :closed-display="closedDisplay"
     :phone-screen="phoneScreen"
     :screen-label="screenLabel"

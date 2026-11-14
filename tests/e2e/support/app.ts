@@ -101,6 +101,16 @@ export function pickerMenu(scope: Locator): Locator {
   return scope.page().getByTestId("picker-menu");
 }
 
+/** The id a closed combobox shows beside its label (`showValue`), given its input. */
+export function comboBoxValueId(input: Locator): Locator {
+  return input.locator("xpath=..").getByTestId("combobox-value-id");
+}
+
+/** A combobox's in-field clear button, given its input. */
+export function comboBoxClear(input: Locator): Locator {
+  return input.locator("xpath=..").getByTestId("combobox-clear");
+}
+
 /** The detail panel beside the floating menu a combobox inside `scope` opened. */
 export function pickerAside(scope: Locator): Locator {
   return scope.page().getByTestId("picker-aside");

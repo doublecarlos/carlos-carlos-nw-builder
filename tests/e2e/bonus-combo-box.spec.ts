@@ -4,6 +4,8 @@
 // occurrence leaf defaults to the bonus it sits in.
 import { test, expect, type Page, type Locator } from "@playwright/test";
 import {
+  comboBoxClear,
+  comboBoxValueId,
   confirmImport,
   importText,
   openBuilder,
@@ -159,4 +161,95 @@ test("the excludes editor offers the same name-and-id rows, by id or name, and n
   const chip = excludes.getByTestId("token-chip");
   await expect(chip).toHaveText(/Zed Pick/);
   await expect(chip).toHaveAttribute("data-value", SHORT_ID);
+});
+
+// A closed picker names the bonus and its id, so neither half of an open row is lost once
+// picked; opening it keeps the pick in view as the placeholder.
+test("a picked bonus reads its name with the id beside it, and stays as the open placeholder", async ({
+  page,
+}) => {
+  const row = await openOccurrenceLeaf(page);
+  const picker = bonusPicker(row);
+  await picker.click();
+  await menuOptions(page).filter({ hasText: "Aardvark Pick" }).click();
+
+  await expect(picker).toHaveValue("Aardvark Pick");
+  await expect(comboBoxValueId(picker)).toHaveText(LONG_ID);
+
+  await picker.click();
+  await expect(picker).toHaveValue("");
+  await expect(picker).toHaveAttribute("placeholder", "Aardvark Pick");
+});
+
+// "this bonus" is the empty value, so it has no id beside it and nothing to clear.
+test("the clear button returns an occurrence leaf to this bonus, and a required pick has none", async ({
+  page,
+}) => {
+  const row = await openOccurrenceLeaf(page);
+  const picker = bonusPicker(row);
+  await expect(comboBoxValueId(picker)).toHaveCount(0);
+  await expect(comboBoxClear(picker)).toHaveCount(0);
+  // The leaf type is always set, so its picker offers no way to empty it.
+  await expect(
+    comboBoxClear(row.getByTestId("picker-input").first()),
+  ).toHaveCount(0);
+
+  await picker.click();
+  await picker.fill(SHORT_ID);
+  await menuOptions(page).filter({ hasText: "Zed Pick" }).click();
+  await comboBoxClear(picker).click();
+  await expect(picker).toHaveValue("this bonus");
+  await expect(comboBoxClear(picker)).toHaveCount(0);
+});
+
+// The inline picker is narrow, so the id has to give way to the name rather than overlap it or
+// spill out of the box.
+test(
+  "a closed picker's id sits after the name and inside the box",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    const row = await openOccurrenceLeaf(page);
+    const picker = bonusPicker(row);
+    await picker.click();
+    await menuOptions(page).filter({ hasText: "Aardvark Pick" }).click();
+
+    const id = comboBoxValueId(picker);
+    const labelCopy = id.locator("xpath=preceding-sibling::span");
+    const box = (await picker.boundingBox())!;
+    const idBox = (await id.boundingBox())!;
+    const labelBox = (await labelCopy.boundingBox())!;
+    expect(idBox.width).toBeGreaterThan(0);
+    expect(idBox.x).toBeGreaterThanOrEqual(labelBox.x + labelBox.width);
+    expect(idBox.x + idBox.width).toBeLessThanOrEqual(box.x + box.width);
+    expect(idBox.y).toBeGreaterThanOrEqual(box.y);
+    expect(idBox.y + idBox.height).toBeLessThanOrEqual(box.y + box.height);
+  },
+);
+
+// The id may be cut short in the narrow box, so hovering the closed picker shows the name and
+// the full id; an open picker has its list instead, and no bubble over it.
+test("a closed picker's tooltip names the bonus and its full id, and an open one has none", async ({
+  page,
+}) => {
+  const row = await openOccurrenceLeaf(page);
+  const picker = bonusPicker(row);
+  await picker.click();
+  await menuOptions(page).filter({ hasText: "Aardvark Pick" }).click();
+
+  const tooltip = page.getByTestId("tooltip");
+  await picker.hover();
+  await expect(tooltip).toContainText("Aardvark Pick");
+  await expect(tooltip).toContainText(LONG_ID);
+
+  await picker.click();
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(tooltip).toHaveCount(0);
+
+  // Keyboard focus opens the list too, which takes the place of the bubble.
+  await picker.press("Escape");
+  await page.mouse.move(0, 0);
+  // A script's focus right after a key press reads as keyboard focus.
+  await picker.focus();
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(tooltip).toHaveCount(0);
 });
