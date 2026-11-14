@@ -200,6 +200,22 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
       };
     }
   }
+  // Class items once had the `build_param_linked_item` category and the class slot selected
+  // them by the `class` tag. Both now use the `class` category.
+  for (const [id, item] of Object.entries(overlay.items)) {
+    if (item?.filter === "build_param_linked_item")
+      overlay.items[id] = { ...item, filter: "class" };
+  }
+  const classSlot = overlay.slots["options.class"];
+  if (
+    classSlot?.type === "item_picker" &&
+    !classSlot.filter &&
+    classSlot.tags?.length === 1 &&
+    classSlot.tags[0] === "class"
+  ) {
+    const { tags: _dropped, ...rest } = classSlot;
+    overlay.slots["options.class"] = { ...rest, filter: "class" };
+  }
   if (isStringList(source.sectionOrder))
     overlay.sectionOrder = [...source.sectionOrder];
   return overlay;
