@@ -225,3 +225,31 @@ test(
     expect(idBox.y + idBox.height).toBeLessThanOrEqual(box.y + box.height);
   },
 );
+
+// The id may be cut short in the narrow box, so hovering the closed picker shows the name and
+// the full id; an open picker has its list instead, and no bubble over it.
+test("a closed picker's tooltip names the bonus and its full id, and an open one has none", async ({
+  page,
+}) => {
+  const row = await openOccurrenceLeaf(page);
+  const picker = bonusPicker(row);
+  await picker.click();
+  await menuOptions(page).filter({ hasText: "Aardvark Pick" }).click();
+
+  const tooltip = page.getByTestId("tooltip");
+  await picker.hover();
+  await expect(tooltip).toContainText("Aardvark Pick");
+  await expect(tooltip).toContainText(LONG_ID);
+
+  await picker.click();
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(tooltip).toHaveCount(0);
+
+  // Keyboard focus opens the list too, which takes the place of the bubble.
+  await picker.press("Escape");
+  await page.mouse.move(0, 0);
+  // A script's focus right after a key press reads as keyboard focus.
+  await picker.focus();
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(tooltip).toHaveCount(0);
+});

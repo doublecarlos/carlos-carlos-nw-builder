@@ -46,6 +46,10 @@ export interface ComboBoxExposed {
 // muted, for pickers over named ids. The box's value stays the label, so assistive tech reads
 // the name; the id is an overlay that truncates before the label does.
 //
+// The id truncates in a narrow box, so a closed box showing one gets a tooltip with the label
+// and the full id. The tooltip wraps the whole box rather than the input, so the input keeps
+// its own `aria-describedby`.
+//
 // With `showEmptyOption`, a filled box also gets a clear button in place of the ▾, kept out of
 // the tab order: the "- empty -" row is the keyboard route.
 import {
@@ -74,6 +78,7 @@ import BaseButton from "./BaseButton.vue";
 import { trackPickerOpen } from "../../composables/useOpenPickers";
 import BaseSheet from "./BaseSheet.vue";
 import IconButton from "./IconButton.vue";
+import BaseTooltip from "./BaseTooltip.vue";
 import { Info, X } from "@lucide/vue";
 
 const props = withDefaults(
@@ -140,6 +145,9 @@ const props = withDefaults(
     detailTitle: "Details",
   },
 );
+
+// The caller's classes and attributes belong on the box, not on the tooltip's wrapper.
+defineOptions({ inheritAttrs: false });
 
 const { id: controlId, describedBy } = useFormFieldControl(() => props.inputId);
 
@@ -315,6 +323,14 @@ const shownValue = computed(() => {
   const value = selected.value?.value ?? "";
   return props.showValue && value !== closedText.value ? value : "";
 });
+
+/** The label and full id, while the closed box shows an id that may be cut short. */
+const valueTooltip = computed(() =>
+  shownValue.value && !(open.value && !screen.value)
+    ? `${closedText.value}
+${shownValue.value}`
+    : "",
+);
 
 const clearable = computed(
   () => props.showEmptyOption && !props.readonly && Boolean(model.value),
@@ -586,237 +602,232 @@ for (const target of keyTargets) {
 </script>
 
 <template>
-  <div class="relative">
-    <input
-      :id="controlId"
-      ref="input"
-      :aria-describedby="describedBy"
-      data-testid="picker-input"
-      class="w-full rounded-md border bg-surface py-0.5 pl-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-      :class="[
-        invalid
-          ? 'border-danger'
-          : tone
-            ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
-            : 'border-line',
-        tone && 'text-(--tone)',
-        clearable
-          ? 'pr-7 pointer-coarse:pr-[calc(var(--spacing-tap)+0.25rem)]'
-          : 'pr-6',
-        placeholderClass,
-        inputClass,
-        $slots.closed && closedOption && 'text-transparent',
-      ]"
-      :data-filled="model ? '' : undefined"
-      :style="tone ? { '--tone': tone } : undefined"
-      type="text"
-      :readonly="readonly || screen"
-      :role="readonly ? undefined : 'combobox'"
-      :aria-autocomplete="readonly || screen ? undefined : 'list'"
-      :aria-haspopup="screen ? 'dialog' : undefined"
-      :aria-expanded="readonly ? undefined : open ? 'true' : 'false'"
-      :aria-controls="open && !screen ? listboxId : undefined"
-      :aria-activedescendant="screen ? undefined : activeDescendant"
-      :aria-invalid="invalid ? 'true' : undefined"
-      autocomplete="off"
-      spellcheck="false"
-      :value="open && !screen ? query : closedText"
-      :title="
-        titleInput
-          ? shownValue
-            ? `${closedText}
-${shownValue}`
-            : closedText
-          : ''
-      "
-      :placeholder="closedText || placeholder"
-      @focus="onFocus"
-      @click="onTriggerClick"
-      @input="onInput"
-      @blur="onBlur"
-    />
-    <!-- Over the box's own text, which goes transparent but stays its value. -->
-    <div
-      v-if="$slots.closed && closedOption"
-      class="pointer-events-none absolute inset-y-0 left-0 right-6 flex min-w-0 flex-col justify-center pl-1.5"
-      :class="tone && 'text-(--tone)'"
-      :style="tone ? { '--tone': tone } : undefined"
-      data-testid="picker-closed"
-    >
-      <slot name="closed" :option="closedOption" />
-    </div>
-    <ComboBoxValueId
-      v-if="shownValue && closedOption && !$slots.closed"
-      :label="closedText"
-      :value="shownValue"
-      :class="
-        clearable
-          ? 'right-7 pointer-coarse:right-[calc(var(--spacing-tap)+0.25rem)]'
-          : 'right-6'
-      "
-    />
-    <IconButton
-      v-if="clearable"
-      class="absolute right-1 top-1/2 -translate-y-1/2"
-      title="Clear"
-      tabindex="-1"
-      data-testid="combobox-clear"
-      @mousedown.prevent
-      @click="clear"
-    >
-      <X />
-    </IconButton>
-    <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
+  <BaseTooltip :text="valueTooltip">
+    <div class="relative" v-bind="$attrs">
+      <input
+        :id="controlId"
+        ref="input"
+        :aria-describedby="describedBy"
+        data-testid="picker-input"
+        class="w-full rounded-md border bg-surface py-0.5 pl-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        :class="[
+          invalid
+            ? 'border-danger'
+            : tone
+              ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
+              : 'border-line',
+          tone && 'text-(--tone)',
+          clearable
+            ? 'pr-7 pointer-coarse:pr-[calc(var(--spacing-tap)+0.25rem)]'
+            : 'pr-6',
+          placeholderClass,
+          inputClass,
+          $slots.closed && closedOption && 'text-transparent',
+        ]"
+        :data-filled="model ? '' : undefined"
+        :style="tone ? { '--tone': tone } : undefined"
+        type="text"
+        :readonly="readonly || screen"
+        :role="readonly ? undefined : 'combobox'"
+        :aria-autocomplete="readonly || screen ? undefined : 'list'"
+        :aria-haspopup="screen ? 'dialog' : undefined"
+        :aria-expanded="readonly ? undefined : open ? 'true' : 'false'"
+        :aria-controls="open && !screen ? listboxId : undefined"
+        :aria-activedescendant="screen ? undefined : activeDescendant"
+        :aria-invalid="invalid ? 'true' : undefined"
+        autocomplete="off"
+        spellcheck="false"
+        :value="open && !screen ? query : closedText"
+        :title="titleInput && !shownValue ? closedText : ''"
+        :placeholder="closedText || placeholder"
+        @focus="onFocus"
+        @click="onTriggerClick"
+        @input="onInput"
+        @blur="onBlur"
+      />
+      <!-- Over the box's own text, which goes transparent but stays its value. -->
+      <div
+        v-if="$slots.closed && closedOption"
+        class="pointer-events-none absolute inset-y-0 left-0 right-6 flex min-w-0 flex-col justify-center pl-1.5"
+        :class="tone && 'text-(--tone)'"
+        :style="tone ? { '--tone': tone } : undefined"
+        data-testid="picker-closed"
+      >
+        <slot name="closed" :option="closedOption" />
+      </div>
+      <ComboBoxValueId
+        v-if="shownValue && closedOption && !$slots.closed"
+        :label="closedText"
+        :value="shownValue"
+        :class="
+          clearable
+            ? 'right-7 pointer-coarse:right-[calc(var(--spacing-tap)+0.25rem)]'
+            : 'right-6'
+        "
+      />
+      <IconButton
+        v-if="clearable"
+        class="absolute right-1 top-1/2 -translate-y-1/2"
+        title="Clear"
+        tabindex="-1"
+        data-testid="combobox-clear"
+        @mousedown.prevent
+        @click="clear"
+      >
+        <X />
+      </IconButton>
+      <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
          this text input is actually a fixed-choice dropdown. -->
-    <span
-      v-else-if="!readonly"
-      class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted"
-      >▾</span
-    >
+      <span
+        v-else-if="!readonly"
+        class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted"
+        >▾</span
+      >
 
-    <!-- One set of rows for either presentation: the floating menu, or the phone screen. -->
-    <component
-      :is="screen ? ComboBoxScreen : ComboBoxMenu"
-      v-if="open"
-      ref="list"
-      v-bind="
-        screen
-          ? { label: screenLabel, listboxId, onClose: closeScreen }
-          : { menuClass, listboxId }
-      "
-    >
-      <template v-if="screen" #search>
-        <input
-          ref="searchInput"
-          data-testid="picker-search"
-          class="w-full rounded-md border border-line bg-surface px-2 py-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="text"
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded="true"
-          :aria-controls="listboxId"
-          :aria-activedescendant="activeDescendant"
-          :aria-label="screenLabel"
-          autocomplete="off"
-          spellcheck="false"
-          enterkeyhint="done"
-          placeholder="Search…"
-          :value="query"
-          @input="onInput"
-        />
-      </template>
-      <template v-if="screen && $slots.actions" #actions>
-        <slot name="actions" :close="closeScreen" />
-      </template>
-      <template v-else-if="$slots.actions" #footer>
-        <slot name="actions" :close="closeMenu" />
-      </template>
-      <!-- Keyed by position: one option may be listed under several headings, so two rows can
+      <!-- One set of rows for either presentation: the floating menu, or the phone screen. -->
+      <component
+        :is="screen ? ComboBoxScreen : ComboBoxMenu"
+        v-if="open"
+        ref="list"
+        v-bind="
+          screen
+            ? { label: screenLabel, listboxId, onClose: closeScreen }
+            : { menuClass, listboxId }
+        "
+      >
+        <template v-if="screen" #search>
+          <input
+            ref="searchInput"
+            data-testid="picker-search"
+            class="w-full rounded-md border border-line bg-surface px-2 py-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="text"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded="true"
+            :aria-controls="listboxId"
+            :aria-activedescendant="activeDescendant"
+            :aria-label="screenLabel"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="done"
+            placeholder="Search…"
+            :value="query"
+            @input="onInput"
+          />
+        </template>
+        <template v-if="screen && $slots.actions" #actions>
+          <slot name="actions" :close="closeScreen" />
+        </template>
+        <template v-else-if="$slots.actions" #footer>
+          <slot name="actions" :close="closeMenu" />
+        </template>
+        <!-- Keyed by position: one option may be listed under several headings, so two rows can
            share a value. -->
-      <template v-for="(row, index) in rows" :key="index">
-        <!-- A heading: named for assistive tech, but not an option and never a cursor stop. -->
-        <ComboBoxMenuRow
-          v-if="row.kind === 'group'"
-          presentational
-          testid="picker-group"
-        >
-          <slot name="group" :label="row.label" :depth="row.depth">
-            <span
-              class="text-xs font-semibold uppercase text-muted"
-              :style="treeIndent(row.depth)"
-              >{{ row.label }}</span
-            >
-          </slot>
-        </ComboBoxMenuRow>
-
-        <ComboBoxMenuRow
-          v-else-if="row.kind === 'empty'"
-          :id="optionId(index)"
-          muted
-          :highlighted="highlight === index"
-          :selected="model === ''"
-          @mousedown.prevent="onRowMousedown(row)"
-          @click="onRowClick(row)"
-          @mousemove="onRowPointer($event, index)"
-        >
-          <slot name="empty">- empty -</slot>
-        </ComboBoxMenuRow>
-
-        <ComboBoxMenuRow
-          v-else
-          :id="optionId(index)"
-          :title="titleRows && row.option.label"
-          :highlighted="highlight === index"
-          :selected="row.option.value === model"
-          @mousedown.prevent="onRowMousedown(row)"
-          @click="onRowClick(row)"
-          @mousemove="onRowPointer($event, index)"
-        >
-          <div class="flex items-center gap-1">
-            <div class="min-w-0 flex-1">
-              <slot
-                v-if="$slots.option"
-                name="option"
-                :option="row.option"
-                :highlighted="highlight === index"
-                :depth="row.depth"
-              />
-              <div
-                v-else
-                class="flex items-baseline gap-1.5"
+        <template v-for="(row, index) in rows" :key="index">
+          <!-- A heading: named for assistive tech, but not an option and never a cursor stop. -->
+          <ComboBoxMenuRow
+            v-if="row.kind === 'group'"
+            presentational
+            testid="picker-group"
+          >
+            <slot name="group" :label="row.label" :depth="row.depth">
+              <span
+                class="text-xs font-semibold uppercase text-muted"
                 :style="treeIndent(row.depth)"
+                >{{ row.label }}</span
               >
-                <span
-                  class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
-                  >{{ row.option.label }}</span
+            </slot>
+          </ComboBoxMenuRow>
+
+          <ComboBoxMenuRow
+            v-else-if="row.kind === 'empty'"
+            :id="optionId(index)"
+            muted
+            :highlighted="highlight === index"
+            :selected="model === ''"
+            @mousedown.prevent="onRowMousedown(row)"
+            @click="onRowClick(row)"
+            @mousemove="onRowPointer($event, index)"
+          >
+            <slot name="empty">- empty -</slot>
+          </ComboBoxMenuRow>
+
+          <ComboBoxMenuRow
+            v-else
+            :id="optionId(index)"
+            :title="titleRows && row.option.label"
+            :highlighted="highlight === index"
+            :selected="row.option.value === model"
+            @mousedown.prevent="onRowMousedown(row)"
+            @click="onRowClick(row)"
+            @mousemove="onRowPointer($event, index)"
+          >
+            <div class="flex items-center gap-1">
+              <div class="min-w-0 flex-1">
+                <slot
+                  v-if="$slots.option"
+                  name="option"
+                  :option="row.option"
+                  :highlighted="highlight === index"
+                  :depth="row.depth"
+                />
+                <div
+                  v-else
+                  class="flex items-baseline gap-1.5"
+                  :style="treeIndent(row.depth)"
                 >
+                  <span
+                    class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+                    >{{ row.option.label }}</span
+                  >
+                </div>
               </div>
+              <IconButton
+                v-if="screen && $slots.detail"
+                class="shrink-0"
+                :title="`About ${row.option.label}`"
+                data-testid="picker-option-info"
+                @mousedown.stop
+                @click.stop="openDetail(row.option)"
+                ><Info
+              /></IconButton>
             </div>
-            <IconButton
-              v-if="screen && $slots.detail"
-              class="shrink-0"
-              :title="`About ${row.option.label}`"
-              data-testid="picker-option-info"
-              @mousedown.stop
-              @click.stop="openDetail(row.option)"
-              ><Info
-            /></IconButton>
-          </div>
+          </ComboBoxMenuRow>
+        </template>
+
+        <ComboBoxMenuRow v-if="!filtered.length" muted presentational>
+          <slot name="no-match">no match</slot>
         </ComboBoxMenuRow>
-      </template>
+        <ComboBoxMenuRow v-if="hiddenCount" muted presentational>
+          <slot name="more" :count="hiddenCount">{{ hiddenCount }} more</slot>
+        </ComboBoxMenuRow>
 
-      <ComboBoxMenuRow v-if="!filtered.length" muted presentational>
-        <slot name="no-match">no match</slot>
-      </ComboBoxMenuRow>
-      <ComboBoxMenuRow v-if="hiddenCount" muted presentational>
-        <slot name="more" :count="hiddenCount">{{ hiddenCount }} more</slot>
-      </ComboBoxMenuRow>
+        <template v-if="$slots.aside && !screen" #aside
+          ><slot name="aside"
+        /></template>
+      </component>
 
-      <template v-if="$slots.aside && !screen" #aside
-        ><slot name="aside"
-      /></template>
-    </component>
-
-    <BaseSheet
-      v-if="screen && open && detailOption"
-      side="bottom"
-      above-modal
-      :title="detailTitle"
-      data-testid="picker-detail"
-      @close="closeDetail"
-    >
-      <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
-        <slot name="detail" :option="detailOption" />
-      </div>
-      <div class="flex-none border-t border-line p-2">
-        <BaseButton
-          variant="primary"
-          class="w-full justify-center"
-          data-testid="picker-detail-choose"
-          @click="choose(detailOption)"
-          >Choose</BaseButton
-        >
-      </div>
-    </BaseSheet>
-  </div>
+      <BaseSheet
+        v-if="screen && open && detailOption"
+        side="bottom"
+        above-modal
+        :title="detailTitle"
+        data-testid="picker-detail"
+        @close="closeDetail"
+      >
+        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
+          <slot name="detail" :option="detailOption" />
+        </div>
+        <div class="flex-none border-t border-line p-2">
+          <BaseButton
+            variant="primary"
+            class="w-full justify-center"
+            data-testid="picker-detail-choose"
+            @click="choose(detailOption)"
+            >Choose</BaseButton
+          >
+        </div>
+      </BaseSheet>
+    </div>
+  </BaseTooltip>
 </template>

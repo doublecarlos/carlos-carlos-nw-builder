@@ -44,7 +44,16 @@ const props = withDefaults(
 const wrapper = useTemplateRef<HTMLElement>("wrapper");
 const popover = useTemplateRef<InstanceType<typeof BasePopover>>("popover");
 const tooltipId = useId();
-const { open, show, attach, detach } = useTooltipController();
+const { open, show, hide, attach, detach } = useTooltipController();
+
+// Text emptied while showing closes the bubble, as a trigger that turns into something else
+// (a combobox opening its list) would otherwise leave it over what it became.
+watch(
+  () => props.text,
+  (text) => {
+    if (!text) hide();
+  },
+);
 
 /** The slotted element the tooltip belongs to. Resolved from the DOM rather than taken as a
  *  prop so callers just wrap their existing markup. `firstElementChild` is unambiguous: the

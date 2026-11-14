@@ -14,7 +14,9 @@
 //
 // An untyped open highlights the current value, so Enter or Tab through the field keeps it.
 // `showEmptyOption` adds an "- empty -" row on that open, the keyboard way to clear the
-// field, and a clear button kept out of the tab order while it is filled.
+// field, and a clear button kept out of the tab order while it is filled. A closed field
+// showing a value has a tooltip with the label and the full value, wrapping the whole field so
+// the input keeps its own `aria-describedby`.
 import { X } from "@lucide/vue";
 import { computed, watch, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
@@ -26,6 +28,7 @@ import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 import ComboBoxValueId from "./ComboBoxValueId.vue";
 import OptionRow from "./OptionRow.vue";
 import IconButton from "./IconButton.vue";
+import BaseTooltip from "./BaseTooltip.vue";
 import type { ComboBoxOption } from "./ComboBox.vue";
 
 const MAX_SUGGESTIONS = 40;
@@ -48,6 +51,9 @@ const props = withDefaults(
     showValue: false,
   },
 );
+
+// The caller's classes and attributes belong on the field, not on the tooltip's wrapper.
+defineOptions({ inheritAttrs: false });
 
 const model = defineModel<string>({ default: "" });
 const { id: controlId, describedBy } = useFormFieldControl();
@@ -95,6 +101,14 @@ const closedText = computed(() =>
 /** The value shown after the label, unless it would repeat it. */
 const shownValue = computed(() =>
   props.showValue && model.value !== closedText.value ? model.value : "",
+);
+
+/** The label and full value, while the closed field shows a value that may be cut short. */
+const valueTooltip = computed(() =>
+  shownValue.value && !open.value
+    ? `${closedText.value}
+${shownValue.value}`
+    : "",
 );
 
 const clearable = computed(() => props.showEmptyOption && Boolean(model.value));
@@ -195,85 +209,81 @@ onKeyStroke(
 </script>
 
 <template>
-  <div class="relative">
-    <input
-      :id="controlId"
-      ref="input"
-      :aria-describedby="describedBy"
-      class="w-full rounded-md border border-line bg-surface py-0.5 pl-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-      :class="[
-        model ? 'placeholder:text-text' : 'placeholder:text-muted',
-        clearable
-          ? 'pr-7 pointer-coarse:pr-[calc(var(--spacing-tap)+0.25rem)]'
-          : 'pr-1.5',
-      ]"
-      type="text"
-      role="combobox"
-      aria-autocomplete="list"
-      :aria-expanded="menuOpen ? 'true' : 'false'"
-      :aria-controls="menuOpen ? listboxId : undefined"
-      :aria-activedescendant="activeDescendant"
-      autocomplete="off"
-      spellcheck="false"
-      :value="open ? query : closedText"
-      :title="
-        shownValue
-          ? `${closedText}
-${shownValue}`
-          : undefined
-      "
-      :placeholder="shownPlaceholder"
-      :data-testid="testid"
-      @focus="onFocus"
-      @click="onClick"
-      @input="onInput"
-      @blur="onBlur"
-    />
-    <ComboBoxValueId
-      v-if="shownValue && !open"
-      :label="closedText"
-      :value="shownValue"
-      :class="
-        clearable
-          ? 'right-7 pointer-coarse:right-[calc(var(--spacing-tap)+0.25rem)]'
-          : 'right-1.5'
-      "
-    />
-    <IconButton
-      v-if="clearable"
-      class="absolute right-1 top-1/2 -translate-y-1/2"
-      title="Clear"
-      tabindex="-1"
-      data-testid="combobox-clear"
-      @mousedown.prevent
-      @click="clear"
-    >
-      <X />
-    </IconButton>
-
-    <ComboBoxMenu v-if="menuOpen" ref="menu" :listbox-id="listboxId">
-      <ComboBoxMenuRow
-        v-for="(entry, index) in entries"
-        :id="optionId(index)"
-        :key="entry.value"
-        :muted="entry === EMPTY"
-        :highlighted="index === highlight"
-        :selected="entry.value === model"
-        @mousedown.prevent="commit(entry.value)"
-        @mousemove="pointAt($event, index)"
+  <BaseTooltip :text="valueTooltip">
+    <div class="relative" v-bind="$attrs">
+      <input
+        :id="controlId"
+        ref="input"
+        :aria-describedby="describedBy"
+        class="w-full rounded-md border border-line bg-surface py-0.5 pl-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        :class="[
+          model ? 'placeholder:text-text' : 'placeholder:text-muted',
+          clearable
+            ? 'pr-7 pointer-coarse:pr-[calc(var(--spacing-tap)+0.25rem)]'
+            : 'pr-1.5',
+        ]"
+        type="text"
+        role="combobox"
+        aria-autocomplete="list"
+        :aria-expanded="menuOpen ? 'true' : 'false'"
+        :aria-controls="menuOpen ? listboxId : undefined"
+        :aria-activedescendant="activeDescendant"
+        autocomplete="off"
+        spellcheck="false"
+        :value="open ? query : closedText"
+        :placeholder="shownPlaceholder"
+        :data-testid="testid"
+        @focus="onFocus"
+        @click="onClick"
+        @input="onInput"
+        @blur="onBlur"
+      />
+      <ComboBoxValueId
+        v-if="shownValue && !open"
+        :label="closedText"
+        :value="shownValue"
+        :class="
+          clearable
+            ? 'right-7 pointer-coarse:right-[calc(var(--spacing-tap)+0.25rem)]'
+            : 'right-1.5'
+        "
+      />
+      <IconButton
+        v-if="clearable"
+        class="absolute right-1 top-1/2 -translate-y-1/2"
+        title="Clear"
+        tabindex="-1"
+        data-testid="combobox-clear"
+        @mousedown.prevent
+        @click="clear"
       >
-        <span class="flex items-center gap-2">
-          <span v-if="entry === EMPTY">{{ entry.label }}</span>
-          <span v-else class="min-w-0 flex-1"
-            ><OptionRow :option="entry"
-          /></span>
-          <span
-            v-if="freeValue && entry.value === freeValue"
-            class="ml-auto rounded bg-ok/25 px-1.5 text-ok"
-            >new</span
-          >
-        </span>
-      </ComboBoxMenuRow>
-    </ComboBoxMenu>
-  </div>
+        <X />
+      </IconButton>
+
+      <ComboBoxMenu v-if="menuOpen" ref="menu" :listbox-id="listboxId">
+        <ComboBoxMenuRow
+          v-for="(entry, index) in entries"
+          :id="optionId(index)"
+          :key="entry.value"
+          :muted="entry === EMPTY"
+          :highlighted="index === highlight"
+          :selected="entry.value === model"
+          @mousedown.prevent="commit(entry.value)"
+          @mousemove="pointAt($event, index)"
+        >
+          <span class="flex items-center gap-2">
+            <span v-if="entry === EMPTY">{{ entry.label }}</span>
+            <span v-else class="min-w-0 flex-1"
+              ><OptionRow :option="entry"
+            /></span>
+            <span
+              v-if="freeValue && entry.value === freeValue"
+              class="ml-auto rounded bg-ok/25 px-1.5 text-ok"
+              >new</span
+            >
+          </span>
+        </ComboBoxMenuRow>
+      </ComboBoxMenu>
+    </div>
+  </BaseTooltip>
 </template>
