@@ -19,25 +19,33 @@ const items: {
   hideFromPicker?: boolean;
 }[] = JSON.parse(readFileSync(path.join(dataDir, "db-items.json"), "utf-8"));
 
+const vocabulary: {
+  filters: Record<string, { label?: string }>;
+  tags: Record<string, { label?: string }>;
+} = JSON.parse(readFileSync(path.join(dataDir, "vocabulary.json"), "utf-8"));
+
+const sections: {
+  slots: { id: string; label?: string; filter?: string }[];
+}[] = JSON.parse(
+  readFileSync(path.join(dataDir, "slots.json"), "utf-8"),
+).sections;
+
+/** What a shipped slot's row is called, from data/slots.json -- the same reason
+ *  `shippedItemName` exists. A slot without a label reads its category's, as the app does. */
+export function shippedSlotLabel(slotId: string): string {
+  const slot = sections
+    .flatMap((section) => section.slots)
+    .find((s) => s.id === slotId);
+  if (!slot) throw new Error(`No shipped slot with id "${slotId}"`);
+  const category = slot.filter ? vocabulary.filters[slot.filter] : undefined;
+  return slot.label || category?.label || slot.id;
+}
+
 /** The shipped item's own `name`, straight from data/db-items.json. */
 export function shippedItemName(itemId: string): string {
   const item = items.find((i) => i.id === itemId);
   if (!item) throw new Error(`No shipped item with id "${itemId}"`);
   return item.name;
-}
-
-const sections: { slots: { id: string; label?: string }[] }[] = JSON.parse(
-  readFileSync(path.join(dataDir, "slots.json"), "utf-8"),
-).sections;
-
-/** The shipped slot's own `label`, straight from data/slots.json -- the same reason
- *  `shippedItemName` exists, for a spec asserting on what a row is called. */
-export function shippedSlotLabel(slotId: string): string {
-  const slot = sections
-    .flatMap((section) => section.slots)
-    .find((s) => s.id === slotId);
-  if (!slot?.label) throw new Error(`No shipped slot with id "${slotId}"`);
-  return slot.label;
 }
 
 /**
@@ -50,11 +58,6 @@ export function shippedItemNamesByTag(tag: string): string[] {
     .map((i) => i.name)
     .sort((a, b) => a.localeCompare(b));
 }
-
-const vocabulary: {
-  filters: Record<string, unknown>;
-  tags: Record<string, { label?: string }>;
-} = JSON.parse(readFileSync(path.join(dataDir, "vocabulary.json"), "utf-8"));
 
 /** Any shipped tag that declares a label, so a spec about label display names none. */
 export function shippedLabeledTag(): { id: string; label: string } {
