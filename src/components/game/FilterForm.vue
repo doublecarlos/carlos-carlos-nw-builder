@@ -134,14 +134,14 @@ function save() {
         />
       </FormField>
       <IdField :id="displayId" label="Id" :existing="namesCategory" />
-      <FormField label="Max copies">
+      <FormField label="Default max copies">
         <BaseInput
-          v-model.number="draft.maxCopies"
+          v-model.number="draft.defaultMaxCopies"
           class="w-full"
           type="number"
           min="0"
           placeholder="no limit"
-          data-testid="filter-max-copies"
+          data-testid="filter-default-max-copies"
         />
       </FormField>
     </FormGrid>

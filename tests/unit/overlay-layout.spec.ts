@@ -143,7 +143,7 @@ describe("catalog.compose: layout order", () => {
   });
 
   it("filters fold like items and come out sorted by id", () => {
-    const added: FilterDef = { id: "aaa_custom", maxCopies: 2 };
+    const added: FilterDef = { id: "aaa_custom", defaultMaxCopies: 2 };
     const composed = catalog.compose([
       overlayWith({ filters: { aaa_custom: added, artifact: null } }),
     ]);
@@ -185,14 +185,44 @@ describe("normalizeOverlay and the overlay shape", () => {
   it("keeps section and filter entries, their tombstones and sectionOrder", () => {
     const normalized = catalog.normalizeOverlay({
       sections: { extra: section("extra", ["extra.a"]), gear: null },
-      filters: { custom: { id: "custom", maxCopies: 1 }, artifact: null },
+      filters: {
+        custom: { id: "custom", defaultMaxCopies: 1 },
+        artifact: null,
+      },
       sectionOrder: ["gear", "options"],
     });
     expect(normalized.sections.extra).toEqual(section("extra", ["extra.a"]));
     expect(normalized.sections.gear).toBe(null);
-    expect(normalized.filters.custom).toEqual({ id: "custom", maxCopies: 1 });
+    expect(normalized.filters.custom).toEqual({
+      id: "custom",
+      defaultMaxCopies: 1,
+    });
     expect(normalized.filters.artifact).toBe(null);
     expect(normalized.sectionOrder).toEqual(["gear", "options"]);
+  });
+
+  // Layers saved before the filter key became `defaultMaxCopies` keep their override.
+  it("renames a stored filter's maxCopies to defaultMaxCopies", () => {
+    const normalized = catalog.normalizeOverlay({
+      filters: {
+        artifact: { id: "artifact", maxCopies: 3, fields: ["tags"] },
+        both: { id: "both", maxCopies: 3, defaultMaxCopies: 2 },
+      },
+    });
+    expect(normalized.filters.artifact).toEqual({
+      id: "artifact",
+      defaultMaxCopies: 3,
+      fields: ["tags"],
+    });
+    expect(normalized.filters.both).toEqual({
+      id: "both",
+      defaultMaxCopies: 2,
+    });
+
+    const artifact = NW_ITEMS.find(
+      (item) => item.filter === "artifact" && item.maxCopies === undefined,
+    )!;
+    expect(catalog.makeDb([normalized]).maxCopies(artifact)).toBe(3);
   });
 
   it("gives a section entry without slotIds an empty list and drops a bad sectionOrder", () => {
@@ -340,7 +370,7 @@ describe("catalog.referencedOverlay: layout travels with a build", () => {
   it("carries an added item_picker slot, its section and a changed filter", () => {
     const added = picker("extra.pick", "extra");
     const extra = section("extra", [added.id]);
-    const artifact: FilterDef = { id: "artifact", maxCopies: 2 };
+    const artifact: FilterDef = { id: "artifact", defaultMaxCopies: 2 };
     const composed = catalog.compose([
       overlayWith({
         slots: { [added.id]: added },

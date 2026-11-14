@@ -293,7 +293,7 @@ test.describe("portable files", () => {
       sections: {
         e2e_extras: { id: "e2e_extras", label: "E2E Extras", slotIds: [] },
       },
-      filters: { e2e_pet: { id: "e2e_pet", maxCopies: 1 } },
+      filters: { e2e_pet: { id: "e2e_pet", defaultMaxCopies: 1 } },
     };
     await importText(page, JSON.stringify(overlay), "extras.json");
     await confirmImport(page);
@@ -316,7 +316,7 @@ test.describe("portable files", () => {
       label: "E2E Extras",
     });
     expect(envelope.data.catalog.filters.e2e_pet).toMatchObject({
-      maxCopies: 1,
+      defaultMaxCopies: 1,
     });
 
     // Someone else's browser: no layer of its own, so what renders is what the file carried.

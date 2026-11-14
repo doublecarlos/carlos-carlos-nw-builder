@@ -187,7 +187,7 @@ function slotForDefaultParam(slotId: string): BuildParameterSlot | undefined {
 /** What a blank field resolves to: the filter's own default, or unlimited. */
 const maxCopiesHint = computed(() => {
   const fallback =
-    props.db.filterDefaults[draft.value.filter.trim()]?.maxCopies;
+    props.db.filterDefaults[draft.value.filter.trim()]?.defaultMaxCopies;
   return fallback === undefined ? "unlimited" : `${fallback} for this filter`;
 });
 

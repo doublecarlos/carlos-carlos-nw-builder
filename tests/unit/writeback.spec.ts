@@ -78,7 +78,7 @@ describe("the writeback endpoint", () => {
       "db-items.json",
       "db-bonuses.json",
       "slots.json",
-      "filters.json",
+      "vocabulary.json",
     ]) {
       statuses[file] = (await post({ file, body: "[]\n" })).status;
     }
@@ -87,7 +87,7 @@ describe("the writeback endpoint", () => {
       "db-items.json": 200,
       "db-bonuses.json": 200,
       "slots.json": 200,
-      "filters.json": 200,
+      "vocabulary.json": 200,
     });
   });
 

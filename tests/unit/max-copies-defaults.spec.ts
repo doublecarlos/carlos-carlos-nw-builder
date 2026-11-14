@@ -1,4 +1,4 @@
-// Per-filter `maxCopies` defaults: what an item inherits from its category, how it opts back
+// Per-filter `defaultMaxCopies`: what an item inherits from its category, how it opts back
 // out, and the lint that catches a member left uncapped.
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
@@ -46,8 +46,8 @@ const slots: SlotsData = {
   ],
 };
 
-/** The category default rings inherit, as data/filters.json declares it. */
-const capped: FilterDef[] = [{ id: "test_ring", maxCopies: 1 }];
+/** The category default rings inherit, as data/vocabulary.json declares it. */
+const capped: FilterDef[] = [{ id: "test_ring", defaultMaxCopies: 1 }];
 
 /** The same declaration as `Db` views it, for the lint. */
 const defaults: FilterDefaultsMap = db.filterDefaultsOf(capped);

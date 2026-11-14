@@ -326,7 +326,7 @@ const PRESET_KEYS = [
   "bonusValues",
   "clears",
 ] as const;
-const FILTER_KEYS = ["maxCopies", "fields"] as const;
+const FILTER_KEYS = ["defaultMaxCopies", "fields"] as const;
 
 function canonicalSlot(slot: Slot) {
   const out = orderKeys(slot, SLOT_KEYS);
@@ -382,15 +382,17 @@ export function toSlotsFile(
 }
 
 /**
- * Regenerates `data/filters.json`, keyed and sorted by id in code-unit order, matching how
- * `data.ts` reads it. Each filter's `fields` are sorted the same way.
+ * Regenerates `data/vocabulary.json`. Each section is keyed and sorted by id in code-unit
+ * order, matching how `data.ts` reads it, and each filter's `fields` are sorted the same way.
  */
-export function toFiltersFile(filters: FilterDef[]): string {
+export function toVocabularyFile(filters: FilterDef[]): string {
   const byId = new Map(filters.map((filter) => [filter.id, filter]));
-  const body: Record<string, Omit<FilterDef, "id">> = {};
+  const body: { filters: Record<string, Omit<FilterDef, "id">> } = {
+    filters: {},
+  };
   for (const id of [...byId.keys()].sort()) {
     const { id: _id, ...filter } = byId.get(id)!;
-    body[id] = orderKeys(
+    body.filters[id] = orderKeys(
       { ...filter, fields: filter.fields && [...filter.fields].sort() },
       FILTER_KEYS,
     );

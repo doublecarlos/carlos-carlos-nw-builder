@@ -6,7 +6,7 @@ import { addLayer, layerRow } from "./support/nav";
 import { TEST_HEAD } from "./support/testHead";
 import { importTestCatalog } from "./support/testCatalog";
 
-/** A category items carry with no declaration of its own in data/filters.json. */
+/** A category items carry with no declaration of its own in data/vocabulary.json. */
 const UNDECLARED = "overload";
 
 /** Creates a layer, selects it, and opens the Filters tab. */
@@ -45,11 +45,11 @@ test("a category with no declaration lists its items and can be given metadata",
     /[1-9]\d* item\(s\)/,
   );
 
-  await page.getByTestId("filter-max-copies").fill("2");
+  await page.getByTestId("filter-default-max-copies").fill("2");
   await page.getByTestId("save-filter").click();
 
   await expect(row.getByText("added")).toBeVisible();
-  await expect(page.getByTestId("filter-max-copies")).toHaveValue("2");
+  await expect(page.getByTestId("filter-default-max-copies")).toHaveValue("2");
 });
 
 test("a shipped filter's cap reaches the item form's blank-field hint", async ({
@@ -57,9 +57,9 @@ test("a shipped filter's cap reaches the item form's blank-field hint", async ({
 }) => {
   await openFiltersTab(page);
   await openFilter(page, "gear_ring");
-  await expect(page.getByTestId("filter-max-copies")).toHaveValue("1");
+  await expect(page.getByTestId("filter-default-max-copies")).toHaveValue("1");
 
-  await page.getByTestId("filter-max-copies").fill("3");
+  await page.getByTestId("filter-default-max-copies").fill("3");
 
   await page.getByTestId("tab-items").click();
   await page.getByTestId("new-item").click();
@@ -109,7 +109,7 @@ test("removing a declaration leaves a restorable row", async ({ page }) => {
   await row.getByRole("button", { name: "restore" }).click();
   await expect(row.getByText("removed")).toHaveCount(0);
   await openFilter(page, "artifact");
-  await expect(page.getByTestId("filter-max-copies")).toHaveValue("1");
+  await expect(page.getByTestId("filter-default-max-copies")).toHaveValue("1");
 });
 
 test("the item form's edit-filter link opens that category", async ({
@@ -125,7 +125,7 @@ test("the item form's edit-filter link opens that category", async ({
   await expect(page.getByTestId("item-filter-input")).toHaveValue("gear_head");
 
   await page.getByTestId("edit-filter-link").click();
-  await expect(page.getByTestId("filter-max-copies")).toBeVisible();
+  await expect(page.getByTestId("filter-default-max-copies")).toBeVisible();
   await expect(page.getByTestId("item-id-value")).toHaveText("gear_head");
 });
 
@@ -149,7 +149,7 @@ test("a filter finding jumps to its row", async ({ page }) => {
   await openFiltersTab(page);
   await page.getByTestId("new-filter").click();
   await page.getByTestId("filter-name-input").fill("zzz unused");
-  await page.getByTestId("filter-max-copies").fill("1");
+  await page.getByTestId("filter-default-max-copies").fill("1");
   await page.getByTestId("save-filter").click();
 
   const finding = page

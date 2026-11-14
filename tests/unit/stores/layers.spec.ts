@@ -199,7 +199,7 @@ describe("layers store", () => {
         },
       },
       sections: { extras: { id: "extras", label: "Extras", slotIds: [] } },
-      filters: { pet: { id: "pet", maxCopies: 1 } },
+      filters: { pet: { id: "pet", defaultMaxCopies: 1 } },
     });
     expect(layers.allocatableIds("sectionPresets")).toEqual(["custom-preset"]);
     expect(layers.allocatableIds("slots")).toEqual(["extras.note"]);

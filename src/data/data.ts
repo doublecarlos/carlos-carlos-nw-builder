@@ -2,7 +2,7 @@
 
 import rawSchema from "../../data/schema.json";
 import rawSlots from "../../data/slots.json";
-import rawFilters from "../../data/filters.json";
+import rawVocabulary from "../../data/vocabulary.json";
 import rawItems from "../../data/db-items.json";
 import rawBonuses from "../../data/db-bonuses.json";
 import type {
@@ -69,7 +69,7 @@ function deriveSlots(raw: typeof rawSlots): SlotsData {
 }
 
 /**
- * Turns the id-keyed `data/filters.json` into a list of entities with their id inside, like
+ * Turns the id-keyed `filters` section of `data/vocabulary.json` into a list of entities with their id inside, like
  * items. Sorted by id, the same order the file is written in.
  */
 function deriveFilters(
@@ -82,7 +82,7 @@ function deriveFilters(
 
 export const NW_SCHEMA: Schema = deriveSchema(rawSchema);
 export const NW_SLOTS: SlotsData = deriveSlots(rawSlots);
-export const NW_FILTERS: FilterDef[] = deriveFilters(rawFilters);
+export const NW_FILTERS: FilterDef[] = deriveFilters(rawVocabulary.filters);
 export const NW_ITEMS: Item[] = rawItems;
 export const NW_BONUSES: Bonus[] = rawBonuses as Bonus[];
 

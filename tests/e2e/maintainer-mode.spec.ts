@@ -102,7 +102,7 @@ test("the slots.json tab carries the sections alone", async ({ page }) => {
   expect(parsed.sections.length).toBeGreaterThan(0);
 });
 
-test("the filters.json tab carries the per-filter declarations", async ({
+test("the vocabulary.json tab carries the per-filter declarations", async ({
   page,
 }) => {
   await bootAt(page, "/");
@@ -111,18 +111,17 @@ test("the filters.json tab carries the per-filter declarations", async ({
 
   await page
     .getByTestId("layer-export")
-    .getByRole("button", { name: "filters.json" })
+    .getByRole("button", { name: "vocabulary.json" })
     .click();
 
   const output = page.getByTestId("layer-export").locator("textarea");
   await expect(output).not.toHaveValue("Loading…");
 
-  const parsed = JSON.parse(await output.inputValue()) as Record<
-    string,
-    { maxCopies?: number; fields?: string[] }
-  >;
-  expect(parsed.artifact).toEqual({ maxCopies: 1 });
-  expect(parsed.insignia?.fields).toContain("insigniaShape");
+  const { filters } = JSON.parse(await output.inputValue()) as {
+    filters: Record<string, { defaultMaxCopies?: number; fields?: string[] }>;
+  };
+  expect(filters.artifact).toEqual({ defaultMaxCopies: 1 });
+  expect(filters.insignia?.fields).toContain("insigniaShape");
 });
 
 test("?maintainer=0 puts the data-file tabs away and leaves the URL", async ({

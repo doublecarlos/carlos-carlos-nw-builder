@@ -30,6 +30,6 @@ writeFileSync(
   catalogExport.toSlotsFile(sections, slots, sectionPresets),
 );
 writeFileSync(
-  path.join(dataDir, "filters.json"),
-  catalogExport.toFiltersFile(filters),
+  path.join(dataDir, "vocabulary.json"),
+  catalogExport.toVocabularyFile(filters),
 );

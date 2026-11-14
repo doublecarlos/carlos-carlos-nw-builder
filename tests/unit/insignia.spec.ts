@@ -63,7 +63,7 @@ const slots: SlotsData = {
   ]),
 };
 
-const filters: FilterDef[] = [{ id: "insignia_bonus", maxCopies: 2 }];
+const filters: FilterDef[] = [{ id: "insignia_bonus", defaultMaxCopies: 2 }];
 
 const fixed = (shape: string) => ({ shape });
 const universal = (preferred?: string) =>

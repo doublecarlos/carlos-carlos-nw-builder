@@ -1,4 +1,4 @@
-// Writes a composed db-items.json / db-bonuses.json / slots.json / filters.json into `data/`.
+// Writes a composed db-items.json / db-bonuses.json / slots.json / vocabulary.json into `data/`.
 //
 // One handler, two hosts: `writebackPlugin()` on the Vite dev server, where the request is
 // same-origin and follows whatever port the worktree uses (ports.ts), and `npm run
@@ -28,7 +28,7 @@ const WRITABLE_FILES = new Set([
   "db-items.json",
   "db-bonuses.json",
   "slots.json",
-  "filters.json",
+  "vocabulary.json",
 ]);
 
 const DEPLOYED_ORIGIN = "https://carloscarlosnwbuilder.pages.dev";

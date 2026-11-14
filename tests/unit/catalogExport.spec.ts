@@ -510,65 +510,84 @@ describe("catalogExport.toSlotsFile", () => {
   });
 });
 
-describe("catalogExport.toFiltersFile", () => {
-  it("keys each filter by id, with the id in the key alone", () => {
+describe("catalogExport.toVocabularyFile", () => {
+  const filtersOf = (filters: FilterDef[]) =>
+    (
+      JSON.parse(catalogExport.toVocabularyFile(filters)) as {
+        filters: Record<string, Record<string, unknown>>;
+      }
+    ).filters;
+
+  it("keys each filter by id under `filters`, with the id in the key alone", () => {
     const filters: FilterDef[] = [
-      { id: "insignia_bonus", maxCopies: 3, fields: ["insigniaRecipe"] },
+      { id: "insignia_bonus", defaultMaxCopies: 3, fields: ["insigniaRecipe"] },
     ];
-    expect(JSON.parse(catalogExport.toFiltersFile(filters))).toEqual({
-      insignia_bonus: { maxCopies: 3, fields: ["insigniaRecipe"] },
+    expect(JSON.parse(catalogExport.toVocabularyFile(filters))).toEqual({
+      filters: {
+        insignia_bonus: { defaultMaxCopies: 3, fields: ["insigniaRecipe"] },
+      },
     });
   });
 
   it("sorts the entries by id whatever order the list arrived in", () => {
     const filters: FilterDef[] = [
       { id: "mount", fields: ["insigniaSlots"] },
-      { id: "artifact", maxCopies: 1 },
+      { id: "artifact", defaultMaxCopies: 1 },
       { id: "insignia", fields: ["insigniaShape"] },
     ];
-    const parsed = JSON.parse(catalogExport.toFiltersFile(filters));
-    expect(Object.keys(parsed)).toEqual(["artifact", "insignia", "mount"]);
+    expect(Object.keys(filtersOf(filters))).toEqual([
+      "artifact",
+      "insignia",
+      "mount",
+    ]);
   });
 
   it("omits a field left undefined instead of writing null", () => {
     const filters: FilterDef[] = [
-      { id: "artifact", maxCopies: 1, fields: undefined },
-      { id: "boon_tier1", maxCopies: undefined, fields: ["inlineRepetition"] },
+      { id: "artifact", defaultMaxCopies: 1, fields: undefined },
+      {
+        id: "boon_tier1",
+        defaultMaxCopies: undefined,
+        fields: ["inlineRepetition"],
+      },
       { id: "bare" },
     ];
-    const text = catalogExport.toFiltersFile(filters);
+    const text = catalogExport.toVocabularyFile(filters);
     expect(text).not.toContain("null");
-    expect(JSON.parse(text)).toEqual({
-      artifact: { maxCopies: 1 },
+    expect(filtersOf(filters)).toEqual({
+      artifact: { defaultMaxCopies: 1 },
       bare: {},
       boon_tier1: { fields: ["inlineRepetition"] },
     });
   });
 
-  it("writes maxCopies before fields, with fields sorted", () => {
+  it("writes defaultMaxCopies before fields, with fields sorted", () => {
     const filters: FilterDef[] = [
-      { fields: ["preferredVariant", "insigniaShape"], maxCopies: 1, id: "x" },
+      {
+        fields: ["preferredVariant", "insigniaShape"],
+        defaultMaxCopies: 1,
+        id: "x",
+      },
     ];
-    const text = catalogExport.toFiltersFile(filters);
-    const parsed = JSON.parse(text);
-    expect(Object.keys(parsed.x)).toEqual(["maxCopies", "fields"]);
+    const parsed = filtersOf(filters);
+    expect(Object.keys(parsed.x)).toEqual(["defaultMaxCopies", "fields"]);
     expect(parsed.x.fields).toEqual(["insigniaShape", "preferredVariant"]);
     expect(filters[0].fields).toEqual(["preferredVariant", "insigniaShape"]);
   });
 
-  it("matches the key order data/filters.json is committed in", () => {
+  it("matches the key order data/vocabulary.json is committed in", () => {
     const raw = readFileSync(
-      new URL("../../data/filters.json", import.meta.url),
+      new URL("../../data/vocabulary.json", import.meta.url),
       "utf8",
     );
-    const text = catalogExport.toFiltersFile(NW_FILTERS);
+    const text = catalogExport.toVocabularyFile(NW_FILTERS);
     expect(JSON.stringify(JSON.parse(text))).toBe(
       JSON.stringify(JSON.parse(raw)),
     );
   });
 
   it("round-trips the real shipped data", () => {
-    const parsed = JSON.parse(catalogExport.toFiltersFile(NW_FILTERS));
+    const parsed = filtersOf(NW_FILTERS);
     expect(Object.keys(parsed)).toEqual(NW_FILTERS.map((f) => f.id));
     for (const filter of NW_FILTERS) {
       const { id, ...rest } = filter;

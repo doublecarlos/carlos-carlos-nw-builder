@@ -167,6 +167,19 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
       overlay.sectionPresets[id] = rest as SectionPreset;
     }
   }
+  // A filter's per-item default was once stored as `maxCopies`. Where both are present the
+  // current key wins.
+  for (const [id, filter] of Object.entries(overlay.filters)) {
+    if (filter && "maxCopies" in filter) {
+      const { maxCopies, ...rest } = filter as FilterDef & {
+        maxCopies?: number;
+      };
+      overlay.filters[id] = {
+        ...rest,
+        defaultMaxCopies: rest.defaultMaxCopies ?? maxCopies,
+      };
+    }
+  }
   if (isStringList(source.sectionOrder))
     overlay.sectionOrder = [...source.sectionOrder];
   return overlay;
@@ -731,7 +744,7 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
 
   // Every slot, section and filter that differs from base, used by this build or not: the
   // engine reads every slot's param, slots need their sections, and picks need their
-  // category's `maxCopies`. Authored slots, so derived options are never frozen in.
+  // category's `defaultMaxCopies`. Authored slots, so derived options are never frozen in.
   //
   // Added/edited only. Removed entries don't travel, since "missing from the db" can't be
   // told apart from "never built from base" here.
@@ -2230,7 +2243,7 @@ function rowsOffering(item: Item, slots: Slot[]): number {
 /**
  * Within one filter a cap is either a category-wide fact or nobody's, so members carrying
  * `maxCopies` beside members that don't is an oversight. Quiet where a cap could never bind
- * (a filter one row alone can hold) or where the filter's own `maxCopies` (data/filters.json)
+ * (a filter one row alone can hold) or where the filter's own `defaultMaxCopies` (data/vocabulary.json)
  * already answers for every member. Warns rather than errors: unlimited is right for some
  * categories, and an item that means it says so with `maxCopies: 0`.
  */
@@ -2244,7 +2257,7 @@ export function validateMaxCopies(
 
   for (const item of items) {
     if (!item.filter) continue;
-    if (filterDefaults[item.filter]?.maxCopies !== undefined) continue;
+    if (filterDefaults[item.filter]?.defaultMaxCopies !== undefined) continue;
     if (rowsOffering(item, slots) < 2) continue;
     const group = byFilter.get(item.filter);
     if (group) group.push(item);
@@ -2308,7 +2321,7 @@ function slotSelectorFilters(slots: Slot[]): Set<string> {
 
 /**
  * Every category the catalog uses: items' `filter` plus every filter a slot selects by. A
- * declaration in data/filters.json is optional metadata on top of these.
+ * declaration in data/vocabulary.json is optional metadata on top of these.
  */
 export function usedFilters(items: Item[], slots: Slot[]): Set<string> {
   const used = slotSelectorFilters(slots);

@@ -16,7 +16,7 @@ const ctx = (id: string) => ({ id });
 
 describe("buildDraft / toFilter round trip", () => {
   it("round-trips a cap-only declaration", () => {
-    const filter: FilterDef = { id: "artifact", maxCopies: 1 };
+    const filter: FilterDef = { id: "artifact", defaultMaxCopies: 1 };
     expect(toFilter(buildDraft(filter), ctx(filter.id))).toEqual(filter);
   });
 
@@ -32,23 +32,26 @@ describe("buildDraft / toFilter round trip", () => {
   it("round-trips a cap and several groups, in FIELD_GROUPS order", () => {
     const filter: FilterDef = {
       id: "paragon",
-      maxCopies: 2,
+      defaultMaxCopies: 2,
       fields: ["defaultParams", "allowedClass"],
     };
     const draft = buildDraft(filter);
     expect(draft.groups).toEqual(["allowedClass", "defaultParams"]);
     expect(toFilter(draft, ctx(filter.id))).toEqual({
       id: "paragon",
-      maxCopies: 2,
+      defaultMaxCopies: 2,
       fields: ["allowedClass", "defaultParams"],
     });
   });
 
   it("writes an explicit 0 cap, and drops an emptied one", () => {
-    const draft = buildDraft({ id: "ring", maxCopies: 1 });
-    draft.maxCopies = 0;
-    expect(toFilter(draft, ctx("ring"))).toEqual({ id: "ring", maxCopies: 0 });
-    draft.maxCopies = "";
+    const draft = buildDraft({ id: "ring", defaultMaxCopies: 1 });
+    draft.defaultMaxCopies = 0;
+    expect(toFilter(draft, ctx("ring"))).toEqual({
+      id: "ring",
+      defaultMaxCopies: 0,
+    });
+    draft.defaultMaxCopies = "";
     expect(toFilter(draft, ctx("ring"))).toEqual({ id: "ring" });
   });
 
@@ -63,7 +66,7 @@ describe("buildDraft / toFilter round trip", () => {
   it("builds an empty draft for a category with no declaration", () => {
     expect(buildDraft(null)).toEqual({
       name: "",
-      maxCopies: null,
+      defaultMaxCopies: null,
       groups: [],
       otherFields: [],
     });
@@ -111,7 +114,7 @@ describe("hasContent", () => {
 
   it("is true once a name, a cap or a group is set", () => {
     expect(hasContent({ ...buildDraft(null), name: "mount" })).toBe(true);
-    expect(hasContent({ ...buildDraft(null), maxCopies: 3 })).toBe(true);
+    expect(hasContent({ ...buildDraft(null), defaultMaxCopies: 3 })).toBe(true);
     expect(hasContent({ ...buildDraft(null), groups: ["tags"] })).toBe(true);
   });
 });
@@ -121,11 +124,11 @@ describe("diffLabel", () => {
     diffLabel(JSON.stringify(old), JSON.stringify(nw));
 
   it("names a cap change, and an emptied cap", () => {
-    expect(label({ id: "a", maxCopies: 1 }, { id: "a", maxCopies: 2 })).toBe(
-      "edit max copies → 2",
-    );
-    expect(label({ id: "a", maxCopies: 1 }, { id: "a" })).toBe(
-      "edit max copies → (none)",
+    expect(
+      label({ id: "a", defaultMaxCopies: 1 }, { id: "a", defaultMaxCopies: 2 }),
+    ).toBe("edit default max copies → 2");
+    expect(label({ id: "a", defaultMaxCopies: 1 }, { id: "a" })).toBe(
+      "edit default max copies → (none)",
     );
   });
 

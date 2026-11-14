@@ -70,9 +70,9 @@ const DATA_FILES: readonly DataFileTab[] = [
       ),
   },
   {
-    tab: "filters",
-    file: "filters.json",
-    render: (exporter, composed) => exporter.toFiltersFile(composed.filters),
+    tab: "vocabulary",
+    file: "vocabulary.json",
+    render: (exporter, composed) => exporter.toVocabularyFile(composed.filters),
   },
 ];
 

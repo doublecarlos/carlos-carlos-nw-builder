@@ -1,5 +1,5 @@
 // The item form offers a field group only where the item's filter is authored with it
-// (the filter's `fields` in data/filters.json), plus the two escapes: a group the item
+// (the filter's `fields` in data/vocabulary.json), plus the two escapes: a group the item
 // already carries a value in stays, and "Show all fields" brings everything back.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, setItemFilter } from "./support/app";

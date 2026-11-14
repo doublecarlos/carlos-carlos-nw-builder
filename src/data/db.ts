@@ -135,12 +135,12 @@ function collectBonusSeeds(
 export const stillOffered = (item: Item, inUse: boolean) =>
   inUse || !item.hideFromPicker;
 
-/** `maxCopies` by filter, for the filters that declare one. */
+/** `defaultMaxCopies` by filter, for the filters that declare one. */
 export function filterDefaultsOf(filters: FilterDef[]): FilterDefaultsMap {
   const out: FilterDefaultsMap = {};
   for (const filter of filters)
-    if (filter.maxCopies !== undefined)
-      out[filter.id] = { maxCopies: filter.maxCopies };
+    if (filter.defaultMaxCopies !== undefined)
+      out[filter.id] = { defaultMaxCopies: filter.defaultMaxCopies };
   return out;
 }
 
@@ -314,7 +314,7 @@ export function build(
      *  default; an explicit 0 opts back out. */
     maxCopies: (item: Item | null | undefined) =>
       item?.maxCopies ??
-      (item?.filter ? (filterDefaults[item.filter]?.maxCopies ?? 0) : 0),
+      (item?.filter ? (filterDefaults[item.filter]?.defaultMaxCopies ?? 0) : 0),
 
     /**
      * Every bonus an item contributes: every bonus it belongs to, whether that bonus has

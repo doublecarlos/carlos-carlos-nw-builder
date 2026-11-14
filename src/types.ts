@@ -332,23 +332,24 @@ export interface SectionPreset {
   clears?: string[];
 }
 
-/** Per-category item metadata from `data/filters.json`. Optional: an undeclared category gets
- * the defaults. */
+/** Per-category item metadata from the `filters` section of `data/vocabulary.json`. Optional:
+ * an undeclared category gets the defaults. */
 export interface FilterDef {
   id: string;
-  /** Copies of one member a build may hold. An item's own `maxCopies` wins, 0 meaning uncapped. */
-  maxCopies?: number;
+  /** Copies of one member a build may hold, unless the item sets its own `maxCopies`. 0 means
+   * uncapped. */
+  defaultMaxCopies?: number;
   /** The item fields the category is authored with. A field no filter names is offered
    * everywhere; once named, only to the filters that name it. */
   fields?: string[];
 }
 
-/** The `maxCopies` half of a `FilterDef`, as `Db.filterDefaults` keys it. */
+/** The `defaultMaxCopies` half of a `FilterDef`, as `Db.filterDefaults` keys it. */
 export interface FilterDefaults {
-  maxCopies?: number;
+  defaultMaxCopies?: number;
 }
 
-/** `Db`'s view of `FilterDef.maxCopies` by filter, derived from the filter list. */
+/** `Db`'s view of `FilterDef.defaultMaxCopies` by filter, derived from the filter list. */
 export type FilterDefaultsMap = Record<string, FilterDefaults>;
 
 /** `Db`'s view of `FilterDef.fields` by filter, derived from the filter list. */
@@ -786,7 +787,7 @@ export interface Db {
   duplicates: string[];
   /** The filter list the db was built from, as `makeDb` handed it over. */
   filters: FilterDef[];
-  /** `maxCopies` by filter, derived from `filters`. */
+  /** `defaultMaxCopies` by filter, derived from `filters`. */
   filterDefaults: FilterDefaultsMap;
   /** `fields` by filter, derived from `filters`. */
   filterFields: FilterFieldsMap;

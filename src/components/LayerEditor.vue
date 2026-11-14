@@ -406,7 +406,7 @@ const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
 
 const showExport = ref(false);
 const showTooltipImport = ref(false);
-const exportTab = ref("overlay"); // items | bonuses | overlay | slots
+const exportTab = ref("overlay"); // overlay | items | bonuses | slots | vocabulary
 const newItemCounter = ref(0);
 /** Seed values for the next brand-new item/bonus draft, set by "Duplicate" and consumed
  *  once at that form's mount -- cleared whenever a plain "New" is requested instead so a

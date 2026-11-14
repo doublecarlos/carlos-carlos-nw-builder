@@ -558,8 +558,8 @@ describe("Db views over the filter list", () => {
   };
   const filters: FilterDef[] = [
     { id: "test_mount", fields: ["insigniaSlots"] },
-    { id: "test_ring", maxCopies: 1 },
-    { id: "test_both", maxCopies: 3, fields: ["insigniaRecipe"] },
+    { id: "test_ring", defaultMaxCopies: 1 },
+    { id: "test_both", defaultMaxCopies: 3, fields: ["insigniaRecipe"] },
     { id: "test_bare" },
   ];
 
@@ -576,11 +576,11 @@ describe("Db views over the filter list", () => {
     });
   });
 
-  it("keys `maxCopies` by filter, only for the filters declaring one", () => {
+  it("keys `defaultMaxCopies` by filter, only for the filters declaring one", () => {
     const built = db.build([], [], NW_SCHEMA, slots, filters);
     expect(built.filterDefaults).toEqual({
-      test_ring: { maxCopies: 1 },
-      test_both: { maxCopies: 3 },
+      test_ring: { defaultMaxCopies: 1 },
+      test_both: { defaultMaxCopies: 3 },
     });
   });
 
