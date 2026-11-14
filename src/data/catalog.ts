@@ -91,7 +91,7 @@ import { outOfRangeErrorMessage } from "../lib/format";
 
 /** Any entry an overlay group holds. */
 export type CatalogEntry =
-  Item | Bonus | SectionPreset | Slot | SlotSection | FilterDef;
+  Item | Bonus | SectionPreset | Slot | SlotSection | FilterDef | TagDef;
 
 export const emptyOverlay = (): CatalogOverlay => ({
   items: {},
@@ -100,6 +100,7 @@ export const emptyOverlay = (): CatalogOverlay => ({
   slots: {},
   sections: {},
   filters: {},
+  tags: {},
 });
 
 /** Every record group an overlay carries. `sectionOrder` is not a record and is handled by name. */
@@ -110,6 +111,7 @@ export const GROUPS = [
   "slots",
   "sections",
   "filters",
+  "tags",
 ] as const;
 
 export const isEmpty = (overlay: CatalogOverlay | null | undefined) =>
@@ -137,7 +139,8 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
           SectionPreset &
           Slot &
           SlotSection &
-          FilterDef;
+          FilterDef &
+          TagDef;
     }
   }
   // A section entry always has an order list.
@@ -207,6 +210,7 @@ export const base = (): CatalogBase => ({
   slots: NW_SLOTS.slots ?? [],
   sections: NW_SLOTS.sections ?? [],
   filters: NW_FILTERS ?? [],
+  tags: NW_TAGS ?? [],
 });
 
 /** Ids are machine identifiers, so they sort by codepoint: deterministic on every machine,
@@ -280,8 +284,8 @@ function layoutSlots(slots: Slot[], sections: SlotSection[]): Slot[] {
 }
 
 /**
- * Fold overlays over the base, later layers winning. Items, bonuses, presets and filters come
- * out sorted by id so the export is stable. Sections and slots come out in layout order:
+ * Fold overlays over the base, later layers winning. Items, bonuses, presets, filters and tags
+ * come out sorted by id so the export is stable. Sections and slots come out in layout order:
  * `sectionOrder` (the last layer's wins) then the unlisted sections in base order, and slots
  * per `layoutSlots`.
  */
@@ -313,8 +317,7 @@ export function compose(
     slots: layoutSlots([...group("slots").values()], sections),
     sections,
     filters: [...group("filters").values()].sort(byId),
-    // Tags are not an overlay group yet, so every layer reads the shipped declarations.
-    tags: NW_TAGS,
+    tags: [...group("tags").values()].sort(byId),
   };
 }
 
@@ -343,6 +346,7 @@ const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
   slots: { ...overlay.slots },
   sections: { ...overlay.sections },
   filters: { ...overlay.filters },
+  tags: { ...overlay.tags },
   ...(overlay.sectionOrder ? { sectionOrder: [...overlay.sectionOrder] } : {}),
 });
 
@@ -753,15 +757,16 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
   }
   overlay.bonuses = divergent(bonuses, catalogBase.bonuses);
 
-  // Every slot, section and filter that differs from base, used by this build or not: the
-  // engine reads every slot's param, slots need their sections, and picks need their
-  // category's `defaultMaxCopies`. Authored slots, so derived options are never frozen in.
+  // Every slot, section, filter and tag that differs from base, used by this build or not:
+  // the engine reads every slot's param, slots need their sections, picks need their
+  // category's `defaultMaxCopies`, and conditions read tag labels. Authored slots, so derived options are never frozen in.
   //
   // Added/edited only. Removed entries don't travel, since "missing from the db" can't be
   // told apart from "never built from base" here.
   overlay.slots = divergent(db.authoredSlots, catalogBase.slots);
   overlay.sections = divergent(db.sections, catalogBase.sections);
   overlay.filters = divergent(db.filters, catalogBase.filters);
+  overlay.tags = divergent(db.tags, catalogBase.tags);
 
   // The section order travels only when it differs from `compose`'s default order.
   const composedOrder = db.sections.map((section) => section.id);
@@ -2435,6 +2440,7 @@ export function validateTags(
     findings.push({
       level: "warn",
       kind: "tag",
+      name: tag,
       message: `tag "${tag}" is tested by a condition but has no label; it reads as the raw tag`,
     });
   }
@@ -2443,6 +2449,7 @@ export function validateTags(
     findings.push({
       level: "warn",
       kind: "tag",
+      name: tag.id,
       message: `tag "${tag.id}" is declared, but no item, slot or condition uses it`,
     });
   }

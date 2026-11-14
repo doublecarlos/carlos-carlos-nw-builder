@@ -33,6 +33,7 @@ export const ROUTE_PARAMS = {
   item: PLACE,
   bonus: PLACE,
   filter: PLACE,
+  tag: PLACE,
   preset: PLACE,
   slot: PLACE,
   sectionId: PLACE,

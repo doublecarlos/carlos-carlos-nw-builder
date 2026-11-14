@@ -55,11 +55,11 @@ test("the item form's filter picker finds a labeled filter by its label", async 
   await expect(input).toHaveValue(FILTER);
 });
 
-test("the Filters tab lists a labeled filter by its label", async ({
+test("the Vocabulary tab lists a labeled filter by its label", async ({
   page,
 }) => {
   await openLabeledLayer(page);
-  await page.getByTestId("tab-filters").click();
+  await page.getByTestId("tab-vocabulary").click();
   await page.locator(".editor-search").fill(FILTER_LABEL);
 
   const row = page.locator(".editor-row", { hasText: FILTER_LABEL });

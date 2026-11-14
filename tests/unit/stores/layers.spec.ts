@@ -155,6 +155,7 @@ describe("layers store", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     });
     layers.setLayerEnabled(l.id, false);
     const ids = layers.allocatableIds("items");
@@ -171,12 +172,13 @@ describe("layers store", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     });
     expect(layers.allocatableIds("items")).toEqual(["shared"]);
     expect(layers.allocatableIds("bonuses")).toEqual(["own-bonus"]);
   });
 
-  it("allocatableIds covers every overlay group, layout and filters included", async () => {
+  it("allocatableIds covers every overlay group, layout and vocabulary included", async () => {
     const { layers } = await freshStores();
     const l = layers.createLayer();
     layers.updateOverlay(l.id, {
@@ -200,11 +202,13 @@ describe("layers store", () => {
       },
       sections: { extras: { id: "extras", label: "Extras", slotIds: [] } },
       filters: { pet: { id: "pet", defaultMaxCopies: 1 } },
+      tags: { "gem:test": { id: "gem:test", label: "Test enchantment" } },
     });
     expect(layers.allocatableIds("sectionPresets")).toEqual(["custom-preset"]);
     expect(layers.allocatableIds("slots")).toEqual(["extras.note"]);
     expect(layers.allocatableIds("sections")).toEqual(["extras"]);
     expect(layers.allocatableIds("filters")).toEqual(["pet"]);
+    expect(layers.allocatableIds("tags")).toEqual(["gem:test"]);
   });
 
   it("allocatableIds returns empty when no layers have items", async () => {
@@ -257,6 +261,7 @@ describe("layers store", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     });
     layers.updateOverlay(a.id, overlayNaming("from A"));
     layers.updateOverlay(b.id, overlayNaming("from B"));
@@ -286,6 +291,7 @@ describe("layers.updatePreset", () => {
     slots: {},
     sections: {},
     filters: {},
+    tags: {},
   });
 
   it("writes into the layer that already defines the preset", async () => {

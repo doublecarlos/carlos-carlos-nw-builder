@@ -36,9 +36,13 @@ const props = withDefaults(
      *  line), returns the value to add, or `null` when the text holds none. Without it an
      *  image paste is not read. */
     fromImage?: (text: string) => string | null;
+    /** A chip whose label differs from its value also shows the value after it, for a
+     *  vocabulary of named ids. */
+    showValue?: boolean;
   }>(),
   {
     options: () => [],
+    showValue: false,
     fromImage: undefined,
     placeholder: "Type to search…",
     allowFree: true,
@@ -195,6 +199,12 @@ async function onPaste(event: ClipboardEvent) {
       class="inline-flex items-center gap-1 rounded-full bg-accent-soft py-0.5 pl-2 pr-1 text-text"
     >
       {{ labelFor(token) }}
+      <span
+        v-if="showValue && labelFor(token) !== token"
+        class="text-xs text-muted"
+        data-testid="token-chip-value"
+        >{{ token }}</span
+      >
       <button
         type="button"
         class="tap-area cursor-pointer border-0 bg-transparent px-1 leading-none text-muted hover:text-danger"

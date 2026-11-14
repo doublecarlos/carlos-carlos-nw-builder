@@ -8,6 +8,7 @@ import {
   NW_BONUSES,
   NW_SLOTS,
   NW_FILTERS,
+  NW_TAGS,
 } from "../../src/data/data";
 import { REQUIRED_SLOT_IDS } from "../../src/lib/demo-slots";
 import type {
@@ -153,6 +154,17 @@ describe("catalog.compose: layout order", () => {
     expect(composed.filters[0]).toEqual(added);
     expect(composed.filters.some((f) => f.id === "artifact")).toBe(false);
   });
+
+  // A layer labels or drops a tag the same way it does a filter.
+  it("tags fold like filters and come out sorted by id", () => {
+    const shipped = NW_TAGS[0].id;
+    const added: TagDef = { id: "!custom", label: "Custom" };
+    const composed = catalog.compose([
+      overlayWith({ tags: { [added.id]: added, [shipped]: null } }),
+    ]);
+    expect(composed.tags[0]).toEqual(added);
+    expect(composed.tags.some((tag) => tag.id === shipped)).toBe(false);
+  });
 });
 
 describe("makeDb with composed sections and filters", () => {
@@ -182,6 +194,7 @@ describe("normalizeOverlay and the overlay shape", () => {
     });
     expect(normalized.sections).toEqual({});
     expect(normalized.filters).toEqual({});
+    expect(normalized.tags).toEqual({});
     expect(normalized.sectionOrder).toBeUndefined();
   });
 
@@ -367,6 +380,7 @@ describe("catalog.referencedOverlay: layout travels with a build", () => {
       authoredSlots: NW_SLOTS.slots,
       sections: NW_SLOTS.sections,
       filters: NW_FILTERS,
+      tags: NW_TAGS,
       ...parts,
     }) as unknown as Db;
 
@@ -394,6 +408,20 @@ describe("catalog.referencedOverlay: layout travels with a build", () => {
     expect(overlay.sections).toEqual({ extra });
     expect(overlay.filters).toEqual({ artifact });
     expect(overlay.sectionOrder).toBeUndefined();
+  });
+
+  // A relabeled tag travels, and the untouched shipped tags stay behind.
+  it("carries a relabeled tag and nothing else from the vocabulary", () => {
+    const relabeled: TagDef = { ...NW_TAGS[0], label: "Relabeled" };
+    const composed = catalog.compose([
+      overlayWith({ tags: { [relabeled.id]: relabeled } }),
+    ]);
+    const overlay = catalog.referencedOverlay(
+      testDb({ tags: composed.tags }),
+      testBuild(),
+    );
+    expect(overlay.tags).toEqual({ [relabeled.id]: relabeled });
+    expect(catalog.makeDb([overlay]).tags).toContainEqual(relabeled);
   });
 
   it("carries a reordered section and sectionOrder, but not an untouched layout", () => {

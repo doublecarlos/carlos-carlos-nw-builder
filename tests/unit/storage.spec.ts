@@ -32,6 +32,7 @@ describe("overlay localStorage", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
     storage.saveOverlay(overlay);
     expect(storage.loadOverlay()).toEqual(overlay);
@@ -47,6 +48,7 @@ describe("overlay localStorage", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     });
   });
 });
@@ -155,6 +157,7 @@ describe("defaultLayer / normalizeLayer", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
     const layer = storage.normalizeLayer({ overlay });
     expect(layer.overlay.items["test-id"]).toBeDefined();
@@ -951,6 +954,7 @@ describe("toBuildJson with db (portable files)", () => {
       authoredSlots: [],
       sections: [],
       filters: [],
+      tags: [],
     } as unknown as Db;
 
     const json = JSON.parse(storage.toBuildJson(build, db));
@@ -978,6 +982,7 @@ describe("toBuildJson with db (portable files)", () => {
       authoredSlots: [],
       sections: [],
       filters: [],
+      tags: [],
     } as unknown as Db;
 
     const json = JSON.parse(storage.toBuildJson(build, db));
@@ -1010,6 +1015,7 @@ describe("toBuildJson with db (portable files)", () => {
       authoredSlots: [],
       sections: [],
       filters: [],
+      tags: [],
     } as unknown as Db;
 
     const json = storage.toBuildJson(build, db);
@@ -1070,6 +1076,7 @@ describe("bundle round trip", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
 
     const json = storage.toBundleJson({ builds: [build], layers: [] });

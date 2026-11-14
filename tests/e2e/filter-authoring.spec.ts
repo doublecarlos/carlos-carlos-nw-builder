@@ -1,5 +1,5 @@
-// End-to-end coverage for the layer editor's Filters tab: authoring a category's copy cap and
-// field groups, including categories that have no declaration yet.
+// End-to-end coverage for the filters in the layer editor's Vocabulary tab: authoring a
+// category's copy cap and field groups, including categories that have no declaration yet.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
@@ -9,17 +9,25 @@ import { importTestCatalog } from "./support/testCatalog";
 /** A category items carry with no declaration of its own in data/vocabulary.json. */
 const UNDECLARED = "overload";
 
-/** Creates a layer, selects it, and opens the Filters tab. */
+/** Creates a layer, selects it, and opens the Vocabulary tab. */
 async function openFiltersTab(page: Page) {
   await openBuilder(page);
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await page.getByTestId("tab-filters").click();
+  await page.getByTestId("tab-vocabulary").click();
 }
 
-/** The list row for one category. */
+/** Opens a new filter draft from the tab's "New" menu. */
+async function newFilter(page: Page) {
+  await page.getByTestId("new-vocabulary-entry").click();
+  await page.getByTestId("new-filter").click();
+}
+
+/** The list row for one category, never a tag of the same name. */
 const filterRow = (page: Page, name: string) =>
-  page.locator(".editor-row", { has: page.getByText(name, { exact: true }) });
+  page.locator('.editor-row[data-kind="filter"]', {
+    has: page.getByText(name, { exact: true }),
+  });
 
 /** Searches for a category and opens its row. */
 async function openFilter(page: Page, name: string) {
@@ -87,7 +95,7 @@ test("claiming a field group offers it in the item form for that category", asyn
   await page.getByRole("button", { name: "Save item" }).click();
 
   // Unclaiming it withdraws the group again, so the checkbox is the whole contract.
-  await page.getByTestId("tab-filters").click();
+  await page.getByTestId("tab-vocabulary").click();
   await openFilter(page, "gear_head");
   await page.getByTestId("filter-field-publishes").locator("input").uncheck();
 
@@ -133,7 +141,7 @@ test("a new declaration's id keeps the snake_case a filter name is written in", 
   page,
 }) => {
   await openFiltersTab(page);
-  await page.getByTestId("new-filter").click();
+  await newFilter(page);
   await page.getByTestId("filter-name-input").fill("zzz_test_trinket");
   await expect(page.getByTestId("item-id-value")).toHaveText(
     "zzz_test_trinket",
@@ -147,7 +155,7 @@ test("a new declaration's id keeps the snake_case a filter name is written in", 
 
 test("a filter finding jumps to its row", async ({ page }) => {
   await openFiltersTab(page);
-  await page.getByTestId("new-filter").click();
+  await newFilter(page);
   await page.getByTestId("filter-name-input").fill("zzz unused");
   await page.getByTestId("filter-default-max-copies").fill("1");
   await page.getByTestId("save-filter").click();
@@ -161,6 +169,6 @@ test("a filter finding jumps to its row", async ({ page }) => {
   await expect(page.getByTestId("new-item")).toBeVisible();
 
   await finding.click();
-  await expect(page.getByTestId("new-filter")).toBeVisible();
+  await expect(page.getByTestId("new-vocabulary-entry")).toBeVisible();
   await expect(page.getByTestId("item-id-value")).toHaveText("zzz_unused");
 });

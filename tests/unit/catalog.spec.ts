@@ -1013,6 +1013,7 @@ describe("catalog.tombstoneIds", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
     expect(catalog.tombstoneIds(overlay, "items")).toEqual(["removed-item"]);
     expect(catalog.tombstoneIds(overlay, "bonuses")).toEqual(["removed-bonus"]);
@@ -1038,6 +1039,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
     const later: CatalogOverlay = {
       items: {
@@ -1052,6 +1054,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
     const composed = catalog.compose([early, later]);
     const item = composed.items.find((i) => i.id === "shared-item");
@@ -1072,6 +1075,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
     // Disabling the later layer means not passing it to compose
     const composed = catalog.compose([early]);
@@ -1093,6 +1097,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
     const later: CatalogOverlay = {
       items: { "shared-item": null },
@@ -1101,6 +1106,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       slots: {},
       sections: {},
       filters: {},
+      tags: {},
     };
     const composed = catalog.compose([early, later]);
     expect(composed.items.find((i) => i.id === "shared-item")).toBeUndefined();
@@ -1115,6 +1121,7 @@ describe("catalog.compose: sectionPresets overlay", () => {
     slots: {},
     sections: {},
     filters: {},
+    tags: {},
   });
 
   it("a layer-added preset appears in the composed list", () => {
@@ -1172,6 +1179,7 @@ describe("catalog.compose: sectionPresets overlay", () => {
         slots: {},
         sections: {},
         filters: {},
+        tags: {},
       },
     ]);
     expect(
@@ -1319,6 +1327,7 @@ function testDb(items: Item[], bonuses: Bonus[], slots: Slot[] = []): Db {
     authoredSlots: slots,
     sections: [],
     filters: [],
+    tags: [],
   } as unknown as Db;
 }
 
@@ -1655,6 +1664,7 @@ describe("catalog.compose id ordering", () => {
     slots: {},
     sections: {},
     filters: {},
+    tags: {},
   };
 
   it("orders items, bonuses and presets by codepoint", () => {

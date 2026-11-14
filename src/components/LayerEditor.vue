@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The layer editor: browse/add/edit/remove everything one layer can author (items, bonuses,
-// filters, sections, slots and presets), lint the composed catalog, and export the results.
+// filters, tags, sections, slots and presets), lint the composed catalog, and export the results.
 //
 // Takes the selected Layer as a prop and writes through `layers.updateOverlay`. When the
 // layer is disabled, the editor shows a muted banner saying its changes are not applied.
@@ -27,6 +27,7 @@ import * as draftGuard from "../stores/draftGuard";
 import ItemForm from "./game/ItemForm.vue";
 import BonusForm from "./game/BonusForm.vue";
 import FilterForm from "./game/FilterForm.vue";
+import TagForm from "./game/TagForm.vue";
 import PresetForm from "./game/PresetForm.vue";
 import SectionForm from "./game/SectionForm.vue";
 import SlotForm from "./game/SlotForm.vue";
@@ -96,6 +97,7 @@ import type {
   Bonus,
   BonusOption,
   FilterDef,
+  TagDef,
   SectionPreset,
   Slot,
   SlotSection,
@@ -104,9 +106,11 @@ import type {
 } from "../types";
 import type {
   EditorRow,
+  EditorRowKind,
   ItemRow,
   BonusRow,
   FilterRow,
+  TagRow,
 } from "./game/LayerEntryList.vue";
 import {
   buildOutline,
@@ -235,7 +239,8 @@ type EditorGroup = CatalogGroup;
 interface GroupDef {
   group: EditorGroup;
   tab: string;
-  routerKey: "item" | "bonus" | "preset" | "slot" | "filter" | "sectionId";
+  routerKey:
+    "item" | "bonus" | "preset" | "slot" | "filter" | "tag" | "sectionId";
   noun: string;
   existsIn(db: Db, id: string): boolean;
   labelIn(db: Db, id: string): string | null;
@@ -270,13 +275,23 @@ const GROUPS: Record<EditorGroup, GroupDef> = {
   },
   filters: {
     group: "filters",
-    tab: "filters",
+    tab: "vocabulary",
     routerKey: "filter",
     noun: "filter",
     existsIn: (db, id) => filterNames(db).includes(id),
     labelIn: (db, id) => (filterNames(db).includes(id) ? id : null),
     rowsFrom: filterRowsFrom,
-    createNew: () => newFilter(),
+    createNew: () => newEntry("filters"),
+  },
+  tags: {
+    group: "tags",
+    tab: "vocabulary",
+    routerKey: "tag",
+    noun: "tag",
+    existsIn: (db, id) => tagNames(db).includes(id),
+    labelIn: (db, id) => (tagNames(db).includes(id) ? id : null),
+    rowsFrom: tagRowsFrom,
+    createNew: () => newEntry("tags"),
   },
   sections: {
     group: "sections",
@@ -340,10 +355,12 @@ const TABS: TabDef[] = [
     countIn: (db) => db.bonuses.length,
   },
   {
-    id: "filters",
-    label: "Filters",
-    testid: "tab-filters",
-    countIn: (db, ovl) => filterRowsFrom(db, ovl).length,
+    id: "vocabulary",
+    label: "Vocabulary",
+    testid: "tab-vocabulary",
+    // Every row, across both of the tab's groups.
+    countIn: (db, ovl) =>
+      filterRowsFrom(db, ovl).length + tagRowsFrom(db, ovl).length,
     advanced: true,
   },
   {
@@ -357,6 +374,9 @@ const TABS: TabDef[] = [
   },
 ];
 
+/** Tab ids an older URL or stored state may name, and the tab that took each over. */
+const TAB_ALIASES: Record<string, string> = { filters: "vocabulary" };
+
 const EDITOR_GROUPS = Object.keys(GROUPS) as EditorGroup[];
 
 /** The groups a tab hosts, in `GROUPS` order. */
@@ -369,35 +389,47 @@ const tabIsAdvanced = computed(
   () => TABS.find((entry) => entry.id === tab.value)?.advanced ?? false,
 );
 
-/** The Slots tab group last shown, used when nothing is selected. */
-const slotsGroup = ref<EditorGroup>("slots");
+/** The group each multi-group tab last showed, used when nothing is selected. */
+const lastGroup = reactive<Record<string, EditorGroup>>({});
 
-/** The group whose rows and form the active tab is showing. */
+/** Remembers `group` as its tab's last shown. */
+const showGroup = (group: EditorGroup) => {
+  lastGroup[GROUPS[group].tab] = group;
+};
+
+/** The group whose form the active tab is showing. */
 const activeGroup = computed<EditorGroup>(() => {
   const groups = groupsOfTab(tab.value);
-  if (groups.includes(slotsGroup.value)) return slotsGroup.value;
+  const last = lastGroup[tab.value];
+  if (last && groups.includes(last)) return last;
   return groups[0] ?? "items";
 });
 
-/** Maps the singular row/lint kind ("sectionPreset") to its plural overlay group name. Tags
- *  have no editor group, so a tag finding opens nothing. */
-const GROUP_OF_KIND: Record<
-  Exclude<LintFinding["kind"], "tag">,
-  EditorGroup
-> = {
+/** Maps the singular row/lint kind ("sectionPreset") to its plural overlay group name. */
+const GROUP_OF_KIND: Record<LintFinding["kind"], EditorGroup> = {
   item: "items",
   bonus: "bonuses",
   filter: "filters",
+  tag: "tags",
   sectionPreset: "sectionPresets",
   slot: "slots",
   section: "sections",
 };
+
+/** The active group's row kind, for the flat list to mark its selection by. */
+const activeKind = computed(
+  () =>
+    (Object.keys(GROUP_OF_KIND) as LintFinding["kind"][]).find(
+      (kind) => GROUP_OF_KIND[kind] === activeGroup.value,
+    ) as EditorRowKind,
+);
 
 /** This layer's current selection, one id per overlay group. */
 const selectedBySection = reactive<Record<EditorGroup, string | null>>({
   items: null,
   bonuses: null,
   filters: null,
+  tags: null,
   sections: null,
   sectionPresets: null,
   slots: null,
@@ -433,6 +465,7 @@ const newEntrySection = ref("");
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const bonusForm = ref<InstanceType<typeof BonusForm> | null>(null);
 const filterForm = ref<InstanceType<typeof FilterForm> | null>(null);
+const tagForm = ref<InstanceType<typeof TagForm> | null>(null);
 const presetForm = ref<InstanceType<typeof PresetForm> | null>(null);
 const sectionForm = ref<InstanceType<typeof SectionForm> | null>(null);
 const slotForm = ref<InstanceType<typeof SlotForm> | null>(null);
@@ -546,8 +579,52 @@ function filterRowsFrom(catalogDb: Db, ovl: CatalogOverlay): FilterRow[] {
   );
 }
 
-const rows = computed<EditorRow[]>(
-  () => GROUPS[activeGroup.value].rowsFrom?.(db.value, overlay.value) ?? [],
+/** Every tag the editor knows: the declared ones plus every one in use. */
+function tagNames(catalogDb: Db): string[] {
+  return [
+    ...new Set<string>([
+      ...catalogDb.tags.map((tag) => tag.id),
+      ...catalog.usedTags(
+        catalogDb.items,
+        catalogDb.bonuses,
+        catalogDb.authoredSlots,
+      ),
+    ]),
+  ].sort();
+}
+
+/** One row per tag, the way `filterRowsFrom` lists categories. */
+function tagRowsFrom(catalogDb: Db, ovl: CatalogOverlay): TagRow[] {
+  const declared = new Map(catalogDb.tags.map((tag) => [tag.id, tag]));
+  const tombstones = catalog.tombstoneIds(ovl, "tags");
+  const removed = new Set(tombstones);
+  return editorRows<string, TagRow>(
+    tagNames(catalogDb).filter((name) => !removed.has(name)),
+    (name) => ({
+      key: name,
+      name,
+      filter: `${catalogDb.itemsByTag.get(name)?.length ?? 0} item(s)`,
+      def: declared.get(name) ?? null,
+      status: catalog.statusOf(ovl, "tags", name),
+      kind: "tag",
+    }),
+    tombstones,
+    (id) => ({
+      key: id,
+      name: id,
+      filter: "-",
+      def: null,
+      status: "removed",
+      kind: "tag",
+    }),
+  );
+}
+
+/** The active tab's rows, group by group in `GROUPS` order. */
+const rows = computed<EditorRow[]>(() =>
+  groupsOfTab(tab.value).flatMap(
+    (group) => GROUPS[group].rowsFrom?.(db.value, overlay.value) ?? [],
+  ),
 );
 
 /** The tab strip, with counts that stay current while another tab is showing. */
@@ -572,9 +649,9 @@ const filterable = (row: EditorRow): FilterableRow =>
         retired: row.item ? isRetired(db.value, row.item.id) : false,
       }
     : {
-        // A filter is found by its label as well as its id.
+        // A filter or tag is found by its label as well as its id.
         name:
-          row.kind === "filter" && row.def?.label
+          (row.kind === "filter" || row.kind === "tag") && row.def?.label
             ? `${row.def.label} ${row.name}`
             : row.name,
         filter: row.filter,
@@ -594,7 +671,9 @@ function shownRow(group: EditorGroup): FilterableRow | undefined {
   const key = selectedBySection[group];
   if (!key) return undefined;
   if (GROUPS[group].tab !== "slots") {
-    const row = rows.value.find((entry) => entry.key === key);
+    const row = rows.value.find(
+      (entry) => entry.key === key && GROUP_OF_KIND[entry.kind] === group,
+    );
     return row && filterable(row);
   }
   const kind = OUTLINE_KIND_OF[group];
@@ -695,6 +774,12 @@ const selectedFilter = computed(
 );
 const selectedFilterId = computed(() => selectedBySection.filters);
 
+/** The declaration behind the selected tag, or null if it has none yet. */
+const selectedTag = computed(
+  () => db.value.tags.find((tag) => tag.id === selectedBySection.tags) ?? null,
+);
+const selectedTagId = computed(() => selectedBySection.tags);
+
 /** The status badge for whichever entity is currently selected. One computed rather than
  *  one per group: `EntryStatus` doesn't vary by entity type, and only one form is ever
  *  showing. */
@@ -705,7 +790,7 @@ const selectedStatus = computed(() => {
     : catalog.statusOf(overlay.value, activeGroup.value, id);
 });
 
-/** The item form's category choices, the same list the Filters tab shows. */
+/** The item form's category choices, the same list the Vocabulary tab shows. */
 const filters = computed<string[]>(() => filterNames(db.value));
 
 /** Every known bonus id, for id-collision avoidance and the `excludes` vocabulary. */
@@ -733,6 +818,7 @@ const entryCount = computed(() => catalog.entryCount(overlay.value));
 const draftDirty: Partial<Record<EditorGroup, () => boolean>> = {
   bonuses: () => bonusForm.value?.dirty ?? false,
   filters: () => filterForm.value?.dirty ?? false,
+  tags: () => tagForm.value?.dirty ?? false,
   sections: () => sectionForm.value?.dirty ?? false,
   sectionPresets: () => presetForm.value?.dirty ?? false,
   slots: () => slotForm.value?.dirty ?? false,
@@ -748,7 +834,8 @@ const hasUnsavedDraft = (row: EditorRow | OutlineRow) => {
  *  not, plus the composed db. Groups are separate id spaces, so an item and its bonus can
  *  share an id. */
 const allocatableIds = computed(() => {
-  const { items, bonuses, presets, slots, sections, filters } = engine.db.value;
+  const { items, bonuses, presets, slots, sections, filters, tags } =
+    engine.db.value;
   const composed: Record<EditorGroup, { id: string }[]> = {
     items,
     bonuses,
@@ -756,6 +843,7 @@ const allocatableIds = computed(() => {
     slots,
     sections,
     filters,
+    tags,
   };
   return Object.fromEntries(
     catalog.GROUPS.map((group) => [
@@ -769,6 +857,11 @@ const allocatableIds = computed(() => {
     ]),
   ) as Record<EditorGroup, string[]>;
 });
+
+/** Every tag a new declaration must not repeat: known here or named by any layer. */
+const takenTags = computed(() => [
+  ...new Set([...tagNames(db.value), ...allocatableIds.value.tags]),
+]);
 
 const findings = computed(() =>
   catalog.validate(
@@ -792,8 +885,8 @@ const warnCount = computed(
 );
 
 // --- routing --------------------------------------------------------------------------
-// This component owns the `item`/`bonus`/`filter`/`preset`/`slot`/`sectionId`/`section`/
-// `status`/`q` params; `section` is the tab, `sectionId` a selected layout section.
+// This component owns the `item`/`bonus`/`filter`/`tag`/`preset`/`slot`/`sectionId`/
+// `section`/`status`/`q` params; `section` is the tab, `sectionId` a selected layout section.
 // `select`'s `push` flag keeps arrow-key browsing out of the back/forward history.
 
 /** The route params that select `id` in `group` and clear every other group's key. */
@@ -831,16 +924,20 @@ interface SelectionSource {
   slot?: string;
   sectionId?: string;
   filter?: string;
+  tag?: string;
   /** The group whose new draft is open. In the URL only. */
   new?: string;
-  /** Stored per layer, never in the URL: the Slots tab group last shown. */
-  slotsGroup?: string;
+  /** Stored per layer, never in the URL: the group each multi-group tab last showed. */
+  lastGroup?: Readonly<Record<string, string>>;
 }
 
-/** Applies a parsed route or the stored `ui` state to `tab`/`selectedBySection`. An unknown tab
- *  falls back to the first one, and an id that no longer resolves is dropped. */
+/** Applies a parsed route or the stored `ui` state to `tab`/`selectedBySection`. A renamed tab
+ *  lands on its successor, an unknown one falls back to the first, and an id that no longer
+ *  resolves is dropped. */
 function restoreSelection(source: SelectionSource) {
-  const target = TABS.find((entry) => entry.id === source.section) ?? TABS[0];
+  const section = source.section ?? "";
+  const named = TAB_ALIASES[section] ?? section;
+  const target = TABS.find((entry) => entry.id === named) ?? TABS[0];
   tab.value = target.id;
   const groups = groupsOfTab(target.id);
   const fresh = groups.find((group) => group === source.new);
@@ -854,8 +951,8 @@ function restoreSelection(source: SelectionSource) {
   const chosen =
     fresh ??
     groups.find((group) => selectedBySection[group]) ??
-    groups.find((group) => group === source.slotsGroup);
-  if (chosen) slotsGroup.value = chosen;
+    groups.find((group) => group === source.lastGroup?.[target.id]);
+  if (chosen) showGroup(chosen);
 }
 
 /** Clears every duplicate seed: one belongs only to the draft it was set up for. */
@@ -923,7 +1020,7 @@ async function switchTab(target: string) {
   if (!(await draftGuard.confirmDiscard())) return;
   tab.value = target;
   // A phone lands on the new tab's list, the way into any of its entries.
-  const group = groupsOfTab(target)[0];
+  const group = activeGroup.value;
   writeRoute({
     section: tabParam(target),
     ...routeParamsFor(
@@ -950,7 +1047,7 @@ async function select(
   for (const sibling of groupsOfTab(GROUPS[group].tab))
     selectedBySection[sibling] = null;
   selectedBySection[group] = row.key;
-  slotsGroup.value = group;
+  showGroup(group);
   writeRoute(routeParamsFor(group, row.key), { transient });
 }
 
@@ -962,7 +1059,7 @@ async function newEntry(group: EditorGroup) {
   if (!(await draftGuard.confirmDiscard())) return;
   for (const sibling of groupsOfTab(GROUPS[group].tab))
     selectedBySection[sibling] = null;
-  slotsGroup.value = group;
+  showGroup(group);
   newItemCounter.value++;
   writeRoute(newDraftParams(group));
 }
@@ -977,13 +1074,9 @@ function newBonus() {
   newEntry("bonuses");
 }
 
-function newFilter() {
-  newEntry("filters");
-}
-
-/** The entry list's "create" click, dispatched to the active group's `createNew`. */
-function createEntry() {
-  GROUPS[activeGroup.value].createNew();
+/** The entry list's "create" click: the kind its menu named, else the active group. */
+function createEntry(kind?: EditorRowKind) {
+  GROUPS[kind ? GROUP_OF_KIND[kind] : activeGroup.value].createNew();
 }
 
 /** Opens a new item draft pre-filled from the currently selected item -- an explicit Save
@@ -1072,7 +1165,7 @@ async function duplicateSlot() {
   if (!(await draftGuard.confirmDiscard())) return;
   duplicateSlotSeed.value = slot;
   selectedBySection.slots = null;
-  slotsGroup.value = "slots";
+  showGroup("slots");
   newItemCounter.value++;
   writeRoute(newDraftParams("slots"));
   showNotice(
@@ -1181,7 +1274,7 @@ async function jumpTo(group: EditorGroup, id: string) {
   tab.value = target;
   for (const sibling of groupsOfTab(target)) selectedBySection[sibling] = null;
   selectedBySection[group] = id;
-  slotsGroup.value = group;
+  showGroup(group);
   writeRoute({
     section: tabParam(target),
     ...routeParamsFor(group, id),
@@ -1192,7 +1285,7 @@ async function jumpTo(group: EditorGroup, id: string) {
 /** Jump to whatever a validation finding points at. Findings carry `kind` precisely so this
  * doesn't have to guess from the id/name shape. */
 function selectFinding(finding: LintFinding) {
-  if (!finding.name || finding.kind === "tag") return;
+  if (!finding.name) return;
   jumpTo(GROUP_OF_KIND[finding.kind], finding.name);
 }
 
@@ -1201,6 +1294,9 @@ const openItem = (itemId: string) => jumpTo("items", itemId);
 
 /** The item form's "edit filter" link: open that category's metadata. */
 const openFilter = (filter: string) => jumpTo("filters", filter);
+
+/** The item form's link on an unlabeled tag: open that tag's form. */
+const openTag = (tag: string) => jumpTo("tags", tag);
 
 // Per-group wrappers typing each form's payload.
 const onSave = ({ item }: { item: Item }) =>
@@ -1265,6 +1361,13 @@ const onUpdateFilter = ({
 }) => updateEntry("filters", filter.id, filter, label);
 const onDeleteFilter = () => deleteEntry("filters");
 const onRevertFilter = () => revertEntry("filters");
+
+const onSaveTag = ({ tag }: { tag: TagDef }) =>
+  saveEntry("tags", tag.id, tag, tag.id);
+const onUpdateTag = ({ tag, label }: { tag: TagDef; label: string }) =>
+  updateEntry("tags", tag.id, tag, label);
+const onDeleteTag = () => deleteEntry("tags");
+const onRevertTag = () => revertEntry("tags");
 
 const onSavePreset = ({ preset }: { preset: SectionPreset }) =>
   saveEntry("sectionPresets", preset.id, preset, preset.label || preset.id);
@@ -1442,13 +1545,14 @@ watch(query, (value) => {
 // has been cleared by `onUnmounted` below. `selectedBySection` is a reactive object, not a
 // ref, so it deep-watches by default even inside this array of sources.
 watch(
-  [tab, slotsGroup, selectedBySection, statusFilter, query, itemFilter],
-  ([activeTab, group, sel, status, q, items]) => {
+  [tab, lastGroup, selectedBySection, statusFilter, query, itemFilter],
+  ([activeTab, groups, sel, status, q, items]) => {
     ui.value.section = activeTab;
-    ui.value.slotsGroup = group;
+    ui.value.lastGroup = { ...groups };
     ui.value.item = sel.items ?? "";
     ui.value.bonus = sel.bonuses ?? "";
     ui.value.filter = sel.filters ?? "";
+    ui.value.tag = sel.tags ?? "";
     ui.value.preset = sel.sectionPresets ?? "";
     ui.value.slot = sel.slots ?? "";
     ui.value.sectionId = sel.sections ?? "";
@@ -1467,6 +1571,7 @@ function hasRoutedLayerState(routed: Route) {
     routed.item ||
     routed.bonus ||
     routed.filter ||
+    routed.tag ||
     routed.preset ||
     routed.slot ||
     routed.sectionId ||
@@ -1502,10 +1607,10 @@ onMounted(() => {
     // BuildSection's "Create new from current": the pre-filled draft *is* the point of the
     // jump, so it outranks whatever this layer had open, the same as `newItemSeed`.
     tab.value = "slots";
-    slotsGroup.value = "sectionPresets";
+    showGroup("sectionPresets");
     selectedBySection.sectionPresets = null;
     ui.value.section = "slots";
-    ui.value.slotsGroup = "sectionPresets";
+    ui.value.lastGroup = { ...lastGroup };
     ui.value.preset = "";
     writeRoute(
       { section: "slots", ...newDraftParams("sectionPresets") },
@@ -1565,7 +1670,7 @@ watch(layerEditorUi.newItemSeed, () => {
   if (!seed) return;
   for (const sibling of groupsOfTab(GROUPS.items.tab))
     selectedBySection[sibling] = null;
-  slotsGroup.value = "items";
+  showGroup("items");
   duplicateItemSeed.value = seed;
   newItemCounter.value++;
   showNewItemSeed(seed);
@@ -1577,6 +1682,7 @@ onUnmounted(() => {
       item: null,
       bonus: null,
       filter: null,
+      tag: null,
       preset: null,
       slot: null,
       sectionId: null,
@@ -1806,12 +1912,13 @@ onUnmounted(() => {
           v-model:query="query"
           v-model:status-filter="statusFilter"
           v-model:item-filter="itemFilter"
-          :scroll-key="`${props.layer.id}:${activeGroup}`"
+          :scroll-key="`${props.layer.id}:${tab}`"
           class="min-w-0 flex-1"
           :rows="filtered"
           :categories="filters"
-          :section="activeGroup"
+          :section="tab"
           :selected-key="selectedKey"
+          :selected-kind="activeKind"
           :status-filter-options="statusFilterOptions"
           :has-unsaved-draft="hasUnsavedDraft"
           @select="select"
@@ -1857,6 +1964,7 @@ onUnmounted(() => {
           @update-bonus="onUpdateBonus"
           @open-item="openItem"
           @open-filter="openFilter"
+          @open-tag="openTag"
           @tooltip-import="showTooltipImport = !showTooltipImport"
         />
         <BonusForm
@@ -1891,6 +1999,20 @@ onUnmounted(() => {
           @update:filter="onUpdateFilter"
           @delete="onDeleteFilter"
           @revert="onRevertFilter"
+        />
+        <TagForm
+          v-else-if="activeGroup === 'tags'"
+          ref="tagForm"
+          :key="`tag:${selectedKey ?? `__new__${newItemCounter}`}`"
+          :source="selectedTag"
+          :fixed-id="selectedTagId"
+          :status="selectedStatus"
+          :db="db"
+          :taken-ids="takenTags"
+          @save="onSaveTag"
+          @update:tag="onUpdateTag"
+          @delete="onDeleteTag"
+          @revert="onRevertTag"
         />
         <SectionForm
           v-else-if="activeGroup === 'sections'"

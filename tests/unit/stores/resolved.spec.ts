@@ -28,6 +28,7 @@ const emptyOverlay = (): CatalogOverlay => ({
   slots: {},
   sections: {},
   filters: {},
+  tags: {},
 });
 
 describe("resolved.db stability", () => {
