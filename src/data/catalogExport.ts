@@ -328,7 +328,8 @@ const PRESET_KEYS = [
   "clears",
 ] as const;
 const FILTER_KEYS = ["label", "defaultMaxCopies", "fields"] as const;
-const TAG_KEYS = ["label"] as const;
+const TAG_KEYS = ["label", "badge"] as const;
+const BADGE_KEYS = ["label", "tone"] as const;
 
 function canonicalSlot(slot: Slot) {
   const out = orderKeys(slot, SLOT_KEYS);
@@ -406,7 +407,12 @@ export function toVocabularyFile(filters: FilterDef[], tags: TagDef[]): string {
         FILTER_KEYS,
       ),
     ),
-    tags: keyedById(tags, ({ id: _id, ...tag }) => orderKeys(tag, TAG_KEYS)),
+    tags: keyedById(tags, ({ id: _id, ...tag }) =>
+      orderKeys(
+        { ...tag, badge: tag.badge && orderKeys(tag.badge, BADGE_KEYS) },
+        TAG_KEYS,
+      ),
+    ),
   };
   return `${JSON.stringify(body, null, 2)}\n`;
 }

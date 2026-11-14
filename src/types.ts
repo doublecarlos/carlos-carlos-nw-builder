@@ -353,6 +353,31 @@ export interface TagDef {
   /** A noun phrase naming the items that carry the tag (`Cobalt enchantment`), read in
    * conditions and pickers. Without one the raw tag is shown. */
   label?: string;
+  /** A chip on the card of every item carrying the tag. */
+  badge?: TagBadge;
+}
+
+/** Badge colors, named by hue so the palette does not grow per kind of tag. Each is a
+ * `--badge-<tone>` token in base.css. */
+export const BADGE_TONES = [
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "teal",
+  "blue",
+  "purple",
+  "magenta",
+  "gray",
+] as const;
+export type BadgeTone = (typeof BADGE_TONES)[number];
+
+export interface TagBadge {
+  /** Short card text. Without one the badge reads the tag's label, then the raw tag. */
+  label?: string;
+  /** A `string` because the shipped JSON widens to one; `BADGE_TONES` is the vocabulary,
+   * enforced by catalog.ts. */
+  tone: string;
 }
 
 /** The `defaultMaxCopies` half of a `FilterDef`, as `Db.filterDefaults` keys it. */

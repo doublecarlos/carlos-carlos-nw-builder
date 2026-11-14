@@ -631,6 +631,27 @@ describe("catalog.validateTags", () => {
     expect(findings).toEqual([expect.stringMatching(/"gem:typo".*declared/)]);
   });
 
+  // An unknown tone has no --badge-* color, so the badge would render uncolored.
+  it("rejects a badge with an unknown tone and accepts a known one", () => {
+    const findings = catalog.validateTags(
+      [
+        { id: "gem:jade", badge: { tone: "chartreuse" } },
+        { id: "gem:cobalt", label: "Cobalt", badge: { tone: "blue" } },
+        { id: "gem:opal", label: "Opal" },
+      ],
+      [ring],
+      [gated],
+      [],
+    );
+    expect(findings).toEqual([
+      expect.objectContaining({
+        level: "error",
+        name: "gem:jade",
+        message: expect.stringMatching(/"chartreuse"/),
+      }),
+    ]);
+  });
+
   it("counts a slot's availableWhen and selector tags as uses", () => {
     const slot: ItemPickerSlot = {
       ...picker("a.one", "a"),
