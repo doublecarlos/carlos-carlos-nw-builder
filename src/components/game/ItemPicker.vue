@@ -400,7 +400,7 @@ defineExpose({
     :show-empty-option="allowEmpty"
     :closed-display="selectedLabel"
     :tone="selectedTone"
-    :placeholder="selectedLabel || placeholder || '-'"
+    :placeholder="placeholder || '-'"
     :title-input="false"
     :readonly="readonly"
     :max-rows="maxRows"

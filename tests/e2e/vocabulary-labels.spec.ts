@@ -6,6 +6,8 @@ import {
   confirmImport,
   openBuilder,
   pickerMenu,
+  comboBoxClear,
+  comboBoxValueId,
 } from "./support/app";
 import { layerRow } from "./support/nav";
 import { shippedLabeledTag } from "./support/shippedData";
@@ -53,14 +55,16 @@ test("the item form's filter picker finds a labeled filter by its label", async 
   const row = page.getByRole("option", { name: FILTER_LABEL });
   await expect(row.getByTestId("option-row-id")).toHaveText(FILTER);
 
-  // Choosing the row writes the id, not the label.
+  // Choosing the row writes the id, which the closed field shows beside the label.
   await row.click();
-  await expect(input).toHaveValue(FILTER);
+  await expect(input).toHaveValue(FILTER_LABEL);
+  await expect(comboBoxValueId(input)).toHaveText(FILTER);
 
   // So does typing the label in full and leaving the field.
   await input.fill(FILTER_LABEL);
   await input.blur();
-  await expect(input).toHaveValue(FILTER);
+  await expect(input).toHaveValue(FILTER_LABEL);
+  await expect(comboBoxValueId(input)).toHaveText(FILTER);
 });
 
 test("the Vocabulary tab lists a labeled filter by its label", async ({
@@ -122,12 +126,13 @@ test("an equipped condition's tag picker finds a labeled tag by label and by id 
   await input.fill("Charm Label");
   await expect(row.getByTestId("option-row-id")).toHaveText(TAG);
   await row.click();
-  await expect(input).toHaveValue(TAG);
+  await expect(input).toHaveValue(TAG_LABEL);
+  await expect(comboBoxValueId(input)).toHaveText(TAG);
 
   await input.fill(TAG);
   await expect(row).toBeVisible();
   await input.press("Enter");
-  await expect(input).toHaveValue(TAG);
+  await expect(input).toHaveValue(TAG_LABEL);
 
   await grant.getByLabel("Edit as JSON").click();
   const json = await grant.locator("textarea").inputValue();
@@ -143,6 +148,8 @@ test("an equipped condition's tag picker keeps a tag typed by hand", async ({
   await expect(page.getByRole("option", { name: /new$/ })).toBeVisible();
   await input.blur();
   await expect(input).toHaveValue("test:not-yet-carried");
+  // An unlabeled tag reads as its id alone, not the id twice.
+  await expect(comboBoxValueId(input)).toHaveCount(0);
 });
 
 // The equipped leaf names a tag or an exact item, so a tag picked by mistake has to come out.
@@ -152,7 +159,7 @@ test("an equipped condition's tag picker clears through its empty row", async ({
   const { grant, input } = await openEquippedCondition(page);
   await input.fill(TAG);
   await input.press("Enter");
-  await expect(input).toHaveValue(TAG);
+  await expect(input).toHaveValue(TAG_LABEL);
 
   // The empty row clears; it is not a new value to coin.
   await input.click();
@@ -193,5 +200,28 @@ test("an open tag picker shows the current tag as its placeholder", async ({
 
   await input.focus();
   await expect(input).toHaveValue("");
-  await expect(input).toHaveAttribute("placeholder", TAG);
+  await expect(input).toHaveAttribute("placeholder", TAG_LABEL);
+});
+
+// The clear button is the pointer's way to empty the field without opening the list, and it
+// adds no Tab stop to the condition row.
+test("an equipped condition's tag picker clears with its clear button", async ({
+  page,
+}) => {
+  const { grant, input } = await openEquippedCondition(page);
+  const clear = comboBoxClear(input);
+  await expect(clear).toHaveCount(0);
+
+  await input.fill(TAG);
+  await input.press("Enter");
+  await input.blur();
+  await expect(clear).toHaveAttribute("tabindex", "-1");
+  await clear.click();
+  await expect(input).toHaveValue("");
+  await expect(clear).toHaveCount(0);
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+
+  await grant.getByLabel("Edit as JSON").click();
+  const json = await grant.locator("textarea").inputValue();
+  expect(JSON.parse(json).when).toBeUndefined();
 });

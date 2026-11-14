@@ -41,6 +41,13 @@ export interface ComboBoxExposed {
 // details in a bottom sheet over the list, with a Choose button: the phone's stand-in for a
 // caller's `#aside`, which only shows beside the floating menu. Back and Escape close the
 // sheet back to the list.
+//
+// `showValue` adds the chosen option's value after its label in the closed box, small and
+// muted, for pickers over named ids. The box's value stays the label, so assistive tech reads
+// the name; the id is an overlay that truncates before the label does.
+//
+// With `showEmptyOption`, a filled box also gets a clear button in place of the ▾, kept out of
+// the tab order: the "- empty -" row is the keyboard route.
 import {
   ref,
   shallowRef,
@@ -61,12 +68,13 @@ import { isPhone } from "../../stores/viewport";
 import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
+import ComboBoxValueId from "./ComboBoxValueId.vue";
 import ComboBoxScreen from "./ComboBoxScreen.vue";
 import BaseButton from "./BaseButton.vue";
 import { trackPickerOpen } from "../../composables/useOpenPickers";
 import BaseSheet from "./BaseSheet.vue";
 import IconButton from "./IconButton.vue";
-import { Info } from "@lucide/vue";
+import { Info, X } from "@lucide/vue";
 
 const props = withDefaults(
   defineProps<{
@@ -79,8 +87,10 @@ const props = withDefaults(
     placeholder?: string;
     /** Red border while the current choice fails validation. */
     invalid?: boolean;
-    /** Offer "clear the slot" as the first, highlightable row. */
+    /** Offer "clear the slot" as the first, highlightable row, and a clear button. */
     showEmptyOption?: boolean;
+    /** Show the chosen option's value beside its label in the closed box. */
+    showValue?: boolean;
     /** Cap on rendered rows -- filters run to 40+ entries and nobody scrolls past the
      *  first screenful, so rendering everything for every keystroke is wasted work. */
     maxRows?: number;
@@ -115,6 +125,7 @@ const props = withDefaults(
     placeholder: "-",
     invalid: false,
     showEmptyOption: false,
+    showValue: false,
     maxRows: 60,
     closedDisplay: "",
     inputClass: "",
@@ -294,10 +305,25 @@ watch(highlight, () => {
   nextTick(() => list.value?.scrollToHighlighted());
 });
 
+/** What the closed box reads, which an open one keeps as its placeholder. */
+const closedText = computed(
+  () => props.closedDisplay || (selected.value?.label ?? ""),
+);
+
+/** The id shown after the label, unless it would repeat it. */
+const shownValue = computed(() => {
+  const value = selected.value?.value ?? "";
+  return props.showValue && value !== closedText.value ? value : "";
+});
+
+const clearable = computed(
+  () => props.showEmptyOption && !props.readonly && Boolean(model.value),
+);
+
 /** An open menu shows the current value as the placeholder, so it keeps the value's look;
  *  only a real placeholder reads muted. */
 const placeholderClass = computed(() =>
-  !model.value
+  !closedText.value
     ? "placeholder:text-muted"
     : props.tone
       ? "placeholder:text-(--tone)"
@@ -446,6 +472,12 @@ function choose(option: T | null, { blur = true }: { blur?: boolean } = {}) {
   else close();
 }
 
+/** The clear button's action: empties the box where it is, leaving focus alone. */
+function clear() {
+  model.value = "";
+  close();
+}
+
 /** Focuses the input, which opens the list on a fresh query the same way a click does (see
  *  `onFocus`). Exposed so the keyboard cursor's owners never have to reach through `$el` for
  *  an input this component should be the only one to know the shape of. */
@@ -560,7 +592,7 @@ for (const target of keyTargets) {
       ref="input"
       :aria-describedby="describedBy"
       data-testid="picker-input"
-      class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      class="w-full rounded-md border bg-surface py-0.5 pl-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       :class="[
         invalid
           ? 'border-danger'
@@ -568,6 +600,9 @@ for (const target of keyTargets) {
             ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
             : 'border-line',
         tone && 'text-(--tone)',
+        clearable
+          ? 'pr-7 pointer-coarse:pr-[calc(var(--spacing-tap)+0.25rem)]'
+          : 'pr-6',
         placeholderClass,
         inputClass,
         $slots.closed && closedOption && 'text-transparent',
@@ -585,13 +620,16 @@ for (const target of keyTargets) {
       :aria-invalid="invalid ? 'true' : undefined"
       autocomplete="off"
       spellcheck="false"
-      :value="
-        open && !screen
-          ? query
-          : closedDisplay || (selected ? selected.label : '')
+      :value="open && !screen ? query : closedText"
+      :title="
+        titleInput
+          ? shownValue
+            ? `${closedText}
+${shownValue}`
+            : closedText
+          : ''
       "
-      :title="titleInput ? closedDisplay || (selected?.label ?? '') : ''"
-      :placeholder="placeholder"
+      :placeholder="closedText || placeholder"
       @focus="onFocus"
       @click="onTriggerClick"
       @input="onInput"
@@ -607,10 +645,31 @@ for (const target of keyTargets) {
     >
       <slot name="closed" :option="closedOption" />
     </div>
+    <ComboBoxValueId
+      v-if="shownValue && closedOption && !$slots.closed"
+      :label="closedText"
+      :value="shownValue"
+      :class="
+        clearable
+          ? 'right-7 pointer-coarse:right-[calc(var(--spacing-tap)+0.25rem)]'
+          : 'right-6'
+      "
+    />
+    <IconButton
+      v-if="clearable"
+      class="absolute right-1 top-1/2 -translate-y-1/2"
+      title="Clear"
+      tabindex="-1"
+      data-testid="combobox-clear"
+      @mousedown.prevent
+      @click="clear"
+    >
+      <X />
+    </IconButton>
     <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
          this text input is actually a fixed-choice dropdown. -->
     <span
-      v-if="!readonly"
+      v-else-if="!readonly"
       class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted"
       >▾</span
     >

@@ -9,10 +9,13 @@
 // something new and blurring or pressing Enter/Tab commits the typed text itself.
 //
 // Options are `{ value, label }` and a row is an OptionRow, so a labeled value is found by its
-// label or its value. The field itself holds the value.
+// label or its value. The closed field shows the value, or with `showValue` its label with the
+// value after it, small and muted, as ComboBox does.
 //
 // An untyped open highlights the current value, so Enter or Tab through the field keeps it.
-// `showEmptyOption` adds an "- empty -" row on that open, the way to clear the field.
+// `showEmptyOption` adds an "- empty -" row on that open, the keyboard way to clear the
+// field, and a clear button kept out of the tab order while it is filled.
+import { X } from "@lucide/vue";
 import { computed, watch, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { filterAndRank } from "../../lib/text-filter";
@@ -20,7 +23,9 @@ import { useMenuNavigation } from "../../composables/useMenuNavigation";
 import { useFormFieldControl } from "../../composables/useFormField";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
+import ComboBoxValueId from "./ComboBoxValueId.vue";
 import OptionRow from "./OptionRow.vue";
+import IconButton from "./IconButton.vue";
 import type { ComboBoxOption } from "./ComboBox.vue";
 
 const MAX_SUGGESTIONS = 40;
@@ -32,12 +37,15 @@ const props = withDefaults(
     testid?: string;
     /** Offer "- empty -" as the first row of an untyped open, to clear the field. */
     showEmptyOption?: boolean;
+    /** Show the label in the closed field, with the value beside it. */
+    showValue?: boolean;
   }>(),
   {
     options: () => [],
     placeholder: "",
     testid: undefined,
     showEmptyOption: false,
+    showValue: false,
   },
 );
 
@@ -76,10 +84,25 @@ const freeValue = computed(() => {
   return value;
 });
 
+/** What the closed field reads: the value, or its label under `showValue`. */
+const closedText = computed(() =>
+  props.showValue
+    ? (props.options.find((option) => option.value === model.value)?.label ??
+      model.value)
+    : model.value,
+);
+
+/** The value shown after the label, unless it would repeat it. */
+const shownValue = computed(() =>
+  props.showValue && model.value !== closedText.value ? model.value : "",
+);
+
+const clearable = computed(() => props.showEmptyOption && Boolean(model.value));
+
 /** While open, the current pick stands in as the placeholder, read like a value and shown as
  *  the closed field shows it. */
 const shownPlaceholder = computed(() =>
-  open.value && model.value ? model.value : props.placeholder,
+  open.value && model.value ? closedText.value : props.placeholder,
 );
 
 /** Typed text naming an option by its label commits that option's value. */
@@ -123,6 +146,13 @@ watch(entries, resetHighlight);
 
 function commit(value: string) {
   model.value = valueOf(value).trim();
+  close();
+}
+
+/** The clear button's action: empties the field, leaving focus alone. */
+function clear() {
+  query.value = "";
+  model.value = "";
   close();
 }
 
@@ -170,8 +200,13 @@ onKeyStroke(
       :id="controlId"
       ref="input"
       :aria-describedby="describedBy"
-      class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-      :class="model ? 'placeholder:text-text' : 'placeholder:text-muted'"
+      class="w-full rounded-md border border-line bg-surface py-0.5 pl-1.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      :class="[
+        model ? 'placeholder:text-text' : 'placeholder:text-muted',
+        clearable
+          ? 'pr-7 pointer-coarse:pr-[calc(var(--spacing-tap)+0.25rem)]'
+          : 'pr-1.5',
+      ]"
       type="text"
       role="combobox"
       aria-autocomplete="list"
@@ -180,7 +215,13 @@ onKeyStroke(
       :aria-activedescendant="activeDescendant"
       autocomplete="off"
       spellcheck="false"
-      :value="open ? query : model"
+      :value="open ? query : closedText"
+      :title="
+        shownValue
+          ? `${closedText}
+${shownValue}`
+          : undefined
+      "
       :placeholder="shownPlaceholder"
       :data-testid="testid"
       @focus="onFocus"
@@ -188,6 +229,27 @@ onKeyStroke(
       @input="onInput"
       @blur="onBlur"
     />
+    <ComboBoxValueId
+      v-if="shownValue && !open"
+      :label="closedText"
+      :value="shownValue"
+      :class="
+        clearable
+          ? 'right-7 pointer-coarse:right-[calc(var(--spacing-tap)+0.25rem)]'
+          : 'right-1.5'
+      "
+    />
+    <IconButton
+      v-if="clearable"
+      class="absolute right-1 top-1/2 -translate-y-1/2"
+      title="Clear"
+      tabindex="-1"
+      data-testid="combobox-clear"
+      @mousedown.prevent
+      @click="clear"
+    >
+      <X />
+    </IconButton>
 
     <ComboBoxMenu v-if="menuOpen" ref="menu" :listbox-id="listboxId">
       <ComboBoxMenuRow

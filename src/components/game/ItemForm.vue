@@ -625,6 +625,7 @@ function showsGroup(group: FieldGroup): boolean {
           :options="filterOptions"
           testid="item-filter-input"
           show-empty-option
+          show-value
         />
         <BaseLink
           v-if="draft.filter.trim()"
