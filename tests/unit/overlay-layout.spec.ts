@@ -242,6 +242,34 @@ describe("normalizeOverlay and the overlay shape", () => {
     expect(catalog.makeDb([normalized]).maxCopies(artifact)).toBe(3);
   });
 
+  // Layers saved while class items had the `build_param_linked_item` category and the class
+  // slot selected the `class` tag keep their class items in the Class picker.
+  it("moves an old class item and class slot override to the class category", () => {
+    const shippedSlot = NW_SLOTS.slots.find(
+      (slot) => slot.id === "options.class",
+    )!;
+    const { filter: _filter, ...unfiltered } = shippedSlot as ItemPickerSlot;
+    const normalized = catalog.normalizeOverlay({
+      items: {
+        "class-custom": {
+          id: "class-custom",
+          name: "Custom class",
+          filter: "build_param_linked_item",
+          tags: ["class"],
+          bonuses: [],
+        },
+      },
+      slots: { "options.class": { ...unfiltered, tags: ["class"] } },
+    });
+    const ids = catalog
+      .makeDb([normalized])
+      .forSlot("options.class")
+      .map((item) => item.id);
+    expect(ids).toContain("class-custom");
+    const shippedClass = NW_ITEMS.find((item) => item.filter === "class")!;
+    expect(ids).toContain(shippedClass.id);
+  });
+
   it("gives a section entry without slotIds an empty list and drops a bad sectionOrder", () => {
     const normalized = catalog.normalizeOverlay({
       sections: { extra: { id: "extra", label: "Extra" } },
