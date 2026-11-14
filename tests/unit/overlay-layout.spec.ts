@@ -270,6 +270,60 @@ describe("normalizeOverlay and the overlay shape", () => {
     expect(ids).toContain(shippedClass.id);
   });
 
+  // The old class slot picked any `class` tagged item, so one in a category of its own stays
+  // in the Class picker. One in a category a slot picks keeps it.
+  it("moves a class tagged item in a category no slot picks to the class category", () => {
+    const item = (id: string, filter: string) => ({
+      id,
+      name: id,
+      filter,
+      tags: ["class"],
+      bonuses: [],
+    });
+    const normalized = catalog.normalizeOverlay({
+      items: {
+        own: item("own", "my_classes"),
+        picked: item("picked", "artifact"),
+      },
+    });
+    expect(normalized.items.own?.filter).toBe("class");
+    expect(normalized.items.picked?.filter).toBe("artifact");
+    const ids = catalog
+      .makeDb([normalized])
+      .forSlot("options.class")
+      .map((entry) => entry.id);
+    expect(ids).toContain("own");
+  });
+
+  // A category named with `build_param` or `hidden` once silenced "matches no slot"; such
+  // an item moves to `no_category`, which says the same, unless a slot picks its category.
+  it("moves an item in an old unpickable category to no_category", () => {
+    const item = (id: string, filter: string) => ({
+      id,
+      name: id,
+      filter,
+      bonuses: [],
+    });
+    const normalized = catalog.normalizeOverlay({
+      items: {
+        param: item("param", "build_param_mount"),
+        hidden: item("hidden", "hidden_extras"),
+        listed: item("listed", "hidden_listed"),
+      },
+      slots: {
+        "gear.listed": {
+          id: "gear.listed",
+          type: "item_picker",
+          section: "gear",
+          filter: "hidden_listed",
+        },
+      },
+    });
+    expect(normalized.items.param?.filter).toBe(catalog.NO_CATEGORY);
+    expect(normalized.items.hidden?.filter).toBe(catalog.NO_CATEGORY);
+    expect(normalized.items.listed?.filter).toBe("hidden_listed");
+  });
+
   it("gives a section entry without slotIds an empty list and drops a bad sectionOrder", () => {
     const normalized = catalog.normalizeOverlay({
       sections: { extra: { id: "extra", label: "Extra" } },

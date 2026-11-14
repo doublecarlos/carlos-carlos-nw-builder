@@ -201,10 +201,32 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
     }
   }
   // Class items once had the `build_param_linked_item` category and the class slot selected
-  // them by the `class` tag. Both now use the `class` category.
+  // them by the `class` tag. Both now use the `class` category, so a `class` tagged item in a
+  // category no slot picks moves there too.
+  const picked = slotSelectorFilters([
+    ...(NW_SLOTS.slots ?? []),
+    ...Object.values(overlay.slots).filter((slot) => slot !== null),
+  ]);
+  const unpicked = (filter: string | undefined) =>
+    !filter || (filter !== NO_CATEGORY && !picked.has(filter));
   for (const [id, item] of Object.entries(overlay.items)) {
-    if (item?.filter === "build_param_linked_item")
+    if (!item) continue;
+    if (
+      item.filter === "build_param_linked_item" ||
+      (item.tags?.includes("class") && unpicked(item.filter))
+    )
       overlay.items[id] = { ...item, filter: "class" };
+  }
+  // A category named with `build_param` or `hidden` once kept an item no slot picks from
+  // warning. `no_category` says that now.
+  for (const [id, item] of Object.entries(overlay.items)) {
+    const filter = item?.filter;
+    if (
+      filter &&
+      unpicked(filter) &&
+      (filter.includes("build_param") || filter.includes("hidden"))
+    )
+      overlay.items[id] = { ...item, filter: NO_CATEGORY };
   }
   const classSlot = overlay.slots["options.class"];
   if (
@@ -2397,28 +2419,22 @@ export function validateFilters(
     }));
 }
 
-/** Slot types that show a label in the build editor. */
-const LABELED_SLOT_TYPES: readonly AuthoredSlot["type"][] = [
-  "build_parameter",
-  "item_picker",
-  "item_picker_list",
-  "point_assignment",
-];
-
 /** Warns on a slot with neither a label nor a labeled category, since it would read as its id. */
 export function validateSlotLabels(
   slots: AuthoredSlot[],
   filters: FilterDef[],
 ): LintFinding[] {
-  const labeled = new Set(
-    filters.filter((filter) => filter.label).map((filter) => filter.id),
-  );
+  const labels = db.labelMap(filters);
   return slots
     .filter(
       (slot) =>
-        LABELED_SLOT_TYPES.includes(slot.type) &&
+        db.LABELED_SLOT_TYPES.includes(slot.type) &&
         !slot.label &&
-        !("filter" in slot && slot.filter && labeled.has(slot.filter)),
+        !db.categoryLabel(
+          slot.type,
+          "filter" in slot ? slot.filter : undefined,
+          labels,
+        ),
     )
     .map((slot) => ({
       level: "warn" as const,
@@ -2487,14 +2503,21 @@ export function usedTags(
   return used;
 }
 
-/** Every tag a catalog knows, sorted: the declared ones plus every one in use. */
-export function knownTags(catalogDb: Db): string[] {
-  return [
+const knownTagsCache = new WeakMap<Db, readonly string[]>();
+
+/** Every tag a catalog knows, sorted: the declared ones plus every one in use. It depends on
+ *  the catalog alone, so it is built once per `Db`. */
+export function knownTags(catalogDb: Db): readonly string[] {
+  const memoized = knownTagsCache.get(catalogDb);
+  if (memoized) return memoized;
+  const tags = [
     ...new Set<string>([
       ...catalogDb.tags.map((tag) => tag.id),
       ...usedTags(catalogDb.items, catalogDb.bonuses, catalogDb.authoredSlots),
     ]),
   ].sort();
+  knownTagsCache.set(catalogDb, tags);
+  return tags;
 }
 
 /**
@@ -2558,7 +2581,9 @@ export function validateScalerTargets(
     if (slot.type !== "build_parameter" || !slot.scaler?.applies) continue;
     const { filter = [], tags: appliesTags = [] } = slot.scaler.applies;
     const missing = [
-      ...filter.filter((id) => !filters.has(id)).map((id) => `filter "${id}"`),
+      ...filter
+        .filter((id) => !filters.has(id))
+        .map((id) => `category "${id}"`),
       ...appliesTags
         .filter((tag) => !tags.has(tag))
         .map((tag) => `tag "${tag}"`),
@@ -2946,7 +2971,7 @@ export function validate(
       if (!matchesPickerTag) {
         report(
           "error",
-          "no filter or tag; the item appears in no slot",
+          "no category or tag; the item appears in no slot",
           item.id,
         );
       }
@@ -2965,7 +2990,7 @@ export function validate(
     ) {
       report(
         "error",
-        `filter "${item.filter}" is claimed by both an item_picker slot and a ` +
+        `category "${item.filter}" is claimed by both an item_picker slot and a ` +
           "point_assignment slot; which one resolves it is ambiguous",
         item.id,
       );
@@ -2975,7 +3000,7 @@ export function validate(
     ) {
       report(
         "warn",
-        `filter "${item.filter}" is a point_assignment slot's filter, but this ` +
+        `category "${item.filter}" is a point_assignment slot's category, but this ` +
           "item has no inlineRepetition config, so it never appears as a row",
         item.id,
       );

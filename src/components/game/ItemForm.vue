@@ -71,7 +71,7 @@ const props = withDefaults(
     filters?: string[];
     /** Every known bonus id, forwarded to ItemBonuses for id-collision avoidance. */
     allBonusIds?: string[];
-    tags?: string[];
+    tags?: readonly string[];
     /** Every known bonus, forwarded to ItemBonuses for its pickers. */
     bonusOptions?: BonusOption[];
     allocatableIds?: string[];
@@ -149,30 +149,23 @@ const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
  *  be discarded by the jump, so it offers none until saved. */
 const unlabeledTags = computed(() => {
   if (!props.source) return [];
-  const labeled = new Set(
-    props.db.tags.filter((tag) => tag.label?.trim()).map((tag) => tag.id),
-  );
-  return draft.value.tags.filter((tag) => !labeled.has(tag));
+  return draft.value.tags.filter((tag) => !props.db.tagLabels.has(tag));
 });
 
 /** Each known tag, read by its declared label where it has one, else by itself. */
-const tagOptions = computed(() => {
-  const labels = new Map(props.db.tags.map((tag) => [tag.id, tag.label]));
-  return props.tags.map((tag) => ({
+const tagOptions = computed(() =>
+  props.tags.map((tag) => ({
     value: tag,
-    label: labels.get(tag) || tag,
-  }));
-});
+    label: props.db.tagLabels.get(tag) ?? tag,
+  })),
+);
 /** Each known filter, likewise. */
-const filterOptions = computed(() => {
-  const labels = new Map(
-    props.db.filters.map((filter) => [filter.id, filter.label]),
-  );
-  return props.filters.map((filter) => ({
+const filterOptions = computed(() =>
+  props.filters.map((filter) => ({
     value: filter,
-    label: labels.get(filter) || filter,
-  }));
-});
+    label: props.db.filterLabels.get(filter) ?? filter,
+  })),
+);
 /** `replacedBy` candidates. This item is left out: a self-reference is a lint error. */
 const replacementOptions = computed(() => [
   { value: "", label: "- not replaced -" },

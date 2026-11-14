@@ -7,7 +7,7 @@ import * as catalog from "../data/catalog";
 import { keepsRow, type FilterableRow } from "./entry-list-filter";
 import { defaultItemListFilter } from "./item-list-filter";
 import { nestedParentId } from "./slot-parent";
-import { filterLabelLookup, slotLabel } from "../data/db";
+import { slotLabel } from "../data/db";
 import type { AuthoredSlot, CatalogOverlay, Db, SectionPreset } from "../types";
 import type { EntryStatus } from "../data/catalog";
 
@@ -36,24 +36,21 @@ export interface OutlineGroup {
 /** Slots whose `section` does not exist. `compose` still renders them last, and lint reports them. */
 export const ORPHAN_LABEL = "No section";
 
-type LabelOf = (filter: string | undefined) => string | undefined;
-
 /** A slot's row name: its label or its category's, a text slot's text, or else its id. */
-const slotName = (slot: AuthoredSlot, labelOf: LabelOf) =>
+const slotName = (slot: AuthoredSlot, db: Db) =>
   slot.type === "text" && !slot.label
     ? slot.text || slot.id
-    : slotLabel(slot, labelOf);
+    : slotLabel(slot, db.filterLabels);
 
 const slotRow = (
   slot: AuthoredSlot,
   db: Db,
   overlay: CatalogOverlay,
-  labelOf: LabelOf,
 ): OutlineRow => {
   const row: OutlineRow = {
     key: slot.id,
     kind: "slot",
-    name: slotName(slot, labelOf),
+    name: slotName(slot, db),
     detail: slot.type,
     status: catalog.statusOf(overlay, "slots", slot.id),
   };
@@ -117,15 +114,14 @@ export function buildOutline(db: Db, overlay: CatalogOverlay): OutlineGroup[] {
   };
   const bucket = (sectionId: string) => groups.get(sectionId) ?? orphans;
 
-  const labelOf = filterLabelLookup(db.filters);
   for (const slot of db.authoredSlots)
-    bucket(slot.section).slots.push(slotRow(slot, db, overlay, labelOf));
+    bucket(slot.section).slots.push(slotRow(slot, db, overlay));
   for (const id of catalog.tombstoneIds(overlay, "slots")) {
     const base = shipped.slots.find((slot) => slot.id === id);
     bucket(base?.section ?? "").slots.push({
       key: id,
       kind: "slot",
-      name: base ? slotName(base, labelOf) : id,
+      name: base ? slotName(base, db) : id,
       detail: base?.type ?? "",
       status: "removed",
     });

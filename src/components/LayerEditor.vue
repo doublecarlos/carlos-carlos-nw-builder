@@ -65,7 +65,7 @@ import {
   Upload,
 } from "@lucide/vue";
 import * as catalog from "../data/catalog";
-import { filterLabelLookup, isRetired, slotLabel } from "../data/db";
+import { isRetired, slotLabel } from "../data/db";
 import { showNotice } from "../stores/notice";
 import { navigation } from "../lib/navigation";
 import type { Route, RoutePatch } from "../lib/route-model";
@@ -461,8 +461,7 @@ const duplicatePresetSeed = ref<SectionPreset | null>(newPresetSeed);
 const duplicateSlotSeed = ref<AuthoredSlot | null>(null);
 
 /** How a slot reads in notices and history: its label, else its category's, else its id. */
-const slotName = (slot: AuthoredSlot) =>
-  slotLabel(slot, filterLabelLookup(db.value.filters));
+const slotName = (slot: AuthoredSlot) => slotLabel(slot, db.value.filterLabels);
 /** The section the outline's "New" menu named, read once by the blank draft it opens. */
 const newEntrySection = ref("");
 
@@ -474,28 +473,36 @@ const presetForm = ref<InstanceType<typeof PresetForm> | null>(null);
 const sectionForm = ref<InstanceType<typeof SectionForm> | null>(null);
 const slotForm = ref<InstanceType<typeof SlotForm> | null>(null);
 
-/** One row per composed-catalog entry plus one per tombstone, name-sorted. Removed entries
- *  are gone from `db`, so without the tombstone pass (`catalog.tombstoneIds`) a deletion would
- *  vanish from the list with no way back. */
+/** One row per composed-catalog entry plus one per tombstone, sorted by what the row reads
+ *  as (`shownName`, the name unless given). Removed entries are gone from `db`, so without
+ *  the tombstone pass (`catalog.tombstoneIds`) a deletion would vanish from the list with no
+ *  way back. */
 function editorRows<E, R extends EditorRow>(
   entries: E[],
   toRow: (entity: E) => R,
   tombstones: string[],
   toTombstoneRow: (id: string) => R,
+  shownName: (row: R) => string = (row) => row.name,
 ): R[] {
   const rows = entries.map(toRow);
   for (const id of tombstones) rows.push(toTombstoneRow(id));
-  return rows.sort((a, b) => a.name.localeCompare(b.name));
+  return rows.sort((a, b) => shownName(a).localeCompare(shownName(b)));
 }
 
+/** A category or tag row leads with its label, so the Vocabulary list sorts by it. */
+const vocabularyName = (row: FilterRow | TagRow) =>
+  row.def?.label?.trim() || row.name;
+
 function itemRowsFrom(catalogDb: Db, ovl: CatalogOverlay): ItemRow[] {
-  const labels = new Map(catalogDb.filters.map((def) => [def.id, def.label]));
   return editorRows<Item, ItemRow>(
     catalogDb.items,
     (item) => ({
       key: item.id,
       name: item.name,
-      filter: (item.filter && labels.get(item.filter)) || item.filter || "",
+      filter:
+        (item.filter && catalogDb.filterLabels.get(item.filter)) ||
+        item.filter ||
+        "",
       item,
       status: catalog.statusOf(ovl, "items", item.id),
       kind: "item",
@@ -581,6 +588,7 @@ function filterRowsFrom(catalogDb: Db, ovl: CatalogOverlay): FilterRow[] {
       status: "removed",
       kind: "filter",
     }),
+    vocabularyName,
   );
 }
 
@@ -608,6 +616,7 @@ function tagRowsFrom(catalogDb: Db, ovl: CatalogOverlay): TagRow[] {
       status: "removed",
       kind: "tag",
     }),
+    vocabularyName,
   );
 }
 
@@ -788,13 +797,12 @@ const selectedStatus = computed(() => {
 /** The item form's category choices, the same list the Vocabulary tab shows. */
 const filters = computed<string[]>(() => filterNames(db.value));
 /** The Items tab's category choices, read by label where a category has one. */
-const categoryOptions = computed(() => {
-  const labels = new Map(db.value.filters.map((def) => [def.id, def.label]));
-  return filters.value.map((id) => ({
+const categoryOptions = computed(() =>
+  filters.value.map((id) => ({
     value: id,
-    label: labels.get(id) || id,
-  }));
-});
+    label: db.value.filterLabels.get(id) ?? id,
+  })),
+);
 
 /** Every known bonus id, for id-collision avoidance and the `excludes` vocabulary. */
 const allBonusIds = computed<string[]>(() =>
@@ -808,9 +816,9 @@ const bonusOptions = computed<BonusOption[]>(() =>
     .sort((a, b) => a.label.localeCompare(b.label)),
 );
 
-const tagList = computed<string[]>(() =>
-  [...db.value.itemsByTag.keys()].sort(),
-);
+/** The item form's tag choices, the same list the Vocabulary tab and the condition tag
+ *  picker show, so a declared tag no item carries yet is offered too. */
+const tagList = computed(() => catalog.knownTags(db.value));
 
 const changedCount = computed(() => catalog.changedCount(overlay.value));
 

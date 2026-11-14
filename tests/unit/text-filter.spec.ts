@@ -83,6 +83,23 @@ describe("filterAndRank", () => {
     expect(byLabel).toEqual([]);
   });
 
+  // Typing an option's exact label must land on that option's row, so Enter commits the
+  // same option a blur would.
+  it("ranks earlier exact keys first, so an exact label leads", () => {
+    const categories = [
+      { value: "gear_head_cosmetic", label: "Head cosmetic" },
+      { value: "head", label: "Head piece" },
+      { value: "gear_head", label: "Head" },
+    ];
+    const ranked = filterAndRank(
+      categories,
+      "head",
+      (option) => [option.value, option.label],
+      (option) => [option.label, option.value],
+    ).map((option) => option.value);
+    expect(ranked).toEqual(["gear_head", "head", "gear_head_cosmetic"]);
+  });
+
   it("an empty query lists everything unranked", () => {
     expect(rank("")).toEqual(["test-pick-longer", "test-pick", "other"]);
   });

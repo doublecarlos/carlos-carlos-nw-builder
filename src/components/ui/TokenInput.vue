@@ -89,7 +89,7 @@ const suggestions = computed(() => {
     props.options.filter((option) => !chosen.has(option.value)),
     query.value,
     (option) => [option.value, option.label, option.search ?? ""],
-    (option) => option.value,
+    (option) => [option.label, option.value],
   ).slice(0, MAX_SUGGESTIONS);
 });
 

@@ -5,11 +5,13 @@
 //
 // Like ComboBox, the field shows a live `query` while open (starting blank, so focusing an
 // already-filled field still browses the full option list, with the current pick as its
-// placeholder) and the committed `model` once closed. Unlike ComboBox, committing isn't limited to picking a listed option -- typing
-// something new and blurring or pressing Enter/Tab commits the typed text itself.
+// placeholder) and the committed `model` once closed. Unlike ComboBox, committing isn't
+// limited to picking a listed option: typing something new and blurring or pressing Enter or
+// Tab commits the typed text itself.
 //
 // Options are `{ value, label }` and a row is an OptionRow, so a labeled value is found by its
-// label or its value. The closed field shows the value, or with `showValue` its label with the
+// label or its value. Typed text equal to a label ranks that option first and commits it, so
+// Enter, Tab and blur agree. The closed field shows the value, or with `showValue` its label with the
 // value after it, small and muted, as ComboBox does.
 //
 // An untyped open highlights the current value, so Enter or Tab through the field keeps it.
@@ -73,7 +75,7 @@ const suggestions = computed(() => {
     props.options,
     query.value,
     (option) => [option.value, option.label, option.search ?? ""],
-    (option) => option.value,
+    (option) => [option.label, option.value],
   ).slice(0, MAX_SUGGESTIONS);
 });
 
@@ -158,9 +160,15 @@ function resetHighlight() {
 
 watch(entries, resetHighlight);
 
+/** Commits a listed row's value as is. */
 function commit(value: string) {
-  model.value = valueOf(value).trim();
+  model.value = value.trim();
   close();
+}
+
+/** Commits typed text, naming an option by its label when it matches one. */
+function commitTyped(text: string) {
+  commit(valueOf(text));
 }
 
 /** The clear button's action: empties the field, leaving focus alone. */
@@ -187,11 +195,11 @@ function onInput(event: Event) {
   resetHighlight();
 }
 
-/** A typed-but-uncommitted query is saved on blur (matching plain-input expectations --
- *  filling the field and clicking elsewhere shouldn't discard what was typed). Blurring an
- *  untouched, freshly-opened field leaves the existing value alone. */
+/** A typed but uncommitted query is saved on blur, as a plain input would keep it: filling
+ *  the field and clicking elsewhere shouldn't discard what was typed. Blurring an untouched,
+ *  freshly opened field leaves the existing value alone. */
 function onBlur() {
-  if (query.value.trim()) commit(query.value);
+  if (query.value.trim()) commitTyped(query.value);
   else close();
 }
 
@@ -202,7 +210,8 @@ onKeyStroke(
     const picked = entries.value[highlight.value];
     if (!picked && !query.value.trim()) return;
     if (event.key === "Enter") event.preventDefault();
-    commit(picked ? picked.value : query.value);
+    if (picked) commit(picked.value);
+    else commitTyped(query.value);
   },
   { target: input },
 );

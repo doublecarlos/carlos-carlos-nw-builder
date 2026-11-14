@@ -24,7 +24,7 @@ import { useEditorDraft } from "../../composables/useEditorDraft";
 import { resolvedOptions } from "../../lib/param-options";
 import {
   buildDraft,
-  categoryLabel,
+  draftCategoryLabel,
   hasContent,
   toSlot,
   diffLabel,
@@ -81,7 +81,7 @@ const emit = defineEmits<{
 }>();
 
 function computeId(local: SlotDraft): string {
-  const label = local.label.trim() || categoryLabel(local, props.db) || "";
+  const label = local.label.trim() || draftCategoryLabel(local, props.db) || "";
   // Separators and text slots have no label, so `nextSlotId` falls back to a per-type stem.
   if (!label && local.type !== "separator" && local.type !== "text") return "";
   return catalog.nextSlotId(
@@ -126,7 +126,9 @@ const { draft, error, dirty, displayId } = useEditorDraft<
 });
 
 /** What a blank label reads as: the category's label. */
-const inheritedLabel = computed(() => categoryLabel(draft.value, props.db));
+const inheritedLabel = computed(() =>
+  draftCategoryLabel(draft.value, props.db),
+);
 
 defineExpose({ draft, dirty });
 
@@ -148,11 +150,11 @@ const parentChoices = computed(() =>
 const optionsSourceOptions = [
   { value: "inline", label: "listed here" },
   { value: "tags", label: "items with tags" },
-  { value: "filter", label: "items in a filter" },
+  { value: "filter", label: "items in a category" },
 ];
 
 const selectorSourceOptions = [
-  { value: "filter", label: "items in a filter" },
+  { value: "filter", label: "items in a category" },
   { value: "tags", label: "items with tags" },
 ];
 

@@ -837,6 +837,10 @@ export interface Db {
   filters: FilterDef[];
   /** Declared tag metadata, sorted by id. */
   tags: TagDef[];
+  /** Each category's label by id, trimmed, for the categories with a non-blank one. */
+  filterLabels: ReadonlyMap<string, string>;
+  /** Each tag's label by id, trimmed, for the tags with a non-blank one. */
+  tagLabels: ReadonlyMap<string, string>;
   /** `defaultMaxCopies` by filter, derived from `filters`. */
   filterDefaults: FilterDefaultsMap;
   /** `fields` by filter, derived from `filters`. */
@@ -1120,7 +1124,7 @@ export interface EvalContext {
   /** Same for item ids, so an `equipped: { item }` leaf reads as the item's name. */
   itemNames: Map<string, string>;
   /** Labels of the tags that declare one, so a tag test reads as the items it names. */
-  tagLabels?: Map<string, string>;
+  tagLabels?: ReadonlyMap<string, string>;
   /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
    *  the `param` leaf reads. Built once by bonus.ts's `collect()`. */
   params: Map<string, string | number | boolean>;
