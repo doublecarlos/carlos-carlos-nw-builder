@@ -160,7 +160,7 @@ describe("global input ids", () => {
   });
 
   it("accepts an id under the naming convention", () => {
-    expect(globalIdError("globals.enemyTier.boss", taken)).toBe(null);
+    expect(globalIdError("globals.enemyRank.boss", taken)).toBe(null);
     expect(globalIdError("globals.location.sword-coast", taken)).toBe(null);
   });
 

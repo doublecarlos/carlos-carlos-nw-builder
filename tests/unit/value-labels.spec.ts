@@ -1,4 +1,4 @@
-// Value labels: an ordered number parameter, like an enemy tier, whose values read by name.
+// Value labels: an ordered number parameter, like an enemy rank, whose values read by name.
 // The value stays a number, so `atLeast` conditions and `tierBy` ladders keep working, and
 // only what the player reads changes.
 import { describe, expect, it } from "vitest";
@@ -30,13 +30,13 @@ const schema: Schema = {
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1.2 } },
 };
 
-const tier: BuildParameterSlot = {
-  id: "globals.tier",
-  label: "Tier",
+const rank: BuildParameterSlot = {
+  id: "globals.rank",
+  label: "Rank",
   section: "globals",
   type: "build_parameter",
   paramType: "number",
-  path: "globals.tier",
+  path: "globals.rank",
   default: 3,
   min: 1,
   max: 3,
@@ -48,10 +48,10 @@ const tier: BuildParameterSlot = {
 const bane: Bonus = {
   id: "bane",
   name: "Bane",
-  inputs: { tier: { global: tier.id } },
+  inputs: { rank: { global: rank.id } },
   grants: [
     {
-      tierBy: { formula: "$tier" },
+      tierBy: { formula: "$rank" },
       tiers: [
         { atLeast: 2, stats: { power: 10 } },
         { atLeast: 3, stats: { power: 30 } },
@@ -71,7 +71,7 @@ const slots: Slot[] = [
     type: "item_picker",
     filter: "gear",
   },
-  tier,
+  rank,
 ];
 const testDb = db.build(items, [bane], schema, {
   sections: [
@@ -100,28 +100,28 @@ function build(): Build {
 const bonusEntry = (b: Build) =>
   engine.resolveBuild(testDb, b).bonuses.find((entry) => entry.id === "bane")!;
 
-describe("a labeled tier input", () => {
-  // The slot's default stands in until the player picks a tier.
-  it("picks the tier its value reaches, the default while nothing is stored", () => {
+describe("a labeled rank input", () => {
+  // The slot's default stands in until the player picks a rank.
+  it("picks the grant tier its value reaches, the default while nothing is stored", () => {
     const b = build();
     expect(bonusEntry(b).appliedStats?.power).toBe(30);
-    writeInput(b, { store: "context", path: tier.path }, 2);
+    writeInput(b, { store: "context", path: rank.path }, 2);
     expect(bonusEntry(b).appliedStats?.power).toBe(10);
-    writeInput(b, { store: "context", path: tier.path }, 1);
+    writeInput(b, { store: "context", path: rank.path }, 1);
     expect(bonusEntry(b).appliedStats?.power ?? 0).toBe(0);
   });
 
   it("names rungs by label, and unlabeled ones by number", () => {
     const grant = bonusEntry(build()).grants![0];
-    expect(tierHeading(grant, 3)).toBe("Tier ≥ Strong");
-    expect(tierHeading(grant, 2)).toBe("Tier ≥ 2");
+    expect(tierHeading(grant, 3)).toBe("Rank ≥ Strong");
+    expect(tierHeading(grant, 2)).toBe("Rank ≥ 2");
   });
 
   // Preset buttons and range notes format through the reader's spec.
   it("formats the reader's control values by label", () => {
     const b = build();
     const entry = inputEntries(testDb, b, engine.resolveBuild(testDb, b)).find(
-      (input) => input.bonusInput?.global === tier.id,
+      (input) => input.bonusInput?.global === rank.id,
     )!;
     expect([1, 2, 3].map(entry.spec.format)).toEqual(["Weak", "2", "Strong"]);
   });
@@ -130,7 +130,7 @@ describe("a labeled tier input", () => {
 describe("catalog.validate: value labels", () => {
   const slotErrors = (overrides: Partial<BuildParameterSlot>) =>
     catalog
-      .validateSlots([{ ...tier, ...overrides }])
+      .validateSlots([{ ...rank, ...overrides }])
       .filter((finding) => finding.level === "error")
       .map((finding) => finding.name);
 
@@ -139,10 +139,10 @@ describe("catalog.validate: value labels", () => {
   });
 
   it("rejects labels on a percent, a key outside the bounds or not a whole number", () => {
-    expect(slotErrors({ paramType: "percent", max: 1 })).toEqual([tier.id]);
-    expect(slotErrors({ valueLabels: { "4": "Huge" } })).toEqual([tier.id]);
-    expect(slotErrors({ valueLabels: { "1.5": "Half" } })).toEqual([tier.id]);
-    expect(slotErrors({ valueLabels: { "2": " " } })).toEqual([tier.id]);
+    expect(slotErrors({ paramType: "percent", max: 1 })).toEqual([rank.id]);
+    expect(slotErrors({ valueLabels: { "4": "Huge" } })).toEqual([rank.id]);
+    expect(slotErrors({ valueLabels: { "1.5": "Half" } })).toEqual([rank.id]);
+    expect(slotErrors({ valueLabels: { "2": " " } })).toEqual([rank.id]);
   });
 
   // The bonus editor has no field for them, so a bonus's own input would lose them on save.
@@ -150,7 +150,7 @@ describe("catalog.validate: value labels", () => {
     const own: Bonus = {
       ...bane,
       inputs: {
-        tier: {
+        rank: {
           type: "number",
           min: 1,
           max: 3,

@@ -1,5 +1,5 @@
 // Moves the scenario flag picks of the retired `options.scenario` list onto what replaced them:
-// the Boss and Non-boss flags onto the enemy tier global input, a location onto the shared
+// the Boss and Non-boss flags onto the enemy rank global input, a location onto the shared
 // Location pick. Also
 // moves Sword Coast Tactician's private "active" input onto that pick.
 //
@@ -24,11 +24,11 @@ export interface ScenarioFlag {
   value: number;
 }
 
-/** The enemy tier each enemy flag item became. Boss is the tier's default, so Non-boss needs
- *  a value of its own: Solo, the strongest tier below Boss. */
+/** The enemy rank each enemy flag item became. Boss is the rank's default, so Non-boss needs
+ *  a value of its own: Solo, the strongest rank below Boss. */
 export const FLAG_VALUES: Record<string, ScenarioFlag> = {
-  "enemy-type-boss": { path: "globals.enemyTier", value: 6 },
-  "enemy-type-non-boss": { path: "globals.enemyTier", value: 5 },
+  "enemy-type-boss": { path: "globals.enemyRank", value: 6 },
+  "enemy-type-non-boss": { path: "globals.enemyRank", value: 5 },
 };
 
 /** The location flag items, which kept their ids as Location picks. */

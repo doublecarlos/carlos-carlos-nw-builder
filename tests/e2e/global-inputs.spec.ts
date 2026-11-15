@@ -267,11 +267,11 @@ test(
   },
 );
 
-// An ordered global input, like the enemy tier, reads by name wherever its control shows.
+// An ordered global input, like the enemy rank, reads by name wherever its control shows.
 test("a labeled global input names its presets on the reader's row and its own row", async ({
   page,
 }) => {
-  const tier = `${GLOBALS}.tier`;
+  const rank = `${GLOBALS}.rank`;
   await openBuilder(page);
   await importTestCatalog(page, {
     items: [
@@ -286,10 +286,10 @@ test("a labeled global input names its presets on the reader's row and its own r
       {
         id: "test-bane",
         name: "Test Bane",
-        inputs: { tier: { global: tier } },
+        inputs: { rank: { global: rank } },
         grants: [
           {
-            when: { input: { key: "tier", atLeast: 2 } },
+            when: { input: { key: "rank", atLeast: 2 } },
             stats: { power: 5 },
           },
         ],
@@ -297,12 +297,12 @@ test("a labeled global input names its presets on the reader's row and its own r
     ],
     slots: [
       {
-        id: tier,
-        label: "Test tier",
+        id: rank,
+        label: "Test rank",
         section: GLOBALS,
         type: "build_parameter",
         paramType: "number",
-        path: "test.tier",
+        path: "test.rank",
         default: 2,
         min: 1,
         max: 2,
@@ -312,13 +312,13 @@ test("a labeled global input names its presets on the reader's row and its own r
         globalInput: true,
       },
     ],
-    sections: [{ id: GLOBALS, label: "Test Global Inputs", slotIds: [tier] }],
+    sections: [{ id: GLOBALS, label: "Test Global Inputs", slotIds: [rank] }],
     choices: { "gear.ring1": "test-bane" },
   });
   await ensureSectionExpanded(page, "gear");
   await ensureSectionExpanded(page, GLOBALS);
   const reader = slotRow(page, "gear.ring1");
-  const own = slotRow(page, tier);
+  const own = slotRow(page, rank);
   for (const row of [reader, own])
     await expect(row.getByRole("button", { name: "Strong" })).toHaveAttribute(
       "aria-pressed",

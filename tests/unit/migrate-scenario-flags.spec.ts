@@ -1,6 +1,6 @@
 // Builds saved while the scenario flags were items picked in the `options.scenario` list.
-// The Boss and Non-boss flags became enemy tiers and a location the shared Location pick, so a
-// stored pick has to move there, or every such build silently loses its tier or location.
+// The Boss and Non-boss flags became enemy ranks and a location the shared Location pick, so a
+// stored pick has to move there, or every such build silently loses its rank or location.
 import { describe, expect, it } from "vitest";
 import * as db from "../../src/data/db";
 import { getPath } from "../../src/lib/build-path";
@@ -13,7 +13,7 @@ import {
 import * as storage from "../../src/storage/storage";
 import type { Build, SectionPreset } from "../../src/types";
 
-const TIER = FLAG_VALUES["enemy-type-boss"]!.path;
+const RANK = FLAG_VALUES["enemy-type-boss"]!.path;
 
 const flagged = (choices: Record<string, string>, extra = {}) =>
   storage.normalize({
@@ -28,7 +28,7 @@ describe("scenario flag migration", () => {
       "options.scenario#1": "enemy-type-boss",
       "options.scenario#2": "location-thay",
     });
-    expect(getPath(build.context, TIER)).toBe(6);
+    expect(getPath(build.context, RANK)).toBe(6);
     expect(build.choices[LOCATION_SLOT]).toBe("location-thay");
     expect(Object.keys(build.choices)).not.toContain("options.scenario#1");
     expect(build.listRows).not.toHaveProperty("options.scenario");
@@ -51,11 +51,11 @@ describe("scenario flag migration", () => {
     expect(build.choices[LOCATION_SLOT]).toBe("location-chult");
   });
 
-  // The tier defaults to Boss, so a Non-boss pick has to store a lower tier to stay non-boss.
-  it("stores a tier below Boss for a Non-boss pick", () => {
+  // The rank defaults to Boss, so a Non-boss pick has to store a lower rank to stay non-boss.
+  it("stores a rank below Boss for a Non-boss pick", () => {
     const build = flagged({ "options.scenario#1": "enemy-type-non-boss" });
     expect(build.choices).not.toHaveProperty("options.scenario#1");
-    expect(getPath(build.context, TIER)).toBeLessThan(6);
+    expect(getPath(build.context, RANK)).toBeLessThan(6);
   });
 
   it("keeps the first stored of a Boss and a Non-boss pick", () => {
@@ -63,7 +63,7 @@ describe("scenario flag migration", () => {
       "options.scenario#1": "enemy-type-boss",
       "options.scenario#2": "enemy-type-non-boss",
     });
-    expect(getPath(build.context, TIER)).toBe(6);
+    expect(getPath(build.context, RANK)).toBe(6);
   });
 
   // The fixed Location and Enemy Type slots came before the list, so they chain through it.
@@ -78,9 +78,9 @@ describe("scenario flag migration", () => {
   it("keeps a value the context already stores", () => {
     const build = flagged(
       { "options.scenario#1": "enemy-type-boss" },
-      { context: { globals: { enemyTier: 3 } } },
+      { context: { globals: { enemyRank: 3 } } },
     );
-    expect(getPath(build.context, TIER)).toBe(3);
+    expect(getPath(build.context, RANK)).toBe(3);
   });
 
   it("is idempotent", () => {
@@ -95,7 +95,7 @@ describe("scenario flag migration", () => {
       { "options.scenario#1": "enemy-type-boss" },
       { context },
     );
-    expect(getPath(build.context, TIER)).toBe(6);
+    expect(getPath(build.context, RANK)).toBe(6);
     expect(getPath(build.context, "globals.enemyType.demon")).toBe(true);
     expect(context).toEqual({ globals: { enemyType: { demon: true } } });
   });

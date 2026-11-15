@@ -196,7 +196,7 @@
           "procs": true
         },
         "globals": {
-          "enemyTier": 6
+          "enemyRank": 6
         }
       },
       "values": {

@@ -109,11 +109,11 @@ describe("buildDraft / toSlot round trip", () => {
   it("round-trips a number slot's value labels", () => {
     const slot: BuildParameterSlot = {
       id: "s7",
-      label: "Tier",
+      label: "Rank",
       section: "globals",
       type: "build_parameter",
       paramType: "number",
-      path: "tier",
+      path: "rank",
       min: 1,
       max: 6,
       valueLabels: { "1": "Minion", "6": "Boss" },

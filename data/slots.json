@@ -328,11 +328,11 @@
           "globalInput": true
         },
         {
-          "id": "globals.enemyTier",
-          "label": "Enemy tier",
+          "id": "globals.enemyRank",
+          "label": "Enemy rank",
           "type": "build_parameter",
           "paramType": "number",
-          "path": "globals.enemyTier",
+          "path": "globals.enemyRank",
           "default": 6,
           "min": 1,
           "max": 6,
