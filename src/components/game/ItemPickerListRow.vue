@@ -6,6 +6,7 @@ import { Plus } from "@lucide/vue";
 import { useTemplateRef } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
+import { rowLabelOf } from "../../lib/slot-label";
 import * as buildEditor from "../../stores/buildEditor";
 import type { ItemPickerListSlot } from "../../types";
 
@@ -39,7 +40,7 @@ useCursorRowKeys(anchor, {
       <!-- Labeled rather than a bare icon: an empty list is nothing but this row, and a
            lone + under a section header says nothing about what it would add. -->
       <BaseButton :data-testid="'list-add:' + slotDef.id" @click="add">
-        <Plus />Add {{ slotDef.label }}
+        <Plus />Add {{ rowLabelOf(slotDef) }}
       </BaseButton>
     </div>
   </div>

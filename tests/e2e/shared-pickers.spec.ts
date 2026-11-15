@@ -64,6 +64,7 @@ async function openWithReaders(page: Page, choices: Record<string, string>) {
       {
         id: PLACE,
         label: "Test Place",
+        rowLabel: "Place",
         section: SHARED,
         type: "item_picker",
         filter: "test_place",
@@ -125,4 +126,13 @@ test("the own row shows while a reader is equipped or it holds a pick", async ({
   ).toHaveCount(0);
   await expect(slotRow(page, PLACE)).toBeVisible();
   await expect(page.getByTestId(`slot-used-by:${PLACE}`)).toHaveCount(0);
+});
+
+// The row sits in a section that supplies its context, so it reads the short name; a reference
+// elsewhere keeps the full label (tests/unit/shared-inputs.spec.ts guards that half).
+test("a row reads its row label, not the full name", async ({ page }) => {
+  await openWithReaders(page, { [PLACE]: "test-port" });
+  await expect(slotRow(page, PLACE).getByTestId("slot-label")).toHaveText(
+    "Place",
+  );
 });

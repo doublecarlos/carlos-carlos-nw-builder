@@ -204,7 +204,7 @@ const stableGroup = computed(() => {
          `list` and so no button. A phone shows it on the row's label line instead. -->
     <IconButton
       v-if="slotDef.list && !isPhone"
-      :title="`Remove ${slotDef.label}`"
+      :title="`Remove ${label ?? slotDef.label}`"
       :data-testid="'list-remove:' + slotDef.id"
       @click.stop="buildEditor.removeListRow(slotDef.id)"
     >

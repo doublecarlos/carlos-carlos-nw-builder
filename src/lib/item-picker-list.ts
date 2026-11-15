@@ -66,6 +66,7 @@ function newRowSlot(
   return {
     id: rowSlotId(slot.id, index),
     label: `${slot.label ?? slot.id} ${index}`,
+    ...(slot.rowLabel ? { rowLabel: `${slot.rowLabel} ${index}` } : {}),
     section: slot.section,
     type: "item_picker",
     ...(slot.filter ? { filter: slot.filter } : {}),

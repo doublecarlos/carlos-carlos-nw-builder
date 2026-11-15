@@ -89,3 +89,20 @@ describe("catalog.validateSlotLabels", () => {
     ).toEqual([]);
   });
 });
+
+describe("catalog.validateSlots", () => {
+  // A rowLabel names a row, so a type that renders none has nothing to name.
+  it("rejects a row label on a slot that shows no row", () => {
+    const findings = catalog.validateSlots([
+      {
+        id: "gear.sep",
+        section: "gear",
+        type: "separator",
+        rowLabel: "Defense",
+      } as unknown as AuthoredSlot,
+    ]);
+    expect(findings.map((finding) => finding.message).join(" ")).toMatch(
+      /rowLabel is only meaningful on a row slot/,
+    );
+  });
+});

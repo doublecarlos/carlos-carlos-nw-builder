@@ -25,6 +25,7 @@ import PointAssignmentRow from "./PointAssignmentRow.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { isFormControl } from "../../composables/focus";
 import { isDisabled } from "../../lib/slot-toggle";
+import { rowLabelOf } from "../../lib/slot-label";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, useTemplateRef } from "vue";
 import { Info, Trash } from "@lucide/vue";
@@ -66,8 +67,7 @@ const props = defineProps<{
   canCreateItem?: boolean;
   /** item_picker only: what the row reads as while empty. */
   placeholder?: string;
-  /** Stands in for the row's authored label, which stays in slots.json for go-to and every
-   *  other by-label lookup. */
+  /** Stands in for the row's own label. */
   labelOverride?: string;
   // item_picker only
   items?: Item[];
@@ -165,6 +165,11 @@ function onRowClick(event: MouseEvent) {
 
 const labelsOneControl = computed(
   () => props.slotDef.type !== "point_assignment",
+);
+
+/** What this row calls itself. */
+const ownLabel = computed(
+  () => props.labelOverride || rowLabelOf(props.slotDef),
 );
 
 // --- the quick enable/disable checkbox ------------------------------------------------------
@@ -281,14 +286,15 @@ useCursorRowKeys(anchor, {
         class="slot-label min-w-0 flex-1 truncate text-muted"
         :class="labelOverride ? 'capitalize' : undefined"
         :for="labelsOneControl ? controlId : undefined"
-        >{{ labelOverride || slotDef.label }}</component
+        data-testid="slot-label"
+        >{{ ownLabel }}</component
       >
 
       <!-- Kept well clear of the row's other icons, so a near miss doesn't remove the row. -->
       <IconButton
         v-if="phoneRemove"
         class="compact-tap mr-4 shrink-0"
-        :title="`Remove ${slotDef.label}`"
+        :title="`Remove ${ownLabel}`"
         :data-testid="'list-remove:' + slotDef.id"
         @click.stop="buildEditor.removeListRow(slotDef.id)"
         ><Trash
@@ -296,14 +302,14 @@ useCursorRowKeys(anchor, {
       <!-- Its own accessible name: the row label beside it belongs to the picker. -->
       <BaseTooltip
         v-if="toggleableSlot"
-        :text="`Count ${labelOverride || slotDef.label} in this build`"
+        :text="`Count ${ownLabel} in this build`"
       >
         <input
           type="checkbox"
           class="shrink-0 cursor-pointer"
           :class="!hasChoice && 'invisible'"
           :checked="!disabled"
-          :aria-label="`Count ${labelOverride || slotDef.label} in this build`"
+          :aria-label="`Count ${ownLabel} in this build`"
           :data-testid="'slot-toggle:' + slotDef.id"
           @change="onToggle"
         />
@@ -314,7 +320,7 @@ useCursorRowKeys(anchor, {
       <IconButton
         v-if="showInfo && coarsePointer"
         class="compact-tap ml-2 shrink-0"
-        :title="`Show the item in ${labelOverride || slotDef.label}`"
+        :title="`Show the item in ${ownLabel}`"
         :data-testid="'slot-info:' + slotDef.id"
         @click.stop="onInfo"
         ><Info
@@ -333,7 +339,7 @@ useCursorRowKeys(anchor, {
       ]"
     >
       <IconButton
-        :title="`Show the item in ${labelOverride || slotDef.label}`"
+        :title="`Show the item in ${ownLabel}`"
         :data-testid="'slot-info:' + slotDef.id"
         @click.stop="onInfo"
         ><Info
@@ -385,7 +391,7 @@ useCursorRowKeys(anchor, {
           :other-choice-quality="otherChoiceQuality"
           :bonus-diffs="bonusDiffs"
           :input-diffs="inputDiffs"
-          :label="labelOverride || slotDef.label"
+          :label="ownLabel"
           :can-create-item="canCreateItem"
           @new-item="emit('newItem')"
         />
@@ -407,6 +413,7 @@ useCursorRowKeys(anchor, {
           ref="control"
           :input-id="controlId"
           :slot-def="slotDef"
+          :screen-label="ownLabel"
           :build="build"
           :compare-build="compareBuild"
           :highlight-diff="highlightDiff"

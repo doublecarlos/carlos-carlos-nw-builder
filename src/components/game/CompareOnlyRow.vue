@@ -8,6 +8,7 @@ import { useTemplateRef } from "vue";
 import NestGuide from "./NestGuide.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
+import { rowLabelOf } from "../../lib/slot-label";
 import { toneStyle } from "../../lib/item-quality";
 import type { Slot } from "../../types";
 import type { NestPosition } from "../../lib/slot-parent";
@@ -58,7 +59,7 @@ useCursorRowKeys(anchor, {
     <NestGuide v-if="nest" :nest="nest" />
     <span
       class="min-w-0 truncate self-start py-0.5 pl-(--row-indent) text-muted [grid-column:label]"
-      >{{ slotDef.label }}</span
+      >{{ rowLabelOf(slotDef) }}</span
     >
     <div
       class="min-w-0 py-0.5 max-md:pl-(--row-indent) [grid-column:controls]"

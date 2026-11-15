@@ -22,6 +22,8 @@ const props = defineProps<{
   otherParamLabel?: string;
   /** DOM id for this row's control, so BuildSlot's label can point at it. */
   inputId?: string;
+  /** What this row reads as, for its phone screen. */
+  screenLabel?: string;
 }>();
 
 const param = useTemplateRef<InstanceType<typeof BuildParamInput>>("param");
@@ -57,6 +59,7 @@ const paramValue = () =>
       ref="param"
       class="grow-0 basis-80 min-w-40"
       :slot-def="slotDef"
+      :screen-label="screenLabel"
       :wide="true"
       phone-screen
       :input-id="inputId"

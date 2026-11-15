@@ -287,6 +287,7 @@ const SECTION_KEYS = [
 const SLOT_KEYS = [
   "id",
   "label",
+  "rowLabel",
   "type",
   "text",
   "filter",

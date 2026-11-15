@@ -278,10 +278,26 @@ describe("buildDraft / toSlot round trip", () => {
     expect(roundTrip(slot)).toEqual(slot);
   });
 
+  it("round-trips a row label and keeps a blank one out of the data", () => {
+    const slot: Slot = {
+      id: "companions.defense",
+      label: "Companion defense power",
+      rowLabel: "Defense",
+      section: "companions",
+      type: "item_picker",
+      tags: ["companion_power:defense"],
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+    const plain: Slot = { ...slot };
+    delete plain.rowLabel;
+    expect(roundTrip(plain)).not.toHaveProperty("rowLabel");
+  });
+
   it("round-trips an item_picker_list", () => {
     const slot: Slot = {
       id: "misc.misc",
-      label: "Misc",
+      label: "Misc bonus",
+      rowLabel: "Misc",
       section: "misc",
       type: "item_picker_list",
       filter: "misc",
@@ -372,6 +388,13 @@ describe("diffLabel", () => {
     const nw = { ...base, label: "Recovery II" };
     expect(diffLabel(JSON.stringify(base), JSON.stringify(nw))).toBe(
       'edit label to "Recovery II"',
+    );
+  });
+
+  it("labels a row label change", () => {
+    const nw = { ...base, rowLabel: "Recovery" };
+    expect(diffLabel(JSON.stringify(base), JSON.stringify(nw))).toBe(
+      'edit row label to "Recovery"',
     );
   });
 

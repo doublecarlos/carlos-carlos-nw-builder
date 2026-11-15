@@ -30,11 +30,14 @@ const POWER_ID = "test-tier1-power";
 const POWER_NAME = "Test Power Boon";
 const AVOIDANCE_ID = "test-tier1-avoidance";
 const AVOIDANCE_NAME = "Test Avoidance Boon";
+/** The category's own name, which is what the card calls the kind of item. */
+const KIND = "Test tier 1 boon";
 
 /** Opens a build whose Tier 1 row carries the two test boons, each 0 to 5 points. */
 async function openTier1(page: Page) {
   await openBuilder(page);
   await importTestCatalog(page, {
+    filters: [{ id: "boon_tier1", label: KIND, fields: ["inlineRepetition"] }],
     items: [
       [POWER_ID, POWER_NAME],
       [AVOIDANCE_ID, AVOIDANCE_NAME],
@@ -189,7 +192,7 @@ test.describe("point_assignment hover card", () => {
 
     const card = page.getByTestId("item-card");
     await expect(card.getByTestId("item-card-name")).toHaveText(POWER_NAME);
-    await expect(card.getByText("Tier 1")).toBeVisible();
+    await expect(card.getByText(KIND)).toBeVisible();
   });
 
   test("the card previews an item whether or not points are currently spent on it", async ({

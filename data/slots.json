@@ -475,13 +475,15 @@
         {
           "id": "reinforcements.armorKit1",
           "label": "Head reinforcement",
+          "rowLabel": "Reinforcement",
           "type": "item_picker",
           "filter": "reinforcement_armor_kit",
           "parent": "gear.head"
         },
         {
           "id": "gear.headMod",
-          "label": "Head mod",
+          "label": "Head modification",
+          "rowLabel": "Modification",
           "type": "item_picker",
           "filter": "modification_head",
           "parent": "gear.head",
@@ -499,13 +501,15 @@
         {
           "id": "reinforcements.armorKit2",
           "label": "Armor reinforcement",
+          "rowLabel": "Reinforcement",
           "type": "item_picker",
           "filter": "reinforcement_armor_kit",
           "parent": "gear.armor"
         },
         {
           "id": "gear.armorMod",
-          "label": "Armor mod",
+          "label": "Armor modification",
+          "rowLabel": "Modification",
           "type": "item_picker",
           "filter": "modification_armor",
           "parent": "gear.armor",
@@ -523,13 +527,15 @@
         {
           "id": "reinforcements.armorKit3",
           "label": "Arms reinforcement",
+          "rowLabel": "Reinforcement",
           "type": "item_picker",
           "filter": "reinforcement_armor_kit",
           "parent": "gear.arms"
         },
         {
           "id": "gear.armsMod",
-          "label": "Arms mod",
+          "label": "Arms modification",
+          "rowLabel": "Modification",
           "type": "item_picker",
           "filter": "modification_arms",
           "parent": "gear.arms",
@@ -546,7 +552,8 @@
         },
         {
           "id": "gear.mainhandMod",
-          "label": "Main-hand mod",
+          "label": "Main-hand modification",
+          "rowLabel": "Modification",
           "type": "item_picker",
           "filter": "modification_mainhand",
           "parent": "gear.mainhand",
@@ -563,7 +570,8 @@
         },
         {
           "id": "gear.offhandMod1",
-          "label": "Off-hand mod 1",
+          "label": "Off-hand modification 1",
+          "rowLabel": "Modification 1",
           "type": "item_picker",
           "filter": "modification_offhand_static",
           "parent": "gear.offhand",
@@ -575,7 +583,8 @@
         },
         {
           "id": "gear.offhandMod2",
-          "label": "Off-hand mod 2",
+          "label": "Off-hand modification 2",
+          "rowLabel": "Modification 2",
           "type": "item_picker",
           "filter": "modification_offhand_dynamic",
           "parent": "gear.offhand",
@@ -593,13 +602,15 @@
         {
           "id": "reinforcements.armorKit4",
           "label": "Boots reinforcement",
+          "rowLabel": "Reinforcement",
           "type": "item_picker",
           "filter": "reinforcement_armor_kit",
           "parent": "gear.boots"
         },
         {
           "id": "gear.bootsMod",
-          "label": "Boots mod",
+          "label": "Boots modification",
+          "rowLabel": "Modification",
           "type": "item_picker",
           "filter": "modification_boots",
           "parent": "gear.boots",
@@ -621,6 +632,7 @@
         {
           "id": "reinforcements.jewel1",
           "label": "Neck reinforcement",
+          "rowLabel": "Reinforcement",
           "type": "item_picker",
           "filter": "reinforcement_jewel",
           "parent": "gear.neck"
@@ -634,6 +646,7 @@
         {
           "id": "reinforcements.jewel2",
           "label": "Ring 1 reinforcement",
+          "rowLabel": "Reinforcement",
           "type": "item_picker",
           "filter": "reinforcement_jewel",
           "parent": "gear.ring1"
@@ -647,6 +660,7 @@
         {
           "id": "reinforcements.jewel3",
           "label": "Ring 2 reinforcement",
+          "rowLabel": "Reinforcement",
           "type": "item_picker",
           "filter": "reinforcement_jewel",
           "parent": "gear.ring2"
@@ -659,6 +673,7 @@
         {
           "id": "reinforcements.jewel4",
           "label": "Waist reinforcement",
+          "rowLabel": "Reinforcement",
           "type": "item_picker",
           "filter": "reinforcement_jewel",
           "parent": "gear.waist"
@@ -737,25 +752,29 @@
       "slots": [
         {
           "id": "enchantments.offense1",
-          "label": "Offense 1",
+          "label": "Offense enchantment 1",
+          "rowLabel": "Offense 1",
           "type": "item_picker",
           "filter": "enchantment_offense"
         },
         {
           "id": "enchantments.offense2",
-          "label": "Offense 2",
+          "label": "Offense enchantment 2",
+          "rowLabel": "Offense 2",
           "type": "item_picker",
           "filter": "enchantment_offense"
         },
         {
           "id": "enchantments.offense3",
-          "label": "Offense 3",
+          "label": "Offense enchantment 3",
+          "rowLabel": "Offense 3",
           "type": "item_picker",
           "filter": "enchantment_offense"
         },
         {
           "id": "enchantments.offense4",
-          "label": "Offense 4",
+          "label": "Offense enchantment 4",
+          "rowLabel": "Offense 4",
           "type": "item_picker",
           "filter": "enchantment_offense"
         },
@@ -765,25 +784,29 @@
         },
         {
           "id": "enchantments.defense1",
-          "label": "Defense 1",
+          "label": "Defense enchantment 1",
+          "rowLabel": "Defense 1",
           "type": "item_picker",
           "filter": "enchantment_defense"
         },
         {
           "id": "enchantments.defense2",
-          "label": "Defense 2",
+          "label": "Defense enchantment 2",
+          "rowLabel": "Defense 2",
           "type": "item_picker",
           "filter": "enchantment_defense"
         },
         {
           "id": "enchantments.defense3",
-          "label": "Defense 3",
+          "label": "Defense enchantment 3",
+          "rowLabel": "Defense 3",
           "type": "item_picker",
           "filter": "enchantment_defense"
         },
         {
           "id": "enchantments.defense4",
-          "label": "Defense 4",
+          "label": "Defense enchantment 4",
+          "rowLabel": "Defense 4",
           "type": "item_picker",
           "filter": "enchantment_defense"
         },
@@ -999,25 +1022,29 @@
         },
         {
           "id": "boons.tier4",
-          "label": "Tier 4",
+          "label": "Boon tier 4",
+          "rowLabel": "Tier 4",
           "type": "point_assignment",
           "filter": "boon_tier4"
         },
         {
           "id": "boons.tier3",
-          "label": "Tier 3",
+          "label": "Boon tier 3",
+          "rowLabel": "Tier 3",
           "type": "point_assignment",
           "filter": "boon_tier3"
         },
         {
           "id": "boons.tier2",
-          "label": "Tier 2",
+          "label": "Boon tier 2",
+          "rowLabel": "Tier 2",
           "type": "point_assignment",
           "filter": "boon_tier2"
         },
         {
           "id": "boons.tier1",
-          "label": "Tier 1",
+          "label": "Boon tier 1",
+          "rowLabel": "Tier 1",
           "type": "point_assignment",
           "filter": "boon_tier1"
         }
@@ -1062,25 +1089,29 @@
         },
         {
           "id": "companions.equip1",
-          "label": "Equip 1",
+          "label": "Companion equip 1",
+          "rowLabel": "Equip 1",
           "type": "item_picker",
           "filter": "companion_equip"
         },
         {
           "id": "companions.equip2",
-          "label": "Equip 2",
+          "label": "Companion equip 2",
+          "rowLabel": "Equip 2",
           "type": "item_picker",
           "filter": "companion_equip"
         },
         {
           "id": "companions.equip3",
-          "label": "Equip 3",
+          "label": "Companion equip 3",
+          "rowLabel": "Equip 3",
           "type": "item_picker",
           "filter": "companion_equip"
         },
         {
           "id": "companions.enchantment",
-          "label": "Enchantment",
+          "label": "Companion enchantment",
+          "rowLabel": "Enchantment",
           "type": "item_picker",
           "filter": "companion_enchantment"
         },
@@ -1090,7 +1121,8 @@
         },
         {
           "id": "companions.enhancement",
-          "label": "Enhancement",
+          "label": "Companion enhancement",
+          "rowLabel": "Enhancement",
           "type": "item_picker",
           "filter": "companion_enhancement"
         },
@@ -1100,19 +1132,22 @@
         },
         {
           "id": "companions.offense",
-          "label": "Offense",
+          "label": "Companion offense power",
+          "rowLabel": "Offense",
           "type": "item_picker",
           "tags": ["companion_power:offense"]
         },
         {
           "id": "companions.defense",
-          "label": "Defense",
+          "label": "Companion defense power",
+          "rowLabel": "Defense",
           "type": "item_picker",
           "tags": ["companion_power:defense"]
         },
         {
           "id": "companions.universal1",
-          "label": "Universal 1",
+          "label": "Companion universal power 1",
+          "rowLabel": "Universal 1",
           "type": "item_picker",
           "tags": [
             "companion_power:offense",
@@ -1122,7 +1157,8 @@
         },
         {
           "id": "companions.universal2",
-          "label": "Universal 2",
+          "label": "Companion universal power 2",
+          "rowLabel": "Universal 2",
           "type": "item_picker",
           "tags": [
             "companion_power:offense",
@@ -1132,7 +1168,8 @@
         },
         {
           "id": "companions.utility",
-          "label": "Utility",
+          "label": "Companion utility power",
+          "rowLabel": "Utility",
           "type": "item_picker",
           "tags": ["companion_power:utility"]
         }
@@ -1268,7 +1305,8 @@
         },
         {
           "id": "insignia.bonus1",
-          "label": "Bonus 1",
+          "label": "Insignia bonus 1",
+          "rowLabel": "Bonus 1",
           "type": "item_picker",
           "filter": "insignia_bonus",
           "stable": {
@@ -1336,7 +1374,8 @@
         },
         {
           "id": "insignia.bonus2",
-          "label": "Bonus 2",
+          "label": "Insignia bonus 2",
+          "rowLabel": "Bonus 2",
           "type": "item_picker",
           "filter": "insignia_bonus",
           "stable": {
@@ -1404,7 +1443,8 @@
         },
         {
           "id": "insignia.bonus3",
-          "label": "Bonus 3",
+          "label": "Insignia bonus 3",
+          "rowLabel": "Bonus 3",
           "type": "item_picker",
           "filter": "insignia_bonus",
           "stable": {
@@ -1472,7 +1512,8 @@
         },
         {
           "id": "insignia.bonus4",
-          "label": "Bonus 4",
+          "label": "Insignia bonus 4",
+          "rowLabel": "Bonus 4",
           "type": "item_picker",
           "filter": "insignia_bonus",
           "stable": {
@@ -1540,7 +1581,8 @@
         },
         {
           "id": "insignia.bonus5",
-          "label": "Bonus 5",
+          "label": "Insignia bonus 5",
+          "rowLabel": "Bonus 5",
           "type": "item_picker",
           "filter": "insignia_bonus",
           "stable": {

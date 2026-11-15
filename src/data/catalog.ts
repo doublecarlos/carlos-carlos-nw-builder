@@ -41,7 +41,7 @@ import {
   parentOf,
 } from "../lib/slot-parent";
 import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
-import { BADGE_TONES, INSIGNIA_SHAPES } from "../types";
+import { BADGE_TONES, INSIGNIA_SHAPES, ROW_LABEL_TYPES } from "../types";
 import { bonusStatConfigs, canStep } from "../engine/inputs";
 import {
   sharedInputsOf,
@@ -1392,6 +1392,16 @@ export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
         level: "error",
         kind: "item",
         message: `${slot.id}: toggleable is only meaningful on an item_picker or item_picker_list, this is a ${slot.type}`,
+      });
+    }
+    if (
+      (slot as { rowLabel?: unknown }).rowLabel !== undefined &&
+      !ROW_LABEL_TYPES.includes(slot.type)
+    ) {
+      findings.push({
+        level: "error",
+        kind: "item",
+        message: `${slot.id}: rowLabel is only meaningful on a row slot, this is a ${slot.type}`,
       });
     }
     if (slot.type === "point_assignment") {

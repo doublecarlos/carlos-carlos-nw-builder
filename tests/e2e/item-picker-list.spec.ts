@@ -49,6 +49,39 @@ test("adding rows numbers them after the slot's label", async ({ page }) => {
   await expect(slotRow(page, row(3))).toHaveCount(0);
 });
 
+// The container and its rows can read shorter than the name references use, numbering the short
+// name the same way. See tests/unit/item-picker-list.spec.ts for the expanded row's own names.
+test("a list reads its row label on its add button and its rows", async ({
+  page,
+}) => {
+  const id = "test-extra.list";
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    slots: [
+      {
+        id,
+        label: "Test misc bonus",
+        rowLabel: "Extra",
+        section: "test-extra",
+        type: "item_picker_list",
+        filter: "misc",
+      },
+    ],
+    sections: [
+      {
+        id: "test-extra",
+        label: "Test Extra",
+        slotIds: [id],
+      },
+    ],
+  });
+  await expect(listAddButton(page, id)).toHaveText(/Add Extra/);
+  await addListRows(page, id, 1);
+  await expect(slotRow(page, `${id}#1`).getByTestId("slot-label")).toHaveText(
+    "Extra 1",
+  );
+});
+
 test("each row picks independently from the list's own candidates", async ({
   page,
 }) => {

@@ -26,6 +26,8 @@ import type { BuildParameterSlot } from "../../types";
 const props = withDefaults(
   defineProps<{
     slotDef: BuildParameterSlot;
+    /** The phone screen's heading, when the caller's row reads differently from `slotDef`. */
+    screenLabel?: string;
     /** When true, constrains control widths for uniform row alignment in section rows.
      *  QuickOptions (the horizontal strip) never passes `wide` -- it has its own layout. */
     wide?: boolean;
@@ -37,6 +39,7 @@ const props = withDefaults(
     phoneScreen?: boolean;
   }>(),
   {
+    screenLabel: undefined,
     wide: false,
     inputId: undefined,
     phoneScreen: false,
@@ -108,7 +111,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
       :options="slotDef.options ?? []"
       :show-empty-option="!!slotDef.allowEmpty"
       :phone-screen="phoneScreen"
-      :screen-label="slotDef.label"
+      :screen-label="screenLabel ?? slotDef.label"
       @update:model-value="model = $event as string"
     />
 
