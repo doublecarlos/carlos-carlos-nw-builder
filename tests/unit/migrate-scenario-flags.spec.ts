@@ -1,6 +1,6 @@
-// Builds saved while the scenario flags were items picked in the `options.scenario` list.
-// The Boss and Non-boss flags became enemy ranks and a location the shared Location pick, so a
-// stored pick has to move there, or every such build silently loses its rank or location.
+// Builds saved before a catalog change retired what they stored. The scenario flag picks of the
+// retired `options.scenario` list, and two private bonus inputs, moved onto the shared inputs
+// that replaced them; without the move every such build silently reads the shared default.
 import { describe, expect, it } from "vitest";
 import * as db from "../../src/data/db";
 import { getPath } from "../../src/lib/build-path";
@@ -8,6 +8,7 @@ import {
   FLAG_VALUES,
   LOCATION_FLAGS,
   LOCATION_SLOT,
+  RETIRED_INPUTS,
   migrateOverlayScenarioFlags,
 } from "../../src/storage/migrate-scenario-flags";
 import * as storage from "../../src/storage/storage";
@@ -145,17 +146,23 @@ describe("scenario flag migration", () => {
     const paths = new Set(
       [...db.fromData().sharedInputs.values()].map((slot) => slot.path),
     );
-    const targets = Object.values(FLAG_VALUES).map(({ path }) => path);
+    const targets = [
+      ...Object.values(FLAG_VALUES).map(({ path }) => path),
+      ...RETIRED_INPUTS.flatMap(({ becomes }) =>
+        becomes.kind === "value" ? [becomes.path] : [],
+      ),
+    ];
     expect(targets.filter((path) => !paths.has(path))).toEqual([]);
   });
 
   it("picks only shipped Location candidates", () => {
     const shipped = db.fromData();
     const candidates = shipped.forSlot(LOCATION_SLOT).map((item) => item.id);
+    const picks = RETIRED_INPUTS.flatMap(({ becomes }) =>
+      becomes.kind === "pick" ? [becomes.item] : [],
+    );
     expect(
-      [...LOCATION_FLAGS, "location-sword-coast"].filter(
-        (id) => !candidates.includes(id),
-      ),
+      [...LOCATION_FLAGS, ...picks].filter((id) => !candidates.includes(id)),
     ).toEqual([]);
   });
 });
@@ -189,6 +196,123 @@ describe("Sword Coast input migration", () => {
 
   it("is idempotent", () => {
     const once = stored(true);
+    expect(storage.normalize(once)).toEqual(once);
+  });
+});
+
+// Fleeting Haste had a private "action points below 100%" checkbox; the bonus now reads the
+// shared action point input, where full action points is the state that switches it off.
+describe("Fleeting Haste input migration", () => {
+  const stored = (active: boolean, extra = {}) =>
+    storage.normalize({
+      bonusValues: { "fleeting-haste-2": { input: { active } } },
+      ...extra,
+    });
+  const AP = "shared.actionPoints";
+
+  it("turns an unchecked box into full action points and drops the input", () => {
+    const build = stored(false);
+    expect(getPath(build.context, AP)).toBe(1);
+    expect(build.bonusValues).not.toHaveProperty("fleeting-haste-2");
+  });
+
+  // The shared default is 50%, below 100%, so the stored "yes" needs no value of its own.
+  it("drops a checked box, leaving action points unset", () => {
+    const build = stored(true);
+    expect(getPath(build.context, AP)).toBeUndefined();
+    expect(build.bonusValues).not.toHaveProperty("fleeting-haste-2");
+  });
+
+  it("keeps action points the build already holds", () => {
+    const build = stored(false, {
+      context: { shared: { actionPoints: 0.25 } },
+    });
+    expect(getPath(build.context, AP)).toBe(0.25);
+  });
+
+  // The bonus's dynamic stats are stored beside its inputs and stay there.
+  it("keeps the bonus's other stored values", () => {
+    const build = storage.normalize({
+      bonusValues: {
+        "fleeting-haste-2": {
+          input: { active: false },
+          stat: { movement: 1 },
+        },
+      },
+    });
+    expect(build.bonusValues["fleeting-haste-2"]).toEqual({
+      stat: { movement: 1 },
+    });
+  });
+
+  it("is idempotent", () => {
+    const once = stored(false);
+    expect(storage.normalize(once)).toEqual(once);
+  });
+});
+
+// Master's Cruelty and Master's Precision split the stamina bar between them, and Trainer's
+// Restoration reads action points. All three had a private Proc checkbox answering their gate.
+describe("Master's and Trainer's input migrations", () => {
+  const stored = (bonus: string, active: boolean, extra = {}) =>
+    storage.normalize({
+      bonusValues: { [bonus]: { input: { active } } },
+      ...extra,
+    });
+  const STAMINA = "shared.stamina";
+  const AP = "shared.actionPoints";
+
+  it("turns Cruelty's unchecked box into mid stamina and drops the input", () => {
+    const set = stored("master-cruelty", false);
+    expect(getPath(set.context, STAMINA)).toBe(0.5);
+    expect(set.bonusValues).not.toHaveProperty("master-cruelty");
+
+    // The default stamina is full, which keeps Cruelty on, what a checked box meant.
+    const unset = stored("master-cruelty", true);
+    expect(getPath(unset.context, STAMINA)).toBeUndefined();
+    expect(unset.bonusValues).not.toHaveProperty("master-cruelty");
+  });
+
+  it("turns Precision's checked box into mid stamina and drops the input", () => {
+    const set = stored("master-s-precision", true);
+    expect(getPath(set.context, STAMINA)).toBe(0.5);
+    expect(set.bonusValues).not.toHaveProperty("master-s-precision");
+    expect(getPath(stored("master-s-precision", false).context, STAMINA)).toBe(
+      undefined,
+    );
+  });
+
+  it("turns Trainer's checked box into full action points and drops the input", () => {
+    const set = stored("trainer-s-restoration", true);
+    expect(getPath(set.context, AP)).toBe(1);
+    expect(set.bonusValues).not.toHaveProperty("trainer-s-restoration");
+    expect(getPath(stored("trainer-s-restoration", false).context, AP)).toBe(
+      undefined,
+    );
+  });
+
+  it("keeps a shared value the build already holds", () => {
+    const build = stored("master-cruelty", false, {
+      context: { shared: { stamina: 0.9 } },
+    });
+    expect(getPath(build.context, STAMINA)).toBe(0.9);
+  });
+
+  // Whenever the two Master's boxes agreed, they agreed on the same stamina state, so both
+  // land on one value; a contradictory pair keeps the state one of the two stored.
+  it("lands both Master's boxes on the same stamina value", () => {
+    const build = storage.normalize({
+      bonusValues: {
+        "master-cruelty": { input: { active: false } },
+        "master-s-precision": { input: { active: true } },
+      },
+    });
+    expect(getPath(build.context, STAMINA)).toBe(0.5);
+    expect(build.bonusValues).toEqual({});
+  });
+
+  it("is idempotent", () => {
+    const once = stored("trainer-s-restoration", true);
     expect(storage.normalize(once)).toEqual(once);
   });
 });

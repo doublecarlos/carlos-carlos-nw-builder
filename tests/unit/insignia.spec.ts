@@ -9,7 +9,8 @@ import {
   resolveBuild as engineRun,
 } from "../../src/engine/engine";
 import { defaultBuild } from "../../src/storage/storage";
-import { inputDefs } from "../../src/engine/shared-inputs";
+import { declaredInputs, inputDefs } from "../../src/engine/shared-inputs";
+import { writeInput } from "../../src/lib/build-inputs";
 import { NW_SLOTS } from "../../src/data/data";
 import type {
   Build,
@@ -948,7 +949,7 @@ describe("the shipped insignia bonuses", () => {
   const bonusOf = (item: Item) => shipped.bonusById.get(item.bonuses![0])!;
 
   /** One bonus resolved on its own, with each of its inputs at `value` (at its default when
-   *  omitted). */
+   *  omitted). A shared input is written where it is read, its slot's path. */
   function resolveAlone(
     item: Item,
     value?: (def: InputDef) => number | boolean,
@@ -956,30 +957,36 @@ describe("the shipped insignia bonuses", () => {
     const build = defaultBuild();
     build.choices[insignia.bonusSlotId(shipped, 1)!] = item.id;
     const bonus = bonusOf(item);
-    if (value && bonus.inputs) {
-      build.bonusValues[bonus.id] = {
-        input: Object.fromEntries(
-          Object.entries(inputDefs(bonus, shipped.sharedInputs)).map(
-            ([name, def]) => [name, value(def)],
-          ),
-        ),
-      };
-    }
+    if (value)
+      for (const { def, address } of declaredInputs(
+        bonus,
+        shipped.sharedInputs,
+      ))
+        writeInput(build, address, value(def));
     return engineRun(shipped, build).bonuses.find((b) => b.id === bonus.id);
   }
 
+  // Every modelled bonus must be able to grant something. A band input like Master's Precision
+  // is on in the middle of its range, so sample low, middle and high rather than only the max.
   it("every modelled bonus resolves and grants something", () => {
+    const at = [
+      undefined,
+      (def: InputDef) => (def.type === "boolean" ? true : (def.min ?? 0)),
+      (def: InputDef) => (def.type === "boolean" ? true : 0.5),
+      (def: InputDef) => (def.type === "boolean" ? true : (def.max ?? 1)),
+    ];
     // Reported per bonus so a failure names the one that broke.
     const inert = modelled
-      .filter((item) => {
-        const bonus = resolveAlone(item, (def) =>
-          def.type === "boolean" ? true : (def.max ?? 1),
-        );
-        return (
-          !bonus?.active ||
-          !Object.values(bonus.appliedStats ?? {}).some((v) => v)
-        );
-      })
+      .filter(
+        (item) =>
+          !at.some((value) => {
+            const bonus = resolveAlone(item, value);
+            return (
+              bonus?.active &&
+              Object.values(bonus.appliedStats ?? {}).some((v) => v)
+            );
+          }),
+      )
       .map((item) => item.id);
     expect(inert).toEqual([]);
   });
