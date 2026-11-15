@@ -1029,6 +1029,14 @@ function checkConditions(
       checkParamCondition(spec as ParamCondition, path, report, paramSlots);
     } else if (key === "input") {
       checkInputCondition(spec as InputCondition, path, report, inputs);
+    } else if (key === "equipped") {
+      const s = spec as { tag?: unknown; item?: unknown } | null;
+      // conditions.ts reads only `tag` then, so the item would be ignored without a trace.
+      if (s && typeof s === "object" && s.tag != null && s.item != null)
+        report(
+          "error",
+          `${path}: equipped condition sets both "tag" and "item"; it matches one of them`,
+        );
     } else if (key === "formula") {
       // The formula itself is checked with the bonus's other formula sites.
       const s = spec as FormulaCondition;

@@ -118,6 +118,34 @@ describe("condition-draft range/exact leaves", () => {
     expect(rowsToWhen(rows)).toEqual(when);
   });
 
+  it("an equipped leaf matching an item round-trips as an item match", () => {
+    const when = { equipped: { item: "location-thay", atLeast: 2 } };
+    const rows = whenToRows(when);
+    expect(rows[0].matchBy).toBe("item");
+    expect(rowsToWhen(rows)).toEqual(when);
+  });
+
+  // The leaf matches one target, chosen by `matchBy`, so a value left in the other field
+  // never reaches the saved spec.
+  it("an equipped leaf saves only the target it matches by", () => {
+    const row = newLeafRow("equipped");
+    expect(row.matchBy).toBe("tag");
+    row.tag = "aura";
+    row.item = "ring";
+    expect(rowsToWhen([row])).toEqual({ equipped: { tag: "aura" } });
+    row.matchBy = "item";
+    expect(rowsToWhen([row])).toEqual({ equipped: { item: "ring" } });
+    row.item = "";
+    expect(whenRowsComplete([row])).toBe(false);
+  });
+
+  // conditions.ts reads the tag first, so a hand-written spec with both loads as what it does.
+  it("an equipped spec carrying both a tag and an item loads as a tag match", () => {
+    const rows = whenToRows({ equipped: { tag: "aura", item: "ring" } });
+    expect(rows[0].matchBy).toBe("tag");
+    expect(rowsToWhen(rows)).toEqual({ equipped: { tag: "aura" } });
+  });
+
   it("a bonusOccurrences leaf's below bound round-trips the same way", () => {
     const when = {
       bonusOccurrences: { bonus: "vitality", atLeast: 1, below: 4 },

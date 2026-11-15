@@ -898,6 +898,35 @@ describe("catalog.validate: bonusOccurrences targets", () => {
   });
 });
 
+describe("catalog.validate: equipped targets", () => {
+  const findingsFor = (bonuses: Bonus[]) =>
+    catalog
+      .validate([], bonuses)
+      .filter(
+        (f) => f.kind === "bonus" && f.message !== "not attached to any item",
+      );
+
+  // conditions.ts reads only the tag when both are set, so the item would be silently
+  // ignored; the editor offers one or the other for the same reason.
+  it("an equipped leaf setting both a tag and an item is an error", () => {
+    const findings = findingsFor([
+      {
+        id: "b",
+        grants: [
+          { when: { equipped: { tag: "t" } }, stats: {} },
+          { when: { not: { equipped: { tag: "t", item: "i" } } }, stats: {} },
+        ],
+      },
+    ]);
+    expect(findings.map((f) => [f.level, f.message])).toEqual([
+      [
+        "error",
+        'grant 2: equipped condition sets both "tag" and "item"; it matches one of them',
+      ],
+    ]);
+  });
+});
+
 describe("catalog.validateRankTiers", () => {
   const ranked: Bonus = {
     id: "rank-bonus",
