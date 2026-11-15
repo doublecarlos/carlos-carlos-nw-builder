@@ -17,6 +17,16 @@ describe("deepEqual", () => {
     expect(deepEqual([1, 2], [2, 1])).toBe(false);
   });
 
+  // `keepEqual` reads through this, so two different maps matching would keep a stale one.
+  it("compares maps and sets by their entries", () => {
+    expect(deepEqual(new Map([["a", [1]]]), new Map([["a", [1]]]))).toBe(true);
+    expect(deepEqual(new Map(), new Map([["a", [1]]]))).toBe(false);
+    expect(deepEqual(new Map([["a", 1]]), new Map([["a", 2]]))).toBe(false);
+    expect(deepEqual(new Set([1]), new Set([1]))).toBe(true);
+    expect(deepEqual(new Set(), new Set([1]))).toBe(false);
+    expect(deepEqual({ m: new Map([["a", 1]]) }, { m: new Map() })).toBe(false);
+  });
+
   it("catches added, removed and changed keys", () => {
     expect(deepEqual({ a: 1 }, { a: 1, b: 2 })).toBe(false);
     expect(deepEqual({ a: 1, b: 2 }, { a: 1 })).toBe(false);
