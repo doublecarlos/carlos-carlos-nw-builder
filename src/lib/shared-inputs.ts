@@ -79,7 +79,8 @@ export function sharedRowIds(
   return ids;
 }
 
-const rowLabel = (db: LabelDb, slotId: string) =>
+/** A slot's canonical name: what every reference to it reads, not what its own row reads. */
+const slotName = (db: LabelDb, slotId: string) =>
   db.slotFor(slotId)?.label ?? slotId;
 
 /** A row named in a shared slot's notes, by its slot id and label. */
@@ -93,7 +94,7 @@ export function usedByLinks(
   db: LabelDb,
   rows: readonly string[] | undefined,
 ): SharedRowLink[] {
-  return (rows ?? []).map((row) => ({ key: row, label: rowLabel(db, row) }));
+  return (rows ?? []).map((row) => ({ key: row, label: slotName(db, row) }));
 }
 
 /** The tooltip on a shared control on reader row `ownRow`, naming the other reader rows. */
@@ -104,7 +105,7 @@ export function sharedTooltip(
 ): string {
   const others = (rows ?? [])
     .filter((row) => row !== ownRow)
-    .map((row) => rowLabel(db, row));
+    .map((row) => slotName(db, row));
   const last = others.pop();
   if (last === undefined) return "Shared input";
   const list = others.length ? `${others.join(", ")} and ${last}` : last;
