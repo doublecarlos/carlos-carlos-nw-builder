@@ -226,7 +226,7 @@ test("an input can reference a global input defined by a flagged slot", async ({
   await chooseCombo(page.getByTestId("slot-type-input"), "boolean");
   await page.getByTestId("slot-path-input").fill("shared.song");
   await page.getByTestId("slot-global-input").check();
-  // A global input has no row of its own, so it cannot be quick.
+  // A global input has its row in the Shared inputs section, so it cannot be quick.
   await expect(page.getByTestId("slot-quick-input")).toHaveCount(0);
   await page.getByTestId("save-slot").click();
   await expect(page.getByText('Saved slot "Played a song"')).toBeVisible();

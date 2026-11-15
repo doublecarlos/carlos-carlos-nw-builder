@@ -125,8 +125,8 @@ export interface BuildParameterSlot {
   /** Shown in the always-visible QuickOptions strip instead of its section's slot list. */
   quick?: boolean;
   /** A global input: a value several bonuses share, read through a `GlobalInputRef` in each
-   *  reader's `inputs`. The build editor shows it on the equipped readers' rows instead of a
-   *  row of its own. */
+   *  reader's `inputs`. The build editor shows it on the equipped readers' rows, and on a row
+   *  of its own in the Shared inputs section while any reader is equipped. */
   globalInput?: boolean;
   default?: string | number | boolean;
   options?: { value: string; label: string }[];

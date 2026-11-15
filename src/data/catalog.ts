@@ -1560,11 +1560,18 @@ export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
 }
 
 /** What a `globalInput` slot cannot carry. Its value is read only through the bonus inputs
- *  referencing it, so it has no row, no scaler and no reader of its own. */
+ *  referencing it, and its row sits in the Shared inputs section, so it has no scaler and no
+ *  reader of its own. */
 function globalInputSlotProblems(slot: Authored<BuildParameterSlot>): string[] {
   const out: string[] = [];
+  if (!slot.label?.trim())
+    out.push(
+      "a global input needs a label, or its row and every reader's control read as its id",
+    );
   if (slot.quick)
-    out.push("a global input has no row of its own, so it cannot be quick");
+    out.push(
+      "a global input has its row in the Shared inputs section, so it cannot be quick",
+    );
   if (slot.scaler)
     out.push("a global input is read through bonus inputs, not as a scaler");
   if (slot.paramType === "list" || slot.optionsFrom)

@@ -52,9 +52,11 @@ import * as stableBrowser from "../stores/stableBrowser";
 import { slotsWithCompare } from "../lib/slot-availability";
 import {
   isLayoutRow,
-  shownOutsideSection,
+  leftOutOfSection,
   visibleRows,
 } from "../lib/row-visibility";
+import { isSharedSlot } from "../engine/global-inputs";
+import { usedByNote } from "../lib/shared-inputs";
 import { keepArray, keepEqual, keepMap, keepSet } from "../lib/keep-identity";
 import {
   nestedParentId,
@@ -165,7 +167,7 @@ watch(
 );
 
 /** How many shown sections the manual preference has open, for the toolbar buttons' enable
- *  state. A hidden section, such as Global inputs, has nothing for them to do. */
+ *  state. A hidden section, such as an unused Shared inputs, has nothing for them to do. */
 const expandedSectionCount = computed(
   () => shownSections.value.filter((section) => expanded[section.id]).length,
 );
@@ -548,10 +550,11 @@ const allSlotsBySection = computed(() =>
   db.value.sections.map((section) => ({
     section,
     slots: editorSlots.value.filter(
-      // A slot shown outside its section never counts toward the section's badge, diff or
+      // A slot its section leaves out never counts toward the section's badge, diff or
       // unsaved state, and a section left with no field hides.
       (slotDef) =>
-        slotDef.section === section.id && !shownOutsideSection(slotDef),
+        slotDef.section === section.id &&
+        !leftOutOfSection(slotDef, engine.sharedRows.value),
     ),
   })),
 );
@@ -808,6 +811,8 @@ interface SlotRowData {
   placeholder: string | undefined;
   labelOverride: string | undefined;
   diff: SlotDiff | undefined;
+  /** A shared slot's own row: the bonuses on the build reading it. */
+  usedBy: string | undefined;
 }
 
 const EMPTY_ROW_DATA: SlotRowData = {
@@ -820,6 +825,7 @@ const EMPTY_ROW_DATA: SlotRowData = {
   placeholder: undefined,
   labelOverride: undefined,
   diff: undefined,
+  usedBy: undefined,
 };
 
 const rowDataBySlot = computed<Map<string, SlotRowData>>((previous) => {
@@ -860,6 +866,9 @@ const rowDataBySlot = computed<Map<string, SlotRowData>>((previous) => {
         placeholder: stablePlaceholder(slotDef.id),
         labelOverride: stableLabel(slotDef.id),
         diff,
+        usedBy: isSharedSlot(slotDef)
+          ? usedByNote(engine.sharedUsers.value.get(slotDef.id))
+          : undefined,
       });
     }
   }
@@ -1749,6 +1758,7 @@ watch(
               :placeholder="rowDataFor(slotDef.id).placeholder"
               :label-override="rowDataFor(slotDef.id).labelOverride"
               :diff="rowDataFor(slotDef.id).diff"
+              :used-by="rowDataFor(slotDef.id).usedBy"
               @enter="rowHandlers(slotDef.id).enter"
               @leave="onRowLeave"
               @info="rowHandlers(slotDef.id).info"

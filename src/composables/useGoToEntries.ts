@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { expandSlots } from "../lib/item-picker-list";
 import { slotShown } from "../lib/slot-availability";
-import { isLayoutRow, shownOutsideSection } from "../lib/row-visibility";
+import { isLayoutRow, leftOutOfSection } from "../lib/row-visibility";
 import { itemLabel } from "../engine/insignia";
 import type { GoToEntry } from "../lib/go-to";
 import * as engine from "../stores/resolved";
@@ -14,8 +14,8 @@ import * as layers from "../stores/layers";
  * typed: sections, then their slots, then builds, then layers.
  *
  * The slot list mirrors what BuildEditor.vue actually renders (`allSlotsBySection`): no
- * separators or text rows, since neither is a place the cursor can land, no slot shown outside
- * its section (a `quick` one or a global input) and no unavailable slot. Offering a target
+ * separators or text rows, since neither is a place the cursor can land, no slot its section
+ * leaves out (a `quick` one, or a shared one the build does not use) and no unavailable slot. Offering a target
  * the editor has no row for is worse than not offering it. For the same reason a section with
  * no field the editor shows is left out, as the editor hides it.
  */
@@ -26,6 +26,7 @@ export function useGoToEntries() {
     const active = builds.build.value;
     if (resolved.ok && active) {
       const db = engine.db.value;
+      const sharedRows = engine.sharedRows.value;
       const itemBySlot = new Map(
         resolved.result.rows.map((row) => [row.slotId, row.item]),
       );
@@ -35,7 +36,8 @@ export function useGoToEntries() {
       const withFields = new Set(
         slots
           .filter(
-            (slotDef) => !isLayoutRow(slotDef) && !shownOutsideSection(slotDef),
+            (slotDef) =>
+              !isLayoutRow(slotDef) && !leftOutOfSection(slotDef, sharedRows),
           )
           .map((slotDef) => slotDef.section),
       );
@@ -53,7 +55,7 @@ export function useGoToEntries() {
           if (slotDef.section !== section.id) continue;
           if (isLayoutRow(slotDef) || slotDef.type === "item_picker_list")
             continue;
-          if (shownOutsideSection(slotDef)) continue;
+          if (leftOutOfSection(slotDef, sharedRows)) continue;
           const item = itemBySlot.get(slotDef.id);
           entries.push({
             key: `slot:${slotDef.id}`,

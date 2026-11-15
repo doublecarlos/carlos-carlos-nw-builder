@@ -9,7 +9,6 @@ import { slotsWithCompare } from "../lib/slot-availability";
 import { indexResolved, type ResolvedIndex } from "../lib/resolved-index";
 import { itemLabel, stableRef } from "../engine/insignia";
 import { inputEntries, type InputEntry } from "../engine/inputs";
-import { isGlobalInputSlot } from "../engine/global-inputs";
 import type {
   Build,
   BuildParameterSlot,
@@ -300,8 +299,6 @@ export function useCompareDiff(options: {
       compareBuild.value,
     );
     for (const slot of slots) {
-      // A global input has no row: its difference shows on its readers' rows instead.
-      if (isGlobalInputSlot(slot)) continue;
       const choice = differs(slot.id);
       const disabled = disabledDiffers(build.value, compareBuild.value, slot);
       const inputs = inputDiffs(slot.id);

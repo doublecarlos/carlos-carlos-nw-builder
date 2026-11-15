@@ -59,7 +59,7 @@ function submit() {
 
 <template>
   <BaseModal
-    :title="`Make “${name}” global`"
+    :title="`Make “${name}” shared`"
     panel-class="max-h-[80vh] w-[28rem] max-w-[92vw]"
     phone="card"
     data-testid="make-global"
@@ -67,11 +67,11 @@ function submit() {
   >
     <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
       <p class="mb-2 text-muted">
-        Moves this input to a new global input in the Global inputs section, in
+        Moves this input to a new shared input in the Shared inputs section, in
         this layer. Builds keep the value they hold. A bonus from another layer
         or the shipped catalog is copied into this layer to convert it.
       </p>
-      <FormField label="Global input id" :error="idError" class="mb-3">
+      <FormField label="Shared input id" :error="idError" class="mb-3">
         <BaseInput
           v-model="id"
           class="w-full font-mono"
@@ -122,7 +122,7 @@ function submit() {
         data-testid="make-global-submit"
         :disabled="idError !== null"
         @click="submit"
-        >Make global</BaseButton
+        >Make shared</BaseButton
       >
     </div>
   </BaseModal>

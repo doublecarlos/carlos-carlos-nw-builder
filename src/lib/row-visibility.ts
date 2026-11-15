@@ -1,13 +1,16 @@
 // Text and separator rows have nothing of their own to show: they follow the fields around them
 // by position, whatever hid those fields. The rows between two separators form a group.
 import { isQuick } from "./quick-summary";
-import { isGlobalInputSlot } from "../engine/global-inputs";
+import { isSharedSlot } from "../engine/global-inputs";
 import type { Slot } from "../types";
 
-/** A field shown somewhere other than its section's list, which leaves it out: a quick slot
- *  sits in the QuickOptions strip, a global input on the rows of the bonuses reading it. */
-export function shownOutsideSection(slot: Slot): boolean {
-  return isQuick(slot) || isGlobalInputSlot(slot);
+/** A field its section's list leaves out: a quick slot sits in the QuickOptions strip, and a
+ *  shared slot shows only while `sharedRows` holds it, that is while the build uses it. */
+export function leftOutOfSection(
+  slot: Slot,
+  sharedRows: ReadonlySet<string>,
+): boolean {
+  return isQuick(slot) || (isSharedSlot(slot) && !sharedRows.has(slot.id));
 }
 
 /** A text or separator row, which only lays out the fields around it. */

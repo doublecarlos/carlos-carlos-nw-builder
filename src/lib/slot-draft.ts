@@ -50,12 +50,11 @@ export interface OptionRow {
   label: string;
 }
 
-/** The section "Make global" files a new global input under, created along with it when the
- *  catalog has none. The build editor never renders a global input, so it stays hidden. */
+/** The section "Make shared" files a new global input under, created along with it when the
+ *  catalog has none. The build editor shows it while the build uses one of its inputs. */
 export const GLOBAL_INPUTS_SECTION: SlotSection = {
   id: "globals",
-  label: "Global inputs",
-  defaultOpen: false,
+  label: "Shared inputs",
   slotIds: [],
 };
 
@@ -561,8 +560,8 @@ const CHECKS: DiffCheck<AuthoredSlot>[] = [
     Boolean((old as BuildParameterSlot).globalInput) !==
     Boolean((nw as BuildParameterSlot).globalInput)
       ? (nw as BuildParameterSlot).globalInput
-        ? "make global input"
-        : "stop being a global input"
+        ? "make shared"
+        : "stop being shared"
       : null,
   (old, nw) =>
     JSON.stringify((old as BuildParameterSlot).scaler) !==

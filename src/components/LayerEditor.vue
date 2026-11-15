@@ -1354,10 +1354,10 @@ function onMakeGlobal(request: MakeGlobalRequest) {
     makeGlobalScope.value.taken,
     request,
   );
-  commit(null, `Make input "${request.name}" global`, next);
+  commit(null, `Make input "${request.name}" shared`, next);
   const count = request.readers.length;
   showNotice(
-    `Made “${request.name}” a global input, read by ${count} bonus${count === 1 ? "" : "es"}`,
+    `Made “${request.name}” a shared input, read by ${count} bonus${count === 1 ? "" : "es"}`,
   );
 }
 

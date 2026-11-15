@@ -352,7 +352,7 @@ function save() {
             data-testid="slot-path-input"
           />
         </FormField>
-        <FormField label="Global input">
+        <FormField label="Shared">
           <BaseCheckbox
             v-model="draft.globalInput"
             data-testid="slot-global-input"
@@ -371,8 +371,8 @@ function save() {
         class="mb-2 text-muted"
         data-testid="slot-global-note"
       >
-        Shown on the build only on the rows of equipped items whose bonuses
-        reference it.
+        Shown on the rows of equipped items whose bonuses reference it, and in
+        the Shared inputs section while the build uses it.
       </p>
 
       <p

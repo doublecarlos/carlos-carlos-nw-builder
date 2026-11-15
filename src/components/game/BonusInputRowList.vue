@@ -41,7 +41,7 @@ const globalOptions = computed(() =>
  *  the global input, so this gives its type. */
 function globalSummary(id: string): string {
   const slot = props.globals.get(id);
-  if (!slot) return `"${id}" is not a global input`;
+  if (!slot) return `"${id}" is not a shared input`;
   const type =
     typeOptions.find((option) => option.value === slot.paramType)?.label ??
     slot.paramType;
@@ -136,10 +136,10 @@ const controlOptions = [
       <BaseButton
         v-if="canMakeGlobal && !row.global && row.name.trim()"
         class="self-end"
-        title="Share this input with other bonuses through a new global input"
+        title="Share this input with other bonuses through a new shared input"
         data-testid="bonus-input-make-global"
         @click="emit('make-global', index)"
-        >Make global</BaseButton
+        >Make shared</BaseButton
       >
       <!-- Keeps a control's border and padding so it sits level with the picker. It wraps
            beside the picker until the row runs out of room. -->

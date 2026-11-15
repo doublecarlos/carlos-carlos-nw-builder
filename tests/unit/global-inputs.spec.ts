@@ -290,6 +290,15 @@ describe("catalog.validate: global inputs", () => {
     ]);
   });
 
+  // With no label, its own row and every reader's control would read as the slot id.
+  it("rejects a flagged slot with no label", () => {
+    const { label: _label, ...unlabeled } = song;
+    const findings = catalog.validateSlots([unlabeled]);
+    expect(findings.map((finding) => [finding.level, finding.name])).toEqual([
+      ["error", song.id],
+    ]);
+  });
+
   // A preset or replacement seed writes `bonusValues`, where a global input is never stored.
   it("rejects bonusValues naming a global input", () => {
     expect(

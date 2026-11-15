@@ -124,6 +124,6 @@ test("a reference to a missing global input shows its id", async ({ page }) => {
     row.getByTestId("bonus-input-global").getByRole("combobox"),
   ).toHaveValue("test-globals.gone");
   await expect(row.getByTestId("bonus-input-global-summary")).toContainText(
-    "is not a global input",
+    "is not a shared input",
   );
 });

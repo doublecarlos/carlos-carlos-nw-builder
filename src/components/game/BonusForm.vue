@@ -356,7 +356,7 @@ if (bonusDraftRegistry && props.registryId) {
       <FormSection :nested="embedded">Inputs</FormSection>
       <FormSectionDescription
         >Values the player sets on the build, on the first item carrying this
-        bonus. A global input is shared with every other bonus reading it. Can
+        bonus. A shared input is shared with every other bonus reading it. Can
         be used in formulas and in "input" conditions.</FormSectionDescription
       >
       <BonusInputRowList

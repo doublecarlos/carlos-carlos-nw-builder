@@ -301,6 +301,119 @@
       ]
     },
     {
+      "id": "globals",
+      "label": "Shared inputs",
+      "slots": [
+        {
+          "id": "globals.note",
+          "type": "text",
+          "text": "Set once here, used by every bonus in this build that reads them."
+        },
+        {
+          "id": "globals.health",
+          "label": "Current health",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "health",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 5,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyTier.boss",
+          "label": "Enemy: Boss",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyTier.boss",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.cultist",
+          "label": "Enemy: Cultist",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.cultist",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.demon",
+          "label": "Enemy: Demon",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.demon",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.devil",
+          "label": "Enemy: Devil",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.devil",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.dinosaur",
+          "label": "Enemy: Dinosaur",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.dinosaur",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.enemyType.undead",
+          "label": "Enemy: Undead",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.enemyType.undead",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.location.chult",
+          "label": "Location: Chult",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.location.chult",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.location.thay",
+          "label": "Location: Thay",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.location.thay",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.location.wildspace",
+          "label": "Location: Wildspace",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.location.wildspace",
+          "default": false,
+          "globalInput": true
+        },
+        {
+          "id": "globals.location.swordCoast",
+          "label": "Location: Sword Coast",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "globals.location.swordCoast",
+          "default": false,
+          "globalInput": true
+        }
+      ]
+    },
+    {
       "id": "raceLeveling",
       "label": "Race and Leveling",
       "defaultOpen": true,
@@ -1598,115 +1711,6 @@
           "filter": "misc",
           "defaultRows": 0,
           "toggleable": true
-        }
-      ]
-    },
-    {
-      "id": "globals",
-      "label": "Global inputs",
-      "defaultOpen": false,
-      "slots": [
-        {
-          "id": "globals.health",
-          "label": "Current health",
-          "type": "build_parameter",
-          "paramType": "percent",
-          "path": "health",
-          "default": 1,
-          "min": 0,
-          "max": 1,
-          "step": 5,
-          "globalInput": true
-        },
-        {
-          "id": "globals.enemyTier.boss",
-          "label": "Enemy: Boss",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.enemyTier.boss",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.enemyType.cultist",
-          "label": "Enemy: Cultist",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.enemyType.cultist",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.enemyType.demon",
-          "label": "Enemy: Demon",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.enemyType.demon",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.enemyType.devil",
-          "label": "Enemy: Devil",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.enemyType.devil",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.enemyType.dinosaur",
-          "label": "Enemy: Dinosaur",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.enemyType.dinosaur",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.enemyType.undead",
-          "label": "Enemy: Undead",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.enemyType.undead",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.location.chult",
-          "label": "Location: Chult",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.location.chult",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.location.thay",
-          "label": "Location: Thay",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.location.thay",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.location.wildspace",
-          "label": "Location: Wildspace",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.location.wildspace",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.location.swordCoast",
-          "label": "Location: Sword Coast",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.location.swordCoast",
-          "default": false,
-          "globalInput": true
         }
       ]
     }

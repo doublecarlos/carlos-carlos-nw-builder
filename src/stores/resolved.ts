@@ -14,6 +14,11 @@ import {
   type InputCopy,
   type ResolvedIndex,
 } from "../lib/resolved-index";
+import { keepSet } from "../lib/keep-identity";
+import {
+  sharedRowIds,
+  sharedUsers as sharedUsersOf,
+} from "../lib/shared-inputs";
 import * as builds from "./builds";
 import * as layers from "./layers";
 import * as compare from "./compare";
@@ -145,3 +150,18 @@ export const inputCopies = computed<Map<string, InputCopy[]>>(() =>
 export const globalReaders = computed<Map<string, InputEntry[]>>(() =>
   globalInputReaders(inputs.value, bonusById.value),
 );
+
+/** The equipped bonuses reading each shared slot, by name, by its slot id. */
+export const sharedUsers = computed<Map<string, string[]>>(() =>
+  sharedUsersOf(globalReaders.value),
+);
+
+const NO_SHARED_ROWS: ReadonlySet<string> = new Set();
+
+/** The shared slots with a row of their own in the Shared inputs section: the ones the active
+ *  build uses. */
+export const sharedRows = computed<ReadonlySet<string>>((previous) => {
+  const b = builds.build.value;
+  if (!b) return NO_SHARED_ROWS;
+  return keepSet(previous, sharedRowIds(db.value.slots, b, sharedUsers.value));
+});

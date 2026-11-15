@@ -1,5 +1,6 @@
-// A global input is one value several bonuses read. It has no row of its own: its control
-// shows on every equipped reader's row, and editing it on one row changes them all.
+// A global input is one value several bonuses read. Its control shows on every equipped
+// reader's row and on a row of its own in its section, and editing one changes them all. While
+// no reader is equipped it shows nowhere.
 import { test, expect, type Page } from "@playwright/test";
 import {
   bonusInputControl,
@@ -114,32 +115,51 @@ test("the control shows on every reader's row and edits one shared value", async
   await expect(lute(page)).not.toBeChecked();
 });
 
-test("the global input has no row or section, and shows only with a reader equipped", async ({
+test("the section shows the global input only with a reader equipped", async ({
   page,
 }) => {
   await openWithReaders(page, { "gear.ring1": "test-lute" });
-  // Its section holds nothing else, so the empty-section rule hides it.
-  await expect(headerRow(page, GLOBALS)).toBeHidden();
-  await expect(headerRow(page, "gear")).toBeVisible();
-  await expect(slotRow(page, SONG)).toHaveCount(0);
+  await ensureSectionExpanded(page, GLOBALS);
+  const own = slotRow(page, SONG).getByRole("checkbox");
+  await expect(own).toBeVisible();
+  await expect(page.getByText("Shared circumstances")).toBeVisible();
+  await expect(page.getByTestId(`slot-used-by:${SONG}`)).toHaveText(
+    "Used by Test Ballad",
+  );
 
   // A lone reader has no one to share with.
   await expect(lute(page)).toBeVisible();
   await expect(
     page.getByTestId("bonus-input-test-ballad-song-shared"),
   ).toHaveCount(0);
-  await lute(page).check();
+  await own.check();
+  await expect(lute(page)).toBeChecked();
 
+  // With no reader left the section has no field, so it hides with its text row.
   await chooseItem(page, "gear.ring1", PLAIN);
   await expect(lute(page)).toHaveCount(0);
   await expect(page.getByTestId(/^bonus-input-/)).toHaveCount(0);
+  await expect(headerRow(page, GLOBALS)).toBeHidden();
+  await expect(headerRow(page, "gear")).toBeVisible();
+  await expect(slotRow(page, SONG)).toBeHidden();
 
   // The value stays stored, so the reader comes back with the player's setting.
   await chooseItem(page, "gear.ring1", LUTE);
   await expect(lute(page)).toBeChecked();
 });
 
-test("only showing changes keeps a reader row whose one difference is the global input", async ({
+test("used by lists every equipped reader", async ({ page }) => {
+  await openWithReaders(page, {
+    "gear.ring1": "test-lute",
+    "gear.ring2": "test-drum",
+  });
+  await ensureSectionExpanded(page, GLOBALS);
+  await expect(page.getByTestId(`slot-used-by:${SONG}`)).toHaveText(
+    "Used by Test Ballad, Test Chorus",
+  );
+});
+
+test("only showing changes keeps the global input's row and a reader row whose one difference is it", async ({
   page,
 }) => {
   await openWithReaders(page, { "gear.ring1": "test-lute" });
@@ -149,12 +169,14 @@ test("only showing changes keeps a reader row whose one difference is the global
   await chooseItem(page, "gear.ring1", LUTE);
   await lute(page).check();
   await chooseCombo(page.locator(".compare-select"), "Test catalog");
+  await ensureSectionExpanded(page, GLOBALS);
   await page.getByRole("checkbox", { name: "Only show changes" }).check();
 
-  // The global input has no row, so its difference surfaces on the reader's.
+  // The difference shows on the global input's own row and on the reader's.
+  await expect(slotRow(page, SONG)).toBeVisible();
   await expect(slotRow(page, "gear.ring1")).toBeVisible();
   await expect(slotRow(page, "gear.ring2")).toBeHidden();
-  await expect(page.getByTestId("slot-filter-count")).toHaveText(/^\s*1\b/);
+  await expect(page.getByTestId("slot-filter-count")).toHaveText(/^\s*2\b/);
 });
 
 // One value gets one control or one note per row, however many bonuses on it read the value.
@@ -191,17 +213,29 @@ test("two readers on one item give its row one control and its copy one note", a
   ).toHaveCount(0);
 });
 
-// Neither has a row in the editor, so there is nowhere to land.
-test("the go-to palette offers neither the global input nor its section", async ({
+// The palette offers a row only while the editor shows it, or there would be nowhere to land.
+test("the go-to palette offers the global input and its section only while read", async ({
   page,
 }) => {
-  await openWithReaders(page, { "gear.ring1": "test-lute" });
-  await page.keyboard.press("ControlOrMeta+k");
-  await expect(page.getByTestId("go-to-input")).toBeFocused();
-  await expect(page.getByTestId("go-to-option-section:gear")).toBeVisible();
+  await openWithReaders(page, { "gear.ring1": "test-plain" });
+  const palette = async () => {
+    await page.keyboard.press("ControlOrMeta+k");
+    await expect(page.getByTestId("go-to-input")).toBeFocused();
+    await expect(page.getByTestId("go-to-option-section:gear")).toBeVisible();
+  };
+  await palette();
   await expect(page.getByTestId(`go-to-option-section:${GLOBALS}`)).toHaveCount(
     0,
   );
   await page.getByTestId("go-to-input").fill("played a song");
   await expect(page.getByTestId(`go-to-option-slot:${SONG}`)).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  await chooseItem(page, "gear.ring1", LUTE);
+  await palette();
+  await expect(
+    page.getByTestId(`go-to-option-section:${GLOBALS}`),
+  ).toBeVisible();
+  await page.getByTestId("go-to-input").fill("played a song");
+  await expect(page.getByTestId(`go-to-option-slot:${SONG}`)).toBeVisible();
 });

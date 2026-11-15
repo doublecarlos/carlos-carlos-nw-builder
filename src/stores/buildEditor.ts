@@ -8,7 +8,7 @@ import * as builds from "./builds";
 import * as compare from "./compare";
 import * as history from "./history";
 import * as navHistory from "./navHistory";
-import { db, hiddenSlots } from "./resolved";
+import { db, hiddenSlots, sharedRows } from "./resolved";
 import { retiredSlots } from "../data/db";
 import {
   migrateItemIds,
@@ -27,6 +27,7 @@ import {
   storedSlotIds,
 } from "../lib/slot-fields";
 import { slotShown } from "../lib/slot-availability";
+import { isSharedSlot } from "../engine/global-inputs";
 import { itemLabel } from "../engine/insignia";
 import { applyChoice } from "../lib/apply-choice";
 import {
@@ -625,6 +626,8 @@ export function clearSection(sectionId: string, label: string) {
   history.snapshot("build", b.id, null, `clear section "${label}"`, b);
   const fresh = freshDefaults();
   for (const slot of buildSlots()) {
+    // A shared slot without a row of its own is not on screen to be cleared.
+    if (isSharedSlot(slot) && !sharedRows.value.has(slot.id)) continue;
     if (slot.section === sectionId) clearSlot(b, slot, fresh);
   }
   builds.finishEdit(b.id, `Cleared ${label}`);

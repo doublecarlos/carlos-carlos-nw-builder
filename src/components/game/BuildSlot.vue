@@ -83,6 +83,8 @@ const props = defineProps<{
   noBorder?: boolean;
   /** Set for a slot nested under a parent: its label is indented beside a guide line. */
   nest?: NestPosition;
+  /** A shared slot's row: names the bonuses on the build reading it. */
+  usedBy?: string;
 }>();
 
 // Unpacked once here rather than read as `props.diff?.x` at each spot below: this row forwards
@@ -427,6 +429,14 @@ useCursorRowKeys(anchor, {
         data-cursor-anchor
         class="sr-only"
       />
+
+      <p
+        v-if="usedBy"
+        class="mt-0.5 col-span-full text-muted"
+        :data-testid="'slot-used-by:' + slotDef.id"
+      >
+        {{ usedBy }}
+      </p>
 
       <!-- `errors` (engine.ts's findErrors) is populated for item_picker and point_assignment
            rows, and for a build_parameter row only when its linked item itself has a problem
