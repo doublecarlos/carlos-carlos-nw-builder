@@ -24,9 +24,9 @@ import BonusInputRowList from "./BonusInputRowList.vue";
 import MakeSharedDialog from "./MakeSharedDialog.vue";
 import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
+import { useMakeShared } from "../../composables/useMakeSharedContext";
 import { inputFormulaClashes, namedCycles } from "../../engine/formula";
 import type { Bonus, BonusOption, Db } from "../../types";
-import type { MakeSharedRequest } from "../../lib/make-shared";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -68,9 +68,6 @@ const props = withDefaults(
     collapsed?: boolean;
     /** Whether the header bar's inert area raises `toggle`, see DraftFormBar.vue. */
     toggleable?: boolean;
-    /** Where "Make shared" writes. When set, a saved bonus's own inputs offer it, and the host
-     *  writes the result as one layer edit (`make-shared`). */
-    makeSharedScope?: bonusDraft.MakeSharedScope | null;
   }>(),
   {
     source: null,
@@ -87,7 +84,6 @@ const props = withDefaults(
     canDelete: true,
     collapsed: false,
     toggleable: false,
-    makeSharedScope: null,
   },
 );
 
@@ -103,9 +99,6 @@ const emit = defineEmits<{
   toggle: [];
   /** A "Granted by" member link was clicked: open that item in the editor. */
   "open-item": [itemId: string];
-  /** "Make shared" was confirmed on input `name`: a new shared input `id` defined as `def`,
-   *  read by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
-  "make-shared": [payload: MakeSharedRequest];
 }>();
 
 function computeId(local: bonusDraft.BonusDraft): string {
@@ -199,20 +192,25 @@ const duplicateInputNames = computed(() =>
   bonusDraft.duplicateInputNames(draft.value.inputs),
 );
 
+/** Where "Make shared" writes, from the surrounding layer editor. Null outside one. */
+const makeSharedContext = useMakeShared();
+const makeSharedScope = computed(() => makeSharedContext?.scope.value ?? null);
+
 const canMakeShared = computed(() =>
-  bonusDraft.canMakeShared(props.makeSharedScope, props.source?.id),
+  bonusDraft.canMakeShared(makeSharedScope.value, props.source?.id),
 );
 
 /** The open "Make shared" offer, or null. */
 const makeShared = shallowRef<bonusDraft.MakeSharedOffer | null>(null);
 
 function offerMakeShared(index: number) {
-  if (!props.source || !props.makeSharedScope || !canMakeShared.value) return;
+  const scope = makeSharedScope.value;
+  if (!props.source || !scope || !canMakeShared.value) return;
   makeShared.value = bonusDraft.makeSharedOffer(
     draft.value.inputs[index],
     props.source.id,
     props.db.bonuses,
-    props.makeSharedScope,
+    scope,
   );
 }
 
@@ -224,7 +222,7 @@ function confirmMakeShared(id: string, otherIds: string[]) {
   const others = offer.others
     .filter((other) => otherIds.includes(other.bonus.id))
     .map((other) => other.bonus);
-  emit("make-shared", {
+  makeSharedContext?.request({
     id,
     name: offer.name,
     def: offer.def,
