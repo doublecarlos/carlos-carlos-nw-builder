@@ -13,6 +13,7 @@ import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";
 import FormField from "../ui/FormField.vue";
 import IdField from "../ui/IdField.vue";
 import OptionRow from "../ui/OptionRow.vue";
+import { BOOLEAN_PAIR, booleanOptions } from "../../lib/boolean-label";
 import type { InputDraft } from "../../lib/bonus-draft";
 import type { SharedInputs } from "../../engine/shared-inputs";
 
@@ -49,15 +50,12 @@ function sharedSummary(id: string): string {
 }
 
 const typeOptions = [
-  { value: "boolean", label: "on/off" },
+  { value: "boolean", label: BOOLEAN_PAIR },
   { value: "number", label: "number" },
   { value: "percent", label: "percent" },
 ];
 
-const onOffOptions = [
-  { value: "false", label: "off" },
-  { value: "true", label: "on" },
-];
+const booleanChoices = booleanOptions();
 
 /** A number or percent input's numeric fields, typed in the units the input shows. */
 const NUMBER_FIELDS = [
@@ -182,7 +180,7 @@ const controlOptions = [
           <ComboBox
             class="w-full md:w-20"
             :model-value="String(row.on)"
-            :options="onOffOptions"
+            :options="booleanChoices"
             data-testid="bonus-input-default"
             @update:model-value="(v) => (row.on = v === 'true')"
           />

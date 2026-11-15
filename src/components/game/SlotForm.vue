@@ -22,6 +22,7 @@ import IdField from "../ui/IdField.vue";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { resolvedOptions } from "../../lib/param-options";
+import { booleanOptions } from "../../lib/boolean-label";
 import {
   buildDraft,
   draftCategoryLabel,
@@ -170,10 +171,7 @@ const paramTypeOptions = [
   { value: "list", label: "list" },
 ];
 
-const booleanDefaultOptions = [
-  { value: "false", label: "off" },
-  { value: "true", label: "on" },
-];
+const booleanDefaultOptions = booleanOptions();
 
 const controlOptions = [
   { value: "", label: "stepper if bounded" },

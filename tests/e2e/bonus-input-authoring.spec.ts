@@ -238,7 +238,7 @@ test("an input can reference a shared input defined by a flagged slot", async ({
   await chooseCombo(input.getByTestId("bonus-input-shared"), "Played a song");
   await expect(input.getByTestId("bonus-input-type")).toHaveCount(0);
   await expect(input.getByTestId("bonus-input-shared-summary")).toContainText(
-    "on/off",
+    "enabled/disabled",
   );
 
   const leaf = await addInputCondition(page);

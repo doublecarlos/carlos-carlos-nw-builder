@@ -16,6 +16,7 @@ import {
   replacements,
 } from "../storage/migrate-item-ids";
 import { getPath, setPath } from "../lib/build-path";
+import { booleanLabel } from "../lib/boolean-label";
 import { deepEqual } from "../lib/deep-equal";
 import { changedSlots } from "../lib/build-changes";
 import { assignedRows, repetitionRows } from "../lib/inline-repetition";
@@ -248,7 +249,7 @@ function inputLabel(address: InputAddress): string {
 /** A typed value as an undo label shows it. */
 function shownValue(value: number | boolean | null) {
   if (value === null) return "(none)";
-  if (typeof value === "boolean") return value ? "on" : "off";
+  if (typeof value === "boolean") return booleanLabel(value);
   return String(value);
 }
 
@@ -339,9 +340,7 @@ export function setParam(
   if (!b) return;
   const shown =
     typeof value === "boolean"
-      ? value
-        ? "on"
-        : "off"
+      ? booleanLabel(value)
       : (slot.options?.find((o) => o.value === value)?.label ??
         String(value || "none"));
   history.snapshot(

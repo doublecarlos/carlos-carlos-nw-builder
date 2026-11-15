@@ -13,6 +13,7 @@ import NumberStepper from "../ui/NumberStepper.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import StatValueInput from "./StatValueInput.vue";
 import { numberControl } from "../../engine/inputs";
+import { booleanOptions } from "../../lib/boolean-label";
 import type {
   BonusSettingGroup,
   BonusValuesDraft,
@@ -30,11 +31,7 @@ const values = defineModel<Record<string, BonusValuesDraft>>("values", {
 });
 
 const KEEP = { value: "", label: "- keep -" };
-const ON_OFF = [
-  KEEP,
-  { value: "true", label: "on" },
-  { value: "false", label: "off" },
-];
+const ENABLED_DISABLED = [KEEP, ...booleanOptions()];
 
 const draftOf = (bonusId: string): BonusValuesDraft =>
   values.value[bonusId] ?? { stat: {}, input: {} };
@@ -67,7 +64,7 @@ function field(bonusId: string, name: string, def: InputDef) {
   return value === undefined ? "" : Number(value);
 }
 
-/** An on/off picker's value: `KEEP` while left alone. */
+/** A boolean picker's value: `KEEP` while left alone. */
 function picked(bonusId: string, name: string) {
   const value = stored(bonusId, name);
   return value === undefined ? KEEP.value : String(value);
@@ -136,7 +133,7 @@ const testid = (kind: string, bonusId: string, key: string) =>
           class="w-40"
           :data-testid="testid('input', group.bonusId, entry.name)"
           :model-value="picked(group.bonusId, entry.name)"
-          :options="ON_OFF"
+          :options="ENABLED_DISABLED"
           :phone-screen="true"
           :screen-label="entry.def.label ?? entry.name"
           @update:model-value="onPick(group.bonusId, entry.name, $event)"

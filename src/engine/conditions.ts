@@ -8,6 +8,7 @@
 // and free of cycles.
 
 import { equippedCount, occurrenceCount, taggedCount } from "./lookups";
+import { booleanLabel } from "../lib/boolean-label";
 import {
   evaluateFormula,
   formulaFormat,
@@ -110,8 +111,8 @@ const LEAVES: Record<
     // Unmet means every listed toggle is off, which the label already says.
     return {
       ok: on.length > 0,
-      label: `${names.join(" or ")} enabled`,
-      negatedLabel: `${names.join(" and ")} disabled`,
+      label: `${names.join(" or ")} ${booleanLabel(true)}`,
+      negatedLabel: `${names.join(" and ")} ${booleanLabel(false)}`,
       detail: "",
     };
   },
@@ -188,8 +189,8 @@ const LEAVES: Record<
     if (s.is !== undefined) {
       return {
         ok: value === s.is,
-        label: `${name} ${s.is ? "enabled" : "disabled"}`,
-        negatedLabel: `${name} ${s.is ? "disabled" : "enabled"}`,
+        label: `${name} ${booleanLabel(s.is)}`,
+        negatedLabel: `${name} ${booleanLabel(!s.is)}`,
         detail: "",
       };
     }
@@ -226,8 +227,8 @@ const LEAVES: Record<
     if (s.is !== undefined) {
       return {
         ok: Boolean(value) === s.is,
-        label: `${label} ${s.is ? "enabled" : "disabled"}`,
-        negatedLabel: `${label} ${s.is ? "disabled" : "enabled"}`,
+        label: `${label} ${booleanLabel(s.is)}`,
+        negatedLabel: `${label} ${booleanLabel(!s.is)}`,
         detail: "",
       };
     }

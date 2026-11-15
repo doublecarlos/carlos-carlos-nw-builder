@@ -2,6 +2,7 @@
 // bonus it takes part in differs from the compare build.
 import { computed, type Ref } from "vue";
 import { getPath } from "../lib/build-path";
+import { booleanLabel } from "../lib/boolean-label";
 import { inputKey } from "../lib/build-inputs";
 import { pctInput } from "../lib/format";
 import { isDisabled } from "../lib/slot-toggle";
@@ -79,7 +80,7 @@ export function paramDiffers(
 }
 
 function paramLabel(slot: BuildParameterSlot, value: unknown) {
-  if (slot.paramType === "boolean") return value ? "on" : "off";
+  if (slot.paramType === "boolean") return booleanLabel(Boolean(value));
   if (slot.paramType === "list")
     return slot.options?.find((o) => o.value === value)?.label ?? "(none)";
   if (slot.paramType === "percent" && typeof value === "number")
@@ -99,7 +100,9 @@ export function paramDiffTitle(
 
 /** A typed value as its control shows it. */
 function shownInput(spec: InputSpec, value: number) {
-  return spec.type === "boolean" ? (value ? "on" : "off") : spec.format(value);
+  return spec.type === "boolean"
+    ? booleanLabel(Boolean(value))
+    : spec.format(value);
 }
 
 export function useCompareDiff(options: {

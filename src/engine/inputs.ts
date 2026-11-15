@@ -17,6 +17,7 @@ import {
   statInput,
 } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
+import { booleanLabel } from "../lib/boolean-label";
 import { declaredInputs } from "./shared-inputs";
 import type {
   Bonus,
@@ -103,7 +104,7 @@ export function statSpec(config: DynamicStatConfig): InputSpec {
   };
 }
 
-/** A whole-number count's spec. A 0..1 range reads as on/off. */
+/** A whole-number count's spec. A 0..1 range reads as enabled/disabled. */
 export function countSpec(
   config: BoundedValueConfig,
   fallbackLabel: string,
@@ -144,7 +145,7 @@ export function bonusInputSpec(def: InputDef, name: string): InputSpec {
       max: 1,
       default: def.default ? 1 : 0,
       label,
-      format: (value) => (value ? "on" : "off"),
+      format: (value) => booleanLabel(Boolean(value)),
     };
   return {
     type: def.type,

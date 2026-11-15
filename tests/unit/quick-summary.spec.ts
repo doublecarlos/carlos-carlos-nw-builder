@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { quickSummary } from "../../src/lib/quick-summary";
 
 describe("quickSummary", () => {
-  it("lists values in order and counts the toggles that are on", () => {
+  it("lists values in order and counts the toggles that are enabled", () => {
     expect(
       quickSummary([
         { label: "Enemies", value: "3" },
@@ -13,7 +13,7 @@ describe("quickSummary", () => {
         { label: "B", value: false },
         { label: "C", value: true },
       ]),
-    ).toBe("Enemies 3 · Duration 30 · 2/3 toggles on");
+    ).toBe("Enemies 3 · Duration 30 · 2/3 toggles enabled");
   });
 
   it("leaves the toggle count out when there are no toggles", () => {
