@@ -1,5 +1,5 @@
 // Moves the scenario flag picks of the retired `options.scenario` list onto what replaced them:
-// the Boss and Non-boss flags onto the enemy rank global input, a location onto the shared
+// the Boss and Non-boss flags onto the shared enemy rank input, a location onto the shared
 // Location pick. Also
 // moves Sword Coast Tactician's private "active" input onto that pick.
 //
@@ -16,9 +16,9 @@ const RETIRED_LIST = "options.scenario";
 
 /** The shared Location pick. Frozen, like the tables below: a record of what shipped, not a
  *  view of `data/slots.json`. */
-export const LOCATION_SLOT = "globals.location";
+export const LOCATION_SLOT = "shared.location";
 
-/** A global input value a flag pick became. */
+/** A shared input value a flag pick became. */
 export interface ScenarioFlag {
   path: string;
   value: number;
@@ -27,8 +27,8 @@ export interface ScenarioFlag {
 /** The enemy rank each enemy flag item became. Boss is the rank's default, so Non-boss needs
  *  a value of its own: Solo, the strongest rank below Boss. */
 export const FLAG_VALUES: Record<string, ScenarioFlag> = {
-  "enemy-type-boss": { path: "globals.enemyRank", value: 6 },
-  "enemy-type-non-boss": { path: "globals.enemyRank", value: 5 },
+  "enemy-type-boss": { path: "shared.enemyRank", value: 6 },
+  "enemy-type-non-boss": { path: "shared.enemyRank", value: 5 },
 };
 
 /** The location flag items, which kept their ids as Location picks. */
@@ -131,7 +131,7 @@ export function withoutScenarioRows(
 }
 
 /** One preset with the retired list's rows dropped. Its flags are not carried: a preset sets
- *  the slots of its own section, and the global inputs have none it can name. */
+ *  the slots of its own section, and the shared inputs have none it can name. */
 function migratePreset(preset: SectionPreset): SectionPreset {
   const named = [
     ...Object.keys(preset.choices ?? {}),

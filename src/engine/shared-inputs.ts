@@ -1,67 +1,67 @@
 // Bonus inputs as the engine reads them: a bonus's own definitions, plus its references to
-// global inputs resolved against the flagged `build_parameter` slots that define them.
+// shared inputs resolved against the flagged `build_parameter` slots that define them.
 import { bonusInputAddress } from "../lib/build-inputs";
 import type {
   Authored,
   AuthoredSlot,
   Bonus,
   BuildParameterSlot,
-  GlobalInputRef,
+  SharedInputRef,
   InputAddress,
   InputDecl,
   InputDef,
   Slot,
 } from "../types";
 
-export type GlobalInputs = ReadonlyMap<string, BuildParameterSlot>;
+export type SharedInputs = ReadonlyMap<string, BuildParameterSlot>;
 
-/** Global inputs as authored, their labels not yet filled by `Db`: what the catalog check
+/** Shared inputs as authored, their labels not yet filled by `Db`: what the catalog check
  *  reads. Resolved ones fit wherever these do. */
-export type AuthoredGlobalInputs = ReadonlyMap<
+export type AuthoredSharedInputs = ReadonlyMap<
   string,
   Authored<BuildParameterSlot>
 >;
 
 /** For an evaluation context built without a catalog, where no reference can resolve. */
-export const NO_GLOBALS: GlobalInputs = new Map();
+export const NO_SHARED_INPUTS: SharedInputs = new Map();
 
-/** Whether `decl` references a global input rather than defining its own value. */
-export const isGlobalRef = (decl: InputDecl): decl is GlobalInputRef =>
-  typeof decl === "object" && decl !== null && "global" in decl;
+/** Whether `decl` references a shared input rather than defining its own value. */
+export const isSharedRef = (decl: InputDecl): decl is SharedInputRef =>
+  typeof decl === "object" && decl !== null && "shared" in decl;
 
-/** Whether `slot` defines a global input. */
-export const isGlobalInputSlot = (
-  slot: Pick<Slot, "type"> & { globalInput?: boolean },
-): boolean => slot.type === "build_parameter" && slot.globalInput === true;
+/** Whether `slot` defines a shared input. */
+export const isSharedInputSlot = (
+  slot: Pick<Slot, "type"> & { sharedInput?: boolean },
+): boolean => slot.type === "build_parameter" && slot.sharedInput === true;
 
-/** Whether `slot` is flagged shared, a global input param or a shared picker: its control
+/** Whether `slot` is flagged shared, a shared input param or a shared picker: its control
  *  shows on the rows of the bonuses reading it, and in the Shared inputs section while the
  *  build uses it. */
 export const isSharedSlot = (
-  slot: Pick<Slot, "type"> & { globalInput?: boolean },
+  slot: Pick<Slot, "type"> & { sharedInput?: boolean },
 ): boolean =>
   (slot.type === "build_parameter" || slot.type === "item_picker") &&
-  slot.globalInput === true;
+  slot.sharedInput === true;
 
-/** Every global input slot in `slots`, by id. */
-export function globalInputsOf(slots: readonly Slot[]): GlobalInputs;
-export function globalInputsOf(
+/** Every shared input slot in `slots`, by id. */
+export function sharedInputsOf(slots: readonly Slot[]): SharedInputs;
+export function sharedInputsOf(
   slots: readonly AuthoredSlot[],
-): AuthoredGlobalInputs;
-export function globalInputsOf(
+): AuthoredSharedInputs;
+export function sharedInputsOf(
   slots: readonly AuthoredSlot[],
-): AuthoredGlobalInputs {
+): AuthoredSharedInputs {
   return new Map(
     slots.flatMap((slot) =>
-      slot.type === "build_parameter" && slot.globalInput
+      slot.type === "build_parameter" && slot.sharedInput
         ? [[slot.id, slot] as const]
         : [],
     ),
   );
 }
 
-/** A global input slot's definition in a bonus input's shape. */
-export function globalInputDef(slot: Authored<BuildParameterSlot>): InputDef {
+/** A shared input slot's definition in a bonus input's shape. */
+export function sharedInputDef(slot: Authored<BuildParameterSlot>): InputDef {
   if (slot.paramType === "boolean")
     return {
       type: "boolean",
@@ -82,46 +82,46 @@ export function globalInputDef(slot: Authored<BuildParameterSlot>): InputDef {
   return def;
 }
 
-/** One bonus input as read: its definition and where its value is stored. `global` is the
+/** One bonus input as read: its definition and where its value is stored. `shared` is the
  *  referenced slot's id. */
 export interface DeclaredInput {
   name: string;
   def: InputDef;
   address: InputAddress;
-  global?: string;
+  shared?: string;
 }
 
 const declaredCache = new WeakMap<
-  AuthoredGlobalInputs,
+  AuthoredSharedInputs,
   WeakMap<object, DeclaredInput[]>
 >();
 
-/** Every input `bonus` declares, in declaration order. A reference that resolves to no global
+/** Every input `bonus` declares, in declaration order. A reference that resolves to no shared
  *  input is left out, as the catalog check reports it. */
 export function declaredInputs(
   bonus: Pick<Bonus, "id" | "inputs">,
-  globals: AuthoredGlobalInputs,
+  sharedInputs: AuthoredSharedInputs,
 ): DeclaredInput[] {
   const inputs = bonus.inputs;
   if (!inputs) return [];
-  let byInputs = declaredCache.get(globals);
-  if (!byInputs) declaredCache.set(globals, (byInputs = new WeakMap()));
+  let byInputs = declaredCache.get(sharedInputs);
+  if (!byInputs) declaredCache.set(sharedInputs, (byInputs = new WeakMap()));
   const cached = byInputs.get(bonus);
   if (cached) return cached;
   const out = Object.entries(inputs).flatMap(
     ([name, decl]): DeclaredInput[] => {
-      if (!isGlobalRef(decl))
+      if (!isSharedRef(decl))
         return [
           { name, def: decl, address: bonusInputAddress(bonus.id, name) },
         ];
-      const slot = globals.get(decl.global);
+      const slot = sharedInputs.get(decl.shared);
       if (!slot) return [];
       return [
         {
           name,
-          def: globalInputDef(slot),
+          def: sharedInputDef(slot),
           address: { store: "context", path: slot.path },
-          global: slot.id,
+          shared: slot.id,
         },
       ];
     },
@@ -133,10 +133,10 @@ export function declaredInputs(
 /** `bonus`'s inputs by name with references resolved, what formula checks read. */
 export function inputDefs(
   bonus: Pick<Bonus, "id" | "inputs">,
-  globals: AuthoredGlobalInputs,
+  sharedInputs: AuthoredSharedInputs,
 ): Record<string, InputDef> {
   return Object.fromEntries(
-    declaredInputs(bonus, globals).map((entry) => [entry.name, entry.def]),
+    declaredInputs(bonus, sharedInputs).map((entry) => [entry.name, entry.def]),
   );
 }
 
@@ -148,9 +148,9 @@ export type WithInputDefs<T> = Omit<T, "inputs"> & {
 /** `owner` with its input references resolved. */
 export function withInputDefs<T extends Pick<Bonus, "id" | "inputs">>(
   owner: T,
-  globals: AuthoredGlobalInputs,
+  sharedInputs: AuthoredSharedInputs,
 ): WithInputDefs<T> {
-  return { ...owner, inputs: inputDefs(owner, globals) };
+  return { ...owner, inputs: inputDefs(owner, sharedInputs) };
 }
 
 /** The inputs `bonus` defines itself, stored under its own `bonusValues`. */
@@ -158,6 +158,6 @@ export function privateInputs(
   bonus: Pick<Bonus, "inputs">,
 ): [string, InputDef][] {
   return Object.entries(bonus.inputs ?? {}).flatMap(([name, decl]) =>
-    isGlobalRef(decl) ? [] : [[name, decl] as [string, InputDef]],
+    isSharedRef(decl) ? [] : [[name, decl] as [string, InputDef]],
   );
 }

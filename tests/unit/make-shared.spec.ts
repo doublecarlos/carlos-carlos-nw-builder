@@ -1,19 +1,19 @@
-// "Make global" as one layer edit, on a small catalog of its own: the new global input reads
+// "Make shared" as one layer edit, on a small catalog of its own: the new shared input reads
 // as the input did, each reader keeps the local name that moves a build's stored value, and
-// the Global inputs section is added only when the catalog has none.
+// the Shared inputs section is added only when the catalog has none.
 import { describe, expect, it } from "vitest";
 import * as db from "../../src/data/db";
 import { emptyOverlay } from "../../src/data/catalog";
-import { globalInputDef } from "../../src/engine/global-inputs";
+import { sharedInputDef } from "../../src/engine/shared-inputs";
 import {
-  defaultGlobalId,
-  globalIdError,
-  makeGlobalOverlay,
+  defaultSharedInputId,
+  sharedInputIdError,
+  makeSharedOverlay,
   shadowedEntries,
-  takenGlobalIds,
-  type TakenGlobalIds,
-} from "../../src/lib/make-global";
-import { GLOBAL_INPUTS_SECTION } from "../../src/lib/slot-draft";
+  takenSharedIds,
+  type TakenSharedIds,
+} from "../../src/lib/make-shared";
+import { SHARED_INPUTS_SECTION } from "../../src/lib/slot-draft";
 import type {
   Bonus,
   InputDef,
@@ -50,14 +50,14 @@ const defining = (id: string): Bonus => ({
   grants: [],
 });
 
-/** A parameter already on the path the new global input would be named after. */
+/** A parameter already on the path the new shared input would be named after. */
 const clash: Slot = {
   id: "options.hits",
   label: "Hits",
   section: "options",
   type: "build_parameter",
   paramType: "number",
-  path: "globals.recent-hits",
+  path: "shared.recent-hits",
 };
 
 function catalogWith(sections: SlotSection[]) {
@@ -70,17 +70,17 @@ function catalogWith(sections: SlotSection[]) {
 
 const options: SlotSection = { id: "options", label: "Options", slotIds: [] };
 const request = {
-  id: "globals.recentHits",
+  id: "shared.recentHits",
   name: "hits",
   def: hitsDef,
   readers: [defining("a"), defining("b")],
 };
 
-const NONE_TAKEN: TakenGlobalIds = { ids: [], paths: [] };
+const NONE_TAKEN: TakenSharedIds = { ids: [], paths: [] };
 
-describe("makeGlobalOverlay", () => {
-  it("defines the global input as the input was, and every reader keeps the name", () => {
-    const { overlay, slot } = makeGlobalOverlay(
+describe("makeSharedOverlay", () => {
+  it("defines the shared input as the input was, and every reader keeps the name", () => {
+    const { overlay, slot } = makeSharedOverlay(
       emptyOverlay(),
       catalogWith([options]),
       NONE_TAKEN,
@@ -89,14 +89,14 @@ describe("makeGlobalOverlay", () => {
     expect(slot).toMatchObject({
       id: request.id,
       path: request.id,
-      globalInput: true,
-      section: "globals",
+      sharedInput: true,
+      section: "shared",
     });
-    expect(globalInputDef(slot)).toEqual(hitsDef);
+    expect(sharedInputDef(slot)).toEqual(hitsDef);
     expect(overlay.slots[slot.id]).toEqual(slot);
     for (const id of ["a", "b"])
       expect(overlay.bonuses[id]?.inputs).toEqual({
-        hits: { global: slot.id },
+        hits: { shared: slot.id },
       });
   });
 
@@ -104,26 +104,26 @@ describe("makeGlobalOverlay", () => {
   it("refuses an id that is not free instead of renaming it", () => {
     const catalog = catalogWith([options]);
     expect(() =>
-      makeGlobalOverlay(emptyOverlay(), catalog, takenGlobalIds(catalog, []), {
+      makeSharedOverlay(emptyOverlay(), catalog, takenSharedIds(catalog, []), {
         ...request,
-        id: "globals.recent-hits",
+        id: "shared.recent-hits",
       }),
     ).toThrow();
   });
 
-  it("adds the Global inputs section only when the catalog has none", () => {
-    const missing = makeGlobalOverlay(
+  it("adds the Shared inputs section only when the catalog has none", () => {
+    const missing = makeSharedOverlay(
       emptyOverlay(),
       catalogWith([options]),
       NONE_TAKEN,
       request,
     );
-    expect(missing.overlay.sections[GLOBAL_INPUTS_SECTION.id]).toEqual(
-      GLOBAL_INPUTS_SECTION,
+    expect(missing.overlay.sections[SHARED_INPUTS_SECTION.id]).toEqual(
+      SHARED_INPUTS_SECTION,
     );
-    const present = makeGlobalOverlay(
+    const present = makeSharedOverlay(
       emptyOverlay(),
-      catalogWith([options, { ...GLOBAL_INPUTS_SECTION, label: "Mine" }]),
+      catalogWith([options, { ...SHARED_INPUTS_SECTION, label: "Mine" }]),
       NONE_TAKEN,
       request,
     );
@@ -131,61 +131,61 @@ describe("makeGlobalOverlay", () => {
   });
 });
 
-// The id doubles as the path, and paths nest in the build's context, so a new global input
+// The id doubles as the path, and paths nest in the build's context, so a new shared input
 // must not land on, above or below a value another slot owns.
-describe("global input ids", () => {
-  const taken: TakenGlobalIds = {
-    ids: ["options.hits", "globals.recent-hits-2"],
-    paths: ["globals.recent-hits", "globals.location.enclave"],
+describe("shared input ids", () => {
+  const taken: TakenSharedIds = {
+    ids: ["options.hits", "shared.recent-hits-2"],
+    paths: ["shared.recent-hits", "shared.location.enclave"],
   };
 
-  it("offers globals.<label> first, numbered past taken ids and paths", () => {
-    expect(defaultGlobalId("hits", hitsDef, NONE_TAKEN)).toBe(
-      "globals.recent-hits",
+  it("offers shared.<label> first, numbered past taken ids and paths", () => {
+    expect(defaultSharedInputId("hits", hitsDef, NONE_TAKEN)).toBe(
+      "shared.recent-hits",
     );
-    expect(defaultGlobalId("hits", hitsDef, taken)).toBe(
-      "globals.recent-hits-3",
+    expect(defaultSharedInputId("hits", hitsDef, taken)).toBe(
+      "shared.recent-hits-3",
     );
-    expect(globalIdError(defaultGlobalId("hits", hitsDef, taken), taken)).toBe(
-      null,
-    );
+    expect(
+      sharedInputIdError(defaultSharedInputId("hits", hitsDef, taken), taken),
+    ).toBe(null);
   });
 
   // No number frees an id below a taken path, so the default stops instead of searching.
   it("offers the stem when a taken path sits above every candidate", () => {
-    const above = { ids: [], paths: ["globals"] };
-    const id = defaultGlobalId("hits", hitsDef, above);
-    expect(id).toBe("globals.recent-hits");
-    expect(globalIdError(id, above)).not.toBe(null);
+    const above = { ids: [], paths: ["shared"] };
+    const id = defaultSharedInputId("hits", hitsDef, above);
+    expect(id).toBe("shared.recent-hits");
+    expect(sharedInputIdError(id, above)).not.toBe(null);
   });
 
   it("accepts an id under the naming convention", () => {
-    expect(globalIdError("globals.enemyRank.boss", taken)).toBe(null);
-    expect(globalIdError("globals.location.sword-coast", taken)).toBe(null);
+    expect(sharedInputIdError("shared.enemyRank.boss", taken)).toBe(null);
+    expect(sharedInputIdError("shared.location.sword-coast", taken)).toBe(null);
   });
 
   it("rejects a taken id or path", () => {
-    expect(globalIdError("options.hits", taken)).not.toBe(null);
-    expect(globalIdError("globals.recent-hits-2", taken)).not.toBe(null);
-    expect(globalIdError("globals.recent-hits", taken)).not.toBe(null);
+    expect(sharedInputIdError("options.hits", taken)).not.toBe(null);
+    expect(sharedInputIdError("shared.recent-hits-2", taken)).not.toBe(null);
+    expect(sharedInputIdError("shared.recent-hits", taken)).not.toBe(null);
   });
 
   it("rejects an id above or below a taken path", () => {
-    expect(globalIdError("globals.location", taken)).not.toBe(null);
-    expect(globalIdError("globals.recent-hits.max", taken)).not.toBe(null);
+    expect(sharedInputIdError("shared.location", taken)).not.toBe(null);
+    expect(sharedInputIdError("shared.recent-hits.max", taken)).not.toBe(null);
   });
 
-  // Outside `globals.` an id could land on a path the engine reads directly.
-  it("rejects an empty id, one outside globals. and a malformed one", () => {
+  // Outside `shared.` an id could land on a path the engine reads directly.
+  it("rejects an empty id, one outside shared. and a malformed one", () => {
     for (const id of [
       "",
-      "globals",
+      "shared",
       "health",
-      "globals.",
-      "globals..a",
-      "globals.a b",
+      "shared.",
+      "shared..a",
+      "shared.a b",
     ])
-      expect(globalIdError(id, NONE_TAKEN)).not.toBe(null);
+      expect(sharedInputIdError(id, NONE_TAKEN)).not.toBe(null);
   });
 });
 

@@ -4,7 +4,7 @@
 import * as conditions from "./conditions";
 import { bonusContext } from "./bonus";
 import { scalerMultiplier } from "./scaling";
-import { NO_GLOBALS, withInputDefs } from "./global-inputs";
+import { NO_SHARED_INPUTS, withInputDefs } from "./shared-inputs";
 import {
   axisRead,
   describeRead,
@@ -79,7 +79,7 @@ export function scaleLadder(
     stepsProblem(
       steps,
       scale.formula,
-      withInputDefs(bonus, ctx.globalInputs ?? NO_GLOBALS),
+      withInputDefs(bonus, ctx.sharedInputs ?? NO_SHARED_INPUTS),
     )
   )
     return null;

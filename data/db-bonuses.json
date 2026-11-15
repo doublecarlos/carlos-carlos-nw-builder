@@ -416,7 +416,7 @@
     "name": "Batiri's Wisdom",
     "inputs": {
       "rank": {
-        "global": "globals.enemyRank"
+        "shared": "shared.enemyRank"
       }
     },
     "grants": [
@@ -739,7 +739,7 @@
     "name": "Cautious Devotion",
     "inputs": {
       "health": {
-        "global": "globals.health"
+        "shared": "shared.health"
       }
     },
     "grants": [
@@ -886,7 +886,7 @@
     "name": "Cultist Stats",
     "inputs": {
       "cultist": {
-        "global": "globals.enemyType.cultist"
+        "shared": "shared.enemyType.cultist"
       }
     },
     "grants": [
@@ -1047,10 +1047,10 @@
     "name": "Demonic Stats",
     "inputs": {
       "demon": {
-        "global": "globals.enemyType.demon"
+        "shared": "shared.enemyType.demon"
       },
       "devil": {
-        "global": "globals.enemyType.devil"
+        "shared": "shared.enemyType.devil"
       }
     },
     "grants": [
@@ -1134,7 +1134,7 @@
     "name": "Dino Stats",
     "inputs": {
       "dinosaur": {
-        "global": "globals.enemyType.dinosaur"
+        "shared": "shared.enemyType.dinosaur"
       }
     },
     "grants": [
@@ -3472,7 +3472,7 @@
     "name": "M33 Balanced Vitality",
     "inputs": {
       "health": {
-        "global": "globals.health"
+        "shared": "shared.health"
       }
     },
     "grants": [
@@ -3872,7 +3872,7 @@
     "name": "M33 Deity's Gift",
     "inputs": {
       "health": {
-        "global": "globals.health"
+        "shared": "shared.health"
       }
     },
     "grants": [
@@ -3891,7 +3891,7 @@
     "name": "M33 Deity's Gift (Celestial)",
     "inputs": {
       "health": {
-        "global": "globals.health"
+        "shared": "shared.health"
       }
     },
     "grants": [
@@ -4681,7 +4681,7 @@
     "name": "M33 Survivor's Critical Resilience",
     "inputs": {
       "health": {
-        "global": "globals.health"
+        "shared": "shared.health"
       }
     },
     "grants": [
@@ -4713,7 +4713,7 @@
     "name": "M33 Survivor's Instinct",
     "inputs": {
       "health": {
-        "global": "globals.health"
+        "shared": "shared.health"
       }
     },
     "grants": [
@@ -4770,7 +4770,7 @@
     "name": "M33 Unbroken Strength",
     "inputs": {
       "health": {
-        "global": "globals.health"
+        "shared": "shared.health"
       }
     },
     "grants": [
@@ -5704,7 +5704,7 @@
     "name": "Necrotic Mastery Stats",
     "inputs": {
       "undead": {
-        "global": "globals.enemyType.undead"
+        "shared": "shared.enemyType.undead"
       }
     },
     "grants": [
@@ -7092,7 +7092,7 @@
     "name": "The Bigger They Are",
     "inputs": {
       "rank": {
-        "global": "globals.enemyRank"
+        "shared": "shared.enemyRank"
       }
     },
     "grants": [

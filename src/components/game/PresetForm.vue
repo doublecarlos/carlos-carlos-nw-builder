@@ -44,7 +44,7 @@ import type {
   PointAssignmentSlot,
 } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
-import { isGlobalInputSlot } from "../../engine/global-inputs";
+import { isSharedInputSlot } from "../../engine/shared-inputs";
 import { isLayoutRow } from "../../lib/row-visibility";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
@@ -130,26 +130,26 @@ const bonusGroups = computed(() => bonusSettingGroups(draft.value, props.db));
 
 // --- Common ---------------------------------------------------------------------------
 
-/** A section holding only global inputs has no row a preset could fill, so it is not offered. */
+/** A section holding only shared inputs has no row a preset could fill, so it is not offered. */
 const sectionOptions = computed(() =>
   props.db.sections
-    .filter((s) => !onlyGlobalInputs(s.id) || s.id === draft.value.section)
+    .filter((s) => !onlySharedInputs(s.id) || s.id === draft.value.section)
     .map((s) => ({ value: s.id, label: s.label })),
 );
 
-function onlyGlobalInputs(sectionId: string): boolean {
+function onlySharedInputs(sectionId: string): boolean {
   const fields = props.db.slots.filter(
     (slot) => slot.section === sectionId && !isLayoutRow(slot),
   );
-  return fields.length > 0 && fields.every(isGlobalInputSlot);
+  return fields.length > 0 && fields.every(isSharedInputSlot);
 }
 
 /** Off the composed catalog rather than the shipped file, so a layer-authored param is
  * offered here the same as a shipped one: a preset seeding a custom param is the whole
- * point of both being overlayable. A global input has no row a preset could fill. */
+ * point of both being overlayable. A shared input has no row a preset could fill. */
 const slotsInSection = computed(() =>
   props.db.slots.filter(
-    (slot) => slot.section === draft.value.section && !isGlobalInputSlot(slot),
+    (slot) => slot.section === draft.value.section && !isSharedInputSlot(slot),
   ),
 );
 

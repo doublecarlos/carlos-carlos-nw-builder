@@ -1,4 +1,4 @@
-// Global inputs: a value defined once by a flagged build_parameter slot and read by every bonus
+// Shared inputs: a value defined once by a flagged build_parameter slot and read by every bonus
 // referencing it in its `inputs`, through the same `input` leaf and `$name` a private input uses.
 import { describe, expect, it } from "vitest";
 import * as db from "../../src/data/db";
@@ -30,26 +30,26 @@ const schema: Schema = {
 };
 
 const song: BuildParameterSlot = {
-  id: "globals.song",
+  id: "shared.song",
   label: "Played a song",
-  section: "globals",
+  section: "shared",
   type: "build_parameter",
   paramType: "boolean",
-  path: "globals.song",
+  path: "shared.song",
   default: false,
-  globalInput: true,
+  sharedInput: true,
 };
 const hits: BuildParameterSlot = {
-  id: "globals.hits",
+  id: "shared.hits",
   label: "Recent hits",
-  section: "globals",
+  section: "shared",
   type: "build_parameter",
   paramType: "number",
-  path: "globals.hits",
+  path: "shared.hits",
   min: 0,
   max: 10,
   default: 2,
-  globalInput: true,
+  sharedInput: true,
 };
 
 // Two bonuses read the song under different local names; a third has a private input that
@@ -57,7 +57,7 @@ const hits: BuildParameterSlot = {
 const ballad: Bonus = {
   id: "ballad",
   name: "Ballad",
-  inputs: { song: { global: song.id } },
+  inputs: { song: { shared: song.id } },
   grants: [
     { when: { input: { key: "song", is: true } }, stats: { power: 100 } },
   ],
@@ -65,7 +65,7 @@ const ballad: Bonus = {
 const chorus: Bonus = {
   id: "chorus",
   name: "Chorus",
-  inputs: { sang: { global: song.id }, hits: { global: hits.id } },
+  inputs: { sang: { shared: song.id }, hits: { shared: hits.id } },
   grants: [
     { when: { input: { key: "sang", is: true } }, stats: { power: 10 } },
     {
@@ -100,7 +100,7 @@ const slots: Slot[] = [gear("a"), gear("b"), gear("c"), song, hits];
 const testDb = db.build(items, [ballad, chorus, solo], schema, {
   sections: [
     { id: "gear", label: "Gear", slotIds: [] },
-    { id: "globals", label: "Global inputs", slotIds: [] },
+    { id: "shared", label: "Shared inputs", slotIds: [] },
   ],
   slots,
   presets: [],
@@ -125,7 +125,7 @@ const applied = (b: Build, bonusId: string) =>
   engine.resolveBuild(testDb, b).bonuses.find((entry) => entry.id === bonusId)
     ?.appliedStats?.power ?? 0;
 
-describe("reading a global input", () => {
+describe("reading a shared input", () => {
   it("reads the slot's default while the build stores nothing", () => {
     const b = build({ a: "lute", b: "drum" });
     expect(applied(b, "ballad")).toBe(0);
@@ -133,7 +133,7 @@ describe("reading a global input", () => {
     expect(applied(b, "chorus")).toBe(2);
   });
 
-  // The point of a global input: one setting gates every reader, whatever it calls it.
+  // The point of a shared input: one setting gates every reader, whatever it calls it.
   it("gives every reader the one value stored at the slot's path", () => {
     const b = build({ a: "lute", b: "drum" });
     writeInput(b, { store: "context", path: song.path }, true);
@@ -156,7 +156,7 @@ describe("reading a global input", () => {
     const b = build({ a: "lute", b: "drum" });
     const resolved = engine.resolveBuild(testDb, b);
     const songEntries = inputEntries(testDb, b, resolved).filter(
-      (entry) => entry.bonusInput?.global === song.id,
+      (entry) => entry.bonusInput?.shared === song.id,
     );
     expect(
       songEntries.map((entry) => [entry.slotId, entry.bonusInput?.name]),
@@ -171,11 +171,11 @@ describe("reading a global input", () => {
   // A stored value means the player set it, which a later migration relies on.
   it("is not seeded into a fresh build", () => {
     const { context } = seededDefaults(slots, testDb);
-    expect(context).not.toHaveProperty("globals");
+    expect(context).not.toHaveProperty("shared");
   });
 });
 
-describe("catalog.validate: global inputs", () => {
+describe("catalog.validate: shared inputs", () => {
   const messages = (bonus: Bonus, extraSlots: Slot[] = []) =>
     catalog
       .validate(
@@ -186,13 +186,13 @@ describe("catalog.validate: global inputs", () => {
         [...slots, ...extraSlots],
         [
           { id: "gear", label: "Gear", slotIds: [] },
-          { id: "globals", label: "Global inputs", slotIds: [] },
+          { id: "shared", label: "Shared inputs", slotIds: [] },
         ],
       )
       .filter((finding) => finding.name === bonus.id)
       .map((finding) => `${finding.level}: ${finding.message}`);
 
-  it("accepts a reference to a global input", () => {
+  it("accepts a reference to a shared input", () => {
     expect(messages(ballad)).toEqual([]);
   });
 
@@ -200,7 +200,7 @@ describe("catalog.validate: global inputs", () => {
     const plain: Slot = {
       id: "plain",
       label: "Plain",
-      section: "globals",
+      section: "shared",
       type: "build_parameter",
       paramType: "boolean",
       path: "plain",
@@ -210,9 +210,9 @@ describe("catalog.validate: global inputs", () => {
         {
           id: "bad",
           inputs: {
-            extra: { global: song.id, default: true } as { global: string },
-            unknown: { global: "nope" },
-            unflagged: { global: "plain" },
+            extra: { shared: song.id, default: true } as { shared: string },
+            unknown: { shared: "nope" },
+            unflagged: { shared: "plain" },
           },
           grants: [
             {
@@ -234,7 +234,7 @@ describe("catalog.validate: global inputs", () => {
     ).toEqual(["extra", "unknown", "unflagged"]);
   });
 
-  it("checks a reader's leaf against the global input's type", () => {
+  it("checks a reader's leaf against the shared input's type", () => {
     expect(
       messages({
         ...ballad,
@@ -246,7 +246,7 @@ describe("catalog.validate: global inputs", () => {
   });
 
   // A direct read would gate a bonus with no row showing the control.
-  it("rejects reading a global input's path directly", () => {
+  it("rejects reading a shared input's path directly", () => {
     expect(
       messages({
         id: "direct",
@@ -257,8 +257,8 @@ describe("catalog.validate: global inputs", () => {
       }),
     ).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/^error: grant 1: .*global input/),
-        expect.stringMatching(/^error: grant 2 scale: .*global input/),
+        expect.stringMatching(/^error: grant 1: .*shared input/),
+        expect.stringMatching(/^error: grant 2 scale: .*shared input/),
       ]),
     );
   });
@@ -299,18 +299,18 @@ describe("catalog.validate: global inputs", () => {
     ]);
   });
 
-  // A preset or replacement seed writes `bonusValues`, where a global input is never stored.
-  it("rejects bonusValues naming a global input", () => {
+  // A preset or replacement seed writes `bonusValues`, where a shared input is never stored.
+  it("rejects bonusValues naming a shared input", () => {
     expect(
       catalog.bonusValuesProblems(
         { ballad: { input: { song: true } } },
         new Map([["ballad", ballad]]),
       ),
-    ).toEqual([expect.stringMatching(/input "song" is a global input/)]);
+    ).toEqual([expect.stringMatching(/input "song" is a shared input/)]);
   });
 
   // Either would silently overwrite the value every reader shares.
-  it("warns about defaultParams or a preset naming a global input", () => {
+  it("warns about defaultParams or a preset naming a shared input", () => {
     const findings = catalog.validate(
       [{ ...items[0], defaultParams: { [song.id]: true } }],
       [ballad],
@@ -319,31 +319,31 @@ describe("catalog.validate: global inputs", () => {
         {
           id: "sing",
           label: "Sing",
-          section: "globals",
+          section: "shared",
           params: { [song.id]: true },
         },
       ],
       slots,
       [
         { id: "gear", label: "Gear", slotIds: [] },
-        { id: "globals", label: "Global inputs", slotIds: [] },
+        { id: "shared", label: "Shared inputs", slotIds: [] },
       ],
     );
     const warned = findings
       .filter(
         (finding) =>
-          finding.level === "warn" && /global input/.test(finding.message),
+          finding.level === "warn" && /shared input/.test(finding.message),
       )
       .map((finding) => finding.name);
     expect(warned).toEqual(expect.arrayContaining(["lute", "sing"]));
   });
 });
 
-describe("range errors of a global input", () => {
+describe("range errors of a shared input", () => {
   const echo: Bonus = {
     id: "echo",
     name: "Echo",
-    inputs: { count: { global: hits.id } },
+    inputs: { count: { shared: hits.id } },
     grants: [
       { when: { input: { key: "count", atLeast: 1 } }, stats: { power: 1 } },
     ],
@@ -358,7 +358,7 @@ describe("range errors of a global input", () => {
     {
       sections: [
         { id: "gear", label: "Gear", slotIds: [] },
-        { id: "globals", label: "Global inputs", slotIds: [] },
+        { id: "shared", label: "Shared inputs", slotIds: [] },
       ],
       slots,
       presets: [],
@@ -373,7 +373,7 @@ describe("range errors of a global input", () => {
       .map((error) => error.slotId);
   };
 
-  // The global input has no row, so its error belongs on the rows that show its control.
+  // The shared input has no row, so its error belongs on the rows that show its control.
   it("reports on each reader's row, once per row", () => {
     expect(rangeSlots({ a: "drum", b: "horn" })).toEqual(["a", "b"]);
     // Horn carries two readers anchored on its row, which still gives one error.

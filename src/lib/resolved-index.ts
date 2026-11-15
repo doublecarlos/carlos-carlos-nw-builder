@@ -91,22 +91,22 @@ export function inputCopiesBySlot(
   return map;
 }
 
-/** The entries of every global input, by its slot id, one per bonus on the build reading it
+/** The entries of every shared input, by its slot id, one per bonus on the build reading it
  *  with an item carrying it. */
-export function globalInputReaders(
+export function sharedInputReaders(
   inputs: readonly InputEntry[],
   bonusById: ReadonlyMap<string, EvaluatedBonus>,
 ): Map<string, InputEntry[]> {
   const map = new Map<string, InputEntry[]>();
   for (const entry of inputs) {
     const reader = entry.bonusInput;
-    if (reader?.global === undefined) continue;
+    if (reader?.shared === undefined) continue;
     const bonus = bonusById.get(reader.bonusId);
     if (!bonus || !isCarried(bonus)) continue;
-    const global = reader.global;
-    const bucket = map.get(global);
+    const shared = reader.shared;
+    const bucket = map.get(shared);
     if (bucket) bucket.push(entry);
-    else map.set(global, [entry]);
+    else map.set(shared, [entry]);
   }
   return map;
 }

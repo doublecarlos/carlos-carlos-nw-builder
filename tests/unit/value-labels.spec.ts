@@ -31,24 +31,24 @@ const schema: Schema = {
 };
 
 const rank: BuildParameterSlot = {
-  id: "globals.rank",
+  id: "shared.rank",
   label: "Rank",
-  section: "globals",
+  section: "shared",
   type: "build_parameter",
   paramType: "number",
-  path: "globals.rank",
+  path: "shared.rank",
   default: 3,
   min: 1,
   max: 3,
   step: 1,
   valueLabels: { "1": "Weak", "3": "Strong" },
-  globalInput: true,
+  sharedInput: true,
 };
 
 const bane: Bonus = {
   id: "bane",
   name: "Bane",
-  inputs: { rank: { global: rank.id } },
+  inputs: { rank: { shared: rank.id } },
   grants: [
     {
       tierBy: { formula: "$rank" },
@@ -76,7 +76,7 @@ const slots: Slot[] = [
 const testDb = db.build(items, [bane], schema, {
   sections: [
     { id: "gear", label: "Gear", slotIds: [] },
-    { id: "globals", label: "Global inputs", slotIds: [] },
+    { id: "shared", label: "Shared inputs", slotIds: [] },
   ],
   slots,
   presets: [],
@@ -121,7 +121,7 @@ describe("a labeled rank input", () => {
   it("formats the reader's control values by label", () => {
     const b = build();
     const entry = inputEntries(testDb, b, engine.resolveBuild(testDb, b)).find(
-      (input) => input.bonusInput?.global === rank.id,
+      (input) => input.bonusInput?.shared === rank.id,
     )!;
     expect([1, 2, 3].map(entry.spec.format)).toEqual(["Weak", "2", "Strong"]);
   });
@@ -162,7 +162,7 @@ describe("catalog.validate: value labels", () => {
     const findings = catalog
       .validate([{ ...items[0] }], [own], undefined, [], slots, [
         { id: "gear", label: "Gear", slotIds: [] },
-        { id: "globals", label: "Global inputs", slotIds: [] },
+        { id: "shared", label: "Shared inputs", slotIds: [] },
       ])
       .filter((finding) => finding.name === "bane")
       .map((finding) => finding.message);

@@ -1,14 +1,14 @@
-// A promoted bonus input's stored value must follow it to the global input at every door a
+// A promoted bonus input's stored value must follow it to the shared input at every door a
 // build meets the catalog through: a layer change, an undo restore, an import and a load.
 // The catalog is a layer of its own entries over the shipped one, in two versions: the
-// bonus's input private, and the same input read through a global input.
+// bonus's input private, and the same input read through a shared input.
 import { nextTick } from "vue";
 import { describe, expect, it, vi } from "vitest";
 import type { Backend } from "../../../src/storage/idb";
 import type { Build, CatalogOverlay } from "../../../src/types";
 import type { ItemHistory } from "../../../src/stores/history";
 
-const SLOT = "zzglobals.song";
+const SLOT = "zzshared.song";
 
 const privateOverlay = (): CatalogOverlay => ({
   items: {},
@@ -33,7 +33,7 @@ const promotedOverlay = (): CatalogOverlay => ({
     "zz-ballad": {
       id: "zz-ballad",
       name: "Ballad",
-      inputs: { song: { global: SLOT } },
+      inputs: { song: { shared: SLOT } },
       grants: [],
     },
   },
@@ -41,22 +41,22 @@ const promotedOverlay = (): CatalogOverlay => ({
     [SLOT]: {
       id: SLOT,
       label: "Played a song",
-      section: "zzglobals",
+      section: "zzshared",
       type: "build_parameter",
       paramType: "boolean",
       path: SLOT,
       default: false,
-      globalInput: true,
+      sharedInput: true,
     },
   },
   sections: {
-    zzglobals: { id: "zzglobals", label: "Global inputs", slotIds: [] },
+    zzshared: { id: "zzshared", label: "Shared inputs", slotIds: [] },
   },
 });
 
 const privateValue = { "zz-ballad": { input: { song: true } } };
 const songAt = (b: Build | undefined) =>
-  (b?.context as unknown as { zzglobals?: { song?: boolean } }).zzglobals?.song;
+  (b?.context as unknown as { zzshared?: { song?: boolean } }).zzshared?.song;
 
 async function freshStores() {
   vi.resetModules();
@@ -87,7 +87,7 @@ async function withLayer(overlay: CatalogOverlay) {
 }
 
 describe("a layer change", () => {
-  it("moves a stored value onto the global input it was promoted to", async () => {
+  it("moves a stored value onto the shared input it was promoted to", async () => {
     const { builds, layers, layerId, id } = await withLayer(privateOverlay());
     builds.get(id)!.bonusValues = structuredClone(privateValue);
     layers.updateOverlay(layerId, promotedOverlay());
@@ -100,7 +100,7 @@ describe("a layer change", () => {
     const { builds, layers, layerId, id } = await withLayer(promotedOverlay());
     builds.get(id)!.context = {
       ...builds.get(id)!.context,
-      zzglobals: { song: true },
+      zzshared: { song: true },
     } as Build["context"];
     layers.updateOverlay(layerId, privateOverlay());
     await nextTick();
@@ -118,7 +118,7 @@ describe("a layer change", () => {
     await nextTick();
     builds.get(id)!.context = {
       ...builds.get(id)!.context,
-      zzglobals: { song: true },
+      zzshared: { song: true },
     } as Build["context"];
     layers.setLayerEnabled(layerId, false);
     await nextTick();
@@ -254,7 +254,7 @@ describe("a load", () => {
             ...storage.defaultBuild("Stored"),
             context: {
               ...storage.defaultBuild().context,
-              zzglobals: { song: true },
+              zzshared: { song: true },
             } as Build["context"],
           },
         ],

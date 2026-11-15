@@ -1,9 +1,9 @@
-// "Make global" as one layer edit: a new global input defined as a bonus input was, the
-// Global inputs section when the catalog has none, and every converted reader. Written as one
+// "Make shared" as one layer edit: a new shared input defined as a bonus input was, the
+// Shared inputs section when the catalog has none, and every converted reader. Written as one
 // overlay so builds move their stored values in one pass, with every reader known.
 import * as catalog from "../data/catalog";
-import { readingGlobal } from "./bonus-draft";
-import { GLOBAL_INPUTS_SECTION, globalInputSlot } from "./slot-draft";
+import { readingShared } from "./bonus-draft";
+import { SHARED_INPUTS_SECTION, sharedInputSlot } from "./slot-draft";
 import type {
   Bonus,
   BuildParameterSlot,
@@ -15,42 +15,42 @@ import type {
 } from "../types";
 
 /** What the bonus form hands over: input `name`, defined as `def`, for each of `readers`, as
- *  the global input `id`. */
-export interface MakeGlobalRequest {
+ *  the shared input `id`. */
+export interface MakeSharedRequest {
   id: string;
   name: string;
   def: InputDef;
   readers: readonly Bonus[];
 }
 
-/** What a new global input's id must stay clear of. Its id doubles as its path, and a path
+/** What a new shared input's id must stay clear of. Its id doubles as its path, and a path
  *  nests in the build's context, so it must not sit above or below another path either. */
-export interface TakenGlobalIds {
+export interface TakenSharedIds {
   ids: readonly string[];
   paths: readonly string[];
 }
 
 /** `takenIds` is every slot id in use, the disabled layers' included. */
-export const takenGlobalIds = (
+export const takenSharedIds = (
   db: Db,
   takenIds: readonly string[],
-): TakenGlobalIds => ({
+): TakenSharedIds => ({
   ids: takenIds,
   paths: db.slots.flatMap((slot) =>
     slot.type === "build_parameter" ? [slot.path] : [],
   ),
 });
 
-const GLOBAL_ID = /^globals(\.[A-Za-z0-9_-]+)+$/;
+const SHARED_INPUT_ID = /^shared(\.[A-Za-z0-9_-]+)+$/;
 
-/** Why `id` cannot name a new global input, or null when it can. */
-export function globalIdError(
+/** Why `id` cannot name a new shared input, or null when it can. */
+export function sharedInputIdError(
   id: string,
-  { ids, paths }: TakenGlobalIds,
+  { ids, paths }: TakenSharedIds,
 ): string | null {
   if (!id) return "Enter an id.";
-  if (!GLOBAL_ID.test(id))
-    return "Start with “globals.”, then dot-separated parts of letters, digits, - or _.";
+  if (!SHARED_INPUT_ID.test(id))
+    return "Start with “shared.”, then dot-separated parts of letters, digits, - or _.";
   if (ids.includes(id) || paths.includes(id))
     return `“${id}” is already the id or path of another slot.`;
   const nested = paths.find(
@@ -61,47 +61,47 @@ export function globalIdError(
   return null;
 }
 
-/** The id "Make global" offers first: `globals.` and the input's label, else its name, with
+/** The id "Make shared" offers first: `shared.` and the input's label, else its name, with
  *  a number added until it is free. Under a taken path no number helps, so the stem is
  *  offered as is and the dialog reports it. */
-export function defaultGlobalId(
+export function defaultSharedInputId(
   name: string,
   def: InputDef,
-  taken: TakenGlobalIds,
+  taken: TakenSharedIds,
 ): string {
   const stem = catalog.nextSlotId(
-    GLOBAL_INPUTS_SECTION.id,
+    SHARED_INPUTS_SECTION.id,
     def.label || name,
     [],
   );
   if (taken.paths.some((path) => stem.startsWith(`${path}.`))) return stem;
   let id = stem;
-  for (let n = 2; globalIdError(id, taken) !== null; n += 1)
+  for (let n = 2; sharedInputIdError(id, taken) !== null; n += 1)
     id = `${stem}-${n}`;
   return id;
 }
 
 /**
- * `overlay` with `request` applied, and the global input it added. `db` is the catalog the
+ * `overlay` with `request` applied, and the shared input it added. `db` is the catalog the
  * edit is made against. Throws when `request.id` is not free in `taken`, which the dialog
  * checks before it offers the edit.
  */
-export function makeGlobalOverlay(
+export function makeSharedOverlay(
   overlay: CatalogOverlay,
   db: Db,
-  taken: TakenGlobalIds,
-  { id, name, def, readers }: MakeGlobalRequest,
+  taken: TakenSharedIds,
+  { id, name, def, readers }: MakeSharedRequest,
 ): { overlay: CatalogOverlay; slot: BuildParameterSlot } {
-  const error = globalIdError(id, taken);
+  const error = sharedInputIdError(id, taken);
   if (error !== null) throw new Error(error);
-  const slot = globalInputSlot(id, name, def);
+  const slot = sharedInputSlot(id, name, def);
   let next = overlay;
   if (!db.sections.some((section) => section.id === slot.section))
     next = catalog.upsert(
       next,
       "sections",
-      GLOBAL_INPUTS_SECTION.id,
-      GLOBAL_INPUTS_SECTION,
+      SHARED_INPUTS_SECTION.id,
+      SHARED_INPUTS_SECTION,
     );
   next = catalog.upsert(next, "slots", slot.id, slot);
   for (const bonus of readers)
@@ -109,7 +109,7 @@ export function makeGlobalOverlay(
       next,
       "bonuses",
       bonus.id,
-      readingGlobal(bonus, name, slot.id),
+      readingShared(bonus, name, slot.id),
     );
   return { overlay: next, slot };
 }

@@ -44,12 +44,12 @@ import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { BADGE_TONES, INSIGNIA_SHAPES } from "../types";
 import { bonusStatConfigs, canStep } from "../engine/inputs";
 import {
-  globalInputsOf,
-  isGlobalInputSlot,
-  isGlobalRef,
+  sharedInputsOf,
+  isSharedInputSlot,
+  isSharedRef,
   withInputDefs,
   type WithInputDefs,
-} from "../engine/global-inputs";
+} from "../engine/shared-inputs";
 import {
   formulaSites,
   inputFormulaClashes,
@@ -78,7 +78,7 @@ import type {
   ConditionWhen,
   FormulaCondition,
   Grant,
-  GlobalInputRef,
+  SharedInputRef,
   InputCondition,
   InputDecl,
   InputDef,
@@ -948,10 +948,10 @@ function checkParamCondition(
     return;
   }
 
-  if (slot.globalInput) {
+  if (slot.sharedInput) {
     report(
       "error",
-      `${path}: param "${spec.key}" is a global input; declare it in the bonus's inputs and read it with an "input" condition`,
+      `${path}: param "${spec.key}" is a shared input; declare it in the bonus's inputs and read it with an "input" condition`,
     );
     return;
   }
@@ -1161,7 +1161,7 @@ function controlProblem(
 const INPUT_NAME = /^[a-zA-Z_]\w*$/;
 
 /** A bonus's input declarations: a valid name and type, a boolean default on a boolean, and
- *  bounds on a number or percent. A reference names a global input and nothing else. */
+ *  bounds on a number or percent. A reference names a shared input and nothing else. */
 function checkInputDefs(
   inputs: Record<string, InputDecl>,
   paramSlotsById: ReadonlyMap<string, Authored<BuildParameterSlot>>,
@@ -1174,8 +1174,8 @@ function checkInputDefs(
         "error",
         `${label}: a name is a letter or _ then letters, digits or _`,
       );
-    if (isGlobalRef(def)) {
-      const problem = globalRefProblem(def, paramSlotsById);
+    if (isSharedRef(def)) {
+      const problem = sharedRefProblem(def, paramSlotsById);
       if (problem) report("error", `${label}: ${problem}`);
       continue;
     }
@@ -1188,7 +1188,7 @@ function checkInputDefs(
     if (def.valueLabels !== undefined)
       report(
         "error",
-        `${label}: value labels belong on a global input's slot, not a bonus's own input`,
+        `${label}: value labels belong on a shared input's slot, not a bonus's own input`,
       );
     if (def.type === "boolean") {
       if (typeof def.default !== "boolean")
@@ -1203,20 +1203,20 @@ function checkInputDefs(
   }
 }
 
-/** What is wrong with a reference to a global input, or null. */
-function globalRefProblem(
-  ref: GlobalInputRef,
+/** What is wrong with a reference to a shared input, or null. */
+function sharedRefProblem(
+  ref: SharedInputRef,
   paramSlotsById: ReadonlyMap<string, Authored<BuildParameterSlot>>,
 ): string | null {
-  const extra = Object.keys(ref).filter((key) => key !== "global");
+  const extra = Object.keys(ref).filter((key) => key !== "shared");
   if (extra.length)
-    return `a reference to a global input takes no other field (${extra.join(", ")})`;
-  if (typeof ref.global !== "string" || !ref.global)
-    return `"global" names a global input's slot id`;
-  const slot = paramSlotsById.get(ref.global);
-  if (!slot) return `"${ref.global}" is not a build_parameter slot`;
-  if (!slot.globalInput)
-    return `"${ref.global}" is not a global input; flag the slot with globalInput`;
+    return `a reference to a shared input takes no other field (${extra.join(", ")})`;
+  if (typeof ref.shared !== "string" || !ref.shared)
+    return `"shared" names a shared input's slot id`;
+  const slot = paramSlotsById.get(ref.shared);
+  if (!slot) return `"${ref.shared}" is not a build_parameter slot`;
+  if (!slot.sharedInput)
+    return `"${ref.shared}" is not a shared input; flag the slot with sharedInput`;
   return null;
 }
 
@@ -1563,8 +1563,8 @@ export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
           message: `${slot.id}: ${problem}`,
         });
     }
-    if (slot.globalInput)
-      for (const problem of globalInputSlotProblems(slot))
+    if (slot.sharedInput)
+      for (const problem of sharedInputSlotProblems(slot))
         findings.push({
           level: "error",
           kind: "slot",
@@ -1598,23 +1598,23 @@ function valueLabelsProblem(slot: Authored<BuildParameterSlot>): string | null {
   return null;
 }
 
-/** What a `globalInput` slot cannot carry. Its value is read only through the bonus inputs
+/** What a `sharedInput` slot cannot carry. Its value is read only through the bonus inputs
  *  referencing it, and its row sits in the Shared inputs section, so it has no scaler and no
  *  reader of its own. */
-function globalInputSlotProblems(slot: Authored<BuildParameterSlot>): string[] {
+function sharedInputSlotProblems(slot: Authored<BuildParameterSlot>): string[] {
   const out: string[] = [];
   if (!slot.label?.trim())
     out.push(
-      "a global input needs a label, or its row and every reader's control read as its id",
+      "a shared input needs a label, or its row and every reader's control read as its id",
     );
   if (slot.quick)
     out.push(
-      "a global input has its row in the Shared inputs section, so it cannot be quick",
+      "a shared input has its row in the Shared inputs section, so it cannot be quick",
     );
   if (slot.scaler)
-    out.push("a global input is read through bonus inputs, not as a scaler");
+    out.push("a shared input is read through bonus inputs, not as a scaler");
   if (slot.paramType === "list" || slot.optionsFrom)
-    out.push("a global input is a boolean, number or percent");
+    out.push("a shared input is a boolean, number or percent");
   const engineRead =
     Object.hasOwn(ENGINE_PARAM_PATHS, slot.path) ||
     Object.hasOwn(DEDICATED_LEAF_FOR_PATH, slot.path) ||
@@ -1779,8 +1779,8 @@ export function bonusValuesProblems(
       const def = bonus.inputs?.[name];
       const problem = !def
         ? "is not an input of it"
-        : isGlobalRef(def)
-          ? "is a global input, stored on the build rather than the bonus"
+        : isSharedRef(def)
+          ? "is a shared input, stored on the build rather than the bonus"
           : inputValueProblem(def, value);
       if (problem)
         out.push(`bonusValues "${bonusId}": input "${name}" ${problem}`);
@@ -1861,12 +1861,12 @@ export function validatePresets(
             name: preset.id,
             message: `preset "${preset.id}" (section "${preset.section}"): "${slotId}" belongs to section "${slot.section}"`,
           });
-        } else if (isGlobalInputSlot(slot)) {
+        } else if (isSharedInputSlot(slot)) {
           findings.push({
             level: "warn",
             kind: "sectionPreset",
             name: preset.id,
-            message: `preset "${preset.id}": "${slotId}" is a global input; applying the preset overwrites the value its readers share`,
+            message: `preset "${preset.id}": "${slotId}" is a shared input; applying the preset overwrites the value its readers share`,
           });
         }
       }
@@ -2624,7 +2624,7 @@ export function validateSharedPickers(
     });
   const labels = db.labelMap(filters);
   for (const slot of slots) {
-    if (!(slot as { globalInput?: unknown }).globalInput) continue;
+    if (!(slot as { sharedInput?: unknown }).sharedInput) continue;
     if (slot.type === "build_parameter") continue;
     if (slot.type !== "item_picker") {
       report(
@@ -3114,7 +3114,7 @@ export function validate(
       paramSlotsById.set(slot.id, slot);
     }
   }
-  const globalInputs = globalInputsOf(allSlots);
+  const sharedInputs = sharedInputsOf(allSlots);
   const checkStats = (
     stats: Record<string, unknown> | undefined,
     label: string,
@@ -3376,10 +3376,10 @@ export function validate(
           `defaultParams "${slotId}" is not a build_parameter slot`,
           item.id,
         );
-      } else if (slot.globalInput) {
+      } else if (slot.sharedInput) {
         report(
           "warn",
-          `defaultParams "${slotId}" is a global input; picking the item overwrites the value its readers share`,
+          `defaultParams "${slotId}" is a shared input; picking the item overwrites the value its readers share`,
           item.id,
         );
       } else if (slot.paramType === "list" && !isListValue(slot, value)) {
@@ -3448,7 +3448,7 @@ export function validate(
     const bonusReport = (level: "error" | "warn", message: string) =>
       report(level, message, bonus.id, "bonus");
     checkInputDefs(bonus.inputs ?? {}, paramSlotsById, bonusReport);
-    const owner = withInputDefs(bonus, globalInputs);
+    const owner = withInputDefs(bonus, sharedInputs);
     const inputs = owner.inputs;
     const readInputs = new Set<string>();
     if (bonus.formulas || formulaSites(bonus).length) {

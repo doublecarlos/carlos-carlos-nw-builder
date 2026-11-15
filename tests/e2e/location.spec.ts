@@ -12,8 +12,8 @@ import {
   slotRow,
 } from "./support/app";
 
-const LOCATION = "globals.location";
-const SHARED = "globals";
+const LOCATION = "shared.location";
+const SHARED = "shared";
 
 const control = (row: Locator) => row.getByTestId(`shared-picker-${LOCATION}`);
 

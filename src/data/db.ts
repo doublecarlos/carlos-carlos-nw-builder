@@ -20,7 +20,7 @@ import {
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import { getPath } from "../lib/build-path";
-import { globalInputsOf } from "../engine/global-inputs";
+import { sharedInputsOf } from "../engine/shared-inputs";
 import { sharedPickerReaders } from "./shared-readers";
 import { copyCounts, copyCountsExcluding } from "../lib/copy-counts";
 import {
@@ -312,7 +312,7 @@ export function build(
     sections: slots?.sections ?? [],
     presets: slots?.presets ?? [],
     slotById,
-    globalInputs: globalInputsOf(slotList),
+    sharedInputs: sharedInputsOf(slotList),
     sharedReaders: new Map(),
     slotFor,
     bonuses,
@@ -419,7 +419,7 @@ export function build(
   };
   out.sharedReaders = sharedPickerReaders(
     slotList.flatMap((slot) =>
-      slot.type === "item_picker" && slot.globalInput
+      slot.type === "item_picker" && slot.sharedInput
         ? [{ id: slot.id, candidates: out.forSlot(slot.id) }]
         : [],
     ),

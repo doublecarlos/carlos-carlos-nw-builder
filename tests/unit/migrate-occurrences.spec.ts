@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { migrateOccurrenceInputs } from "../../src/storage/migrate-occurrences";
 import { NW_BONUSES } from "../../src/data/data";
-import { inputDefs } from "../../src/engine/global-inputs";
+import { inputDefs } from "../../src/engine/shared-inputs";
 import { makeDb } from "../../src/data/catalog";
 
 const shippedDb = makeDb([]);
@@ -71,7 +71,7 @@ describe("migrateOccurrenceInputs", () => {
     for (const [bonusId, { input }] of Object.entries(targets)) {
       const [key, value] = Object.entries(input ?? {})[0]!;
       const bonus = bonuses.get(bonusId);
-      const spec = bonus && inputDefs(bonus, shippedDb.globalInputs)[key];
+      const spec = bonus && inputDefs(bonus, shippedDb.sharedInputs)[key];
       expect(spec, `${bonusId}.${key}`).toBeDefined();
       expect(spec?.type).toBe(
         typeof value === "boolean" ? "boolean" : "number",

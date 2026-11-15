@@ -19,8 +19,8 @@ import {
   rowsToNamedFormulas,
   duplicateFormulaNames,
   formulaOwner,
-  makeGlobalOffer,
-  canMakeGlobal,
+  makeSharedOffer,
+  canMakeShared,
 } from "../../src/lib/bonus-draft";
 import type { Bonus, Grant, InputDef } from "../../src/types";
 
@@ -625,38 +625,38 @@ describe("bonus-draft inputs", () => {
     expect(duplicateInputNames(rows)).toEqual(["a"]);
   });
 
-  // A reference saves nothing but the slot it names, so a global input's definition lives in
+  // A reference saves nothing but the slot it names, so a shared input's definition lives in
   // one place.
-  it("round-trips a reference to a global input, keeping only the slot id", () => {
-    const [row] = inputRows({ song: { global: "globals.song" } });
-    expect(row).toMatchObject({ name: "song", global: "globals.song" });
+  it("round-trips a reference to a shared input, keeping only the slot id", () => {
+    const [row] = inputRows({ song: { shared: "shared.song" } });
+    expect(row).toMatchObject({ name: "song", shared: "shared.song" });
     row.type = "number";
     row.label = "Leftover";
-    expect(rowsToInputs([row])).toEqual({ song: { global: "globals.song" } });
-    row.global = "";
+    expect(rowsToInputs([row])).toEqual({ song: { shared: "shared.song" } });
+    row.shared = "";
     expect(rowsToInputs([row]).song).toMatchObject({ type: "number" });
   });
 
-  it("offers a reference with the global input's label and type", () => {
-    const globals = new Map([
+  it("offers a reference with the shared input's label and type", () => {
+    const sharedInputs = new Map([
       [
-        "globals.hits",
+        "shared.hits",
         {
-          id: "globals.hits",
+          id: "shared.hits",
           label: "Recent hits",
-          section: "globals",
+          section: "shared",
           type: "build_parameter" as const,
           paramType: "number" as const,
-          path: "globals.hits",
-          globalInput: true,
+          path: "shared.hits",
+          sharedInput: true,
         },
       ],
     ]);
     const rows = inputRows({
-      hits: { global: "globals.hits" },
-      gone: { global: "globals.gone" },
+      hits: { shared: "shared.hits" },
+      gone: { shared: "shared.gone" },
     });
-    expect(inputOptions(rows, globals)).toEqual([
+    expect(inputOptions(rows, sharedInputs)).toEqual([
       { value: "hits", label: "Recent hits", type: "number" },
     ]);
   });
@@ -718,7 +718,7 @@ describe("bonus-draft diffLabel", () => {
   });
 });
 
-describe("make global offer", () => {
+describe("make shared offer", () => {
   const hitsDef: InputDef = {
     type: "number",
     default: 2,
@@ -736,7 +736,7 @@ describe("make global offer", () => {
     defining("own", hitsDef),
     defining("same", { type: "number", default: 0 }),
     defining("other-type", { type: "boolean", default: false }),
-    { id: "reader", inputs: { hits: { global: "globals.hits" } }, grants: [] },
+    { id: "reader", inputs: { hits: { shared: "shared.hits" } }, grants: [] },
   ];
   const taken = { ids: [], paths: [] };
   const scope = { inLayer: new Set<string>(), shadowedBy: new Map(), taken };
@@ -745,7 +745,7 @@ describe("make global offer", () => {
   // a reference.
   it("offers the other bonuses defining an input of the same name and type", () => {
     const [row] = inputRows({ hits: hitsDef });
-    const offer = makeGlobalOffer(row, "own", bonuses, scope);
+    const offer = makeSharedOffer(row, "own", bonuses, scope);
     expect(offer?.def).toEqual(hitsDef);
     expect(offer?.others.map((other) => other.bonus.id)).toEqual(["same"]);
   });
@@ -753,13 +753,13 @@ describe("make global offer", () => {
   // The dialog says what converting does: copy a bonus in, or nothing under a higher layer.
   it("marks a bonus from elsewhere as copied, and one a higher layer overrides", () => {
     const [row] = inputRows({ hits: hitsDef });
-    const inLayer = makeGlobalOffer(row, "own", bonuses, {
+    const inLayer = makeSharedOffer(row, "own", bonuses, {
       inLayer: new Set(["same"]),
       shadowedBy: new Map(),
       taken,
     });
     expect(inLayer?.others[0]).toEqual({ bonus: bonuses[1], copied: false });
-    const shadowed = makeGlobalOffer(row, "own", bonuses, {
+    const shadowed = makeSharedOffer(row, "own", bonuses, {
       inLayer: new Set(),
       shadowedBy: new Map([["same", "Top"]]),
       taken,
@@ -772,9 +772,9 @@ describe("make global offer", () => {
 
   // Converting a bonus a higher layer overrides would change nothing in the engine.
   it("is not offered on a bonus a higher layer overrides", () => {
-    expect(canMakeGlobal(scope, "own")).toBe(true);
+    expect(canMakeShared(scope, "own")).toBe(true);
     expect(
-      canMakeGlobal(
+      canMakeShared(
         {
           inLayer: new Set(),
           shadowedBy: new Map([["own", "Top"]]),
@@ -783,12 +783,12 @@ describe("make global offer", () => {
         "own",
       ),
     ).toBe(false);
-    expect(canMakeGlobal(null, "own")).toBe(false);
+    expect(canMakeShared(null, "own")).toBe(false);
   });
 
   it("offers nothing for a reference or an unnamed row", () => {
-    const [ref] = inputRows({ hits: { global: "globals.hits" } });
-    expect(makeGlobalOffer(ref, "reader", bonuses, scope)).toBeNull();
-    expect(makeGlobalOffer(newInput(), "own", bonuses, scope)).toBeNull();
+    const [ref] = inputRows({ hits: { shared: "shared.hits" } });
+    expect(makeSharedOffer(ref, "reader", bonuses, scope)).toBeNull();
+    expect(makeSharedOffer(newInput(), "own", bonuses, scope)).toBeNull();
   });
 });

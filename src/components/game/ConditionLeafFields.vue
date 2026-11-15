@@ -127,10 +127,10 @@ const isMultiValue = computed(() =>
   MULTI_VALUE_LEAF_TYPES.includes(row.value.type ?? ""),
 );
 
-/** A global input is read through the bonus's inputs, never by a `param` leaf. */
+/** A shared input is read through the bonus's inputs, never by a `param` leaf. */
 const paramKeyOptions = computed(() =>
   paramSlots.value
-    .filter((slot) => !slot.globalInput)
+    .filter((slot) => !slot.sharedInput)
     .map((slot) => ({
       value: slot.path,
       label: slot.label,

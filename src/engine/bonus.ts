@@ -6,7 +6,11 @@
 
 import * as conditions from "./conditions";
 import { bonusInputSpec } from "./inputs";
-import { declaredInputs, NO_GLOBALS, type GlobalInputs } from "./global-inputs";
+import {
+  declaredInputs,
+  NO_SHARED_INPUTS,
+  type SharedInputs,
+} from "./shared-inputs";
 import {
   evaluateFormula,
   formulaLabel,
@@ -405,7 +409,7 @@ export function collect(db: Db, build: Build): Collected {
     ...catalogNames(db),
     params,
     scalers,
-    globalInputs: db.globalInputs,
+    sharedInputs: db.sharedInputs,
   };
 
   return {
@@ -677,7 +681,7 @@ export function bonusContext(
     self: bonus.id,
     formulas: formulaScope(bonus),
     inputs: new Map(
-      declaredInputs(bonus, ctx.globalInputs ?? NO_GLOBALS).map(
+      declaredInputs(bonus, ctx.sharedInputs ?? NO_SHARED_INPUTS).map(
         ({ name, def }) => {
           const { label, format } = bonusInputSpec(def, name);
           return [
@@ -821,14 +825,14 @@ function resolveDynamicValues(
 }
 
 /** Every input the bonus declares, typed or defaulted, keyed by name. A boolean input reads as
- *  a boolean, anything else as a number. A global input reads the value at its slot's path. */
+ *  a boolean, anything else as a number. A shared input reads the value at its slot's path. */
 export function resolveInputValues(
   bonus: Pick<Bonus, "id" | "inputs">,
   build: Build,
-  globals: GlobalInputs,
+  sharedInputs: SharedInputs,
 ): Record<string, number | boolean> {
   const out: Record<string, number | boolean> = {};
-  for (const { name, def, address } of declaredInputs(bonus, globals)) {
+  for (const { name, def, address } of declaredInputs(bonus, sharedInputs)) {
     if (def.type === "boolean") {
       const stored = storedInput(build, address);
       out[name] = stored == null ? Boolean(def.default) : Boolean(stored);
@@ -881,7 +885,7 @@ export function resolve(
     const sources = [...group.sources].sort((a, b) => a.order - b.order);
     const anchor = sources[0] ?? group.anchor!;
     const dynamicValues = resolveDynamicValues(group.bonus, build);
-    const inputValues = resolveInputValues(group.bonus, build, db.globalInputs);
+    const inputValues = resolveInputValues(group.bonus, build, db.sharedInputs);
     const result = evaluateBonus(group.bonus, ctx, dynamicValues, {
       hasSources: sources.length > 0,
       inputValues,

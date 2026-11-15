@@ -20,7 +20,7 @@
 // imply the whole bonus stacks), so they're edited once by the caller (BonusForm.vue/
 // bonus-groups.js), not per row here.
 
-import type { TakenGlobalIds } from "./make-global";
+import type { TakenSharedIds } from "./make-shared";
 import {
   whenIsRepresentable,
   whenToRows,
@@ -54,10 +54,10 @@ import type {
   NumberControl,
 } from "../types";
 import {
-  globalInputDef,
-  isGlobalRef,
-  type GlobalInputs,
-} from "../engine/global-inputs";
+  sharedInputDef,
+  isSharedRef,
+  type SharedInputs,
+} from "../engine/shared-inputs";
 
 // Exactly what the form edits on a grant and a tier. Anything else would be dropped by the
 // form, so its presence forces JSON mode instead.
@@ -471,10 +471,10 @@ export interface InputDraft {
   /** Declared by the bonus when the form opened, so builds may already hold a value under
    *  `name`: the form shows it read-only. An input added since stays editable. */
   frozen: boolean;
-  /** The global input's slot id this input references, or empty when the bonus defines the
+  /** The shared input's slot id this input references, or empty when the bonus defines the
    *  input itself. A reference saves nothing else, so the fields below are kept only for
    *  switching back. */
-  global: string;
+  shared: string;
   type: InputDef["type"];
   label: string;
   on: boolean;
@@ -491,7 +491,7 @@ export interface InputDraft {
 export const newInput = (): InputDraft => ({
   name: "",
   frozen: false,
-  global: "",
+  shared: "",
   type: "boolean",
   label: "",
   on: false,
@@ -507,15 +507,15 @@ export const inputRows = (
   inputs: Record<string, InputDecl> | undefined,
 ): InputDraft[] =>
   entriesToRows(inputs, (name, decl) =>
-    isGlobalRef(decl)
-      ? { ...newInput(), name, frozen: true, global: decl.global }
+    isSharedRef(decl)
+      ? { ...newInput(), name, frozen: true, shared: decl.shared }
       : definedInputRow(name, decl),
   );
 
 const definedInputRow = (name: string, def: InputDef): InputDraft => ({
   name,
   frozen: true,
-  global: "",
+  shared: "",
   type: def.type,
   label: def.label ?? "",
   on: def.type === "boolean" && def.default === true,
@@ -530,7 +530,7 @@ const definedInputRow = (name: string, def: InputDef): InputDraft => ({
 });
 
 /** Unnamed rows are dropped. A boolean keeps only its default and label, and a reference
- *  only the global input it names. */
+ *  only the shared input it names. */
 export const rowsToInputs = (
   rows: InputDraft[] | undefined,
 ): Record<string, InputDecl> =>
@@ -538,7 +538,7 @@ export const rowsToInputs = (
     rows,
     (row) => row.name.trim(),
     (row) => {
-      if (row.global) return { global: row.global };
+      if (row.shared) return { shared: row.shared };
       if (row.type === "boolean") {
         const def: InputDef = { type: row.type, default: row.on };
         putIfSet(def, "label", row.label.trim());
@@ -587,43 +587,43 @@ export interface InputOption {
   type: InputDef["type"];
 }
 
-/** A reference takes its label and type from the global input it names, and one naming no
- *  global input is left out. */
+/** A reference takes its label and type from the shared input it names, and one naming no
+ *  shared input is left out. */
 export const inputOptions = (
   rows: InputDraft[],
-  globals: GlobalInputs = new Map(),
+  sharedInputs: SharedInputs = new Map(),
 ): InputOption[] =>
   rows.flatMap((row) => {
     const name = row.name.trim();
     if (!name) return [];
-    if (!row.global)
+    if (!row.shared)
       return [{ value: name, label: row.label.trim() || name, type: row.type }];
-    const slot = globals.get(row.global);
+    const slot = sharedInputs.get(row.shared);
     if (!slot) return [];
-    const def = globalInputDef(slot);
+    const def = sharedInputDef(slot);
     return [{ value: name, label: def.label ?? name, type: def.type }];
   });
 
-/** Where "Make global" writes a converted bonus: the edited layer, which already holds the
+/** Where "Make shared" writes a converted bonus: the edited layer, which already holds the
  *  bonuses in `inLayer` and gets a copy of any other. A bonus in `shadowedBy` is overridden
  *  by a higher enabled layer, named there, so converting it here would change nothing. The
- *  new global input's id stays clear of `taken`. */
-export interface MakeGlobalScope {
+ *  new shared input's id stays clear of `taken`. */
+export interface MakeSharedScope {
   inLayer: ReadonlySet<string>;
   shadowedBy: ReadonlyMap<string, string>;
-  taken: TakenGlobalIds;
+  taken: TakenSharedIds;
 }
 
-/** Whether bonus `bonusId` can offer "Make global" in `scope`: not while a higher layer
+/** Whether bonus `bonusId` can offer "Make shared" in `scope`: not while a higher layer
  *  overrides it, as the edit would have no effect. */
-export const canMakeGlobal = (
-  scope: MakeGlobalScope | null | undefined,
+export const canMakeShared = (
+  scope: MakeSharedScope | null | undefined,
   bonusId: string | undefined,
 ): boolean =>
   Boolean(scope && bonusId !== undefined && !scope.shadowedBy.has(bonusId));
 
-/** Another bonus "Make global" can convert along. */
-export interface MakeGlobalCandidate {
+/** Another bonus "Make shared" can convert along. */
+export interface MakeSharedCandidate {
   bonus: Bonus;
   /** Defined outside the edited layer, so converting it copies it in. */
   copied: boolean;
@@ -631,34 +631,34 @@ export interface MakeGlobalCandidate {
   shadowedBy?: string;
 }
 
-/** What "Make global" offers for one input row: the definition the global input takes over,
+/** What "Make shared" offers for one input row: the definition the shared input takes over,
  *  and the other bonuses defining an input of the same name and type, which can read it too. */
-export interface MakeGlobalOffer {
+export interface MakeSharedOffer {
   name: string;
   def: InputDef;
-  others: MakeGlobalCandidate[];
+  others: MakeSharedCandidate[];
 }
 
 /** The offer for `row` of bonus `bonusId`, or null for a reference or an unnamed row. */
-export function makeGlobalOffer(
+export function makeSharedOffer(
   row: InputDraft,
   bonusId: string,
   bonuses: readonly Bonus[],
-  scope: MakeGlobalScope,
-): MakeGlobalOffer | null {
+  scope: MakeSharedScope,
+): MakeSharedOffer | null {
   const name = row.name.trim();
-  if (!name || row.global) return null;
+  if (!name || row.shared) return null;
   const def = rowsToInputs([row])[name] as InputDef;
-  const others = bonuses.flatMap((bonus): MakeGlobalCandidate[] => {
+  const others = bonuses.flatMap((bonus): MakeSharedCandidate[] => {
     const decl = bonus.inputs?.[name];
     if (
       bonus.id === bonusId ||
       decl === undefined ||
-      isGlobalRef(decl) ||
+      isSharedRef(decl) ||
       decl.type !== def.type
     )
       return [];
-    const candidate: MakeGlobalCandidate = {
+    const candidate: MakeSharedCandidate = {
       bonus,
       copied: !scope.inLayer.has(bonus.id),
     };
@@ -669,15 +669,15 @@ export function makeGlobalOffer(
   return { name, def, others };
 }
 
-/** `bonus` reading its input `name` from the global input `slotId`. The local name stays, as
+/** `bonus` reading its input `name` from the shared input `slotId`. The local name stays, as
  *  it is how a build's stored value finds its new address. */
-export const readingGlobal = (
+export const readingShared = (
   bonus: Bonus,
   name: string,
   slotId: string,
 ): Bonus => ({
   ...bonus,
-  inputs: { ...bonus.inputs, [name]: { global: slotId } },
+  inputs: { ...bonus.inputs, [name]: { shared: slotId } },
 });
 
 /** One `Bonus.formulas` entry. */

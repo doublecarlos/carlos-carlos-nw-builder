@@ -27,7 +27,7 @@ import {
   storedSlotIds,
 } from "../lib/slot-fields";
 import { slotShown } from "../lib/slot-availability";
-import { isSharedSlot } from "../engine/global-inputs";
+import { isSharedSlot } from "../engine/shared-inputs";
 import { itemLabel } from "../engine/insignia";
 import { applyChoice } from "../lib/apply-choice";
 import {

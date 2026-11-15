@@ -1,4 +1,4 @@
-// A global input is one value several bonuses read. Its control shows on every equipped
+// A shared input is one value several bonuses read. Its control shows on every equipped
 // reader's row and on a row of its own in its section, and editing one changes them all. While
 // no reader is equipped it shows nowhere.
 import { test, expect, type Page } from "@playwright/test";
@@ -14,8 +14,8 @@ import {
 import { importTestCatalog } from "./support/testCatalog";
 import type { Bonus } from "../../src/types";
 
-const GLOBALS = "test-globals";
-const SONG = `${GLOBALS}.song`;
+const SHARED = "test-shared";
+const SONG = `${SHARED}.song`;
 const LUTE = "Test Lute Ring";
 const DRUM = "Test Drum Ring";
 const PLAIN = "Test Plain Ring";
@@ -24,7 +24,7 @@ const PLAIN = "Test Plain Ring";
 const reader = (id: string, name: string, local: string): Bonus => ({
   id,
   name,
-  inputs: { [local]: { global: SONG } },
+  inputs: { [local]: { shared: SONG } },
   grants: [{ when: { input: { key: local, is: true } }, stats: { power: 5 } }],
 });
 
@@ -58,27 +58,27 @@ async function openWithReaders(page: Page, choices: Record<string, string>) {
     ],
     slots: [
       {
-        id: `${GLOBALS}.note`,
-        section: GLOBALS,
+        id: `${SHARED}.note`,
+        section: SHARED,
         type: "text",
         text: "Shared circumstances",
       },
       {
         id: SONG,
         label: "Played a song",
-        section: GLOBALS,
+        section: SHARED,
         type: "build_parameter",
         paramType: "boolean",
         path: "test.song",
         default: false,
-        globalInput: true,
+        sharedInput: true,
       },
     ],
     sections: [
       {
-        id: GLOBALS,
-        label: "Test Global Inputs",
-        slotIds: [`${GLOBALS}.note`, SONG],
+        id: SHARED,
+        label: "Test Shared Inputs",
+        slotIds: [`${SHARED}.note`, SONG],
       },
     ],
     choices,
@@ -115,11 +115,11 @@ test("the control shows on every reader's row and edits one shared value", async
   await expect(lute(page)).not.toBeChecked();
 });
 
-test("the section shows the global input only with a reader equipped", async ({
+test("the section shows the shared input only with a reader equipped", async ({
   page,
 }) => {
   await openWithReaders(page, { "gear.ring1": "test-lute" });
-  await ensureSectionExpanded(page, GLOBALS);
+  await ensureSectionExpanded(page, SHARED);
   const own = slotRow(page, SONG).getByRole("checkbox");
   await expect(own).toBeVisible();
   await expect(page.getByText("Shared circumstances")).toBeVisible();
@@ -139,7 +139,7 @@ test("the section shows the global input only with a reader equipped", async ({
   await chooseItem(page, "gear.ring1", PLAIN);
   await expect(lute(page)).toHaveCount(0);
   await expect(page.getByTestId(/^bonus-input-/)).toHaveCount(0);
-  await expect(headerRow(page, GLOBALS)).toBeHidden();
+  await expect(headerRow(page, SHARED)).toBeHidden();
   await expect(headerRow(page, "gear")).toBeVisible();
   await expect(slotRow(page, SONG)).toBeHidden();
 
@@ -155,7 +155,7 @@ test("used by lists every equipped reader, each a link to its row", async ({
     "gear.ring1": "test-lute",
     "gear.ring2": "test-drum",
   });
-  await ensureSectionExpanded(page, GLOBALS);
+  await ensureSectionExpanded(page, SHARED);
   const usedBy = page.getByTestId(`slot-used-by:${SONG}`);
   await expect(usedBy).toHaveText("Used by Ring 1, Ring 2");
 
@@ -166,7 +166,7 @@ test("used by lists every equipped reader, each a link to its row", async ({
   ).toBeFocused();
 });
 
-test("only showing changes keeps the global input's row and a reader row whose one difference is it", async ({
+test("only showing changes keeps the shared input's row and a reader row whose one difference is it", async ({
   page,
 }) => {
   await openWithReaders(page, { "gear.ring1": "test-lute" });
@@ -176,10 +176,10 @@ test("only showing changes keeps the global input's row and a reader row whose o
   await chooseItem(page, "gear.ring1", LUTE);
   await lute(page).check();
   await chooseCombo(page.locator(".compare-select"), "Test catalog");
-  await ensureSectionExpanded(page, GLOBALS);
+  await ensureSectionExpanded(page, SHARED);
   await page.getByRole("checkbox", { name: "Only show changes" }).check();
 
-  // The difference shows on the global input's own row and on the reader's.
+  // The difference shows on the shared input's own row and on the reader's.
   await expect(slotRow(page, SONG)).toBeVisible();
   await expect(slotRow(page, "gear.ring1")).toBeVisible();
   await expect(slotRow(page, "gear.ring2")).toBeHidden();
@@ -221,7 +221,7 @@ test("two readers on one item give its row one control and its copy one note", a
 });
 
 // The palette offers a row only while the editor shows it, or there would be nowhere to land.
-test("the go-to palette offers the global input and its section only while read", async ({
+test("the go-to palette offers the shared input and its section only while read", async ({
   page,
 }) => {
   await openWithReaders(page, { "gear.ring1": "test-plain" });
@@ -231,7 +231,7 @@ test("the go-to palette offers the global input and its section only while read"
     await expect(page.getByTestId("go-to-option-section:gear")).toBeVisible();
   };
   await palette();
-  await expect(page.getByTestId(`go-to-option-section:${GLOBALS}`)).toHaveCount(
+  await expect(page.getByTestId(`go-to-option-section:${SHARED}`)).toHaveCount(
     0,
   );
   await page.getByTestId("go-to-input").fill("played a song");
@@ -241,7 +241,7 @@ test("the go-to palette offers the global input and its section only while read"
   await chooseItem(page, "gear.ring1", LUTE);
   await palette();
   await expect(
-    page.getByTestId(`go-to-option-section:${GLOBALS}`),
+    page.getByTestId(`go-to-option-section:${SHARED}`),
   ).toBeVisible();
   await page.getByTestId("go-to-input").fill("played a song");
   await expect(page.getByTestId(`go-to-option-slot:${SONG}`)).toBeVisible();
@@ -254,7 +254,7 @@ test(
   { tag: "@cross-browser" },
   async ({ page }) => {
     await openWithReaders(page, { "gear.ring1": "test-lute" });
-    await ensureSectionExpanded(page, GLOBALS);
+    await ensureSectionExpanded(page, SHARED);
     const row = slotRow(page, SONG);
     const label = (await row.locator(".slot-label").boundingBox())!;
     const box = (await row.getByRole("checkbox").boundingBox())!;
@@ -267,9 +267,9 @@ test(
   },
 );
 
-const RANK = `${GLOBALS}.rank`;
+const RANK = `${SHARED}.rank`;
 
-/** A ring whose bonus reads a ranked global input, its values labeled `labels` from 1 up. */
+/** A ring whose bonus reads a ranked shared input, its values labeled `labels` from 1 up. */
 async function openWithRank(page: Page, labels: string[]) {
   const values = labels.map((_, index) => index + 1);
   await openBuilder(page);
@@ -286,7 +286,7 @@ async function openWithRank(page: Page, labels: string[]) {
       {
         id: "test-bane",
         name: "Test Bane",
-        inputs: { rank: { global: RANK } },
+        inputs: { rank: { shared: RANK } },
         grants: [
           {
             when: { input: { key: "rank", atLeast: 2 } },
@@ -299,7 +299,7 @@ async function openWithRank(page: Page, labels: string[]) {
       {
         id: RANK,
         label: "Test rank",
-        section: GLOBALS,
+        section: SHARED,
         type: "build_parameter",
         paramType: "number",
         path: "test.rank",
@@ -311,19 +311,19 @@ async function openWithRank(page: Page, labels: string[]) {
         valueLabels: Object.fromEntries(
           labels.map((label, index) => [String(index + 1), label]),
         ),
-        globalInput: true,
+        sharedInput: true,
       },
     ],
-    sections: [{ id: GLOBALS, label: "Test Global Inputs", slotIds: [RANK] }],
+    sections: [{ id: SHARED, label: "Test Shared Inputs", slotIds: [RANK] }],
     choices: { "gear.ring1": "test-bane" },
   });
   await ensureSectionExpanded(page, "gear");
-  await ensureSectionExpanded(page, GLOBALS);
+  await ensureSectionExpanded(page, SHARED);
   return { reader: slotRow(page, "gear.ring1"), own: slotRow(page, RANK) };
 }
 
-// An ordered global input, like the enemy rank, reads by name wherever its control shows.
-test("a labeled global input names its presets on the reader's row and its own row", async ({
+// An ordered shared input, like the enemy rank, reads by name wherever its control shows.
+test("a labeled shared input names its presets on the reader's row and its own row", async ({
   page,
 }) => {
   const { reader, own } = await openWithRank(page, ["Weak", "Strong"]);

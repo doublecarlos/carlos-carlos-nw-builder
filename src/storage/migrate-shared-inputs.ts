@@ -1,5 +1,5 @@
-// Moving stored input values the catalog relocated: a bonus input promoted to a global input
-// lands on the global slot's path, and a global input demoted back to a reader's own input
+// Moving stored input values the catalog relocated: a bonus input promoted to a shared input
+// lands on the shared slot's path, and a shared input demoted back to a reader's own input
 // lands on that reader.
 //
 // Not part of `normalize`, like migrate-item-ids.ts: the moves are read off the composed
@@ -18,7 +18,7 @@ import {
 } from "../lib/build-inputs";
 import { expandSlots } from "../lib/item-picker-list";
 import { isDisabled } from "../lib/slot-toggle";
-import { isGlobalRef } from "../engine/global-inputs";
+import { isSharedRef } from "../engine/shared-inputs";
 import type {
   Build,
   BuildParameterSlot,
@@ -51,7 +51,7 @@ const pathAddress = (path: string): InputAddress => ({
 
 const promotionCache = new WeakMap<Db, InputMove[]>();
 
-/** A promotion per global input: its readers' own addresses, under the local name each reads
+/** A promotion per shared input: its readers' own addresses, under the local name each reads
  *  it by, move to the slot's path. The references are the migration data, so promoting keeps
  *  the local name. */
 export function promotionMoves(db: Db): InputMove[] {
@@ -60,55 +60,55 @@ export function promotionMoves(db: Db): InputMove[] {
   const readers = new Map<string, InputAddress[]>();
   for (const bonus of db.bonuses)
     for (const [name, decl] of Object.entries(bonus.inputs ?? {})) {
-      if (!isGlobalRef(decl) || !db.globalInputs.has(decl.global)) continue;
-      const list = readers.get(decl.global) ?? [];
+      if (!isSharedRef(decl) || !db.sharedInputs.has(decl.shared)) continue;
+      const list = readers.get(decl.shared) ?? [];
       list.push(bonusInputAddress(bonus.id, name));
-      readers.set(decl.global, list);
+      readers.set(decl.shared, list);
     }
   const moves = [...readers].map(([slotId, from]) => {
-    const slot = db.globalInputs.get(slotId)!;
+    const slot = db.sharedInputs.get(slotId)!;
     return { from, to: [pathAddress(slot.path)], type: valueType(slot) };
   });
   promotionCache.set(db, moves);
   return moves;
 }
 
-/** Every context path `db` reads: plain parameters, and global inputs with a reader. */
+/** Every context path `db` reads: plain parameters, and shared inputs with a reader. */
 function readPaths(db: Db): Set<string> {
   const referenced = new Set<string>();
   for (const bonus of db.bonuses)
     for (const decl of Object.values(bonus.inputs ?? {}))
-      if (isGlobalRef(decl)) referenced.add(decl.global);
+      if (isSharedRef(decl)) referenced.add(decl.shared);
   const paths = new Set<string>();
   for (const slot of db.slots)
     if (
       slot.type === "build_parameter" &&
-      (!slot.globalInput || referenced.has(slot.id))
+      (!slot.sharedInput || referenced.has(slot.id))
     )
       paths.add(slot.path);
   return paths;
 }
 
-/** A demotion per global input of `prev` that a reader stopped referencing for an own input of
+/** A demotion per shared input of `prev` that a reader stopped referencing for an own input of
  *  the same name in `next`: the path's value moves to that reader. Only a catalog change can
- *  tell, as `next` alone does not say which global input an own input used to be. */
+ *  tell, as `next` alone does not say which shared input an own input used to be. */
 export function demotionMoves(prev: Db, next: Db): InputMove[] {
   const targets = new Map<string, InputAddress[]>();
   for (const bonus of prev.bonuses)
     for (const [name, decl] of Object.entries(bonus.inputs ?? {})) {
-      if (!isGlobalRef(decl) || !prev.globalInputs.has(decl.global)) continue;
+      if (!isSharedRef(decl) || !prev.sharedInputs.has(decl.shared)) continue;
       const own = next.bonusById.get(bonus.id)?.inputs?.[name];
-      if (!own || isGlobalRef(own)) continue;
-      const slot = prev.globalInputs.get(decl.global)!;
+      if (!own || isSharedRef(own)) continue;
+      const slot = prev.sharedInputs.get(decl.shared)!;
       if ((own.type === "boolean") !== (slot.paramType === "boolean")) continue;
-      const list = targets.get(decl.global) ?? [];
+      const list = targets.get(decl.shared) ?? [];
       list.push(bonusInputAddress(bonus.id, name));
-      targets.set(decl.global, list);
+      targets.set(decl.shared, list);
     }
   if (!targets.size) return [];
   const read = readPaths(next);
   return [...targets].map(([slotId, to]) => {
-    const slot = prev.globalInputs.get(slotId)!;
+    const slot = prev.sharedInputs.get(slotId)!;
     return {
       from: [pathAddress(slot.path)],
       to,
@@ -211,7 +211,7 @@ export function applyMoves(
  * snapshot is moved the same way, or `sameContent` would read every promoted build as changed
  * since its download. True when anything changed.
  */
-export function migrateGlobalInputs(db: Db, build: Build, prev?: Db): boolean {
+export function migrateSharedInputs(db: Db, build: Build, prev?: Db): boolean {
   const moves =
     prev && prev !== db ? transitionMoves(prev, db) : promotionMoves(db);
   if (!moves.length) return false;

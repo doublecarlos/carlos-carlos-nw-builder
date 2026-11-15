@@ -13,8 +13,8 @@ import {
 } from "./support/app";
 import { importTestCatalog } from "./support/testCatalog";
 
-const GLOBALS = "test-shared";
-const PLACE = `${GLOBALS}.place`;
+const SHARED = "test-shared";
+const PLACE = `${SHARED}.place`;
 
 async function openWithReaders(page: Page, choices: Record<string, string>) {
   await openBuilder(page);
@@ -64,13 +64,13 @@ async function openWithReaders(page: Page, choices: Record<string, string>) {
       {
         id: PLACE,
         label: "Test Place",
-        section: GLOBALS,
+        section: SHARED,
         type: "item_picker",
         filter: "test_place",
-        globalInput: true,
+        sharedInput: true,
       },
     ],
-    sections: [{ id: GLOBALS, label: "Test Shared", slotIds: [PLACE] }],
+    sections: [{ id: SHARED, label: "Test Shared", slotIds: [PLACE] }],
     choices,
   });
   await ensureSectionExpanded(page, "gear");
@@ -86,7 +86,7 @@ test("one pick shows on both reader rows and its own row, all in sync", async ({
     "gear.ring1": "test-shell",
     "gear.ring2": "test-map",
   });
-  await ensureSectionExpanded(page, GLOBALS);
+  await ensureSectionExpanded(page, SHARED);
   const ring1 = slotRow(page, "gear.ring1");
   const ring2 = slotRow(page, "gear.ring2");
   const own = pickerInput(slotRow(page, PLACE));
@@ -111,10 +111,10 @@ test("the own row shows while a reader is equipped or it holds a pick", async ({
 }) => {
   await openWithReaders(page, { "gear.ring1": "test-plain" });
   // No reader and no pick: nothing to set.
-  await expect(headerRow(page, GLOBALS)).toBeHidden();
+  await expect(headerRow(page, SHARED)).toBeHidden();
 
   await chooseItem(page, "gear.ring1", "Test Shell Ring");
-  await ensureSectionExpanded(page, GLOBALS);
+  await ensureSectionExpanded(page, SHARED);
   await expect(slotRow(page, PLACE)).toBeVisible();
   await chooseItem(page, PLACE, "Test Port");
 

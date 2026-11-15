@@ -2,7 +2,7 @@
 // narrowed to the row, with where each control renders, its test id and its control. What a
 // kind shows on its own is its `VIEWS` entry; a value with a range error or a compare diff is
 // shown regardless, so the player can see and fix it. A bonus input renders on its anchor's
-// row only; the rows of its other copies get a note pointing there. A global input renders on
+// row only; the rows of its other copies get a note pointing there. A shared input renders on
 // every reader's row, each control writing the one shared value.
 import { computed, toValue, type MaybeRefOrGetter } from "vue";
 import {
@@ -16,7 +16,7 @@ import { inputKey, readInput } from "../lib/build-inputs";
 import { sharedTooltip } from "../lib/shared-inputs";
 import { keepEqual } from "../lib/keep-identity";
 import { isCarried } from "../lib/bonus-inspector";
-import { globalInputDef } from "../engine/global-inputs";
+import { sharedInputDef } from "../engine/shared-inputs";
 import {
   bonusInputSpec,
   numberControl,
@@ -40,7 +40,7 @@ export interface BuildInput extends InputEntry {
   /** `note` stands in for a control rendered on another row, naming where it is. */
   control: "checkbox" | "stepper" | "field" | "note";
   note?: string;
-  /** A global input's tooltip on its shared mark: where else it is set. */
+  /** A shared input's tooltip on its shared mark: where else it is set. */
   shared?: string;
 }
 
@@ -121,13 +121,13 @@ const NO_BONUSES: ReadonlyMap<string, EvaluatedBonus> = new Map();
 /** `slot`'s typed values. `pinned` names addresses shown whatever their view says, such as
  *  the row's compare diffs. The list keeps its previous identity while its entries are
  *  unchanged, so a new resolve with the same values re-renders nothing. */
-/** A global input's control on its own row in the Shared inputs section: the spec and
+/** A shared input's control on its own row in the Shared inputs section: the spec and
  *  control its readers' rows get, so the value reads and steps the same everywhere. */
-export function ownGlobalInput(
+export function ownSharedInput(
   slot: BuildParameterSlot,
   build: Build,
 ): BuildInput {
-  const spec = bonusInputSpec(globalInputDef(slot), slot.label);
+  const spec = bonusInputSpec(sharedInputDef(slot), slot.label);
   const address: InputAddress = { store: "context", path: slot.path };
   return {
     kind: "bonusInput",
@@ -137,7 +137,7 @@ export function ownGlobalInput(
     slotId: slot.id,
     source: slot.label,
     anchor: { slotId: slot.id },
-    testid: `global-input-${slot.id}`,
+    testid: `shared-input-${slot.id}`,
     control: spec.type === "boolean" ? "checkbox" : numberControl(spec),
   };
 }
@@ -167,7 +167,7 @@ function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
   );
 
   const readerRows = sharedReaderRows.value;
-  // Two bonuses on one row reading the same global input share one control there.
+  // Two bonuses on one row reading the same shared input share one control there.
   const shown = new Set<string>();
   const controls = own.flatMap((entry) => {
     const view = VIEWS[entry.kind];
@@ -175,11 +175,11 @@ function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
     if (!view.visible(entry, bonuses) && !forced.has(key)) return [];
     if (shown.has(key)) return [];
     shown.add(key);
-    const global = entry.bonusInput?.global;
+    const sharedId = entry.bonusInput?.shared;
     const shared =
-      global === undefined
+      sharedId === undefined
         ? undefined
-        : sharedTooltip(db.value, row.id, readerRows.get(global));
+        : sharedTooltip(db.value, row.id, readerRows.get(sharedId));
     return [
       {
         ...entry,
@@ -194,7 +194,7 @@ function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
 }
 
 /** A note for each bonus input whose bonus also comes from `row` but renders elsewhere. A
- *  value `row` already shows a control for, or already notes, gets no further note: a global
+ *  value `row` already shows a control for, or already notes, gets no further note: a shared
  *  input read by several bonuses is one value. */
 function copyNotes(row: Slot, shown: Set<string>): BuildInput[] {
   const copies = inputCopies.value.get(row.id);

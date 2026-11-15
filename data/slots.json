@@ -301,16 +301,16 @@
       ]
     },
     {
-      "id": "globals",
+      "id": "shared",
       "label": "Shared inputs",
       "slots": [
         {
-          "id": "globals.note",
+          "id": "shared.note",
           "type": "text",
           "text": "Set once here, used by every bonus in this build that reads them."
         },
         {
-          "id": "globals.health",
+          "id": "shared.health",
           "label": "Current health",
           "type": "build_parameter",
           "paramType": "percent",
@@ -319,20 +319,20 @@
           "min": 0,
           "max": 1,
           "step": 5,
-          "globalInput": true
+          "sharedInput": true
         },
         {
-          "id": "globals.location",
+          "id": "shared.location",
           "type": "item_picker",
           "filter": "location",
-          "globalInput": true
+          "sharedInput": true
         },
         {
-          "id": "globals.enemyRank",
+          "id": "shared.enemyRank",
           "label": "Enemy rank",
           "type": "build_parameter",
           "paramType": "number",
-          "path": "globals.enemyRank",
+          "path": "shared.enemyRank",
           "default": 6,
           "min": 1,
           "max": 6,
@@ -346,52 +346,52 @@
             "5": "5 dots",
             "6": "Boss"
           },
-          "globalInput": true
+          "sharedInput": true
         },
         {
-          "id": "globals.enemyType.cultist",
+          "id": "shared.enemyType.cultist",
           "label": "Enemy: Cultist",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.enemyType.cultist",
+          "path": "shared.enemyType.cultist",
           "default": false,
-          "globalInput": true
+          "sharedInput": true
         },
         {
-          "id": "globals.enemyType.demon",
+          "id": "shared.enemyType.demon",
           "label": "Enemy: Demon",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.enemyType.demon",
+          "path": "shared.enemyType.demon",
           "default": false,
-          "globalInput": true
+          "sharedInput": true
         },
         {
-          "id": "globals.enemyType.devil",
+          "id": "shared.enemyType.devil",
           "label": "Enemy: Devil",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.enemyType.devil",
+          "path": "shared.enemyType.devil",
           "default": false,
-          "globalInput": true
+          "sharedInput": true
         },
         {
-          "id": "globals.enemyType.dinosaur",
+          "id": "shared.enemyType.dinosaur",
           "label": "Enemy: Dinosaur",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.enemyType.dinosaur",
+          "path": "shared.enemyType.dinosaur",
           "default": false,
-          "globalInput": true
+          "sharedInput": true
         },
         {
-          "id": "globals.enemyType.undead",
+          "id": "shared.enemyType.undead",
           "label": "Enemy: Undead",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "globals.enemyType.undead",
+          "path": "shared.enemyType.undead",
           "default": false,
-          "globalInput": true
+          "sharedInput": true
         }
       ]
     },

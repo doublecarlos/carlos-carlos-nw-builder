@@ -18,7 +18,7 @@ import * as engine from "../stores/resolved";
 import * as builds from "../stores/builds";
 import { bonusContext, resolveInputValues } from "../engine/bonus";
 import { bonusInputSpec } from "../engine/inputs";
-import { withInputDefs, type WithInputDefs } from "../engine/global-inputs";
+import { withInputDefs, type WithInputDefs } from "../engine/shared-inputs";
 import type { FormulaVocabulary, LabelContext } from "../engine/formula";
 import type {
   Bonus,
@@ -33,7 +33,7 @@ export type AuthoredOwner = Pick<
   "id" | "inputs" | "formulas" | "stacking"
 >;
 
-/** The bonus whose formulas are edited, as the formula checks read it: references to global
+/** The bonus whose formulas are edited, as the formula checks read it: references to shared
  *  inputs resolved. */
 export type FormulaOwner = WithInputDefs<AuthoredOwner>;
 
@@ -62,7 +62,7 @@ export function provideFormulaContext(
   // Checks and labels read the catalog being authored, like the vocabulary. The preview below
   // reads the active build's catalog, the one its values were resolved against.
   const ownerRef = computed(() =>
-    withInputDefs(authored.value, db.value.globalInputs),
+    withInputDefs(authored.value, db.value.sharedInputs),
   );
   const params = computed(
     () =>
@@ -112,7 +112,7 @@ export function provideFormulaContext(
       return bonusContext(
         bonus,
         resolved.result.context,
-        resolveInputValues(bonus, build, engine.db.value.globalInputs),
+        resolveInputValues(bonus, build, engine.db.value.sharedInputs),
       );
     },
   };

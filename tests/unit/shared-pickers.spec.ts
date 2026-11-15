@@ -34,12 +34,12 @@ const schema: Schema = {
 };
 
 const place: ItemPickerSlot = {
-  id: "globals.place",
+  id: "shared.place",
   label: "Place",
-  section: "globals",
+  section: "shared",
   type: "item_picker",
   filter: "place",
-  globalInput: true,
+  sharedInput: true,
 };
 const gear = (id: string): Slot => ({
   id,
@@ -105,7 +105,7 @@ const slots: Slot[] = [gear("a"), gear("b"), place];
 const testDb = db.build(items, bonuses, schema, {
   sections: [
     { id: "gear", label: "Gear", slotIds: [] },
-    { id: "globals", label: "Shared inputs", slotIds: [] },
+    { id: "shared", label: "Shared inputs", slotIds: [] },
   ],
   slots,
   presets: [],
@@ -143,14 +143,14 @@ describe("derived readers", () => {
 describe("resolving a shared pick", () => {
   // Zone effects are item data, so they apply with nothing reading the slot.
   it("equips the pick with no reader carried", () => {
-    expect(power(build({ "globals.place": "port" }), "harbor")).toBe(1000);
+    expect(power(build({ "shared.place": "port" }), "harbor")).toBe(1000);
   });
 
   it("holds a `not` on a region tag while nothing is picked", () => {
     expect(power(build({ a: "camel" }), "inland")).toBe(100);
-    expect(
-      power(build({ a: "camel", "globals.place": "port" }), "inland"),
-    ).toBe(0);
+    expect(power(build({ a: "camel", "shared.place": "port" }), "inland")).toBe(
+      0,
+    );
   });
 });
 
@@ -184,7 +184,7 @@ describe("where a shared picker shows", () => {
 
   // A pick is never equipped without a row showing it.
   it("keeps its row while it holds a pick after its last reader leaves", () => {
-    expect(visibility({ a: "rock", "globals.place": "port" }).rows).toEqual(
+    expect(visibility({ a: "rock", "shared.place": "port" }).rows).toEqual(
       new Set([place.id]),
     );
     expect(visibility({ a: "rock" }).rows).toEqual(new Set());

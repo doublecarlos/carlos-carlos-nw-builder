@@ -1,7 +1,7 @@
 // Which shared slots a build uses, and where their controls show. A shared slot shows a row of
 // its own in the Shared inputs section only while the build uses it, which each kind of slot
 // decides in `KINDS`. Display only: nothing here changes what the engine resolves.
-import { isSharedSlot } from "../engine/global-inputs";
+import { isSharedSlot } from "../engine/shared-inputs";
 import type { InputEntry } from "../engine/inputs";
 import { isCarried } from "./bonus-inspector";
 import type { Build, Db, EvaluatedBonus, ItemPickerSlot, Slot } from "../types";
@@ -50,7 +50,7 @@ export function sharedPickerReaders(
 const unique = (ids: string[]) => [...new Set(ids)];
 
 /** The rows the equipped readers of each shared slot anchor on, by its id, each row once and
- *  in build order. `params` is `globalInputReaders`' map, `pickers` `sharedPickerReaders`'. */
+ *  in build order. `params` is `sharedInputReaders`' map, `pickers` `sharedPickerReaders`'. */
 export function sharedReaderRows(
   params: ReadonlyMap<string, readonly InputEntry[]>,
   pickers: ReadonlyMap<string, readonly EvaluatedBonus[]> = new Map(),

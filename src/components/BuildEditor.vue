@@ -55,7 +55,7 @@ import {
   leftOutOfSection,
   visibleRows,
 } from "../lib/row-visibility";
-import { isSharedSlot } from "../engine/global-inputs";
+import { isSharedSlot } from "../engine/shared-inputs";
 import { usedByLinks, type SharedRowLink } from "../lib/shared-inputs";
 import { keepArray, keepEqual, keepMap, keepSet } from "../lib/keep-identity";
 import {

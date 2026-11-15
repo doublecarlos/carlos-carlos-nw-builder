@@ -10,7 +10,7 @@ import { getPath, setPath } from "../lib/build-path";
 import { writeTypedValues, type TypedValues } from "../lib/build-inputs";
 import { parseRowSlotId } from "../lib/item-picker-list";
 import { bonusStatConfigs } from "../engine/inputs";
-import { privateInputs } from "../engine/global-inputs";
+import { privateInputs } from "../engine/shared-inputs";
 import type {
   BonusValues,
   Build,

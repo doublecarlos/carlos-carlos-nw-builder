@@ -185,7 +185,7 @@ export function useCompareDiff(options: {
    * choice already differs. */
   function inputDiffs(slotId: string): InputDiff[] {
     if (!compareBuild.value || differs(slotId)) return [];
-    // Bonuses on one row reading the same global input differ once.
+    // Bonuses on one row reading the same shared input differ once.
     const seen = new Set<string>();
     return ownInputs.value.flatMap((entry) => {
       if (entry.slotId !== slotId) return [];
@@ -343,7 +343,7 @@ export function useCompareDiff(options: {
         slot.type === "build_parameter" &&
         slot.section === "options" &&
         !slot.quick &&
-        !slot.globalInput &&
+        !slot.sharedInput &&
         paramDiffers(build.value, compareBuild.value, slot),
     ).length;
   });

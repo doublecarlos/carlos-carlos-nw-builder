@@ -50,17 +50,17 @@ export interface OptionRow {
   label: string;
 }
 
-/** The section "Make shared" files a new global input under, created along with it when the
+/** The section "Make shared" files a new shared input under, created along with it when the
  *  catalog has none. The build editor shows it while the build uses one of its inputs. */
-export const GLOBAL_INPUTS_SECTION: SlotSection = {
-  id: "globals",
+export const SHARED_INPUTS_SECTION: SlotSection = {
+  id: "shared",
   label: "Shared inputs",
   slotIds: [],
 };
 
-/** A new global input `id` defined as bonus input `name` was, for "Make global". Its id
+/** A new shared input `id` defined as bonus input `name` was, for "Make shared". Its id
  *  doubles as its path, and it is labeled as the input was, else by its name. */
-export function globalInputSlot(
+export function sharedInputSlot(
   id: string,
   name: string,
   def: InputDef,
@@ -69,11 +69,11 @@ export function globalInputSlot(
   const slot: BuildParameterSlot = {
     id,
     label,
-    section: GLOBAL_INPUTS_SECTION.id,
+    section: SHARED_INPUTS_SECTION.id,
     type: "build_parameter",
     paramType: def.type,
     path: id,
-    globalInput: true,
+    sharedInput: true,
     default: def.default,
   };
   if (def.type === "boolean") return slot;
@@ -177,9 +177,9 @@ export interface SlotDraft {
   valueLabels: string;
   /** `number` only. Empty leaves it to the bounds: a stepper when both are set. */
   control: "" | NumberControl;
-  /** See `BuildParameterSlot.globalInput` and `ItemPickerSlot.globalInput`. A shared slot is
+  /** See `BuildParameterSlot.sharedInput` and `ItemPickerSlot.sharedInput`. A shared slot is
    *  never quick, a scaler or switched off, so those fields are kept only for switching back. */
-  globalInput: boolean;
+  sharedInput: boolean;
   /** Empty means the parameter is not a scaler; see `BuildParameterSlot.scaler`. The filter
    *  and tag lists are comma-separated like `optionsFromTags`. */
   scalerMode: "" | Scaler["mode"];
@@ -260,7 +260,7 @@ export function buildDraft(slot: AuthoredSlot | null | undefined): SlotDraft {
       .map(([value, label]) => `${value} = ${label}`)
       .join(", "),
     control: source.control ?? "",
-    globalInput: source.globalInput ?? false,
+    sharedInput: source.sharedInput ?? false,
     scalerMode: source.scaler?.mode ?? "",
     scalerFilters: (source.scaler?.applies?.filter ?? []).join(", "),
     scalerTags: (source.scaler?.applies?.tags ?? []).join(", "),
@@ -395,7 +395,7 @@ const BUILDERS: {
       paramType: local.paramType,
       path: local.path.trim(),
     };
-    if (local.globalInput) slot.globalInput = true;
+    if (local.sharedInput) slot.sharedInput = true;
     else if (local.quick) slot.quick = true;
 
     // Cast `default` by `paramType`, so a boolean param never stores the string "true".
@@ -415,7 +415,7 @@ const BUILDERS: {
         slot.control = local.control;
       if (local.paramType === "number")
         putIfSet(slot, "valueLabels", parseValueLabels(local.valueLabels));
-      if (local.scalerMode && !local.globalInput) {
+      if (local.scalerMode && !local.sharedInput) {
         const applies: NonNullable<Scaler["applies"]> = {};
         putIfSet(applies, "filter", commaList(local.scalerFilters));
         putIfSet(applies, "tags", commaList(local.scalerTags));
@@ -452,7 +452,7 @@ const BUILDERS: {
     putIfSet(slot, "parent", local.parent);
     if (local.disallowEmpty) slot.disallowEmpty = true;
     if (local.hidePreview) slot.hidePreview = true;
-    if (local.globalInput) slot.globalInput = true;
+    if (local.sharedInput) slot.sharedInput = true;
     else {
       if (local.toggleable) slot.toggleable = true;
       if (local.quick) slot.quick = true;
@@ -567,9 +567,9 @@ const CHECKS: DiffCheck<AuthoredSlot>[] = [
       ? "edit stable settings"
       : null,
   (old, nw) =>
-    Boolean((old as BuildParameterSlot).globalInput) !==
-    Boolean((nw as BuildParameterSlot).globalInput)
-      ? (nw as BuildParameterSlot).globalInput
+    Boolean((old as BuildParameterSlot).sharedInput) !==
+    Boolean((nw as BuildParameterSlot).sharedInput)
+      ? (nw as BuildParameterSlot).sharedInput
         ? "make shared"
         : "stop being shared"
       : null,

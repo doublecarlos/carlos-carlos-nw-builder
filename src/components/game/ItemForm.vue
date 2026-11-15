@@ -194,10 +194,10 @@ const buildParamSlots = computed(() =>
     (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
   ),
 );
-/** A global input is the player's to set on its readers' rows, so no item seeds it. */
+/** A shared input is the player's to set on its readers' rows, so no item seeds it. */
 const defaultParamSlotOptions = computed(() =>
   buildParamSlots.value
-    .filter((slot) => !slot.globalInput)
+    .filter((slot) => !slot.sharedInput)
     .map((slot) => ({
       value: slot.id,
       label: slot.label,

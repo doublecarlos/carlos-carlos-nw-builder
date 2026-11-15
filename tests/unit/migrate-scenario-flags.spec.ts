@@ -78,7 +78,7 @@ describe("scenario flag migration", () => {
   it("keeps a value the context already stores", () => {
     const build = flagged(
       { "options.scenario#1": "enemy-type-boss" },
-      { context: { globals: { enemyRank: 3 } } },
+      { context: { shared: { enemyRank: 3 } } },
     );
     expect(getPath(build.context, RANK)).toBe(3);
   });
@@ -90,14 +90,14 @@ describe("scenario flag migration", () => {
 
   // The flag lands beside a stored sibling, in a copy of the nested objects they share.
   it("does not mutate the stored build", () => {
-    const context = { globals: { enemyType: { demon: true } } };
+    const context = { shared: { enemyType: { demon: true } } };
     const build = flagged(
       { "options.scenario#1": "enemy-type-boss" },
       { context },
     );
     expect(getPath(build.context, RANK)).toBe(6);
-    expect(getPath(build.context, "globals.enemyType.demon")).toBe(true);
-    expect(context).toEqual({ globals: { enemyType: { demon: true } } });
+    expect(getPath(build.context, "shared.enemyType.demon")).toBe(true);
+    expect(context).toEqual({ shared: { enemyType: { demon: true } } });
   });
 
   // `sameContent` compares the live build with its downloaded snapshot, so both migrate.
@@ -141,9 +141,9 @@ describe("scenario flag migration", () => {
 
   // The frozen table and the catalog are written separately; a renamed path would silently
   // migrate builds to an address nothing reads.
-  it("writes only to the paths of shipped global inputs", () => {
+  it("writes only to the paths of shipped shared inputs", () => {
     const paths = new Set(
-      [...db.fromData().globalInputs.values()].map((slot) => slot.path),
+      [...db.fromData().sharedInputs.values()].map((slot) => slot.path),
     );
     const targets = Object.values(FLAG_VALUES).map(({ path }) => path);
     expect(targets.filter((path) => !paths.has(path))).toEqual([]);

@@ -7,7 +7,7 @@ import { inputEntries, type InputEntry } from "../engine/inputs";
 import { inspectorBonuses, isNearMiss } from "../lib/bonus-inspector";
 import {
   emptyIndex,
-  globalInputReaders,
+  sharedInputReaders,
   groupBySlot,
   indexResolved,
   inputCopiesBySlot,
@@ -149,9 +149,9 @@ export const inputCopies = computed<Map<string, InputCopy[]>>(() =>
   inputCopiesBySlot(inputs.value, bonusById.value),
 );
 
-/** The bonuses on the build reading each global input, by its slot id. */
-export const globalReaders = computed<Map<string, InputEntry[]>>(() =>
-  globalInputReaders(inputs.value, bonusById.value),
+/** The bonuses on the build reading each shared input, by its slot id. */
+export const readersBySharedInput = computed<Map<string, InputEntry[]>>(() =>
+  sharedInputReaders(inputs.value, bonusById.value),
 );
 
 /** The equipped bonuses reading each shared picker, by its slot id. */
@@ -163,7 +163,7 @@ const pickerReaders = computed(() =>
 
 /** The rows the equipped readers of each shared slot anchor on, by its slot id. */
 export const sharedReaderRows = computed<Map<string, string[]>>(() =>
-  sharedReaderRowsOf(globalReaders.value, pickerReaders.value),
+  sharedReaderRowsOf(readersBySharedInput.value, pickerReaders.value),
 );
 
 /** The shared picker controls each reader's row shows, by the row's slot id. */

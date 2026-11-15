@@ -628,11 +628,11 @@ describe("scaler parameters", () => {
   });
 
   // Duplicate takes the live build from the reactive store, and migrations write nested
-  // paths (`globals.location.thay`, a layer's `custom.proc`) in place, so the copy must not
+  // paths (`shared.location.thay`, a layer's `custom.proc`) in place, so the copy must not
   // throw on the proxy and must share no branch with its source, snapshot included.
   it("duplicate copies a reactive build without sharing a nested branch", () => {
     const context = {
-      globals: { location: { thay: true } },
+      shared: { location: { thay: true } },
       custom: { proc: { on: true } },
     };
     const plain = storage.normalize({ id: "b1", name: "B", context });
@@ -645,18 +645,16 @@ describe("scaler parameters", () => {
     }) as Build;
     const copy = storage.duplicate(source);
     type Nested = {
-      globals: { location: Record<string, boolean> };
+      shared: { location: Record<string, boolean> };
       custom: { proc: Record<string, boolean> };
     };
     const nested = (build: { context: unknown }) => build.context as Nested;
-    nested(copy).globals.location.thay = false;
+    nested(copy).shared.location.thay = false;
     nested(copy).custom.proc.on = false;
-    nested(copy.downloaded!.snapshot).globals.location.thay = false;
-    expect(nested(source).globals.location.thay).toBe(true);
+    nested(copy.downloaded!.snapshot).shared.location.thay = false;
+    expect(nested(source).shared.location.thay).toBe(true);
     expect(nested(source).custom.proc.on).toBe(true);
-    expect(nested(source.downloaded!.snapshot).globals.location.thay).toBe(
-      true,
-    );
+    expect(nested(source.downloaded!.snapshot).shared.location.thay).toBe(true);
   });
 });
 

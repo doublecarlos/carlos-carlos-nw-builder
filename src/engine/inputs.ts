@@ -17,7 +17,7 @@ import {
   statInput,
 } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
-import { declaredInputs } from "./global-inputs";
+import { declaredInputs } from "./shared-inputs";
 import type {
   Bonus,
   BoundedValueConfig,
@@ -57,9 +57,9 @@ export interface InputEntry {
   source: string;
   /** The item carrying the value on its slot, where a slot holds several. */
   itemId?: string;
-  /** A bonus input's bonus and the name it declares the input by, plus the global input's
+  /** A bonus input's bonus and the name it declares the input by, plus the shared input's
    *  slot id when the input references one. */
-  bonusInput?: { bonusId: string; name: string; global?: string };
+  bonusInput?: { bonusId: string; name: string; shared?: string };
 }
 
 export interface InputKind {
@@ -216,13 +216,13 @@ const bonusDynamic: InputKind = {
 };
 
 /** One entry per input of every bonus on the build, attributed to the bonus's anchor. A
- *  global input has one entry per reader, all at the slot's address. */
+ *  shared input has one entry per reader, all at the slot's address. */
 const bonusInput: InputKind = {
   id: "bonusInput",
   entries: (db, build, resolved) =>
     resolved.bonuses.flatMap((entry) =>
-      declaredInputs(entry.bonus, db.globalInputs).map(
-        ({ name, def, address, global }) => {
+      declaredInputs(entry.bonus, db.sharedInputs).map(
+        ({ name, def, address, shared }) => {
           const spec = bonusInputSpec(def, name);
           return {
             kind: "bonusInput" as const,
@@ -235,7 +235,7 @@ const bonusInput: InputKind = {
             bonusInput: {
               bonusId: entry.bonusId,
               name,
-              ...(global !== undefined && { global }),
+              ...(shared !== undefined && { shared }),
             },
           };
         },
@@ -317,7 +317,7 @@ export function rangeError(
 }
 
 /** Every declared value outside its bounds, once per slot holding it: bonuses on one row
- *  reading the same global input give that row one error. */
+ *  reading the same shared input give that row one error. */
 export function inputRanges(
   db: Db,
   build: Build,

@@ -85,13 +85,13 @@ import {
   type ItemListFilter,
 } from "../lib/item-list-filter";
 import { editorDb } from "../lib/editor-db";
-import type { MakeGlobalScope } from "../lib/bonus-draft";
+import type { MakeSharedScope } from "../lib/bonus-draft";
 import {
-  makeGlobalOverlay,
-  takenGlobalIds,
+  makeSharedOverlay,
+  takenSharedIds,
   shadowedEntries,
-  type MakeGlobalRequest,
-} from "../lib/make-global";
+  type MakeSharedRequest,
+} from "../lib/make-shared";
 import { viewportKind } from "../lib/shell-layout";
 import { layerEditorLayout, viewOf } from "../lib/layer-editor-layout";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
@@ -1337,21 +1337,21 @@ const onUpdateBonusTop = ({
   label: string;
 }) => updateEntry("bonuses", id, bonus, label);
 
-/** Where "Make global" writes, for the bonus form to say which bonuses it would copy in and
- *  which a higher layer overrides, and every slot id and parameter path the new global
+/** Where "Make shared" writes, for the bonus form to say which bonuses it would copy in and
+ *  which a higher layer overrides, and every slot id and parameter path the new shared
  *  input's id must stay clear of. */
-const makeGlobalScope = computed<MakeGlobalScope>(() => ({
+const makeSharedScope = computed<MakeSharedScope>(() => ({
   inLayer: new Set(Object.keys(overlay.value.bonuses)),
   shadowedBy: shadowedEntries(layers.layers.value, props.layer.id, "bonuses"),
-  taken: takenGlobalIds(db.value, allocatableIds.value.slots),
+  taken: takenSharedIds(db.value, allocatableIds.value.slots),
 }));
 
-/** "Make global" from the bonus form, as one undo step. */
-function onMakeGlobal(request: MakeGlobalRequest) {
-  const { overlay: next } = makeGlobalOverlay(
+/** "Make shared" from the bonus form, as one undo step. */
+function onMakeShared(request: MakeSharedRequest) {
+  const { overlay: next } = makeSharedOverlay(
     overlay.value,
     db.value,
-    makeGlobalScope.value.taken,
+    makeSharedScope.value.taken,
     request,
   );
   commit(null, `Make input "${request.name}" shared`, next);
@@ -2021,10 +2021,10 @@ onUnmounted(() => {
           :all-bonus-ids="allBonusIds"
           :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds.bonuses"
-          :make-global-scope="makeGlobalScope"
+          :make-shared-scope="makeSharedScope"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
-          @make-global="onMakeGlobal"
+          @make-shared="onMakeShared"
           @delete="onDeleteBonusTop"
           @duplicate="duplicateBonus"
           @revert="onRevertBonusTop"

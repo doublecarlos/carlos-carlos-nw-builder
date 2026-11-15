@@ -21,12 +21,12 @@ import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import OptionRow from "../ui/OptionRow.vue";
 import BonusInputRowList from "./BonusInputRowList.vue";
-import MakeGlobalDialog from "./MakeGlobalDialog.vue";
+import MakeSharedDialog from "./MakeSharedDialog.vue";
 import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
 import { inputFormulaClashes, namedCycles } from "../../engine/formula";
 import type { Bonus, BonusOption, Db } from "../../types";
-import type { MakeGlobalRequest } from "../../lib/make-global";
+import type { MakeSharedRequest } from "../../lib/make-shared";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -68,9 +68,9 @@ const props = withDefaults(
     collapsed?: boolean;
     /** Whether the header bar's inert area raises `toggle`, see DraftFormBar.vue. */
     toggleable?: boolean;
-    /** Where "Make global" writes. When set, a saved bonus's own inputs offer it, and the host
-     *  writes the result as one layer edit (`make-global`). */
-    makeGlobalScope?: bonusDraft.MakeGlobalScope | null;
+    /** Where "Make shared" writes. When set, a saved bonus's own inputs offer it, and the host
+     *  writes the result as one layer edit (`make-shared`). */
+    makeSharedScope?: bonusDraft.MakeSharedScope | null;
   }>(),
   {
     source: null,
@@ -87,7 +87,7 @@ const props = withDefaults(
     canDelete: true,
     collapsed: false,
     toggleable: false,
-    makeGlobalScope: null,
+    makeSharedScope: null,
   },
 );
 
@@ -103,9 +103,9 @@ const emit = defineEmits<{
   toggle: [];
   /** A "Granted by" member link was clicked: open that item in the editor. */
   "open-item": [itemId: string];
-  /** "Make global" was confirmed on input `name`: a new global input `id` defined as `def`,
+  /** "Make shared" was confirmed on input `name`: a new shared input `id` defined as `def`,
    *  read by every bonus in `readers` under that name. The first reader is this bonus, as drafted. */
-  "make-global": [payload: MakeGlobalRequest];
+  "make-shared": [payload: MakeSharedRequest];
 }>();
 
 function computeId(local: bonusDraft.BonusDraft): string {
@@ -193,38 +193,38 @@ const duplicateFormulaNames = computed(() =>
 /** The bonus's inputs as the `input` condition leaf offers them, read live off the draft so a
  *  just-declared input is pickable before saving. */
 const inputOptions = computed(() =>
-  bonusDraft.inputOptions(draft.value.inputs, props.db.globalInputs),
+  bonusDraft.inputOptions(draft.value.inputs, props.db.sharedInputs),
 );
 const duplicateInputNames = computed(() =>
   bonusDraft.duplicateInputNames(draft.value.inputs),
 );
 
-const canMakeGlobal = computed(() =>
-  bonusDraft.canMakeGlobal(props.makeGlobalScope, props.source?.id),
+const canMakeShared = computed(() =>
+  bonusDraft.canMakeShared(props.makeSharedScope, props.source?.id),
 );
 
-/** The open "Make global" offer, or null. */
-const makeGlobal = shallowRef<bonusDraft.MakeGlobalOffer | null>(null);
+/** The open "Make shared" offer, or null. */
+const makeShared = shallowRef<bonusDraft.MakeSharedOffer | null>(null);
 
-function offerMakeGlobal(index: number) {
-  if (!props.source || !props.makeGlobalScope || !canMakeGlobal.value) return;
-  makeGlobal.value = bonusDraft.makeGlobalOffer(
+function offerMakeShared(index: number) {
+  if (!props.source || !props.makeSharedScope || !canMakeShared.value) return;
+  makeShared.value = bonusDraft.makeSharedOffer(
     draft.value.inputs[index],
     props.source.id,
     props.db.bonuses,
-    props.makeGlobalScope,
+    props.makeSharedScope,
   );
 }
 
-function confirmMakeGlobal(id: string, otherIds: string[]) {
-  const offer = makeGlobal.value;
+function confirmMakeShared(id: string, otherIds: string[]) {
+  const offer = makeShared.value;
   // Written as drafted, so it passes the same checks as a save.
   const bonus = offer && checkedBonus();
   if (!offer || !bonus) return;
   const others = offer.others
     .filter((other) => otherIds.includes(other.bonus.id))
     .map((other) => other.bonus);
-  emit("make-global", {
+  emit("make-shared", {
     id,
     name: offer.name,
     def: offer.def,
@@ -361,20 +361,20 @@ if (bonusDraftRegistry && props.registryId) {
       >
       <BonusInputRowList
         :rows="draft.inputs"
-        :globals="db.globalInputs"
-        :can-make-global="canMakeGlobal"
+        :shared-inputs="db.sharedInputs"
+        :can-make-shared="canMakeShared"
         @add="draft.inputs.push(bonusDraft.newInput())"
         @remove="(i) => draft.inputs.splice(i, 1)"
-        @make-global="offerMakeGlobal"
+        @make-shared="offerMakeShared"
       />
-      <MakeGlobalDialog
-        v-if="makeGlobal && makeGlobalScope"
-        :name="makeGlobal.name"
-        :def="makeGlobal.def"
-        :others="makeGlobal.others"
-        :taken="makeGlobalScope.taken"
-        @confirm="confirmMakeGlobal"
-        @close="makeGlobal = null"
+      <MakeSharedDialog
+        v-if="makeShared && makeSharedScope"
+        :name="makeShared.name"
+        :def="makeShared.def"
+        :others="makeShared.others"
+        :taken="makeSharedScope.taken"
+        @confirm="confirmMakeShared"
+        @close="makeShared = null"
       />
       <p
         v-if="duplicateInputNames.length"

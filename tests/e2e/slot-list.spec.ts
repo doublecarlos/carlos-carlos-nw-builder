@@ -284,7 +284,7 @@ test.describe("section collapse/expand", () => {
               type: "build_parameter",
               paramType: "boolean",
               path: "e2eHidden.flag",
-              globalInput: true,
+              sharedInput: true,
               default: false,
             },
           },

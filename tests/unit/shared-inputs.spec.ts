@@ -12,18 +12,18 @@ import type { InputEntry } from "../../src/engine/inputs";
 import type { Build, BuildParameterSlot, Db, Slot } from "../../src/types";
 
 const song: BuildParameterSlot = {
-  id: "globals.song",
+  id: "shared.song",
   label: "Played a song",
-  section: "globals",
+  section: "shared",
   type: "build_parameter",
   paramType: "boolean",
-  path: "globals.song",
+  path: "shared.song",
   default: false,
-  globalInput: true,
+  sharedInput: true,
 };
 const note: Slot = {
-  id: "globals.note",
-  section: "globals",
+  id: "shared.note",
+  section: "shared",
   type: "text",
   text: "Set once here",
 };
@@ -33,7 +33,7 @@ const labels: Record<string, string> = { a: "Ring", b: "Neck", c: "Belt" };
 const db = {
   slotFor: (id: string) => (labels[id] ? { label: labels[id] } : undefined),
   slotById: new Map([[song.id, song]]),
-  sections: [{ id: "globals", label: "Shared inputs", slotIds: [] }],
+  sections: [{ id: "shared", label: "Shared inputs", slotIds: [] }],
 } as unknown as Db;
 
 const reader = (source: string, slotId: string): InputEntry =>

@@ -326,7 +326,7 @@
     {
       "label": "Health, boss and location",
       "reason": "Not recorded in the game export.",
-      "sections": ["globals"]
+      "sections": ["shared"]
     }
   ],
   "hclassToClass": {

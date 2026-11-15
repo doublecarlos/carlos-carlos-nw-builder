@@ -195,7 +195,7 @@
           "party": true,
           "procs": true
         },
-        "globals": {
+        "shared": {
           "enemyRank": 6
         }
       },

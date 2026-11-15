@@ -1,7 +1,7 @@
 // Text and separator rows have nothing of their own to show: they follow the fields around them
 // by position, whatever hid those fields. The rows between two separators form a group.
 import { isQuick } from "./quick-summary";
-import { isSharedSlot } from "../engine/global-inputs";
+import { isSharedSlot } from "../engine/shared-inputs";
 import type { Slot } from "../types";
 
 /** A field its section's list leaves out: a quick slot sits in the QuickOptions strip, and a

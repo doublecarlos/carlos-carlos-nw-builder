@@ -30,7 +30,7 @@ import {
   unpackNotice,
   type UnpackedCatalog,
 } from "./buildCatalog";
-import { migrateGlobalInputs } from "../storage/migrate-global-inputs";
+import { migrateSharedInputs } from "../storage/migrate-shared-inputs";
 import {
   clearSlotContents,
   pruneUnavailableSlots,
@@ -154,7 +154,7 @@ function syncStored(
   prev?: Db,
 ): { moved: boolean; cleared: string[] } {
   const db = engineDb.value;
-  const moved = migrateGlobalInputs(db, b, prev);
+  const moved = migrateSharedInputs(db, b, prev);
   const { cleared } = pruneUnavailableSlots(db, toRaw(b));
   for (const slotId of cleared) {
     const slot = db.slotById.get(slotId);

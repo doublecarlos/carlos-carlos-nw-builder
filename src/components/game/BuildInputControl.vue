@@ -2,9 +2,9 @@
 // One typed value on a build-editor row (useSlotInputs.ts's `BuildInput`), rendered by its
 // `control`: a checkbox with its label, a stepper, a typed field noting its range, or a note
 // pointing to the row that holds the control. Presets go in InputRow's slot for them, which
-// places them by layout. Writes go straight to the store by the value's address. A global
+// places them by layout. Writes go straight to the store by the value's address. A shared
 // input's control carries a shared mark whose tooltip names where else it is set. `bare`
-// leaves the label to the row, as on a global input's own row, and `inputId` lets that
+// leaves the label to the row, as on a shared input's own row, and `inputId` lets that
 // row's label point at the control.
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";

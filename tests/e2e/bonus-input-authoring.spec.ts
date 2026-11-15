@@ -209,9 +209,9 @@ test("a repeated input id is flagged", async ({ page }) => {
   );
 });
 
-// A global input is defined once as a flagged slot and referenced by each bonus reading it, so
+// A shared input is defined once as a flagged slot and referenced by each bonus reading it, so
 // the bonus form saves only the reference and the leaf picker reads the slot's definition.
-test("an input can reference a global input defined by a flagged slot", async ({
+test("an input can reference a shared input defined by a flagged slot", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -225,8 +225,8 @@ test("an input can reference a global input defined by a flagged slot", async ({
   await page.getByTestId("slot-label-input").fill("Played a song");
   await chooseCombo(page.getByTestId("slot-type-input"), "boolean");
   await page.getByTestId("slot-path-input").fill("shared.song");
-  await page.getByTestId("slot-global-input").check();
-  // A global input has its row in the Shared inputs section, so it cannot be quick.
+  await page.getByTestId("slot-shared-input").check();
+  // A shared input has its row in the Shared inputs section, so it cannot be quick.
   await expect(page.getByTestId("slot-quick-input")).toHaveCount(0);
   await page.getByTestId("save-slot").click();
   await expect(page.getByText('Saved slot "Played a song"')).toBeVisible();
@@ -235,9 +235,9 @@ test("an input can reference a global input defined by a flagged slot", async ({
   await page.getByTestId("new-bonus").click();
   await page.getByTestId("bonus-name-input").fill(BONUS);
   const input = await addInput(page, "song");
-  await chooseCombo(input.getByTestId("bonus-input-global"), "Played a song");
+  await chooseCombo(input.getByTestId("bonus-input-shared"), "Played a song");
   await expect(input.getByTestId("bonus-input-type")).toHaveCount(0);
-  await expect(input.getByTestId("bonus-input-global-summary")).toContainText(
+  await expect(input.getByTestId("bonus-input-shared-summary")).toContainText(
     "on/off",
   );
 
@@ -249,7 +249,7 @@ test("an input can reference a global input defined by a flagged slot", async ({
   await openEditorRow(page, "Risky Investment");
   await openEditorRow(page, BONUS);
   await expect(
-    page.getByTestId("bonus-input-global").getByRole("combobox"),
+    page.getByTestId("bonus-input-shared").getByRole("combobox"),
   ).toHaveValue("Played a song");
   const grant = page.getByTestId("bonus-grant-row").first();
   await grant.getByLabel("Edit as JSON").click();

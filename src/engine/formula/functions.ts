@@ -248,10 +248,10 @@ export const FUNCTIONS: Record<string, FormulaFunction> = {
           level: "error",
           message: `param("${path}") is not a build_parameter's path`,
         };
-      if (slot.globalInput)
+      if (slot.sharedInput)
         return {
           level: "error",
-          message: `param("${path}") is a global input; declare it in the bonus's inputs and read it as $name`,
+          message: `param("${path}") is a shared input; declare it in the bonus's inputs and read it as $name`,
         };
       if (slot.paramType !== "number" && slot.paramType !== "percent")
         return {

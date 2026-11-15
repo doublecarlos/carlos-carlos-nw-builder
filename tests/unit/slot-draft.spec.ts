@@ -37,36 +37,36 @@ describe("buildDraft / toSlot round trip", () => {
     expect(roundTrip(slot)).toEqual(slot);
   });
 
-  it("round-trips the global input flag", () => {
+  it("round-trips the shared input flag", () => {
     const slot: BuildParameterSlot = {
-      id: "globals.song",
+      id: "shared.song",
       label: "Played a song",
-      section: "globals",
+      section: "shared",
       type: "build_parameter",
       paramType: "boolean",
-      path: "globals.song",
+      path: "shared.song",
       default: false,
-      globalInput: true,
+      sharedInput: true,
     };
     expect(roundTrip(slot)).toEqual(slot);
   });
 
-  // A global input has no row and is read only through bonus inputs, so the form never saves
+  // A shared input has no row and is read only through bonus inputs, so the form never saves
   // the quick or scaler fields it keeps for switching back.
-  it("drops quick and scaler from a global input", () => {
+  it("drops quick and scaler from a shared input", () => {
     const draft = buildDraft({
       id: "g",
       label: "G",
-      section: "globals",
+      section: "shared",
       type: "build_parameter",
       paramType: "number",
       path: "g",
       quick: true,
       scaler: { mode: "absolute" },
     });
-    draft.globalInput = true;
+    draft.sharedInput = true;
     const slot = toSlot(draft, { id: "g" });
-    expect(slot).toMatchObject({ globalInput: true });
+    expect(slot).toMatchObject({ sharedInput: true });
     expect(slot).not.toHaveProperty("quick");
     expect(slot).not.toHaveProperty("scaler");
   });
@@ -76,15 +76,15 @@ describe("buildDraft / toSlot round trip", () => {
   it("drops quick and toggleable from a shared picker", () => {
     const draft = buildDraft({
       id: "p",
-      section: "globals",
+      section: "shared",
       type: "item_picker",
       filter: "location",
       quick: true,
       toggleable: true,
     });
-    draft.globalInput = true;
+    draft.sharedInput = true;
     const slot = toSlot(draft, { id: "p" });
-    expect(slot).toMatchObject({ globalInput: true, filter: "location" });
+    expect(slot).toMatchObject({ sharedInput: true, filter: "location" });
     expect(slot).not.toHaveProperty("quick");
     expect(slot).not.toHaveProperty("toggleable");
   });
@@ -110,7 +110,7 @@ describe("buildDraft / toSlot round trip", () => {
     const slot: BuildParameterSlot = {
       id: "s7",
       label: "Rank",
-      section: "globals",
+      section: "shared",
       type: "build_parameter",
       paramType: "number",
       path: "rank",

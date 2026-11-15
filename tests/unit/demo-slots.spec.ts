@@ -807,7 +807,7 @@ describe("notInDemoGroups on a test catalog", () => {
   };
 
   // A section the table names reads under its authored label, so the report never falls back
-  // to the section's own label for it, as it does for the global inputs' section.
+  // to the section's own label for it, as it does for the shared inputs' section.
   it("files a named section's slots under its authored group only", () => {
     const groups = notInDemoGroups(
       testDb,
@@ -826,16 +826,16 @@ describe("notInDemoGroups on a test catalog", () => {
 });
 
 describe("notInDemoGroups on the shipped table", () => {
-  // Global inputs have no row in the build editor, so the section-labeled fallback would name
+  // Shared inputs have no row in the build editor, so the section-labeled fallback would name
   // a section the player never sees.
-  it("the shipped table names every global input in an authored group", () => {
+  it("the shipped table names every shared input in an authored group", () => {
     const authored = new Set(
       GAME_IMPORT_DATA.notInDemoReasons.map((r) => r.label),
     );
-    const globals = NW_SLOTS.slots
-      .filter((s) => s.type === "build_parameter" && s.globalInput)
+    const sharedInputs = NW_SLOTS.slots
+      .filter((s) => s.type === "build_parameter" && s.sharedInput)
       .map((s) => s.id);
-    const groups = notInDemoGroups(db, globals);
+    const groups = notInDemoGroups(db, sharedInputs);
     expect(groups.filter((g) => !authored.has(g.label))).toEqual([]);
   });
 });

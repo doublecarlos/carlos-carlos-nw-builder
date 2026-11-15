@@ -9,7 +9,7 @@ import {
   resolveBuild as engineRun,
 } from "../../src/engine/engine";
 import { defaultBuild } from "../../src/storage/storage";
-import { inputDefs } from "../../src/engine/global-inputs";
+import { inputDefs } from "../../src/engine/shared-inputs";
 import { NW_SLOTS } from "../../src/data/data";
 import type {
   Build,
@@ -959,7 +959,7 @@ describe("the shipped insignia bonuses", () => {
     if (value && bonus.inputs) {
       build.bonusValues[bonus.id] = {
         input: Object.fromEntries(
-          Object.entries(inputDefs(bonus, shipped.globalInputs)).map(
+          Object.entries(inputDefs(bonus, shipped.sharedInputs)).map(
             ([name, def]) => [name, value(def)],
           ),
         ),
@@ -1000,7 +1000,7 @@ describe("the shipped insignia bonuses", () => {
 
   it("a Proc bonus grants nothing until its toggle is on", () => {
     const procs = modelled.filter((item) => {
-      const proc = inputDefs(bonusOf(item), shipped.globalInputs).active;
+      const proc = inputDefs(bonusOf(item), shipped.sharedInputs).active;
       return proc?.label === "Proc" && proc.default === false;
     });
     expect(procs.length).toBeGreaterThan(0);

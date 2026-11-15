@@ -1,12 +1,12 @@
 <script setup lang="ts">
 // The build_parameter case of BuildSlot.vue's row content: the generic control and this
 // type's diff note. Row chrome (label, cursor anchor, hover/diff highlighting, the errors
-// list) stays in BuildSlot.vue since it's identical across every slot type. A global input
+// list) stays in BuildSlot.vue since it's identical across every slot type. A shared input
 // renders the control its readers' rows show, so both stay alike.
 import { computed, useTemplateRef } from "vue";
 import BuildInputControl from "./BuildInputControl.vue";
 import BuildParamInput from "./BuildParamInput.vue";
-import { ownGlobalInput } from "../../composables/useSlotInputs";
+import { ownSharedInput } from "../../composables/useSlotInputs";
 import BaseLink from "../ui/BaseLink.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { getPath } from "../../lib/build-path";
@@ -26,13 +26,13 @@ const props = defineProps<{
 
 const param = useTemplateRef<InstanceType<typeof BuildParamInput>>("param");
 
-const globalInput = computed(() =>
-  props.slotDef.globalInput ? ownGlobalInput(props.slotDef, props.build) : null,
+const sharedInput = computed(() =>
+  props.slotDef.sharedInput ? ownSharedInput(props.slotDef, props.build) : null,
 );
 
 defineExpose({
   focus: () =>
-    globalInput.value && props.inputId
+    sharedInput.value && props.inputId
       ? document.getElementById(props.inputId)?.focus()
       : param.value?.focus(),
   focusAndSeed: (char: string) => param.value?.focusAndSeed(char),
@@ -47,9 +47,9 @@ const paramValue = () =>
 
 <template>
   <BuildInputControl
-    v-if="globalInput"
+    v-if="sharedInput"
     bare
-    :input="globalInput"
+    :input="sharedInput"
     :input-id="inputId"
   />
   <div v-else class="flex flex-wrap items-center gap-2.5">

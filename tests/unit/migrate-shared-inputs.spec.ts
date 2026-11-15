@@ -1,14 +1,14 @@
-// Promoting a bonus input to a global input, or demoting it back, must carry the value a build
+// Promoting a bonus input to a shared input, or demoting it back, must carry the value a build
 // stores to its new address: without the move, every stored build silently resets to the
 // default. Built on a small catalog of its own, in two versions: each bonus's input private,
-// and the same inputs read through one global input.
+// and the same inputs read through one shared input.
 import { describe, expect, it } from "vitest";
 import * as db from "../../src/data/db";
 import { sameContent } from "../../src/storage/storage";
 import {
-  migrateGlobalInputs,
+  migrateSharedInputs,
   promotionMoves,
-} from "../../src/storage/migrate-global-inputs";
+} from "../../src/storage/migrate-shared-inputs";
 import type {
   Bonus,
   Build,
@@ -33,14 +33,14 @@ const schema: Schema = {
 };
 
 const song: BuildParameterSlot = {
-  id: "globals.song",
+  id: "shared.song",
   label: "Played a song",
-  section: "globals",
+  section: "shared",
   type: "build_parameter",
   paramType: "boolean",
-  path: "globals.song",
+  path: "shared.song",
   default: false,
-  globalInput: true,
+  sharedInput: true,
 };
 
 const grants: Bonus["grants"] = [
@@ -55,7 +55,7 @@ const privateSong = (id: string): Bonus => ({
 const readsSong = (id: string): Bonus => ({
   id,
   name: id,
-  inputs: { song: { global: song.id } },
+  inputs: { song: { shared: song.id } },
   grants,
 });
 
@@ -76,7 +76,7 @@ function catalogWith(bonuses: Bonus[], extra: Slot[] = []): Db {
   return db.build(items, bonuses, schema, {
     sections: [
       { id: "gear", label: "Gear", slotIds: [] },
-      { id: "globals", label: "Global inputs", slotIds: [] },
+      { id: "shared", label: "Shared inputs", slotIds: [] },
     ],
     slots: [gear("a"), gear("b"), ...extra],
     presets: [],
@@ -111,19 +111,19 @@ function build(
 const sung = (value: boolean) => ({ input: { song: value } });
 
 describe("promotion", () => {
-  it("moves a stored private value to the global input's path", () => {
+  it("moves a stored private value to the shared input's path", () => {
     const b = build({ a: "lute" }, { ballad: sung(true) });
-    expect(migrateGlobalInputs(promotedDb, b)).toBe(true);
-    expect(b.context).toEqual({ globals: { song: true } });
+    expect(migrateSharedInputs(promotedDb, b)).toBe(true);
+    expect(b.context).toEqual({ shared: { song: true } });
     expect(b.bonusValues).toEqual({});
   });
 
   // Every load, import and edit runs the pass, so a second run must find nothing to do.
   it("is idempotent", () => {
     const b = build({ a: "lute" }, { ballad: sung(true) });
-    migrateGlobalInputs(promotedDb, b);
+    migrateSharedInputs(promotedDb, b);
     const once = structuredClone(b);
-    expect(migrateGlobalInputs(promotedDb, b)).toBe(false);
+    expect(migrateSharedInputs(promotedDb, b)).toBe(false);
     expect(b).toEqual(once);
   });
 
@@ -131,10 +131,10 @@ describe("promotion", () => {
     const b = build(
       { a: "lute" },
       { ballad: sung(true) },
-      { globals: { song: false } },
+      { shared: { song: false } },
     );
-    migrateGlobalInputs(promotedDb, b);
-    expect(b.context).toEqual({ globals: { song: false } });
+    migrateSharedInputs(promotedDb, b);
+    expect(b.context).toEqual({ shared: { song: false } });
     // The private address is read by nothing now, so a later reset cannot bring it back.
     expect(b.bonusValues).toEqual({});
   });
@@ -142,8 +142,8 @@ describe("promotion", () => {
   it("prefers the equipped reader when readers disagree", () => {
     // `chorus` comes after `ballad` in catalog order, but only `chorus` is equipped.
     const b = build({ a: "drum" }, { ballad: sung(false), chorus: sung(true) });
-    migrateGlobalInputs(promotedDb, b);
-    expect(b.context).toEqual({ globals: { song: true } });
+    migrateSharedInputs(promotedDb, b);
+    expect(b.context).toEqual({ shared: { song: true } });
     expect(b.bonusValues).toEqual({});
   });
 
@@ -152,8 +152,8 @@ describe("promotion", () => {
       { a: "drum", b: "lute" },
       { ballad: sung(false), chorus: sung(true) },
     );
-    migrateGlobalInputs(promotedDb, b);
-    expect(b.context).toEqual({ globals: { song: true } });
+    migrateSharedInputs(promotedDb, b);
+    expect(b.context).toEqual({ shared: { song: true } });
   });
 
   // A switched-off pick is out of the calculation, so its reader is not the one the player saw.
@@ -163,25 +163,25 @@ describe("promotion", () => {
       { ballad: sung(false), chorus: sung(true) },
     );
     b.disabledSlots = { a: true };
-    migrateGlobalInputs(promotedDb, b);
-    expect(b.context).toEqual({ globals: { song: false } });
+    migrateSharedInputs(promotedDb, b);
+    expect(b.context).toEqual({ shared: { song: false } });
   });
 
   it("falls back to catalog order when no reader is equipped", () => {
     const b = build({}, { ballad: sung(false), chorus: sung(true) });
-    migrateGlobalInputs(promotedDb, b);
-    expect(b.context).toEqual({ globals: { song: false } });
+    migrateSharedInputs(promotedDb, b);
+    expect(b.context).toEqual({ shared: { song: false } });
   });
 
   // An input never changes meaning in place: a number read as a boolean would be a new fact.
   it("drops a stored value of the other type rather than reinterpreting it", () => {
     const b = build({ a: "lute" }, { ballad: { input: { song: 3 } } });
-    migrateGlobalInputs(promotedDb, b);
+    migrateSharedInputs(promotedDb, b);
     expect(b.context).toEqual({});
     expect(b.bonusValues).toEqual({});
   });
 
-  it("does nothing on a catalog without global inputs", () => {
+  it("does nothing on a catalog without shared inputs", () => {
     expect(promotionMoves(privateDb)).toEqual([]);
   });
 
@@ -190,16 +190,16 @@ describe("promotion", () => {
     const b = build({ a: "lute" }, { ballad: sung(true) });
     const { downloaded: _none, ...snapshot } = structuredClone(b);
     b.downloaded = { snapshot, at: 1 };
-    migrateGlobalInputs(promotedDb, b);
-    expect(b.downloaded.snapshot.context).toEqual({ globals: { song: true } });
+    migrateSharedInputs(promotedDb, b);
+    expect(b.downloaded.snapshot.context).toEqual({ shared: { song: true } });
     expect(sameContent<Build>(b, b.downloaded.snapshot)).toBe(true);
   });
 });
 
 describe("demotion", () => {
   it("moves the path's value back to each reader and clears the path", () => {
-    const b = build({ a: "lute" }, {}, { globals: { song: true } });
-    expect(migrateGlobalInputs(privateDb, b, promotedDb)).toBe(true);
+    const b = build({ a: "lute" }, {}, { shared: { song: true } });
+    expect(migrateSharedInputs(privateDb, b, promotedDb)).toBe(true);
     expect(b.bonusValues).toEqual({ ballad: sung(true), chorus: sung(true) });
     expect(b.context).toEqual({});
   });
@@ -207,12 +207,12 @@ describe("demotion", () => {
   it("round-trips with promotion", () => {
     const b = build({ a: "lute" }, { ballad: sung(true) });
     const before = structuredClone(b);
-    migrateGlobalInputs(promotedDb, b, privateDb);
-    migrateGlobalInputs(privateDb, b, promotedDb);
+    migrateSharedInputs(promotedDb, b, privateDb);
+    migrateSharedInputs(privateDb, b, promotedDb);
     // Demotion hands the value to every reader, the one that held it included.
     expect(b.bonusValues).toEqual({ ballad: sung(true), chorus: sung(true) });
-    migrateGlobalInputs(promotedDb, b, privateDb);
-    migrateGlobalInputs(privateDb, b, promotedDb);
+    migrateSharedInputs(promotedDb, b, privateDb);
+    migrateSharedInputs(privateDb, b, promotedDb);
     expect(b.context).toEqual(before.context);
   });
 
@@ -221,15 +221,15 @@ describe("demotion", () => {
       [privateSong("ballad"), readsSong("chorus")],
       [song],
     );
-    const b = build({ a: "lute" }, {}, { globals: { song: true } });
-    migrateGlobalInputs(partly, b, promotedDb);
+    const b = build({ a: "lute" }, {}, { shared: { song: true } });
+    migrateSharedInputs(partly, b, promotedDb);
     expect(b.bonusValues).toEqual({ ballad: sung(true) });
-    expect(b.context).toEqual({ globals: { song: true } });
+    expect(b.context).toEqual({ shared: { song: true } });
   });
 
   it("needs the previous catalog, as the current one alone cannot tell", () => {
-    const b = build({ a: "lute" }, {}, { globals: { song: true } });
-    expect(migrateGlobalInputs(privateDb, b)).toBe(false);
-    expect(b.context).toEqual({ globals: { song: true } });
+    const b = build({ a: "lute" }, {}, { shared: { song: true } });
+    expect(migrateSharedInputs(privateDb, b)).toBe(false);
+    expect(b.context).toEqual({ shared: { song: true } });
   });
 });

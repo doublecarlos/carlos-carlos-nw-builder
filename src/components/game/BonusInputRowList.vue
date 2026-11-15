@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // A repeatable list of a bonus's input declarations (id / type / label / default, plus
-// bounds, step, presets and control for a number), or a reference to a global input that
+// bounds, step, presets and control for a number), or a reference to a shared input that
 // defines all of those. The same row-mutating shape as `DynamicStatRowList`, the id leading
-// the row so a phone gives it the card's first line. With `canMakeGlobal`, an input the bonus
-// defines offers to become a global input.
+// the row so a phone gives it the card's first line. With `canMakeShared`, an input the bonus
+// defines offers to become a shared input.
 import { computed } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import ComboBox from "../ui/ComboBox.vue";
@@ -14,23 +14,23 @@ import FormField from "../ui/FormField.vue";
 import IdField from "../ui/IdField.vue";
 import OptionRow from "../ui/OptionRow.vue";
 import type { InputDraft } from "../../lib/bonus-draft";
-import type { GlobalInputs } from "../../engine/global-inputs";
+import type { SharedInputs } from "../../engine/shared-inputs";
 
 const props = defineProps<{
   rows: InputDraft[];
-  globals: GlobalInputs;
-  canMakeGlobal?: boolean;
+  sharedInputs: SharedInputs;
+  canMakeShared?: boolean;
 }>();
 const emit = defineEmits<{
   add: [];
   remove: [index: number];
-  "make-global": [index: number];
+  "make-shared": [index: number];
 }>();
 
-/** Where an input's definition comes from: a global input, picked like a bonus by its label
+/** Where an input's definition comes from: a shared input, picked like a bonus by its label
  *  or id, or the bonus itself as the empty value. */
-const globalOptions = computed(() =>
-  [...props.globals.values()].map((slot) => ({
+const sharedOptions = computed(() =>
+  [...props.sharedInputs.values()].map((slot) => ({
     value: slot.id,
     label: slot.label,
     search: slot.id,
@@ -38,9 +38,9 @@ const globalOptions = computed(() =>
 );
 
 /** What a reference reads, in place of the fields it does not save. The picker already names
- *  the global input, so this gives its type. */
-function globalSummary(id: string): string {
-  const slot = props.globals.get(id);
+ *  the shared input, so this gives its type. */
+function sharedSummary(id: string): string {
+  const slot = props.sharedInputs.get(id);
   if (!slot) return `"${id}" is not a shared input`;
   const type =
     typeOptions.find((option) => option.value === slot.paramType)?.label ??
@@ -106,26 +106,26 @@ const controlOptions = [
     </template>
     <template #row="{ row, index }">
       <FormField
-        v-if="globals.size || row.global"
+        v-if="sharedInputs.size || row.shared"
         label="Defined by"
         class="max-md:w-full"
       >
         <ComboBox
           class="w-full md:w-56"
-          :model-value="row.global"
-          :options="globalOptions"
+          :model-value="row.shared"
+          :options="sharedOptions"
           show-empty-option
           show-value
           :closed-display="
-            !row.global
+            !row.shared
               ? 'this bonus'
-              : globals.has(row.global)
+              : sharedInputs.has(row.shared)
                 ? ''
-                : row.global
+                : row.shared
           "
           menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
-          data-testid="bonus-input-global"
-          @update:model-value="(v) => (row.global = v)"
+          data-testid="bonus-input-shared"
+          @update:model-value="(v) => (row.shared = v)"
         >
           <template #empty>this bonus</template>
           <template #option="{ option }">
@@ -134,25 +134,25 @@ const controlOptions = [
         </ComboBox>
       </FormField>
       <BaseButton
-        v-if="canMakeGlobal && !row.global && row.name.trim()"
+        v-if="canMakeShared && !row.shared && row.name.trim()"
         class="self-end"
         title="Share this input with other bonuses through a new shared input"
-        data-testid="bonus-input-make-global"
-        @click="emit('make-global', index)"
+        data-testid="bonus-input-make-shared"
+        @click="emit('make-shared', index)"
         >Make shared</BaseButton
       >
       <!-- Keeps a control's border and padding so it sits level with the picker. It wraps
            beside the picker until the row runs out of room. -->
       <FormField
-        v-if="row.global"
+        v-if="row.shared"
         label="Reads"
         class="max-md:w-full md:min-w-40 md:flex-1"
       >
         <p
           class="border-y border-transparent py-0.5 text-muted"
-          data-testid="bonus-input-global-summary"
+          data-testid="bonus-input-shared-summary"
         >
-          {{ globalSummary(row.global) }}
+          {{ sharedSummary(row.shared) }}
         </p>
       </FormField>
       <template v-else>

@@ -2,7 +2,7 @@
 // bonus inputs it notes because their bonus also comes from it.
 import { describe, it, expect } from "vitest";
 import {
-  globalInputReaders,
+  sharedInputReaders,
   groupBySlot,
   indexResolved,
   inputCopiesBySlot,
@@ -48,20 +48,20 @@ function bonusInput(bonusId: string, slotId: string): InputEntry {
   } as InputEntry;
 }
 
-/** A global input's entry on one reader, as the engine's input table lists it. */
-function globalInput(
+/** A shared input's entry on one reader, as the engine's input table lists it. */
+function sharedInput(
   bonusId: string,
   source: string,
   slotId = bonusId,
 ): InputEntry {
   return {
     kind: "bonusInput",
-    address: { store: "context", path: "globals.song" },
+    address: { store: "context", path: "shared.song" },
     spec: { type: "boolean", label: "Song" },
     value: 0,
     slotId,
     source,
-    bonusInput: { bonusId, name: "song", global: "globals.song" },
+    bonusInput: { bonusId, name: "song", shared: "shared.song" },
   } as InputEntry;
 }
 
@@ -133,18 +133,18 @@ describe("inputCopiesBySlot", () => {
   });
 });
 
-describe("global input readers", () => {
+describe("shared input readers", () => {
   const readers = (entries: InputEntry[], carried: string[]) =>
-    globalInputReaders(
+    sharedInputReaders(
       entries,
       new Map(carried.map((id) => [id, bonus(id, id)])),
     );
 
-  // Every equipped reader gets the control, so each one is listed under its global input.
-  it("lists each equipped reader under its global input", () => {
-    const a = globalInput("a", "Bard Ring");
-    const b = globalInput("b", "Bard Neck");
-    expect(readers([a, b], ["a", "b"]).get("globals.song")).toEqual([a, b]);
+  // Every equipped reader gets the control, so each one is listed under its shared input.
+  it("lists each equipped reader under its shared input", () => {
+    const a = sharedInput("a", "Bard Ring");
+    const b = sharedInput("b", "Bard Neck");
+    expect(readers([a, b], ["a", "b"]).get("shared.song")).toEqual([a, b]);
   });
 
   it("leaves out a private input", () => {
@@ -153,15 +153,15 @@ describe("global input readers", () => {
 
   // A bonus resolved only as a 0-point preview is not equipped, so it shares nothing.
   it("leaves out a reader no item on the build carries", () => {
-    const a = globalInput("a", "Bard Ring");
-    const b = globalInput("b", "Bard Neck");
-    const map = globalInputReaders(
+    const a = sharedInput("a", "Bard Ring");
+    const b = sharedInput("b", "Bard Neck");
+    const map = sharedInputReaders(
       [a, b],
       new Map([
         ["a", bonus("a", "a")],
         ["b", bonus("b", "b", [])],
       ]),
     );
-    expect(map.get("globals.song")).toEqual([a]);
+    expect(map.get("shared.song")).toEqual([a]);
   });
 });

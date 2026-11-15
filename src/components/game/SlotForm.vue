@@ -354,22 +354,22 @@ function save() {
         </FormField>
         <FormField label="Shared">
           <BaseCheckbox
-            v-model="draft.globalInput"
-            data-testid="slot-global-input"
+            v-model="draft.sharedInput"
+            data-testid="slot-shared-input"
           >
             shared by the bonuses reading it
           </BaseCheckbox>
         </FormField>
-        <FormField v-if="!draft.globalInput" label="Quick">
+        <FormField v-if="!draft.sharedInput" label="Quick">
           <BaseCheckbox v-model="draft.quick" data-testid="slot-quick-input">
             show in the quick strip
           </BaseCheckbox>
         </FormField>
       </FormGrid>
       <p
-        v-if="draft.globalInput"
+        v-if="draft.sharedInput"
         class="mb-2 text-muted"
-        data-testid="slot-global-note"
+        data-testid="slot-shared-note"
       >
         Shown on the rows of equipped items whose bonuses reference it, and in
         the Shared inputs section while the build uses it.
@@ -466,7 +466,7 @@ function save() {
       <!-- A scaler multiplies stat lines by this parameter's value, so only a numeric param
            can be one. Filters/tags name the items scaled wholesale; a scaler with neither is
            reached only through a grant's `scale` formula. -->
-      <FormGrid v-if="numeric && !draft.globalInput" class="mb-2">
+      <FormGrid v-if="numeric && !draft.sharedInput" class="mb-2">
         <FormField label="Scales stats" class="w-52">
           <ComboBox
             :model-value="draft.scalerMode"
@@ -702,10 +702,10 @@ function save() {
         data-testid="slot-hide-preview-input"
         >hide stat previews in the picker</BaseCheckbox
       >
-      <BaseCheckbox v-model="draft.globalInput" data-testid="slot-global-input"
+      <BaseCheckbox v-model="draft.sharedInput" data-testid="slot-shared-input"
         >shared with the bonuses reading its items</BaseCheckbox
       >
-      <template v-if="!draft.globalInput">
+      <template v-if="!draft.sharedInput">
         <BaseCheckbox
           v-model="draft.toggleable"
           data-testid="slot-toggleable-input"
@@ -717,9 +717,9 @@ function save() {
       </template>
     </div>
     <p
-      v-if="fields.has('pickerFlags') && draft.globalInput"
+      v-if="fields.has('pickerFlags') && draft.sharedInput"
       class="mb-2 text-muted"
-      data-testid="slot-global-note"
+      data-testid="slot-shared-note"
     >
       Shown on the rows of equipped items whose bonuses test its items or their
       tags, and in the Shared inputs section while one is equipped or it holds a

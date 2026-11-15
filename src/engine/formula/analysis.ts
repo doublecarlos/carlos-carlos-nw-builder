@@ -24,7 +24,7 @@ import { parseFormula } from "./language";
 
 // Named references
 
-/** A bonus's inputs with references to global inputs resolved (`withInputDefs`), what the
+/** A bonus's inputs with references to shared inputs resolved (`withInputDefs`), what the
  *  checks reading an input's type or bounds take. */
 export interface InputOwner {
   inputs?: Record<string, InputDef>;
