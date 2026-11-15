@@ -307,7 +307,7 @@
         {
           "id": "shared.note",
           "type": "text",
-          "text": "Set once here, used by every bonus in this build that reads them."
+          "text": "Used by some bonuses in this build."
         },
         {
           "id": "shared.health",
@@ -316,6 +316,30 @@
           "paramType": "percent",
           "path": "health",
           "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 5,
+          "sharedInput": true
+        },
+        {
+          "id": "shared.stamina",
+          "label": "Current stamina",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "shared.stamina",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 5,
+          "sharedInput": true
+        },
+        {
+          "id": "shared.actionPoints",
+          "label": "Current action points",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "shared.actionPoints",
+          "default": 0.5,
           "min": 0,
           "max": 1,
           "step": 5,
@@ -408,6 +432,7 @@
         {
           "id": "raceLeveling.raceAttributes1",
           "label": "Race Ability Score 1",
+          "rowLabel": "Ability Score 1",
           "type": "item_picker",
           "filter": "race_attributes",
           "parent": "raceLeveling.race"
@@ -415,6 +440,7 @@
         {
           "id": "raceLeveling.raceAttributes2",
           "label": "Race Ability Score 2",
+          "rowLabel": "Ability Score 2",
           "type": "item_picker",
           "filter": "race_attributes",
           "parent": "raceLeveling.race",

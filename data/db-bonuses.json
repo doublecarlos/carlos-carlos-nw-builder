@@ -1439,9 +1439,7 @@
     "name": "Fleeting Haste",
     "inputs": {
       "active": {
-        "type": "boolean",
-        "label": "Action points below 100%",
-        "default": true
+        "shared": "shared.actionPoints"
       }
     },
     "grants": [
@@ -1449,7 +1447,8 @@
         "when": {
           "input": {
             "key": "active",
-            "is": true
+            "atLeast": 0,
+            "below": 1
           }
         },
         "stats": {
@@ -1487,11 +1486,7 @@
     "name": "Gladiator's Craftiness",
     "inputs": {
       "stamina": {
-        "type": "percent",
-        "min": 0,
-        "max": 1,
-        "step": 0.1,
-        "default": 1
+        "shared": "shared.stamina"
       }
     },
     "grants": [
@@ -1559,11 +1554,7 @@
     "name": "Gladiator's Guile",
     "inputs": {
       "stamina": {
-        "type": "percent",
-        "min": 0,
-        "max": 1,
-        "step": 0.1,
-        "default": 1
+        "shared": "shared.stamina"
       }
     },
     "grants": [
@@ -5423,19 +5414,27 @@
     "id": "master-cruelty",
     "name": "Master Cruelty",
     "inputs": {
-      "active": {
-        "type": "boolean",
-        "label": "Proc",
-        "default": true
+      "stamina": {
+        "shared": "shared.stamina"
       }
     },
     "grants": [
       {
         "when": {
-          "input": {
-            "key": "active",
-            "is": true
-          }
+          "any": [
+            {
+              "input": {
+                "key": "stamina",
+                "below": 0.25
+              }
+            },
+            {
+              "input": {
+                "key": "stamina",
+                "atLeast": 0.75
+              }
+            }
+          ]
         },
         "stats": {
           "severity": 5000
@@ -5450,18 +5449,17 @@
     "id": "master-s-precision",
     "name": "Master's Precision",
     "inputs": {
-      "active": {
-        "type": "boolean",
-        "label": "Proc",
-        "default": false
+      "stamina": {
+        "shared": "shared.stamina"
       }
     },
     "grants": [
       {
         "when": {
           "input": {
-            "key": "active",
-            "is": true
+            "key": "stamina",
+            "atLeast": 0.25,
+            "below": 0.75
           }
         },
         "stats": {
@@ -7137,18 +7135,16 @@
     "id": "trainer-s-restoration",
     "name": "Trainer's Restoration",
     "inputs": {
-      "active": {
-        "type": "boolean",
-        "label": "Proc",
-        "default": false
+      "actionPoints": {
+        "shared": "shared.actionPoints"
       }
     },
     "grants": [
       {
         "when": {
           "input": {
-            "key": "active",
-            "is": true
+            "key": "actionPoints",
+            "exactly": 1
           }
         },
         "stats": {

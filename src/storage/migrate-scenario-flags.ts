@@ -1,16 +1,20 @@
-// Moves the scenario flag picks of the retired `options.scenario` list onto what replaced them:
-// the Boss and Non-boss flags onto the shared enemy rank input, a location onto the shared
-// Location pick. Also
-// moves Sword Coast Tactician's private "active" input onto that pick.
+// Moves what a retired catalog entry stood for onto its replacement: the scenario flag picks of
+// the retired `options.scenario` list onto the shared enemy rank input and Location pick, and a
+// retired private bonus input onto the shared input the bonus now reads.
 //
 // Called from `normalize` after `migrateListSlots`, which has already moved the older fixed
 // location and enemy type slots onto the list's rows. Idempotent: it writes no row it reads,
-// and a flag or pick the build already holds is left as stored.
+// and a value the build already holds is left as stored.
 import { getPath, setPath } from "../lib/build-path";
 import { parseRowSlotId } from "../lib/item-picker-list";
 import { mapSlotIds } from "../lib/slot-fields";
 import type { SlotData } from "../lib/slot-fields";
-import type { BonusValues, CatalogOverlay, SectionPreset } from "../types";
+import type {
+  BonusValues,
+  CatalogOverlay,
+  InputValue,
+  SectionPreset,
+} from "../types";
 
 const RETIRED_LIST = "options.scenario";
 
@@ -18,15 +22,15 @@ const RETIRED_LIST = "options.scenario";
  *  view of `data/slots.json`. */
 export const LOCATION_SLOT = "shared.location";
 
-/** A shared input value a flag pick became. */
-export interface ScenarioFlag {
+/** A value written at a shared input's path. */
+export interface ContextWrite {
   path: string;
   value: number;
 }
 
 /** The enemy rank each enemy flag item became. Boss is the rank's default, so Non-boss needs
  *  a value of its own: Solo, the strongest rank below Boss. */
-export const FLAG_VALUES: Record<string, ScenarioFlag> = {
+export const FLAG_VALUES: Record<string, ContextWrite> = {
   "enemy-type-boss": { path: "shared.enemyRank", value: 6 },
   "enemy-type-non-boss": { path: "shared.enemyRank", value: 5 },
 };
@@ -48,9 +52,9 @@ const isRetiredRow = (slotId: string) =>
  */
 export function migrateScenarioFlags(stored: SlotData): {
   stored: SlotData;
-  flags: ScenarioFlag[];
+  flags: ContextWrite[];
 } {
-  const flags: ScenarioFlag[] = [];
+  const flags: ContextWrite[] = [];
   let location: string | undefined;
   for (const [slotId, itemId] of Object.entries(stored.choices ?? {})) {
     if (!isRetiredRow(slotId)) continue;
@@ -76,48 +80,112 @@ function withLocation(stored: SlotData, location: string | undefined) {
   };
 }
 
-const SWORD_COAST_BONUS = "sword-coast-tactician-2";
-const SWORD_COAST_INPUT = "active";
-const SWORD_COAST = "location-sword-coast";
+/** What a retired private input's stored value became. */
+type RetiredTarget =
+  | { kind: "value"; path: string; value: number }
+  | { kind: "pick"; slot: string; item: string };
+
+/** A private input a catalog change retired, and the replacement its stored value moves to.
+ *  Frozen, like the tables above: a record of what shipped, not a view of `data/slots.json`. */
+interface RetiredInput {
+  bonus: string;
+  input: string;
+  /** The stored value the replacement can express. The input's other value is only dropped. */
+  when: InputValue;
+  becomes: RetiredTarget;
+}
+
+export const RETIRED_INPUTS: readonly RetiredInput[] = [
+  {
+    bonus: "sword-coast-tactician-2",
+    input: "active",
+    when: true,
+    becomes: {
+      kind: "pick",
+      slot: LOCATION_SLOT,
+      item: "location-sword-coast",
+    },
+  },
+  {
+    bonus: "fleeting-haste-2",
+    input: "active",
+    when: false,
+    becomes: { kind: "value", path: "shared.actionPoints", value: 1 },
+  },
+  {
+    bonus: "master-cruelty",
+    input: "active",
+    when: false,
+    becomes: { kind: "value", path: "shared.stamina", value: 0.5 },
+  },
+  {
+    bonus: "master-s-precision",
+    input: "active",
+    when: true,
+    becomes: { kind: "value", path: "shared.stamina", value: 0.5 },
+  },
+  {
+    bonus: "trainer-s-restoration",
+    input: "active",
+    when: true,
+    becomes: { kind: "value", path: "shared.actionPoints", value: 1 },
+  },
+];
 
 /**
- * Sword Coast Tactician's private "on Sword Coast" input, moved onto Location: `true` picks
- * Sword Coast while Location is empty, and either value is dropped, as the bonus now reads the
- * pick. Returns the maps unchanged when the input is not stored.
+ * A build's stored private inputs with the retired ones dropped: the value a `RETIRED_INPUTS`
+ * entry names lands on its replacement unless that already holds one, while the input's other
+ * value is dropped with it, as it has no replacement. Returns the maps unchanged when no
+ * retired input is stored.
  */
-export function migrateSwordCoastInput(
+export function migrateRetiredInputs(
   choices: Record<string, string>,
   bonusValues: Record<string, BonusValues>,
 ): {
   choices: Record<string, string>;
   bonusValues: Record<string, BonusValues>;
+  values: ContextWrite[];
 } {
-  const values = bonusValues[SWORD_COAST_BONUS];
-  const stored = values?.input?.[SWORD_COAST_INPUT];
-  if (stored === undefined) return { choices, bonusValues };
-  const { [SWORD_COAST_INPUT]: _dropped, ...input } = values!.input!;
-  const { input: _input, ...rest } = values!;
-  const kept: BonusValues = Object.keys(input).length
-    ? { ...rest, input }
-    : rest;
-  const { [SWORD_COAST_BONUS]: _bonus, ...others } = bonusValues;
-  return {
-    choices:
-      stored === true && !choices[LOCATION_SLOT]
-        ? { ...choices, [LOCATION_SLOT]: SWORD_COAST }
-        : choices,
-    bonusValues: Object.keys(kept).length
-      ? { ...others, [SWORD_COAST_BONUS]: kept }
-      : others,
-  };
+  let nextChoices = choices;
+  let nextBonusValues = bonusValues;
+  const values: ContextWrite[] = [];
+  for (const { bonus, input, when, becomes } of RETIRED_INPUTS) {
+    const stored = nextBonusValues[bonus]?.input?.[input];
+    if (stored === undefined) continue;
+    nextBonusValues = withoutInput(nextBonusValues, bonus, input);
+    if (stored !== when) continue;
+    if (becomes.kind === "value")
+      values.push({ path: becomes.path, value: becomes.value });
+    else if (!nextChoices[becomes.slot])
+      nextChoices = { ...nextChoices, [becomes.slot]: becomes.item };
+  }
+  return { choices: nextChoices, bonusValues: nextBonusValues, values };
 }
 
-/** Sets each of `flags` in `context` unless it already holds a value there. */
-export function applyScenarioFlags(
+/** `bonusValues` without one bonus input, dropping containers it leaves empty. */
+function withoutInput(
+  bonusValues: Record<string, BonusValues>,
+  bonusId: string,
+  input: string,
+): Record<string, BonusValues> {
+  const values = bonusValues[bonusId]!;
+  const { [input]: _dropped, ...kept } = values.input!;
+  const { input: _inputs, ...rest } = values;
+  const next: BonusValues = Object.keys(kept).length
+    ? { ...rest, input: kept }
+    : rest;
+  const out = { ...bonusValues };
+  if (Object.keys(next).length) out[bonusId] = next;
+  else delete out[bonusId];
+  return out;
+}
+
+/** Sets each of `writes` in `context` unless it already holds a value there. */
+export function applyContextWrites(
   context: Record<string, unknown>,
-  flags: readonly ScenarioFlag[],
+  writes: readonly ContextWrite[],
 ): void {
-  for (const { path, value } of flags)
+  for (const { path, value } of writes)
     if (getPath(context, path) === undefined) setPath(context, path, value);
 }
 

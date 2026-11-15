@@ -27,10 +27,10 @@ import {
   migrateOverlayListSlots,
 } from "./migrate-list-slots";
 import {
-  applyScenarioFlags,
+  applyContextWrites,
   migrateOverlayScenarioFlags,
+  migrateRetiredInputs,
   migrateScenarioFlags,
-  migrateSwordCoastInput,
   withoutScenarioRows,
 } from "./migrate-scenario-flags";
 import { toRaw } from "vue";
@@ -371,9 +371,9 @@ export function normalize(
 
   const settings = migrateSettings(raw.values, raw.bonusValues);
 
-  // Three chained passes over the coerced maps: the class onto its pick, the retired fixed
-  // slots onto list rows, then the scenario flag rows onto shared inputs. The last two take
-  // all three maps at once, so a moved pick keeps its magnitudes and repetition counts.
+  // The retired fixed slots onto list rows, the scenario flag rows onto shared inputs, then the
+  // retired private inputs onto their replacements. The last two take all three maps at once, so
+  // a moved pick keeps its magnitudes and repetition counts.
   const scenario = migrateScenarioFlags(
     migrateListSlots({
       choices: migrateClassToChoice(strings(raw.choices), context),
@@ -383,7 +383,7 @@ export function normalize(
     }),
   );
   const stored = scenario.stored;
-  const swordCoast = migrateSwordCoastInput(
+  const retired = migrateRetiredInputs(
     stored.choices,
     migrateOccurrenceInputs(raw.occurrenceInputs, settings.bonusValues),
   );
@@ -409,7 +409,7 @@ export function normalize(
       ...(isPlain(context.forte) ? context.forte : {}),
     },
   };
-  applyScenarioFlags(normalizedContext, scenario.flags);
+  applyContextWrites(normalizedContext, [...scenario.flags, ...retired.values]);
   // A scaler parameter is validated rather than passed through like class/role: it multiplies
   // whole stat lines, so a `NaN` from a truncated write or hand-edited export would spread to
   // every downstream stage instead of staying in one field. Floored at 0 because a negative
@@ -433,12 +433,12 @@ export function normalize(
     id: keepId && typeof raw.id === "string" && raw.id ? raw.id : base.id,
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
-    choices: swordCoast.choices,
+    choices: retired.choices,
     // No seeded defaults to fall back on (unlike `assignments`, which seeds every
     // point_assignment row's every item up front): an absent value reads as its config's
     // `default` (`readInput`).
     values: stored.values,
-    bonusValues: swordCoast.bonusValues,
+    bonusValues: retired.bonusValues,
     assignments: stored.assignments,
     listRows: rowCounts(
       withoutScenarioRows(numbers(raw.listRows)),
