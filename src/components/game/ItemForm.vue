@@ -194,11 +194,14 @@ const buildParamSlots = computed(() =>
     (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
   ),
 );
+/** A shared input is the player's to set on its readers' rows, so no item seeds it. */
 const defaultParamSlotOptions = computed(() =>
-  buildParamSlots.value.map((slot) => ({
-    value: slot.id,
-    label: slot.label,
-  })),
+  buildParamSlots.value
+    .filter((slot) => !slot.sharedInput)
+    .map((slot) => ({
+      value: slot.id,
+      label: slot.label,
+    })),
 );
 function slotForDefaultParam(slotId: string): BuildParameterSlot | undefined {
   return buildParamSlots.value.find((slot) => slot.id === slotId);

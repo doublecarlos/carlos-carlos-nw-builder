@@ -31,12 +31,14 @@ import type {
   BuildParameterSlot,
   ConditionWhen,
   Db,
+  InputDef,
   ItemPickerListSlot,
   ItemPickerSlot,
   NumberControl,
   PointAssignmentSlot,
   SeparatorSlot,
   Slot,
+  SlotSection,
   StableRole,
   TextSlot,
 } from "../types";
@@ -46,6 +48,41 @@ type Scaler = NonNullable<BuildParameterSlot["scaler"]>;
 export interface OptionRow {
   value: string;
   label: string;
+}
+
+/** The section "Make shared" files a new shared input under, created along with it when the
+ *  catalog has none. The build editor shows it while the build uses one of its inputs. */
+export const SHARED_INPUTS_SECTION: SlotSection = {
+  id: "shared",
+  label: "Shared inputs",
+  slotIds: [],
+};
+
+/** A new shared input `id` defined as bonus input `name` was, for "Make shared". Its id
+ *  doubles as its path, and it is labeled as the input was, else by its name. */
+export function sharedInputSlot(
+  id: string,
+  name: string,
+  def: InputDef,
+): BuildParameterSlot {
+  const label = def.label || name;
+  const slot: BuildParameterSlot = {
+    id,
+    label,
+    section: SHARED_INPUTS_SECTION.id,
+    type: "build_parameter",
+    paramType: def.type,
+    path: id,
+    sharedInput: true,
+    default: def.default,
+  };
+  if (def.type === "boolean") return slot;
+  putIfSet(slot, "min", def.min);
+  putIfSet(slot, "max", def.max);
+  putIfSet(slot, "step", def.step);
+  putIfSet(slot, "presets", def.presets);
+  putIfSet(slot, "control", def.control);
+  return slot;
 }
 
 /** The field blocks each slot type is authored with, rendered in order by the form. */
@@ -136,8 +173,13 @@ export interface SlotDraft {
   max: string | number;
   step: string | number;
   presets: string;
+  /** `number` only: `value = label` pairs, comma-separated, e.g. `1 = Minion, 6 = Boss`. */
+  valueLabels: string;
   /** `number` only. Empty leaves it to the bounds: a stepper when both are set. */
   control: "" | NumberControl;
+  /** See `BuildParameterSlot.sharedInput` and `ItemPickerSlot.sharedInput`. A shared slot is
+   *  never quick, a scaler or switched off, so those fields are kept only for switching back. */
+  sharedInput: boolean;
   /** Empty means the parameter is not a scaler; see `BuildParameterSlot.scaler`. The filter
    *  and tag lists are comma-separated like `optionsFromTags`. */
   scalerMode: "" | Scaler["mode"];
@@ -214,7 +256,11 @@ export function buildDraft(slot: AuthoredSlot | null | undefined): SlotDraft {
     max: source.max == null ? "" : String(source.max),
     step: source.step == null ? "" : String(source.step),
     presets: (source.presets ?? []).join(", "),
+    valueLabels: Object.entries(source.valueLabels ?? {})
+      .map(([value, label]) => `${value} = ${label}`)
+      .join(", "),
     control: source.control ?? "",
+    sharedInput: source.sharedInput ?? false,
     scalerMode: source.scaler?.mode ?? "",
     scalerFilters: (source.scaler?.applies?.filter ?? []).join(", "),
     scalerTags: (source.scaler?.applies?.tags ?? []).join(", "),
@@ -349,7 +395,8 @@ const BUILDERS: {
       paramType: local.paramType,
       path: local.path.trim(),
     };
-    if (local.quick) slot.quick = true;
+    if (local.sharedInput) slot.sharedInput = true;
+    else if (local.quick) slot.quick = true;
 
     // Cast `default` by `paramType`, so a boolean param never stores the string "true".
     if (local.paramType === "boolean") {
@@ -366,7 +413,9 @@ const BUILDERS: {
       putIfSet(slot, "presets", presets);
       if (local.paramType === "number" && local.control)
         slot.control = local.control;
-      if (local.scalerMode) {
+      if (local.paramType === "number")
+        putIfSet(slot, "valueLabels", parseValueLabels(local.valueLabels));
+      if (local.scalerMode && !local.sharedInput) {
         const applies: NonNullable<Scaler["applies"]> = {};
         putIfSet(applies, "filter", commaList(local.scalerFilters));
         putIfSet(applies, "tags", commaList(local.scalerTags));
@@ -403,8 +452,11 @@ const BUILDERS: {
     putIfSet(slot, "parent", local.parent);
     if (local.disallowEmpty) slot.disallowEmpty = true;
     if (local.hidePreview) slot.hidePreview = true;
-    if (local.toggleable) slot.toggleable = true;
-    if (local.quick) slot.quick = true;
+    if (local.sharedInput) slot.sharedInput = true;
+    else {
+      if (local.toggleable) slot.toggleable = true;
+      if (local.quick) slot.quick = true;
+    }
     if (local.stableRole) {
       const group = number(local.stableGroup);
       slot.stable = { group: group ?? 0, role: local.stableRole };
@@ -513,6 +565,13 @@ const CHECKS: DiffCheck<AuthoredSlot>[] = [
     JSON.stringify((old as ItemPickerSlot).stable) !==
     JSON.stringify((nw as ItemPickerSlot).stable)
       ? "edit stable settings"
+      : null,
+  (old, nw) =>
+    Boolean((old as BuildParameterSlot).sharedInput) !==
+    Boolean((nw as BuildParameterSlot).sharedInput)
+      ? (nw as BuildParameterSlot).sharedInput
+        ? "make shared"
+        : "stop being shared"
       : null,
   (old, nw) =>
     JSON.stringify((old as BuildParameterSlot).scaler) !==
@@ -652,4 +711,15 @@ export function slotSaveError(
   if (unavailable) return unavailable;
   const [badParent] = checkSlotParent(slot, refs);
   return badParent ?? null;
+}
+
+/** `value = label` pairs as typed, in their order. A pair missing either side is dropped. */
+function parseValueLabels(text: string): Record<string, string> | undefined {
+  const pairs = text.split(",").flatMap((part) => {
+    const [value, ...rest] = part.split("=");
+    const key = number(value ?? "");
+    const label = rest.join("=").trim();
+    return key !== undefined && label ? [[String(key), label] as const] : [];
+  });
+  return pairs.length ? Object.fromEntries(pairs) : undefined;
 }

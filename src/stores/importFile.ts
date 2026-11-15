@@ -173,13 +173,14 @@ export function applyImport(plan: ImportPlan, decisions: ImportDecisions) {
     return;
   }
 
+  // Layers first, so each build is synced against the catalog it came with.
+  for (const { layer, replacing } of resolved.layers)
+    layers.upsertImported(layer, replacing);
   const unpacked: UnpackedCatalog[] = [];
   for (const { build, replacing } of resolved.builds) {
     const landed = builds.upsertImported(build, replacing);
     if (landed) unpacked.push(landed);
   }
-  for (const { layer, replacing } of resolved.layers)
-    layers.upsertImported(layer, replacing);
 
   // Rebuilt now the builds exist under their final ids.
   folders.addFolders(resolved.folders);

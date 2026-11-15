@@ -50,6 +50,13 @@ import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotsWithCompare } from "../lib/slot-availability";
+import {
+  isLayoutRow,
+  leftOutOfSection,
+  visibleRows,
+} from "../lib/row-visibility";
+import { isSharedSlot } from "../engine/shared-inputs";
+import { usedByLinks, type SharedRowLink } from "../lib/shared-inputs";
 import { keepArray, keepEqual, keepMap, keepSet } from "../lib/keep-identity";
 import {
   nestedParentId,
@@ -159,12 +166,13 @@ watch(
   { deep: true },
 );
 
-/** How many sections the manual preference has open, for the toolbar buttons' enable state. */
+/** How many shown sections the manual preference has open, for the toolbar buttons' enable
+ *  state. A hidden section, such as an unused Shared inputs, has nothing for them to do. */
 const expandedSectionCount = computed(
-  () => db.value.sections.filter((section) => expanded[section.id]).length,
+  () => shownSections.value.filter((section) => expanded[section.id]).length,
 );
 const allSectionsExpanded = computed(
-  () => expandedSectionCount.value === db.value.sections.length,
+  () => expandedSectionCount.value === shownSections.value.length,
 );
 const noSectionsExpanded = computed(() => expandedSectionCount.value === 0);
 
@@ -299,7 +307,7 @@ function suppliesNeed(slotDef: Slot): boolean {
  *  underneath it), its current choice's (or linked item's) name, or its rendered stat
  *  summary (`statSummary`). The stat filter and the chips always narrow the result further. */
 function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
-  if (slotDef.type === "separator" || slotDef.type === "text") return false;
+  if (isLayoutRow(slotDef)) return false;
   if (!activeChips.value.every((filter) => filter.keeps(slotDef))) return false;
   // A list's container is its "Add" row: no choice or stats for the text and stat filters to
   // match, so it only survives a chip that keeps it explicitly.
@@ -492,9 +500,12 @@ const { rowDiff, rowHasDiff } = useCompareDiff({
 interface SectionRow extends SlotSection {
   /** Every row the section renders. Rows the filter drops stay mounted, hidden. */
   slots: Slot[];
-  /** The rows the filter leaves on screen, in order: matches plus their context parents. */
+  /** The rows on screen, in order: matches plus their context parents, with the text and
+   *  separator rows their groups keep. */
   shown: Slot[];
   shownIds: ReadonlySet<string>;
+  /** How many of `shown` are fields rather than text or separator rows. */
+  fields: number;
   filled: number;
   errors: number;
   warnings: number;
@@ -506,15 +517,6 @@ interface SectionRow extends SlotSection {
   /** How many point-assignment stepper columns a row can hold at most, or 0 when the section
    *  has none. BuildSection.vue gives the section one shared content track per column. */
   assignmentColumns: number;
-}
-
-/** True for a slotDef that renders in the always-visible QuickOptions strip instead of its own
- * section body, and so never counts toward that section's badge/diff/unsaved state. */
-function isQuick(slotDef: Slot) {
-  return (
-    (slotDef.type === "build_parameter" || slotDef.type === "item_picker") &&
-    !!slotDef.quick
-  );
 }
 
 function rowDiffers(slotDef: Slot) {
@@ -548,13 +550,17 @@ const allSlotsBySection = computed(() =>
   db.value.sections.map((section) => ({
     section,
     slots: editorSlots.value.filter(
-      (slotDef) => slotDef.section === section.id && !isQuick(slotDef),
+      // A slot its section leaves out never counts toward the section's badge, diff or
+      // unsaved state, and a section left with no field hides.
+      (slotDef) =>
+        slotDef.section === section.id &&
+        !leftOutOfSection(slotDef, engine.sharedRows.value),
     ),
   })),
 );
 
 /** Every section with every row, so typing in the filter flips `hidden` instead of
- *  unmounting and remounting rows. A section with no shown row is hidden the same way. Its
+ *  unmounting and remounting rows. A section with no shown field is hidden the same way. Its
  *  row sets and presets keep their previous identity while unchanged, so a keystroke
  *  re-renders only the sections whose rows it changed. */
 const sections = computed<SectionRow[]>((previous) =>
@@ -583,11 +589,13 @@ const sections = computed<SectionRow[]>((previous) =>
     );
     const shown = keepArray(
       before?.shown,
-      anyFilterActive.value
-        ? allSlots.filter(
-            (slotDef) => matchedIds.has(slotDef.id) || context.has(slotDef.id),
-          )
-        : allSlots,
+      visibleRows(
+        allSlots,
+        (slotDef) =>
+          !anyFilterActive.value ||
+          matchedIds.has(slotDef.id) ||
+          context.has(slotDef.id),
+      ),
     );
     // The fill-count badge only means anything for item_picker slots -- a build_parameter
     // always has *some* value, "filled" isn't a meaningful state for it. A section made
@@ -628,6 +636,7 @@ const sections = computed<SectionRow[]>((previous) =>
         before?.shownIds,
         new Set(shown.map((slotDef) => slotDef.id)),
       ),
+      fields: shown.filter((slotDef) => !isLayoutRow(slotDef)).length,
       filled,
       errors,
       warnings,
@@ -647,11 +656,9 @@ const sections = computed<SectionRow[]>((previous) =>
   }),
 );
 
-/** Sections with any row on screen: all of them unless a filter is active. */
+/** Sections with any field on screen. Text and separator rows alone do not keep one. */
 const shownSections = computed(() =>
-  sections.value.filter(
-    (section) => section.shown.length > 0 || !anyFilterActive.value,
-  ),
+  sections.value.filter((section) => section.fields > 0),
 );
 const shownSectionIds = computed(
   () => new Set(shownSections.value.map((section) => section.id)),
@@ -669,7 +676,7 @@ useFoldSlide(root, () => ({
  *  the filter controls. */
 const filteredSlotCount = computed(() =>
   shownSections.value.reduce(
-    (sum, section) => sum + section.shown.length - section.context.size,
+    (sum, section) => sum + section.fields - section.context.size,
     0,
   ),
 );
@@ -804,6 +811,8 @@ interface SlotRowData {
   placeholder: string | undefined;
   labelOverride: string | undefined;
   diff: SlotDiff | undefined;
+  /** A shared slot's own row: the rows on the build reading it. */
+  usedBy: SharedRowLink[];
 }
 
 const EMPTY_ROW_DATA: SlotRowData = {
@@ -816,6 +825,7 @@ const EMPTY_ROW_DATA: SlotRowData = {
   placeholder: undefined,
   labelOverride: undefined,
   diff: undefined,
+  usedBy: [],
 };
 
 const rowDataBySlot = computed<Map<string, SlotRowData>>((previous) => {
@@ -856,6 +866,15 @@ const rowDataBySlot = computed<Map<string, SlotRowData>>((previous) => {
         placeholder: stablePlaceholder(slotDef.id),
         labelOverride: stableLabel(slotDef.id),
         diff,
+        usedBy: keepEqual(
+          before?.usedBy,
+          isSharedSlot(slotDef)
+            ? usedByLinks(
+                db.value,
+                engine.sharedReaderRows.value.get(slotDef.id),
+              )
+            : [],
+        ),
       });
     }
   }
@@ -997,6 +1016,11 @@ const rowHandlers = useKeyedCache((slotId: string) => ({
   rowclick: (event: MouseEvent, itemId?: string) =>
     onRowClick(event, slotId, itemId),
 }));
+
+/** A "Used by" link on a shared slot's row: jumps to the reader's row. */
+function onGoToSlot(slotId: string) {
+  goTo.requestJump({ slotId });
+}
 
 // --- reordering list rows -----------------------------------------------------------------
 // An item_picker_list's rows move by their grip or by Alt+arrow on the row cursor. Row ids are
@@ -1409,7 +1433,7 @@ async function runJump(target: goTo.JumpTarget) {
     await nextTick();
   }
   const section = sectionEl(sectionId);
-  // A section the filter hides stays mounted, with nowhere to land.
+  // A hidden section stays mounted, with nowhere to land.
   if (!section?.checkVisibility()) return;
   const header = section.querySelector<HTMLElement>(
     "[data-cursor-key^='header:']",
@@ -1745,11 +1769,13 @@ watch(
               :placeholder="rowDataFor(slotDef.id).placeholder"
               :label-override="rowDataFor(slotDef.id).labelOverride"
               :diff="rowDataFor(slotDef.id).diff"
+              :used-by="rowDataFor(slotDef.id).usedBy"
               @enter="rowHandlers(slotDef.id).enter"
               @leave="onRowLeave"
               @info="rowHandlers(slotDef.id).info"
               @new-item="rowHandlers(slotDef.id).newItem"
               @rowclick="rowHandlers(slotDef.id).rowclick"
+              @go-to-slot="onGoToSlot"
             />
           </template>
         </BuildSection>

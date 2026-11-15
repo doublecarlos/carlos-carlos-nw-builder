@@ -37,6 +37,58 @@ describe("buildDraft / toSlot round trip", () => {
     expect(roundTrip(slot)).toEqual(slot);
   });
 
+  it("round-trips the shared input flag", () => {
+    const slot: BuildParameterSlot = {
+      id: "shared.song",
+      label: "Played a song",
+      section: "shared",
+      type: "build_parameter",
+      paramType: "boolean",
+      path: "shared.song",
+      default: false,
+      sharedInput: true,
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
+  // A shared input has no row and is read only through bonus inputs, so the form never saves
+  // the quick or scaler fields it keeps for switching back.
+  it("drops quick and scaler from a shared input", () => {
+    const draft = buildDraft({
+      id: "g",
+      label: "G",
+      section: "shared",
+      type: "build_parameter",
+      paramType: "number",
+      path: "g",
+      quick: true,
+      scaler: { mode: "absolute" },
+    });
+    draft.sharedInput = true;
+    const slot = toSlot(draft, { id: "g" });
+    expect(slot).toMatchObject({ sharedInput: true });
+    expect(slot).not.toHaveProperty("quick");
+    expect(slot).not.toHaveProperty("scaler");
+  });
+
+  // A shared pick is always shown and always counted, so the form never saves a way to move
+  // it to the quick strip or switch it off.
+  it("drops quick and toggleable from a shared picker", () => {
+    const draft = buildDraft({
+      id: "p",
+      section: "shared",
+      type: "item_picker",
+      filter: "location",
+      quick: true,
+      toggleable: true,
+    });
+    draft.sharedInput = true;
+    const slot = toSlot(draft, { id: "p" });
+    expect(slot).toMatchObject({ sharedInput: true, filter: "location" });
+    expect(slot).not.toHaveProperty("quick");
+    expect(slot).not.toHaveProperty("toggleable");
+  });
+
   it("round-trips numeric bounds and a preset list, including a 0 min", () => {
     const slot: BuildParameterSlot = {
       id: "s2",
@@ -49,6 +101,22 @@ describe("buildDraft / toSlot round trip", () => {
       max: 10,
       step: 1,
       presets: [1, 5, 10],
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
+  // The form rebuilds a slot field by field, so labels the form did not carry would be lost.
+  it("round-trips a number slot's value labels", () => {
+    const slot: BuildParameterSlot = {
+      id: "s7",
+      label: "Rank",
+      section: "shared",
+      type: "build_parameter",
+      paramType: "number",
+      path: "rank",
+      min: 1,
+      max: 6,
+      valueLabels: { "1": "Minion", "6": "Boss" },
     };
     expect(roundTrip(slot)).toEqual(slot);
   });

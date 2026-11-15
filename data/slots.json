@@ -241,17 +241,6 @@
           "default": true
         },
         {
-          "id": "options.health",
-          "label": "Current health",
-          "type": "build_parameter",
-          "paramType": "percent",
-          "path": "health",
-          "default": 1,
-          "min": 0,
-          "max": 1,
-          "step": 5
-        },
-        {
           "id": "options.enemies",
           "label": "Number of enemies",
           "type": "build_parameter",
@@ -261,12 +250,6 @@
           "min": 1,
           "presets": [1, 3, 5, 10],
           "quick": true
-        },
-        {
-          "id": "options.scenario",
-          "type": "item_picker_list",
-          "filter": "scenario_flag",
-          "defaultRows": 0
         },
         {
           "id": "options.duration",
@@ -314,6 +297,101 @@
           "path": "toggles.artifactCall",
           "default": true,
           "quick": true
+        }
+      ]
+    },
+    {
+      "id": "shared",
+      "label": "Shared inputs",
+      "slots": [
+        {
+          "id": "shared.note",
+          "type": "text",
+          "text": "Set once here, used by every bonus in this build that reads them."
+        },
+        {
+          "id": "shared.health",
+          "label": "Current health",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "health",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 5,
+          "sharedInput": true
+        },
+        {
+          "id": "shared.location",
+          "type": "item_picker",
+          "filter": "location",
+          "sharedInput": true
+        },
+        {
+          "id": "shared.enemyRank",
+          "label": "Enemy rank",
+          "type": "build_parameter",
+          "paramType": "number",
+          "path": "shared.enemyRank",
+          "default": 6,
+          "min": 1,
+          "max": 6,
+          "step": 1,
+          "presets": [1, 2, 3, 4, 5, 6],
+          "valueLabels": {
+            "1": "Minion",
+            "2": "2 dots",
+            "3": "3 dots",
+            "4": "4 dots",
+            "5": "5 dots",
+            "6": "Boss"
+          },
+          "sharedInput": true
+        },
+        {
+          "id": "shared.enemyType.cultist",
+          "label": "Enemy: Cultist",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "shared.enemyType.cultist",
+          "default": false,
+          "sharedInput": true
+        },
+        {
+          "id": "shared.enemyType.demon",
+          "label": "Enemy: Demon",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "shared.enemyType.demon",
+          "default": false,
+          "sharedInput": true
+        },
+        {
+          "id": "shared.enemyType.devil",
+          "label": "Enemy: Devil",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "shared.enemyType.devil",
+          "default": false,
+          "sharedInput": true
+        },
+        {
+          "id": "shared.enemyType.dinosaur",
+          "label": "Enemy: Dinosaur",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "shared.enemyType.dinosaur",
+          "default": false,
+          "sharedInput": true
+        },
+        {
+          "id": "shared.enemyType.undead",
+          "label": "Enemy: Undead",
+          "type": "build_parameter",
+          "paramType": "boolean",
+          "path": "shared.enemyType.undead",
+          "default": false,
+          "sharedInput": true
         }
       ]
     },

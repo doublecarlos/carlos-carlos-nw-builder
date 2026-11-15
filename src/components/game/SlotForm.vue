@@ -352,12 +352,28 @@ function save() {
             data-testid="slot-path-input"
           />
         </FormField>
-        <FormField label="Quick">
+        <FormField label="Shared">
+          <BaseCheckbox
+            v-model="draft.sharedInput"
+            data-testid="slot-shared-input"
+          >
+            shared by the bonuses reading it
+          </BaseCheckbox>
+        </FormField>
+        <FormField v-if="!draft.sharedInput" label="Quick">
           <BaseCheckbox v-model="draft.quick" data-testid="slot-quick-input">
             show in the quick strip
           </BaseCheckbox>
         </FormField>
       </FormGrid>
+      <p
+        v-if="draft.sharedInput"
+        class="mb-2 text-muted"
+        data-testid="slot-shared-note"
+      >
+        Shown on the rows of equipped items whose bonuses reference it, and in
+        the Shared inputs section while the build uses it.
+      </p>
 
       <p
         v-if="pathConflict"
@@ -420,6 +436,18 @@ function save() {
           </FormField>
           <FormField
             v-if="draft.paramType === 'number'"
+            label="Value labels"
+            hint="value = label, comma-separated"
+          >
+            <BaseInput
+              v-model="draft.valueLabels"
+              class="w-full"
+              type="text"
+              data-testid="slot-value-labels-input"
+            />
+          </FormField>
+          <FormField
+            v-if="draft.paramType === 'number'"
             label="Control"
             class="w-44"
           >
@@ -438,7 +466,7 @@ function save() {
       <!-- A scaler multiplies stat lines by this parameter's value, so only a numeric param
            can be one. Filters/tags name the items scaled wholesale; a scaler with neither is
            reached only through a grant's `scale` formula. -->
-      <FormGrid v-if="numeric" class="mb-2">
+      <FormGrid v-if="numeric && !draft.sharedInput" class="mb-2">
         <FormField label="Scales stats" class="w-52">
           <ComboBox
             :model-value="draft.scalerMode"
@@ -674,15 +702,29 @@ function save() {
         data-testid="slot-hide-preview-input"
         >hide stat previews in the picker</BaseCheckbox
       >
-      <BaseCheckbox
-        v-model="draft.toggleable"
-        data-testid="slot-toggleable-input"
-        >can be switched off</BaseCheckbox
+      <BaseCheckbox v-model="draft.sharedInput" data-testid="slot-shared-input"
+        >shared with the bonuses reading its items</BaseCheckbox
       >
-      <BaseCheckbox v-model="draft.quick" data-testid="slot-quick-input"
-        >show in the quick strip</BaseCheckbox
-      >
+      <template v-if="!draft.sharedInput">
+        <BaseCheckbox
+          v-model="draft.toggleable"
+          data-testid="slot-toggleable-input"
+          >can be switched off</BaseCheckbox
+        >
+        <BaseCheckbox v-model="draft.quick" data-testid="slot-quick-input"
+          >show in the quick strip</BaseCheckbox
+        >
+      </template>
     </div>
+    <p
+      v-if="fields.has('pickerFlags') && draft.sharedInput"
+      class="mb-2 text-muted"
+      data-testid="slot-shared-note"
+    >
+      Shown on the rows of equipped items whose bonuses test its items or their
+      tags, and in the Shared inputs section while one is equipped or it holds a
+      pick.
+    </p>
 
     <!-- item_picker_list ---------------------------------------------------------------- -->
     <FormGrid v-if="fields.has('defaultRows')" class="mb-2">

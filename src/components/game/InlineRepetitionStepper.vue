@@ -40,6 +40,5 @@ const emit = defineEmits<{
       :data-testid="`${testidPrefix}-input-${itemId}`"
       @update:model-value="emit('change', $event)"
     />
-    <slot />
   </div>
 </template>

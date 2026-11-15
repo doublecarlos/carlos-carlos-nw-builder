@@ -1,8 +1,7 @@
 <script setup lang="ts">
 // Pure control for one PointAssignmentSlot: no label, no diff markup, no row chrome, the same
 // division of concerns BuildParamInput.vue keeps for build_parameter. One
-// InlineRepetitionStepper per candidate item. Whatever belongs under an item's stepper (its
-// bonus inputs) comes from the caller through the `item` slot.
+// InlineRepetitionStepper per candidate item.
 import { computed, useTemplateRef } from "vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import { db } from "../../stores/resolved";
@@ -27,11 +26,6 @@ const emit = defineEmits<{
    *  machinery an item_picker row's whole-row hover already uses (useHoverCard.ts). */
   itemEnter: [event: MouseEvent, item: string];
   itemLeave: [];
-}>();
-
-defineSlots<{
-  /** Extra controls under one item's stepper. */
-  item?(props: { item: Item }): unknown;
 }>();
 
 /** Every item matching the slot's filter with an `inlineRepetition` config -- one row each,
@@ -87,8 +81,6 @@ defineExpose({ focus, focusAndSeed });
       @change="(count) => emit('change', item.id, count)"
       @label-enter="(event) => emit('itemEnter', event, item.id)"
       @label-leave="emit('itemLeave')"
-    >
-      <slot name="item" :item="item" />
-    </InlineRepetitionStepper>
+    />
   </div>
 </template>

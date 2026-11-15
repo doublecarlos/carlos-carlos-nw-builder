@@ -414,12 +414,18 @@
   {
     "id": "batiri-s-wisdom-batiri-damage-offense",
     "name": "Batiri's Wisdom",
+    "inputs": {
+      "rank": {
+        "shared": "shared.enemyRank"
+      }
+    },
     "grants": [
       {
         "when": {
           "toggle": "combat",
-          "equipped": {
-            "item": "enemy-type-boss"
+          "input": {
+            "key": "rank",
+            "atLeast": 6
           }
         },
         "stats": {
@@ -434,7 +440,7 @@
     "inputs": {
       "active": {
         "type": "boolean",
-        "label": "Proc",
+        "label": "Blessed Advantage's Proc",
         "default": false
       }
     },
@@ -474,7 +480,7 @@
     "inputs": {
       "active": {
         "type": "boolean",
-        "label": "Proc",
+        "label": "Blessed Resilience's Proc",
         "default": false
       }
     },
@@ -731,10 +737,15 @@
   {
     "id": "cautious-devotion",
     "name": "Cautious Devotion",
+    "inputs": {
+      "health": {
+        "shared": "shared.health"
+      }
+    },
     "grants": [
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "exactly": 1
           }
@@ -861,11 +872,37 @@
         "name": "Doubled in Chult",
         "when": {
           "equipped": {
-            "item": "location-chult"
+            "tag": "region:chult"
           }
         },
         "stats": {
           "power_p": 0.09
+        }
+      }
+    ]
+  },
+  {
+    "id": "cultist-stats",
+    "name": "Cultist Stats",
+    "inputs": {
+      "cultist": {
+        "shared": "shared.enemyType.cultist"
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "cultist",
+            "is": true
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.01,
+          "incoming_damage": -0.01
+        },
+        "scale": {
+          "formula": "occurrences()"
         }
       }
     ]
@@ -924,7 +961,7 @@
     "inputs": {
       "active": {
         "type": "boolean",
-        "label": "Proc",
+        "label": "Death's Bulwark's Proc",
         "default": false
       }
     },
@@ -967,7 +1004,7 @@
     "inputs": {
       "active": {
         "type": "boolean",
-        "label": "Proc",
+        "label": "Deathly Rage's Proc",
         "default": false
       }
     },
@@ -1002,6 +1039,45 @@
             }
           }
         ]
+      }
+    ]
+  },
+  {
+    "id": "demonic-stats",
+    "name": "Demonic Stats",
+    "inputs": {
+      "demon": {
+        "shared": "shared.enemyType.demon"
+      },
+      "devil": {
+        "shared": "shared.enemyType.devil"
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "any": [
+            {
+              "input": {
+                "key": "demon",
+                "is": true
+              }
+            },
+            {
+              "input": {
+                "key": "devil",
+                "is": true
+              }
+            }
+          ]
+        },
+        "stats": {
+          "outgoing_damage": 0.01,
+          "incoming_damage": -0.01
+        },
+        "scale": {
+          "formula": "occurrences()"
+        }
       }
     ]
   },
@@ -1050,6 +1126,32 @@
             }
           }
         ]
+      }
+    ]
+  },
+  {
+    "id": "dino-stats",
+    "name": "Dino Stats",
+    "inputs": {
+      "dinosaur": {
+        "shared": "shared.enemyType.dinosaur"
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "dinosaur",
+            "is": true
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.01,
+          "incoming_damage": -0.01
+        },
+        "scale": {
+          "formula": "occurrences()"
+        }
       }
     ]
   },
@@ -2092,11 +2194,6 @@
   {
     "id": "m28-voidtouched-set",
     "name": "M28 Voidtouched Set",
-    "formulas": {
-      "multiplier": {
-        "formula": "1 + min(equipped(\"location-wildspace\"), 1)"
-      }
-    },
     "grants": [
       {
         "when": {
@@ -2112,7 +2209,7 @@
       {
         "when": {
           "equipped": {
-            "item": "location-wildspace"
+            "tag": "region:wildspace"
           },
           "bonusOccurrences": {
             "atLeast": 2
@@ -2123,6 +2220,7 @@
         }
       },
       {
+        "name": "Outside Wildspace",
         "when": {
           "enemies": {
             "exactly": 1
@@ -2130,6 +2228,11 @@
           "toggle": "combat",
           "bonusOccurrences": {
             "atLeast": 2
+          },
+          "not": {
+            "equipped": {
+              "tag": "region:wildspace"
+            }
           }
         },
         "variants": [
@@ -2159,7 +2262,51 @@
           }
         ],
         "scale": {
-          "formula": "intervals(duration, 2, 10) * $multiplier"
+          "formula": "intervals(duration, 2, 10)"
+        }
+      },
+      {
+        "name": "Doubled in Wildspace",
+        "when": {
+          "enemies": {
+            "exactly": 1
+          },
+          "toggle": "combat",
+          "bonusOccurrences": {
+            "atLeast": 2
+          },
+          "equipped": {
+            "tag": "region:wildspace"
+          }
+        },
+        "variants": [
+          {
+            "when": {
+              "role": "dps"
+            },
+            "stats": {
+              "outgoing_damage": 0.006
+            }
+          },
+          {
+            "when": {
+              "role": "healer"
+            },
+            "stats": {
+              "overall_healing": 0.006
+            }
+          },
+          {
+            "when": {
+              "role": "tank"
+            },
+            "stats": {
+              "incoming_damage": -0.006
+            }
+          }
+        ],
+        "scale": {
+          "formula": "intervals(duration, 2, 10) * 2"
         }
       }
     ]
@@ -2293,7 +2440,7 @@
             "when": {
               "toggle": "combat",
               "equipped": {
-                "item": "location-thay"
+                "tag": "region:thay"
               }
             },
             "stats": {
@@ -2450,7 +2597,7 @@
           {
             "when": {
               "equipped": {
-                "item": "location-thay"
+                "tag": "region:thay"
               }
             },
             "stats": {
@@ -3323,10 +3470,15 @@
   {
     "id": "m33-balanced-vitality",
     "name": "M33 Balanced Vitality",
+    "inputs": {
+      "health": {
+        "shared": "shared.health"
+      }
+    },
     "grants": [
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "atLeast": 0.6
           }
@@ -3337,7 +3489,7 @@
       },
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "below": 0.6
           }
@@ -3718,13 +3870,18 @@
   {
     "id": "m33-deity-s-gift",
     "name": "M33 Deity's Gift",
+    "inputs": {
+      "health": {
+        "shared": "shared.health"
+      }
+    },
     "grants": [
       {
         "stats": {
           "power_p": 0.065
         },
         "scale": {
-          "formula": "param(\"health\")"
+          "formula": "$health"
         }
       }
     ]
@@ -3732,13 +3889,18 @@
   {
     "id": "m33-deity-s-gift-celestial",
     "name": "M33 Deity's Gift (Celestial)",
+    "inputs": {
+      "health": {
+        "shared": "shared.health"
+      }
+    },
     "grants": [
       {
         "stats": {
           "power_p": 0.085
         },
         "scale": {
-          "formula": "param(\"health\")"
+          "formula": "$health"
         }
       }
     ]
@@ -4517,6 +4679,11 @@
   {
     "id": "m33-survivor-s-critical-resilience",
     "name": "M33 Survivor's Critical Resilience",
+    "inputs": {
+      "health": {
+        "shared": "shared.health"
+      }
+    },
     "grants": [
       {
         "stats": {
@@ -4524,7 +4691,7 @@
           "deflect_p": 0.04
         },
         "scale": {
-          "formula": "param(\"health\")"
+          "formula": "$health"
         }
       }
     ]
@@ -4544,10 +4711,15 @@
   {
     "id": "m33-survivor-s-instinct",
     "name": "M33 Survivor's Instinct",
+    "inputs": {
+      "health": {
+        "shared": "shared.health"
+      }
+    },
     "grants": [
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "atLeast": 0.9
           }
@@ -4558,7 +4730,7 @@
       },
       {
         "when": {
-          "param": {
+          "input": {
             "key": "health",
             "below": 0.5
           }
@@ -4596,11 +4768,16 @@
   {
     "id": "m33-unbroken-strength",
     "name": "M33 Unbroken Strength",
+    "inputs": {
+      "health": {
+        "shared": "shared.health"
+      }
+    },
     "grants": [
       {
         "when": {
           "toggle": "combat",
-          "param": {
+          "input": {
             "key": "health",
             "exactly": 1
           }
@@ -5518,6 +5695,32 @@
           "enemy_defense": -0.05,
           "enemy_awareness": -0.05,
           "enemy_crit_avoid": -0.05
+        }
+      }
+    ]
+  },
+  {
+    "id": "necrotic-mastery-stats",
+    "name": "Necrotic Mastery Stats",
+    "inputs": {
+      "undead": {
+        "shared": "shared.enemyType.undead"
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "undead",
+            "is": true
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.01,
+          "incoming_damage": -0.01
+        },
+        "scale": {
+          "formula": "occurrences()"
         }
       }
     ]
@@ -6871,19 +7074,11 @@
   {
     "id": "sword-coast-tactician-2",
     "name": "Sword Coast Tactician",
-    "inputs": {
-      "active": {
-        "type": "boolean",
-        "label": "On Sword Coast",
-        "default": false
-      }
-    },
     "grants": [
       {
         "when": {
-          "input": {
-            "key": "active",
-            "is": true
+          "equipped": {
+            "tag": "region:sword-coast"
           }
         },
         "stats": {
@@ -6895,14 +7090,46 @@
   {
     "id": "the-bigger-they-are-minsc-damage-defense",
     "name": "The Bigger They Are",
+    "inputs": {
+      "rank": {
+        "shared": "shared.enemyRank"
+      }
+    },
     "grants": [
       {
         "when": {
           "toggle": "combat"
         },
-        "stats": {
-          "outgoing_damage": 0.098
-        }
+        "tierBy": {
+          "formula": "$rank"
+        },
+        "tiers": [
+          {
+            "atLeast": 3,
+            "stats": {
+              "outgoing_damage": 0.0825
+            }
+          },
+          {
+            "atLeast": 4,
+            "stats": {
+              "outgoing_damage": 0.0875
+            }
+          },
+          {
+            "atLeast": 5,
+            "stats": {
+              "outgoing_damage": 0.0925
+            }
+          },
+          {
+            "atLeast": 6,
+            "stats": {
+              "outgoing_damage": 0.0975
+            }
+          }
+        ],
+        "longDescription": "+6.75 to +9.75% damage against strong enemies, the stronger the higher the bonus.\n"
       }
     ]
   },

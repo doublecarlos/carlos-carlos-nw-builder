@@ -85,6 +85,13 @@ import {
   type ItemListFilter,
 } from "../lib/item-list-filter";
 import { editorDb } from "../lib/editor-db";
+import type { MakeSharedScope } from "../lib/bonus-draft";
+import {
+  makeSharedOverlay,
+  takenSharedIds,
+  shadowedEntries,
+  type MakeSharedRequest,
+} from "../lib/make-shared";
 import { viewportKind } from "../lib/shell-layout";
 import { layerEditorLayout, viewOf } from "../lib/layer-editor-layout";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
@@ -1330,6 +1337,30 @@ const onUpdateBonusTop = ({
   label: string;
 }) => updateEntry("bonuses", id, bonus, label);
 
+/** Where "Make shared" writes, for the bonus form to say which bonuses it would copy in and
+ *  which a higher layer overrides, and every slot id and parameter path the new shared
+ *  input's id must stay clear of. */
+const makeSharedScope = computed<MakeSharedScope>(() => ({
+  inLayer: new Set(Object.keys(overlay.value.bonuses)),
+  shadowedBy: shadowedEntries(layers.layers.value, props.layer.id, "bonuses"),
+  taken: takenSharedIds(db.value, allocatableIds.value.slots),
+}));
+
+/** "Make shared" from the bonus form, as one undo step. */
+function onMakeShared(request: MakeSharedRequest) {
+  const { overlay: next } = makeSharedOverlay(
+    overlay.value,
+    db.value,
+    makeSharedScope.value.taken,
+    request,
+  );
+  commit(null, `Make input "${request.name}" shared`, next);
+  const count = request.readers.length;
+  showNotice(
+    `Made “${request.name}” a shared input, read by ${count} bonus${count === 1 ? "" : "es"}`,
+  );
+}
+
 async function onDeleteBonusTop(event?: MouseEvent) {
   const bonus = selectedBonus.value;
   if (!bonus) return;
@@ -1990,8 +2021,10 @@ onUnmounted(() => {
           :all-bonus-ids="allBonusIds"
           :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds.bonuses"
+          :make-shared-scope="makeSharedScope"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
+          @make-shared="onMakeShared"
           @delete="onDeleteBonusTop"
           @duplicate="duplicateBonus"
           @revert="onRevertBonusTop"

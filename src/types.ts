@@ -124,6 +124,10 @@ export interface BuildParameterSlot {
   path: string;
   /** Shown in the always-visible QuickOptions strip instead of its section's slot list. */
   quick?: boolean;
+  /** A shared input: a value several bonuses share, read through a `SharedInputRef` in each
+   *  reader's `inputs`. The build editor shows it on the equipped readers' rows, and on a row
+   *  of its own in the Shared inputs section while any reader is equipped. */
+  sharedInput?: boolean;
   default?: string | number | boolean;
   options?: { value: string; label: string }[];
   /** `list` only: derive the option set from the item catalog instead of enumerating it
@@ -150,6 +154,9 @@ export interface BuildParameterSlot {
   /** A `number` with both bounds is a stepper unless this says `field`; anything else is a
    *  field. */
   control?: NumberControl;
+  /** `number` only: how some values read, by value, e.g. `{ "6": "Boss" }` for an ordered
+   *  scale. Presets, notes and ladders show the label; unlabeled values read as numbers. */
+  valueLabels?: Record<string, string>;
   /** Marks this parameter as a stat scaler: its value multiplies stat payloads elsewhere
    * rather than only being read by `param` conditions. The slot's `path` is the scaler's
    * identity and its `label` the display name. */
@@ -201,6 +208,11 @@ export interface ItemPickerSlot {
   /** Gives the row a checkbox that drops its pick from the calculation without clearing it.
    * The pick stays saved; `Build.disabledSlots` holds the off state. */
   toggleable?: boolean;
+  /** A shared pick, like the location. Stored and equipped as any pick, read by plain
+   *  `equipped` leaves. The build editor shows its control on the rows of the bonuses reading
+   *  it (`Db.sharedReaders`), and its own row in the Shared inputs section while one of them
+   *  is equipped or it holds a pick. */
+  sharedInput?: boolean;
   /** Set only on a row expanded from an `ItemPickerListSlot`: the container's id, which is
    * what the row's remove button acts on. */
   list?: string;
@@ -775,16 +787,28 @@ export interface InputDef {
   /** A `number` with both bounds is a stepper unless this says `field`; anything else is a
    *  field. */
   control?: NumberControl;
+  /** Set from a shared input slot's own `valueLabels`. A bonus's own input takes none. */
+  valueLabels?: Record<string, string>;
   default: number | boolean;
   label?: string;
 }
+
+/** A bonus input defined by a `sharedInput` slot, named by its id. The value is stored at the
+ *  slot's path, so every bonus referencing the slot reads the same one. */
+export interface SharedInputRef {
+  shared: string;
+}
+
+/** A bonus input as declared: its own definition, or a reference to a shared input. */
+export type InputDecl = InputDef | SharedInputRef;
 
 export interface Bonus {
   id: string;
   name?: string;
   /** Values the player sets, by name. One value per bonus per build: every copy and carrier
-   *  of the bonus reads the same one, as duplicate procs trigger together. */
-  inputs?: Record<string, InputDef>;
+   *  of the bonus reads the same one, as duplicate procs trigger together. A reference reads
+   *  the value of the shared input it names. */
+  inputs?: Record<string, InputDecl>;
   /** Formulas any formula site of this bonus reads as `$name`. */
   formulas?: Record<string, FormulaRef>;
   grants?: Grant[];
@@ -818,6 +842,11 @@ export interface Db {
   sections: SlotSection[];
   presets: SectionPreset[];
   slotById: Map<string, Slot>;
+  /** Every `sharedInput` slot, by id: what a `SharedInputRef` resolves against. */
+  sharedInputs: ReadonlyMap<string, BuildParameterSlot>;
+  /** The ids of the bonuses reading each shared `item_picker`, by its slot id: those testing
+   *  one of its candidates, or a tag one carries, through `equipped`. */
+  sharedReaders: ReadonlyMap<string, readonly string[]>;
   bonuses: Bonus[];
   bonusById: Map<string, Bonus>;
   bonusMembers: Map<string, string[]>;
@@ -1135,6 +1164,8 @@ export interface EvalContext {
   /** The `self` bonus's inputs, by name, what the `input` leaf reads. Set per bonus alongside
    *  `self`. */
   inputs?: Map<string, ResolvedInput>;
+  /** Every `sharedInput` slot, by id, which a bonus's input references resolve against. */
+  sharedInputs?: ReadonlyMap<string, BuildParameterSlot>;
   /** The `self` bonus's named formulas and their results so far. Set per bonus alongside
    *  `self`. */
   formulas?: FormulaScope;
@@ -1226,7 +1257,13 @@ export interface GrantEvaluation {
   scale?: GrantScale;
   /** The value `raw.tierBy` measured, with its label, for naming the tier rungs. Absent
    * without `tierBy` or when it failed. */
-  measure?: { formula: string; label?: string; value: number };
+  measure?: {
+    formula: string;
+    label?: string;
+    value: number;
+    /** Each tier's threshold as the measured input shows it, when `tierBy` reads one. */
+    thresholds?: Record<number, string>;
+  };
 }
 
 /** A value a formula read, named and formatted for the player. `key` tells reads apart, and

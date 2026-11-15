@@ -1,6 +1,7 @@
 // Per-slot lookups over one resolution, so a build-editor row reads its own bucket instead of
 // scanning every bonus, error and row of the build. Each index is built once per resolution.
 import type { InputEntry } from "../engine/inputs";
+import { isCarried } from "./bonus-inspector";
 import type {
   EngineError,
   EngineRow,
@@ -75,10 +76,10 @@ export function inputCopiesBySlot(
 ): Map<string, InputCopy[]> {
   const map = new Map<string, InputCopy[]>();
   for (const entry of inputs) {
-    if (entry.kind !== "bonusInput" || entry.address.store !== "bonusValues")
-      continue;
+    if (!entry.bonusInput) continue;
     const seen = new Set([entry.slotId]);
-    for (const source of bonusById.get(entry.address.bonusId)?.sources ?? []) {
+    for (const source of bonusById.get(entry.bonusInput.bonusId)?.sources ??
+      []) {
       if (seen.has(source.slotId)) continue;
       seen.add(source.slotId);
       const copy = { entry, itemId: source.itemId };
@@ -86,6 +87,26 @@ export function inputCopiesBySlot(
       if (bucket) bucket.push(copy);
       else map.set(source.slotId, [copy]);
     }
+  }
+  return map;
+}
+
+/** The entries of every shared input, by its slot id, one per bonus on the build reading it
+ *  with an item carrying it. */
+export function sharedInputReaders(
+  inputs: readonly InputEntry[],
+  bonusById: ReadonlyMap<string, EvaluatedBonus>,
+): Map<string, InputEntry[]> {
+  const map = new Map<string, InputEntry[]>();
+  for (const entry of inputs) {
+    const reader = entry.bonusInput;
+    if (reader?.shared === undefined) continue;
+    const bonus = bonusById.get(reader.bonusId);
+    if (!bonus || !isCarried(bonus)) continue;
+    const shared = reader.shared;
+    const bucket = map.get(shared);
+    if (bucket) bucket.push(entry);
+    else map.set(shared, [entry]);
   }
   return map;
 }

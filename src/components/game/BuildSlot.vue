@@ -29,6 +29,7 @@ import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, useTemplateRef } from "vue";
 import { Info, Trash } from "@lucide/vue";
 import IconButton from "../ui/IconButton.vue";
+import LinkList, { type LinkListItem } from "../ui/LinkList.vue";
 import { coarsePointer, isPhone } from "../../stores/viewport";
 import type {
   RowSlot,
@@ -83,6 +84,8 @@ const props = defineProps<{
   noBorder?: boolean;
   /** Set for a slot nested under a parent: its label is indented beside a guide line. */
   nest?: NestPosition;
+  /** A shared slot's row: the rows on the build reading it, linked. */
+  usedBy?: LinkListItem[];
 }>();
 
 // Unpacked once here rather than read as `props.diff?.x` at each spot below: this row forwards
@@ -121,6 +124,8 @@ const emit = defineEmits<{
   info: [button: HTMLElement];
   /** The picker's "New item" action. */
   newItem: [];
+  /** A "Used by" link: jump to that row. */
+  goToSlot: [slotId: string];
 }>();
 
 const anchor = useTemplateRef("anchor");
@@ -427,6 +432,22 @@ useCursorRowKeys(anchor, {
         data-cursor-anchor
         class="sr-only"
       />
+
+      <!-- A link's click stops here, or the row would park the cursor back on itself after the
+           jump. -->
+      <p
+        v-if="usedBy?.length"
+        class="mt-0.5 col-span-full text-muted"
+        :data-testid="'slot-used-by:' + slotDef.id"
+        @click.stop
+      >
+        Used by
+        <LinkList
+          :items="usedBy"
+          link-testid="slot-used-by-link"
+          @select="emit('goToSlot', $event)"
+        />
+      </p>
 
       <!-- `errors` (engine.ts's findErrors) is populated for item_picker and point_assignment
            rows, and for a build_parameter row only when its linked item itself has a problem

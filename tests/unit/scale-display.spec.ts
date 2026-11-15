@@ -3,7 +3,11 @@
 import { describe, expect, it } from "vitest";
 import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
-import { stepsProblem, stepsRangeWarning } from "../../src/engine/formula";
+import {
+  stepsProblem,
+  stepsRangeWarning,
+  type InputOwner,
+} from "../../src/engine/formula";
 import { scaleLadder } from "../../src/engine/scale-steps";
 import { bonusInputAddress, writeInput } from "../../src/lib/build-inputs";
 import { grantFormulas } from "../../src/lib/bonus-inspector";
@@ -337,7 +341,7 @@ describe("a scale's step ladder", () => {
 });
 
 describe("stepsProblem", () => {
-  const owner: Pick<Bonus, "inputs" | "formulas"> = {
+  const owner: InputOwner & Pick<Bonus, "formulas"> = {
     inputs: {
       stacks: stacks(4, 0),
       proc: { type: "boolean", default: false },
@@ -387,7 +391,7 @@ describe("stepsProblem", () => {
 });
 
 describe("stepsRangeWarning", () => {
-  const owner: Pick<Bonus, "inputs"> = { inputs: { stacks: stacks(4, 0) } };
+  const owner: InputOwner = { inputs: { stacks: stacks(4, 0) } };
 
   it("flags a ladder past its input's own bounds", () => {
     expect(stepsRangeWarning(overStacks(4), owner)).toBeNull();

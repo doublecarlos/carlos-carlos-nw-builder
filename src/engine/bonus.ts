@@ -7,6 +7,11 @@
 import * as conditions from "./conditions";
 import { bonusInputSpec } from "./inputs";
 import {
+  declaredInputs,
+  NO_SHARED_INPUTS,
+  type SharedInputs,
+} from "./shared-inputs";
+import {
   evaluateFormula,
   formulaLabel,
   formulaReads,
@@ -20,12 +25,7 @@ import { getPath } from "../lib/build-path";
 import { assignedRows, inlineRepetitionCount } from "../lib/inline-repetition";
 import { isDisabled } from "../lib/slot-toggle";
 import { expandSlots } from "../lib/item-picker-list";
-import {
-  bonusInputAddress,
-  bonusStatAddress,
-  readInput,
-  storedInput,
-} from "../lib/build-inputs";
+import { bonusStatAddress, readInput, storedInput } from "../lib/build-inputs";
 import type {
   AssignedItemStats,
   PublishConflict,
@@ -37,6 +37,7 @@ import type {
   BonusCandidate,
   DynamicStatConfig,
   EvalContext,
+  FormulaRef,
   ConditionExplain,
   ConditionWhen,
   ConditionLeafResult,
@@ -408,6 +409,7 @@ export function collect(db: Db, build: Build): Collected {
     ...catalogNames(db),
     params,
     scalers,
+    sharedInputs: db.sharedInputs,
   };
 
   return {
@@ -612,11 +614,13 @@ function evaluateGrant(
       return inactive();
     }
     const label = grant.tierBy && formulaLabel(grant.tierBy, ctx);
+    const thresholds = grant.tierBy && tierThresholds(grant, grant.tierBy, ctx);
     const measured = grant.tierBy && {
       measure: {
         formula: formulaText(grant.tierBy),
         ...(label && { label }),
         value: measure.value,
+        ...(thresholds && { thresholds }),
       },
     };
     let best: GrantTier | null = null;
@@ -677,13 +681,15 @@ export function bonusContext(
     self: bonus.id,
     formulas: formulaScope(bonus),
     inputs: new Map(
-      Object.entries(bonus.inputs ?? {}).map(([name, def]) => {
-        const { label, format } = bonusInputSpec(def, name);
-        return [
-          name,
-          { label, format, value: inputValues[name] ?? def.default },
-        ];
-      }),
+      declaredInputs(bonus, ctx.sharedInputs ?? NO_SHARED_INPUTS).map(
+        ({ name, def }) => {
+          const { label, format } = bonusInputSpec(def, name);
+          return [
+            name,
+            { label, format, value: inputValues[name] ?? def.default },
+          ];
+        },
+      ),
     ),
   };
 }
@@ -819,14 +825,14 @@ function resolveDynamicValues(
 }
 
 /** Every input the bonus declares, typed or defaulted, keyed by name. A boolean input reads as
- *  a boolean, anything else as a number. */
+ *  a boolean, anything else as a number. A shared input reads the value at its slot's path. */
 export function resolveInputValues(
   bonus: Pick<Bonus, "id" | "inputs">,
   build: Build,
+  sharedInputs: SharedInputs,
 ): Record<string, number | boolean> {
   const out: Record<string, number | boolean> = {};
-  for (const [name, def] of Object.entries(bonus.inputs ?? {})) {
-    const address = bonusInputAddress(bonus.id, name);
+  for (const { name, def, address } of declaredInputs(bonus, sharedInputs)) {
     if (def.type === "boolean") {
       const stored = storedInput(build, address);
       out[name] = stored == null ? Boolean(def.default) : Boolean(stored);
@@ -879,7 +885,7 @@ export function resolve(
     const sources = [...group.sources].sort((a, b) => a.order - b.order);
     const anchor = sources[0] ?? group.anchor!;
     const dynamicValues = resolveDynamicValues(group.bonus, build);
-    const inputValues = resolveInputValues(group.bonus, build);
+    const inputValues = resolveInputValues(group.bonus, build, db.sharedInputs);
     const result = evaluateBonus(group.bonus, ctx, dynamicValues, {
       hasSources: sources.length > 0,
       inputValues,
@@ -979,4 +985,19 @@ export function resolve(
     assignmentStatsBySlot,
     publishConflicts,
   };
+}
+
+/** Each tier's threshold in the units of the input `tierBy` reads, or undefined when it
+ *  reads anything else. */
+function tierThresholds(
+  grant: Grant,
+  tierBy: FormulaRef,
+  ctx: EvalContext,
+): Record<number, string> | undefined {
+  const read = singleRead(tierBy.formula);
+  const input = read?.kind === "named" ? ctx.inputs?.get(read.name) : undefined;
+  if (!input || !grant.tiers) return undefined;
+  return Object.fromEntries(
+    grant.tiers.map((tier) => [tier.atLeast, input.format(tier.atLeast)]),
+  );
 }

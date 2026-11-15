@@ -7,6 +7,8 @@ import { computed, useTemplateRef } from "vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
 import ItemPicker from "./ItemPicker.vue";
 import BuildInputControl from "./BuildInputControl.vue";
+import SharedPickerControl from "./SharedPickerControl.vue";
+import { sharedPickers as sharedPickersByRow } from "../../stores/resolved";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseLink from "../ui/BaseLink.vue";
@@ -103,6 +105,11 @@ const repetition = computed(() =>
 );
 const listed = computed(() =>
   inputs.value.filter((input) => input.kind !== "repetition"),
+);
+
+/** The shared pickers the bonuses anchored on this row read, listed with its other values. */
+const sharedPickers = computed(
+  () => sharedPickersByRow.value.get(props.slotDef.id) ?? [],
 );
 
 function setRepetition(count: number) {
@@ -246,7 +253,16 @@ const stableGroup = computed(() => {
     >
   </div>
 
-  <div v-if="listed.length" class="mt-1 flex flex-col gap-1.5">
+  <div
+    v-if="listed.length || sharedPickers.length"
+    class="mt-1 flex flex-col gap-1.5"
+  >
+    <SharedPickerControl
+      v-for="control in sharedPickers"
+      :key="control.slot.id"
+      :control="control"
+      :build="build"
+    />
     <BuildInputControl
       v-for="input in listed"
       :key="inputKey(input.address)"

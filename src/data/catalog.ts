@@ -34,6 +34,7 @@ import {
   replacementValuesOf,
 } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import { readerTags, readsCandidates } from "./shared-readers";
 import {
   groupUnderParents,
   nestedParentId,
@@ -42,6 +43,13 @@ import {
 import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { BADGE_TONES, INSIGNIA_SHAPES } from "../types";
 import { bonusStatConfigs, canStep } from "../engine/inputs";
+import {
+  sharedInputsOf,
+  isSharedInputSlot,
+  isSharedRef,
+  withInputDefs,
+  type WithInputDefs,
+} from "../engine/shared-inputs";
 import {
   formulaSites,
   inputFormulaClashes,
@@ -70,7 +78,9 @@ import type {
   ConditionWhen,
   FormulaCondition,
   Grant,
+  SharedInputRef,
   InputCondition,
+  InputDecl,
   InputDef,
   ParamCondition,
   LintFinding,
@@ -938,6 +948,14 @@ function checkParamCondition(
     return;
   }
 
+  if (slot.sharedInput) {
+    report(
+      "error",
+      `${path}: param "${spec.key}" is a shared input; declare it in the bonus's inputs and read it with an "input" condition`,
+    );
+    return;
+  }
+
   const numeric = slot.paramType === "number" || slot.paramType === "percent";
   if (
     numeric &&
@@ -1143,9 +1161,10 @@ function controlProblem(
 const INPUT_NAME = /^[a-zA-Z_]\w*$/;
 
 /** A bonus's input declarations: a valid name and type, a boolean default on a boolean, and
- *  bounds on a number or percent. */
+ *  bounds on a number or percent. A reference names a shared input and nothing else. */
 function checkInputDefs(
-  inputs: Record<string, InputDef>,
+  inputs: Record<string, InputDecl>,
+  paramSlotsById: ReadonlyMap<string, Authored<BuildParameterSlot>>,
   report: (level: "error" | "warn", message: string) => void,
 ) {
   for (const [name, def] of Object.entries(inputs)) {
@@ -1155,12 +1174,22 @@ function checkInputDefs(
         "error",
         `${label}: a name is a letter or _ then letters, digits or _`,
       );
+    if (isSharedRef(def)) {
+      const problem = sharedRefProblem(def, paramSlotsById);
+      if (problem) report("error", `${label}: ${problem}`);
+      continue;
+    }
     if (!def || typeof def !== "object" || !INPUT_TYPES.has(def.type)) {
       report("error", `${label}: type must be boolean, number or percent`);
       continue;
     }
     const control = controlProblem(def, label);
     if (control) report("error", control);
+    if (def.valueLabels !== undefined)
+      report(
+        "error",
+        `${label}: value labels belong on a shared input's slot, not a bonus's own input`,
+      );
     if (def.type === "boolean") {
       if (typeof def.default !== "boolean")
         report("error", `${label}: a boolean's default is true or false`);
@@ -1174,11 +1203,28 @@ function checkInputDefs(
   }
 }
 
+/** What is wrong with a reference to a shared input, or null. */
+function sharedRefProblem(
+  ref: SharedInputRef,
+  paramSlotsById: ReadonlyMap<string, Authored<BuildParameterSlot>>,
+): string | null {
+  const extra = Object.keys(ref).filter((key) => key !== "shared");
+  if (extra.length)
+    return `a reference to a shared input takes no other field (${extra.join(", ")})`;
+  if (typeof ref.shared !== "string" || !ref.shared)
+    return `"shared" names a shared input's slot id`;
+  const slot = paramSlotsById.get(ref.shared);
+  if (!slot) return `"${ref.shared}" is not a build_parameter slot`;
+  if (!slot.sharedInput)
+    return `"${ref.shared}" is not a shared input; flag the slot with sharedInput`;
+  return null;
+}
+
 /** One formula site: its shape, its text, and every id, path and input it reads. Input names
  *  it reads (`$name` in `scope`) are added to `readInputs`. */
 function checkFormulaSite(
   site: FormulaSite,
-  bonus: Bonus,
+  bonus: WithInputDefs<Bonus>,
   scope: NamedScope,
   vocabulary: FormulaVocabulary,
   report: (level: "error" | "warn", message: string) => void,
@@ -1209,7 +1255,7 @@ function checkFormulaSite(
 /** Every formula `bonus` declares or uses, plus reference cycles among its named formulas and
  *  names it declares both as a formula and as an input. */
 function checkBonusFormulas(
-  bonus: Bonus,
+  bonus: WithInputDefs<Bonus>,
   vocabulary: FormulaVocabulary,
   report: (level: "error" | "warn", message: string) => void,
   readInputs: Set<string>,
@@ -1241,7 +1287,7 @@ function checkBonusFormulas(
 function checkGrantShape(
   grant: Grant,
   label: string,
-  bonus: Bonus,
+  bonus: WithInputDefs<Bonus>,
   report: (level: "error" | "warn", message: string) => void,
 ) {
   const legacy = (grant as { scaledBy?: unknown }).scaledBy;
@@ -1507,8 +1553,77 @@ export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
         });
       }
     }
+    if (slot.valueLabels !== undefined) {
+      const problem = valueLabelsProblem(slot);
+      if (problem)
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: ${problem}`,
+        });
+    }
+    if (slot.sharedInput)
+      for (const problem of sharedInputSlotProblems(slot))
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: ${problem}`,
+        });
   }
   return findings;
+}
+
+/** What is wrong with a parameter's `valueLabels`, or null. Each key is a whole number
+ *  within the bounds, as only those can be stepped to or picked. */
+function valueLabelsProblem(slot: Authored<BuildParameterSlot>): string | null {
+  if (slot.paramType !== "number")
+    return "value labels are for a number parameter";
+  const labels: unknown = slot.valueLabels;
+  if (!labels || typeof labels !== "object" || Array.isArray(labels))
+    return "value labels map values to labels";
+  for (const [key, text] of Object.entries(labels)) {
+    const value = Number(key);
+    if (!Number.isInteger(value) || String(value) !== key)
+      return `value label "${key}" is not a whole number`;
+    if (
+      (slot.min !== undefined && value < slot.min) ||
+      (slot.max !== undefined && value > slot.max)
+    )
+      return `value label "${key}" is outside the bounds`;
+    if (typeof text !== "string" || !text.trim())
+      return `value label "${key}" is empty`;
+  }
+  return null;
+}
+
+/** What a `sharedInput` slot cannot carry. Its value is read only through the bonus inputs
+ *  referencing it, and its row sits in the Shared inputs section, so it has no scaler and no
+ *  reader of its own. */
+function sharedInputSlotProblems(slot: Authored<BuildParameterSlot>): string[] {
+  const out: string[] = [];
+  if (!slot.label?.trim())
+    out.push(
+      "a shared input needs a label, or its row and every reader's control read as its id",
+    );
+  if (slot.quick)
+    out.push(
+      "a shared input has its row in the Shared inputs section, so it cannot be quick",
+    );
+  if (slot.scaler)
+    out.push("a shared input is read through bonus inputs, not as a scaler");
+  if (slot.paramType === "list" || slot.optionsFrom)
+    out.push("a shared input is a boolean, number or percent");
+  const engineRead =
+    Object.hasOwn(ENGINE_PARAM_PATHS, slot.path) ||
+    Object.hasOwn(DEDICATED_LEAF_FOR_PATH, slot.path) ||
+    slot.path.startsWith("toggles.");
+  if (engineRead)
+    out.push(
+      `path "${slot.path}" is read directly by the engine or a condition, not through bonus inputs`,
+    );
+  return out;
 }
 
 // The slot types a preset field may reference -- `validatePresets`' own check that e.g.
@@ -1662,9 +1777,11 @@ export function bonusValuesProblems(
         );
     for (const [name, value] of Object.entries(values.input ?? {})) {
       const def = bonus.inputs?.[name];
-      const problem = def
-        ? inputValueProblem(def, value)
-        : "is not an input of it";
+      const problem = !def
+        ? "is not an input of it"
+        : isSharedRef(def)
+          ? "is a shared input, stored on the build rather than the bonus"
+          : inputValueProblem(def, value);
       if (problem)
         out.push(`bonusValues "${bonusId}": input "${name}" ${problem}`);
     }
@@ -1743,6 +1860,13 @@ export function validatePresets(
             kind: "sectionPreset",
             name: preset.id,
             message: `preset "${preset.id}" (section "${preset.section}"): "${slotId}" belongs to section "${slot.section}"`,
+          });
+        } else if (isSharedInputSlot(slot)) {
+          findings.push({
+            level: "warn",
+            kind: "sectionPreset",
+            name: preset.id,
+            message: `preset "${preset.id}": "${slotId}" is a shared input; applying the preset overwrites the value its readers share`,
           });
         }
       }
@@ -2481,6 +2605,69 @@ export function validateSlotLabels(
     }));
 }
 
+/** What a shared picker cannot carry, and the readers it cannot have. Its readers are derived
+ *  from the tags its candidates carry, so a tag that makes a bonus a reader must stay on
+ *  those candidates: on ordinary gear it would make the bonus a reader for the wrong reason. */
+export function validateSharedPickers(
+  slots: AuthoredSlot[],
+  items: Item[],
+  bonuses: Bonus[],
+  filters: FilterDef[],
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const report = (slot: AuthoredSlot, message: string) =>
+    findings.push({
+      level: "error",
+      kind: "slot",
+      name: slot.id,
+      message: `${slot.id}: ${message}`,
+    });
+  const labels = db.labelMap(filters);
+  for (const slot of slots) {
+    if (!(slot as { sharedInput?: unknown }).sharedInput) continue;
+    if (slot.type === "build_parameter") continue;
+    if (slot.type !== "item_picker") {
+      report(
+        slot,
+        `only a param or a single item_picker can be shared, this is a ${slot.type}`,
+      );
+      continue;
+    }
+    // A shared pick is always shown and always equipped, so nothing may prune or hide it.
+    const banned: [keyof Authored<ItemPickerSlot>, string][] = [
+      ["quick", "has its row in the Shared inputs section"],
+      ["availableWhen", "is never pruned"],
+      ["parent", "has no parent"],
+      ["toggleable", "is never switched off"],
+      ["list", "is a single pick"],
+    ];
+    for (const [field, reason] of banned)
+      if (slot[field] !== undefined && slot[field] !== false)
+        report(slot, `a shared picker ${reason}, so it cannot set ${field}`);
+    if (!slot.label && !db.categoryLabel(slot.type, slot.filter, labels))
+      report(
+        slot,
+        "a shared picker needs a label or a labeled category, or its row and every reader's control read as its id",
+      );
+    const candidates = items.filter((item) => offeredBy(slot, item));
+    const candidateIds = new Set(candidates.map((item) => item.id));
+    for (const bonus of bonuses) {
+      if (!readsCandidates(bonus, candidates)) continue;
+      for (const tag of readerTags(bonus, candidates)) {
+        const stray = items.find(
+          (item) => item.tags?.includes(tag) && !candidateIds.has(item.id),
+        );
+        if (stray)
+          report(
+            slot,
+            `bonus "${bonus.id}" reads it through tag "${tag}", which "${stray.id}" also carries outside its candidates`,
+          );
+      }
+    }
+  }
+  return findings;
+}
+
 /** Every tag an `equipped` leaf of `when` tests. */
 function conditionTags(when: ConditionWhen | undefined, out: Set<string>) {
   eachLeaf(when, (key, spec) => {
@@ -2847,6 +3034,7 @@ export function validate(
     ...validateFilterFields(db.filterFieldsOf(filters)),
     ...validateFilters(filters, items, slots),
     ...validateSlotLabels(slots, filters),
+    ...validateSharedPickers(slots, items, bonuses, filters),
     ...validateTags(tags, items, bonuses, slots),
     ...validateScalerTargets(slots, items),
     ...validateRequiredSlots(slots, sections),
@@ -2926,6 +3114,7 @@ export function validate(
       paramSlotsById.set(slot.id, slot);
     }
   }
+  const sharedInputs = sharedInputsOf(allSlots);
   const checkStats = (
     stats: Record<string, unknown> | undefined,
     label: string,
@@ -3187,6 +3376,12 @@ export function validate(
           `defaultParams "${slotId}" is not a build_parameter slot`,
           item.id,
         );
+      } else if (slot.sharedInput) {
+        report(
+          "warn",
+          `defaultParams "${slotId}" is a shared input; picking the item overwrites the value its readers share`,
+          item.id,
+        );
       } else if (slot.paramType === "list" && !isListValue(slot, value)) {
         report(
           "error",
@@ -3252,16 +3447,17 @@ export function validate(
     }
     const bonusReport = (level: "error" | "warn", message: string) =>
       report(level, message, bonus.id, "bonus");
-    const inputs = bonus.inputs ?? {};
-    checkInputDefs(inputs, bonusReport);
+    checkInputDefs(bonus.inputs ?? {}, paramSlotsById, bonusReport);
+    const owner = withInputDefs(bonus, sharedInputs);
+    const inputs = owner.inputs;
     const readInputs = new Set<string>();
     if (bonus.formulas || formulaSites(bonus).length) {
       vocabulary ??= formulaVocabulary();
-      checkBonusFormulas(bonus, vocabulary, bonusReport, readInputs);
+      checkBonusFormulas(owner, vocabulary, bonusReport, readInputs);
     }
     bonus.grants?.forEach((grant, index) => {
       const label = `grant ${index + 1}`;
-      checkGrantShape(grant, label, bonus, bonusReport);
+      checkGrantShape(grant, label, owner, bonusReport);
       checkConditions(grant.when, label, bonusReport, paramSlots, inputs);
       inputNames(grant.when, readInputs);
       for (const variant of grant.variants ?? []) {

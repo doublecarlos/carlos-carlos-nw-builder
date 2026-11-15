@@ -2053,6 +2053,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
+    "bonuses": ["cultist-stats"],
     "inlineRepetition": {
       "min": 0,
       "max": 5,
@@ -2185,7 +2186,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "bonuses": ["boon-tier2-warning"],
+    "bonuses": ["demonic-stats", "boon-tier2-warning"],
     "inlineRepetition": {
       "min": 0,
       "max": 5,
@@ -2359,7 +2360,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "bonuses": ["boon-tier3-warning"],
+    "bonuses": ["dino-stats", "boon-tier3-warning"],
     "inlineRepetition": {
       "min": 0,
       "max": 5,
@@ -2503,7 +2504,7 @@
     "name": "Boon: Necrotic Mastery",
     "filter": "boon_tier4",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
-    "bonuses": ["boon-tier4-warning"],
+    "bonuses": ["necrotic-mastery-stats", "boon-tier4-warning"],
     "inlineRepetition": {
       "min": 0,
       "max": 5,
@@ -3749,16 +3750,6 @@
     "allowedClass": ["fighter"],
     "tags": ["exclusive:dreadnought"],
     "bonuses": ["paragon-exclusive"]
-  },
-  {
-    "id": "enemy-type-boss",
-    "name": "Enemy: Boss",
-    "filter": "scenario_flag"
-  },
-  {
-    "id": "enemy-type-non-boss",
-    "name": "Enemy: Non Boss",
-    "filter": "scenario_flag"
   },
   {
     "id": "ethereal-jaunt",
@@ -5414,18 +5405,27 @@
   },
   {
     "id": "location-chult",
-    "name": "Location: Chult",
-    "filter": "scenario_flag"
+    "name": "Chult",
+    "filter": "location",
+    "tags": ["region:chult"]
+  },
+  {
+    "id": "location-sword-coast",
+    "name": "Sword Coast",
+    "filter": "location",
+    "tags": ["region:sword-coast"]
   },
   {
     "id": "location-thay",
-    "name": "Location: Thay",
-    "filter": "scenario_flag"
+    "name": "Thay",
+    "filter": "location",
+    "tags": ["region:thay"]
   },
   {
     "id": "location-wildspace",
-    "name": "Location: Wildspace",
-    "filter": "scenario_flag"
+    "name": "Wildspace",
+    "filter": "location",
+    "tags": ["region:wildspace"]
   },
   {
     "id": "loremaster",

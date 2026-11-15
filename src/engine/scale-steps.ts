@@ -4,6 +4,7 @@
 import * as conditions from "./conditions";
 import { bonusContext } from "./bonus";
 import { scalerMultiplier } from "./scaling";
+import { NO_SHARED_INPUTS, withInputDefs } from "./shared-inputs";
 import {
   axisRead,
   describeRead,
@@ -74,7 +75,14 @@ export function scaleLadder(
   const steps = scale?.steps;
   if (!scale || !steps || grant.tiers || grant.variants || grant.problem)
     return null;
-  if (stepsProblem(steps, scale.formula, bonus)) return null;
+  if (
+    stepsProblem(
+      steps,
+      scale.formula,
+      withInputDefs(bonus, ctx.sharedInputs ?? NO_SHARED_INPUTS),
+    )
+  )
+    return null;
   const axis = stepAxis(steps.over)!;
 
   const runs: ScaleStep[] = [];

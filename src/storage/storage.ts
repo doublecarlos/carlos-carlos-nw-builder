@@ -26,6 +26,14 @@ import {
   migrateListSlots,
   migrateOverlayListSlots,
 } from "./migrate-list-slots";
+import {
+  applyScenarioFlags,
+  migrateOverlayScenarioFlags,
+  migrateScenarioFlags,
+  migrateSwordCoastInput,
+  withoutScenarioRows,
+} from "./migrate-scenario-flags";
+import { toRaw } from "vue";
 import pkg from "../../package.json";
 import { showNotice } from "../stores/notice";
 import type {
@@ -158,10 +166,11 @@ export const newId = (prefix = "b") =>
  */
 /**
  * The stored values a fresh build starts with, read off `slots`' declared defaults: a
- * `build_parameter`'s written to its path, an `item_picker`'s as an ordinary choice, and every
- * `point_assignment` row from its item's own `inlineRepetition.default` (`db` resolves those
- * item lists). Seeded values are ordinary stored ones, so nothing downstream needs an
- * `?? slot.default` fallback for a build the app itself produced.
+ * `build_parameter`'s written to its path unless it is a shared input, an `item_picker`'s as
+ * an ordinary choice, and every `point_assignment` row from its item's own
+ * `inlineRepetition.default` (`db` resolves those item lists). Seeded values are ordinary
+ * stored ones, so nothing downstream needs an `?? slot.default` fallback for a build the app
+ * itself produced.
  */
 export function seededDefaults(
   slots: AuthoredSlot[],
@@ -173,7 +182,9 @@ export function seededDefaults(
   const listRows: Build["listRows"] = {};
   for (const slot of slots) {
     if (slot.type === "build_parameter" && slot.default !== undefined) {
-      setPath(root.context, slot.path, slot.default);
+      // A shared input reads its default while unset, so a stored value is always the
+      // player's own.
+      if (!slot.sharedInput) setPath(root.context, slot.path, slot.default);
     } else if (slot.type === "item_picker") {
       if (slot.default) choices[slot.id] = slot.default;
     } else if (slot.type === "item_picker_list") {
@@ -228,11 +239,6 @@ export function defaultBuild(name = "New build", db: Db = baseDb()): Build {
   };
 }
 
-/**
- * Coerce anything build-shaped into a valid build. Tolerates a truncated write, an older
- * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
- * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
- */
 const isPlain = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
@@ -332,6 +338,7 @@ function migrateClassToChoice(
  * Coerce anything build-shaped into a valid build. Tolerates a truncated write, an older
  * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
  * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
+ * `raw` is plain data, as parsed or stored; a live store object is unwrapped by its caller.
  */
 export function normalize(
   raw: unknown,
@@ -340,7 +347,11 @@ export function normalize(
   const base = defaultBuild();
   if (!isPlain(raw)) return base;
 
-  const context = isPlain(raw.context) ? raw.context : {};
+  // A copy of its own, so the passes below and later in-place writes at any dotted path never
+  // reach an object the input owns.
+  const context: Record<string, unknown> = isPlain(raw.context)
+    ? structuredClone(raw.context)
+    : {};
   const compare = isPlain(raw.compare) ? raw.compare : {};
 
   // The catalog a download embeds (see `Build.catalog`). Coerced like the rest of the build so
@@ -360,14 +371,22 @@ export function normalize(
 
   const settings = migrateSettings(raw.values, raw.bonusValues);
 
-  // Both migrations run over the coerced maps, and this one over all three at once: renaming a
-  // pick onto its list row has to take that row's magnitudes and repetition counts with it.
-  const stored = migrateListSlots({
-    choices: migrateClassToChoice(strings(raw.choices), context),
-    values: settings.values,
-    assignments: nestedNumbers(raw.assignments, base.assignments),
-    disabledSlots: offSlots(raw.disabledSlots),
-  });
+  // Three chained passes over the coerced maps: the class onto its pick, the retired fixed
+  // slots onto list rows, then the scenario flag rows onto shared inputs. The last two take
+  // all three maps at once, so a moved pick keeps its magnitudes and repetition counts.
+  const scenario = migrateScenarioFlags(
+    migrateListSlots({
+      choices: migrateClassToChoice(strings(raw.choices), context),
+      values: settings.values,
+      assignments: nestedNumbers(raw.assignments, base.assignments),
+      disabledSlots: offSlots(raw.disabledSlots),
+    }),
+  );
+  const stored = scenario.stored;
+  const swordCoast = migrateSwordCoastInput(
+    stored.choices,
+    migrateOccurrenceInputs(raw.occurrenceInputs, settings.bonusValues),
+  );
 
   const normalizedContext = {
     ...base.context,
@@ -390,6 +409,7 @@ export function normalize(
       ...(isPlain(context.forte) ? context.forte : {}),
     },
   };
+  applyScenarioFlags(normalizedContext, scenario.flags);
   // A scaler parameter is validated rather than passed through like class/role: it multiplies
   // whole stat lines, so a `NaN` from a truncated write or hand-edited export would spread to
   // every downstream stage instead of staying in one field. Floored at 0 because a negative
@@ -397,17 +417,6 @@ export function normalize(
   // engine reports without clamping.
   for (const slot of NW_SLOTS.slots) {
     if (slot.type !== "build_parameter" || !slot.scaler) continue;
-    // The spread above shares every nested object with the raw input, and `duplicate` hands
-    // a live build in, so a dotted path is copied node by node before the write: it must not
-    // land in an object the input still owns, the same isolation `toggles`/`forte` get. A
-    // non-object node is left for `setPath` to rebuild.
-    let node: Record<string, unknown> = normalizedContext;
-    for (const key of slot.path.split(".").slice(0, -1)) {
-      const next = node[key];
-      if (!isPlain(next)) break;
-      node[key] = { ...next };
-      node = node[key] as Record<string, unknown>;
-    }
     const value = Number(getPath(context, slot.path));
     setPath(
       normalizedContext,
@@ -424,17 +433,18 @@ export function normalize(
     id: keepId && typeof raw.id === "string" && raw.id ? raw.id : base.id,
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
-    choices: stored.choices,
+    choices: swordCoast.choices,
     // No seeded defaults to fall back on (unlike `assignments`, which seeds every
     // point_assignment row's every item up front): an absent value reads as its config's
     // `default` (`readInput`).
     values: stored.values,
-    bonusValues: migrateOccurrenceInputs(
-      raw.occurrenceInputs,
-      settings.bonusValues,
-    ),
+    bonusValues: swordCoast.bonusValues,
     assignments: stored.assignments,
-    listRows: rowCounts(raw.listRows, base.listRows, stored),
+    listRows: rowCounts(
+      withoutScenarioRows(numbers(raw.listRows)),
+      base.listRows,
+      stored,
+    ),
     disabledSlots: stored.disabledSlots,
     // `context`'s pass-through fields (class/role/damageType) are not individually
     // validated -- the result is only knowable-safe by construction, not by the type
@@ -450,9 +460,11 @@ export function normalize(
   };
 }
 
+/** A copy of `build` under a new id. `build` may be a live store object: it is unwrapped
+ *  here, as `normalize` takes plain data and `structuredClone` rejects a reactive proxy. */
 export function duplicate(build: Build, name?: string): Build {
   return {
-    ...normalize(build),
+    ...normalize(toRaw(build)),
     id: newId(),
     name: name ?? `${build.name} copy`,
   };
@@ -567,7 +579,9 @@ function migrateDownloaded(
 /** Coerces and migrates a stored overlay, the way a layer or a build's embedded catalog holds
  *  one. */
 export function normalizeLayerOverlay(raw: unknown): CatalogOverlay {
-  const overlay = migrateOverlayListSlots(catalog.normalizeOverlay(raw));
+  const overlay = migrateOverlayScenarioFlags(
+    migrateOverlayListSlots(catalog.normalizeOverlay(raw)),
+  );
   const sectionPresets: CatalogOverlay["sectionPresets"] = {};
   for (const [id, preset] of Object.entries(overlay.sectionPresets)) {
     sectionPresets[id] = preset ? migratePresetSettings(preset) : preset;

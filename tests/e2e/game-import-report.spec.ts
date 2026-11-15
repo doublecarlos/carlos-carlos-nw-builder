@@ -59,9 +59,15 @@ test("all three groups render with correct counts", async ({ page }) => {
     unrecognized.getByTestId("game-import-report-unrecognized-row"),
   ).toHaveCount(4);
 
+  // The groups come from the shipped game-import table, so only the count's agreement with
+  // the rows is pinned.
   const notInDemo = page.getByTestId("game-import-report-not-in-demo");
+  const groups = await notInDemo
+    .getByTestId("game-import-report-notindemo-row")
+    .count();
+  expect(groups).toBeGreaterThan(0);
   await expect(notInDemo.locator("summary")).toHaveText(
-    "Not in the export (12)",
+    `Not in the export (${groups})`,
   );
 });
 

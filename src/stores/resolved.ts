@@ -7,12 +7,21 @@ import { inputEntries, type InputEntry } from "../engine/inputs";
 import { inspectorBonuses, isNearMiss } from "../lib/bonus-inspector";
 import {
   emptyIndex,
+  sharedInputReaders,
   groupBySlot,
   indexResolved,
   inputCopiesBySlot,
   type InputCopy,
   type ResolvedIndex,
 } from "../lib/resolved-index";
+import { keepSet } from "../lib/keep-identity";
+import {
+  sharedPickerReaders,
+  sharedPickersByRow,
+  sharedRowIds,
+  sharedReaderRows as sharedReaderRowsOf,
+  type SharedPickerControl,
+} from "../lib/shared-inputs";
 import * as builds from "./builds";
 import * as layers from "./layers";
 import * as compare from "./compare";
@@ -139,3 +148,38 @@ export const inputsBySlot = computed<Map<string, InputEntry[]>>(() =>
 export const inputCopies = computed<Map<string, InputCopy[]>>(() =>
   inputCopiesBySlot(inputs.value, bonusById.value),
 );
+
+/** The bonuses on the build reading each shared input, by its slot id. */
+export const readersBySharedInput = computed<Map<string, InputEntry[]>>(() =>
+  sharedInputReaders(inputs.value, bonusById.value),
+);
+
+/** The equipped bonuses reading each shared picker, by its slot id. */
+const pickerReaders = computed(() =>
+  resolved.value.ok
+    ? sharedPickerReaders(db.value, resolved.value.result.bonuses)
+    : new Map<string, EvaluatedBonus[]>(),
+);
+
+/** The rows the equipped readers of each shared slot anchor on, by its slot id. */
+export const sharedReaderRows = computed<Map<string, string[]>>(() =>
+  sharedReaderRowsOf(readersBySharedInput.value, pickerReaders.value),
+);
+
+/** The shared picker controls each reader's row shows, by the row's slot id. */
+export const sharedPickers = computed<Map<string, SharedPickerControl[]>>(() =>
+  sharedPickersByRow(db.value, sharedReaderRows.value),
+);
+
+const NO_SHARED_ROWS: ReadonlySet<string> = new Set();
+
+/** The shared slots with a row of their own in the Shared inputs section: the ones the active
+ *  build uses. */
+export const sharedRows = computed<ReadonlySet<string>>((previous) => {
+  const b = builds.build.value;
+  if (!b) return NO_SHARED_ROWS;
+  return keepSet(
+    previous,
+    sharedRowIds(db.value.slots, b, sharedReaderRows.value),
+  );
+});

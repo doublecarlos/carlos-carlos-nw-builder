@@ -20,6 +20,7 @@
 // imply the whole bonus stacks), so they're edited once by the caller (BonusForm.vue/
 // bonus-groups.js), not per row here.
 
+import type { TakenSharedIds } from "./make-shared";
 import {
   whenIsRepresentable,
   whenToRows,
@@ -48,9 +49,15 @@ import type {
   Bonus,
   StatValues,
   DynamicStatConfig,
+  InputDecl,
   InputDef,
   NumberControl,
 } from "../types";
+import {
+  sharedInputDef,
+  isSharedRef,
+  type SharedInputs,
+} from "../engine/shared-inputs";
 
 // Exactly what the form edits on a grant and a tier. Anything else would be dropped by the
 // form, so its presence forces JSON mode instead.
@@ -464,6 +471,10 @@ export interface InputDraft {
   /** Declared by the bonus when the form opened, so builds may already hold a value under
    *  `name`: the form shows it read-only. An input added since stays editable. */
   frozen: boolean;
+  /** The shared input's slot id this input references, or empty when the bonus defines the
+   *  input itself. A reference saves nothing else, so the fields below are kept only for
+   *  switching back. */
+  shared: string;
   type: InputDef["type"];
   label: string;
   on: boolean;
@@ -480,6 +491,7 @@ export interface InputDraft {
 export const newInput = (): InputDraft => ({
   name: "",
   frozen: false,
+  shared: "",
   type: "boolean",
   label: "",
   on: false,
@@ -492,32 +504,41 @@ export const newInput = (): InputDraft => ({
 });
 
 export const inputRows = (
-  inputs: Record<string, InputDef> | undefined,
+  inputs: Record<string, InputDecl> | undefined,
 ): InputDraft[] =>
-  entriesToRows(inputs, (name, def) => ({
-    name,
-    frozen: true,
-    type: def.type,
-    label: def.label ?? "",
-    on: def.type === "boolean" && def.default === true,
-    default: def.type === "boolean" ? null : Number(def.default),
-    min: def.min ?? null,
-    max: def.max ?? null,
-    step: def.step ?? null,
-    presets: (def.presets ?? [])
-      .map((value) => (def.type === "percent" ? toPercent(value) : value))
-      .join(", "),
-    control: def.control ?? "",
-  }));
+  entriesToRows(inputs, (name, decl) =>
+    isSharedRef(decl)
+      ? { ...newInput(), name, frozen: true, shared: decl.shared }
+      : definedInputRow(name, decl),
+  );
 
-/** Unnamed rows are dropped. A boolean keeps only its default and label. */
+const definedInputRow = (name: string, def: InputDef): InputDraft => ({
+  name,
+  frozen: true,
+  shared: "",
+  type: def.type,
+  label: def.label ?? "",
+  on: def.type === "boolean" && def.default === true,
+  default: def.type === "boolean" ? null : Number(def.default),
+  min: def.min ?? null,
+  max: def.max ?? null,
+  step: def.step ?? null,
+  presets: (def.presets ?? [])
+    .map((value) => (def.type === "percent" ? toPercent(value) : value))
+    .join(", "),
+  control: def.control ?? "",
+});
+
+/** Unnamed rows are dropped. A boolean keeps only its default and label, and a reference
+ *  only the shared input it names. */
 export const rowsToInputs = (
   rows: InputDraft[] | undefined,
-): Record<string, InputDef> =>
-  rowsToEntries(
+): Record<string, InputDecl> =>
+  rowsToEntries<InputDraft, InputDecl>(
     rows,
     (row) => row.name.trim(),
     (row) => {
+      if (row.shared) return { shared: row.shared };
       if (row.type === "boolean") {
         const def: InputDef = { type: row.type, default: row.on };
         putIfSet(def, "label", row.label.trim());
@@ -566,14 +587,98 @@ export interface InputOption {
   type: InputDef["type"];
 }
 
-export const inputOptions = (rows: InputDraft[]): InputOption[] =>
-  rows
-    .filter((row) => row.name.trim())
-    .map((row) => ({
-      value: row.name.trim(),
-      label: row.label.trim() || row.name.trim(),
-      type: row.type,
-    }));
+/** A reference takes its label and type from the shared input it names, and one naming no
+ *  shared input is left out. */
+export const inputOptions = (
+  rows: InputDraft[],
+  sharedInputs: SharedInputs = new Map(),
+): InputOption[] =>
+  rows.flatMap((row) => {
+    const name = row.name.trim();
+    if (!name) return [];
+    if (!row.shared)
+      return [{ value: name, label: row.label.trim() || name, type: row.type }];
+    const slot = sharedInputs.get(row.shared);
+    if (!slot) return [];
+    const def = sharedInputDef(slot);
+    return [{ value: name, label: def.label ?? name, type: def.type }];
+  });
+
+/** Where "Make shared" writes a converted bonus: the edited layer, which already holds the
+ *  bonuses in `inLayer` and gets a copy of any other. A bonus in `shadowedBy` is overridden
+ *  by a higher enabled layer, named there, so converting it here would change nothing. The
+ *  new shared input's id stays clear of `taken`. */
+export interface MakeSharedScope {
+  inLayer: ReadonlySet<string>;
+  shadowedBy: ReadonlyMap<string, string>;
+  taken: TakenSharedIds;
+}
+
+/** Whether bonus `bonusId` can offer "Make shared" in `scope`: not while a higher layer
+ *  overrides it, as the edit would have no effect. */
+export const canMakeShared = (
+  scope: MakeSharedScope | null | undefined,
+  bonusId: string | undefined,
+): boolean =>
+  Boolean(scope && bonusId !== undefined && !scope.shadowedBy.has(bonusId));
+
+/** Another bonus "Make shared" can convert along. */
+export interface MakeSharedCandidate {
+  bonus: Bonus;
+  /** Defined outside the edited layer, so converting it copies it in. */
+  copied: boolean;
+  /** The higher layer overriding it, when one does. */
+  shadowedBy?: string;
+}
+
+/** What "Make shared" offers for one input row: the definition the shared input takes over,
+ *  and the other bonuses defining an input of the same name and type, which can read it too. */
+export interface MakeSharedOffer {
+  name: string;
+  def: InputDef;
+  others: MakeSharedCandidate[];
+}
+
+/** The offer for `row` of bonus `bonusId`, or null for a reference or an unnamed row. */
+export function makeSharedOffer(
+  row: InputDraft,
+  bonusId: string,
+  bonuses: readonly Bonus[],
+  scope: MakeSharedScope,
+): MakeSharedOffer | null {
+  const name = row.name.trim();
+  if (!name || row.shared) return null;
+  const def = rowsToInputs([row])[name] as InputDef;
+  const others = bonuses.flatMap((bonus): MakeSharedCandidate[] => {
+    const decl = bonus.inputs?.[name];
+    if (
+      bonus.id === bonusId ||
+      decl === undefined ||
+      isSharedRef(decl) ||
+      decl.type !== def.type
+    )
+      return [];
+    const candidate: MakeSharedCandidate = {
+      bonus,
+      copied: !scope.inLayer.has(bonus.id),
+    };
+    const shadowedBy = scope.shadowedBy.get(bonus.id);
+    if (shadowedBy !== undefined) candidate.shadowedBy = shadowedBy;
+    return [candidate];
+  });
+  return { name, def, others };
+}
+
+/** `bonus` reading its input `name` from the shared input `slotId`. The local name stays, as
+ *  it is how a build's stored value finds its new address. */
+export const readingShared = (
+  bonus: Bonus,
+  name: string,
+  slotId: string,
+): Bonus => ({
+  ...bonus,
+  inputs: { ...bonus.inputs, [name]: { shared: slotId } },
+});
 
 /** One `Bonus.formulas` entry. */
 export interface NamedFormulaDraft extends FormulaDraft {

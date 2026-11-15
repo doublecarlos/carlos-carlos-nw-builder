@@ -218,6 +218,10 @@
       "label": "WIS leveling bonus",
       "fields": ["inlineRepetition"]
     },
+    "location": {
+      "label": "Location",
+      "defaultMaxCopies": 1
+    },
     "misc": {
       "label": "Miscellaneous bonus"
     },
@@ -286,10 +290,6 @@
     },
     "reinforcement_jewel": {
       "label": "Reinforcement jewel"
-    },
-    "scenario_flag": {
-      "label": "Scenario flag",
-      "defaultMaxCopies": 1
     },
     "sturdy_collar": {
       "label": "Sturdy collar"
@@ -499,6 +499,18 @@
     },
     "race-ability:two-picks": {
       "label": "Race allowing two picks"
+    },
+    "region:chult": {
+      "label": "Location: Chult"
+    },
+    "region:sword-coast": {
+      "label": "Location: Sword Coast"
+    },
+    "region:thay": {
+      "label": "Location: Thay"
+    },
+    "region:wildspace": {
+      "label": "Location: Wildspace"
     }
   }
 }

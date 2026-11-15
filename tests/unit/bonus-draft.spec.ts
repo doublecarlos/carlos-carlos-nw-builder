@@ -19,8 +19,10 @@ import {
   rowsToNamedFormulas,
   duplicateFormulaNames,
   formulaOwner,
+  makeSharedOffer,
+  canMakeShared,
 } from "../../src/lib/bonus-draft";
-import type { Bonus, Grant } from "../../src/types";
+import type { Bonus, Grant, InputDef } from "../../src/types";
 
 describe("bonus-draft problem payload", () => {
   it("a simple problem grant round-trips through the form, not JSON", () => {
@@ -589,7 +591,9 @@ describe("bonus-draft inputs", () => {
     });
     expect(row.presets).toBe("10, 3.6");
     row.presets = "25%, 3.6";
-    expect(rowsToInputs([row]).share.presets).toEqual([0.25, 0.036]);
+    expect((rowsToInputs([row]).share as InputDef).presets).toEqual([
+      0.25, 0.036,
+    ]);
   });
 
   it("leaves a number input's presets as typed", () => {
@@ -597,7 +601,7 @@ describe("bonus-draft inputs", () => {
       stacks: { type: "number", default: 0, presets: [1, 5] },
     });
     expect(row.presets).toBe("1, 5");
-    expect(rowsToInputs([row]).stacks.presets).toEqual([1, 5]);
+    expect((rowsToInputs([row]).stacks as InputDef).presets).toEqual([1, 5]);
   });
 
   it("writes control on a number only", () => {
@@ -619,6 +623,42 @@ describe("bonus-draft inputs", () => {
   it("reports names used twice", () => {
     const rows = ["a", "b", " a "].map((name) => ({ ...newInput(), name }));
     expect(duplicateInputNames(rows)).toEqual(["a"]);
+  });
+
+  // A reference saves nothing but the slot it names, so a shared input's definition lives in
+  // one place.
+  it("round-trips a reference to a shared input, keeping only the slot id", () => {
+    const [row] = inputRows({ song: { shared: "shared.song" } });
+    expect(row).toMatchObject({ name: "song", shared: "shared.song" });
+    row.type = "number";
+    row.label = "Leftover";
+    expect(rowsToInputs([row])).toEqual({ song: { shared: "shared.song" } });
+    row.shared = "";
+    expect(rowsToInputs([row]).song).toMatchObject({ type: "number" });
+  });
+
+  it("offers a reference with the shared input's label and type", () => {
+    const sharedInputs = new Map([
+      [
+        "shared.hits",
+        {
+          id: "shared.hits",
+          label: "Recent hits",
+          section: "shared",
+          type: "build_parameter" as const,
+          paramType: "number" as const,
+          path: "shared.hits",
+          sharedInput: true,
+        },
+      ],
+    ]);
+    const rows = inputRows({
+      hits: { shared: "shared.hits" },
+      gone: { shared: "shared.gone" },
+    });
+    expect(inputOptions(rows, sharedInputs)).toEqual([
+      { value: "hits", label: "Recent hits", type: "number" },
+    ]);
   });
 
   it("offers named inputs with their type for the input leaf", () => {
@@ -675,5 +715,80 @@ describe("bonus-draft diffLabel", () => {
     expect(label(base, { ...base, excludes: ["x", "y"] })).toBe(
       "add excludes (2)",
     );
+  });
+});
+
+describe("make shared offer", () => {
+  const hitsDef: InputDef = {
+    type: "number",
+    default: 2,
+    min: 0,
+    max: 10,
+    label: "Recent hits",
+  };
+  const defining = (id: string, def: InputDef): Bonus => ({
+    id,
+    name: id,
+    inputs: { hits: def },
+    grants: [],
+  });
+  const bonuses = [
+    defining("own", hitsDef),
+    defining("same", { type: "number", default: 0 }),
+    defining("other-type", { type: "boolean", default: false }),
+    { id: "reader", inputs: { hits: { shared: "shared.hits" } }, grants: [] },
+  ];
+  const taken = { ids: [], paths: [] };
+  const scope = { inLayer: new Set<string>(), shadowedBy: new Map(), taken };
+
+  // Only an input that could share one value is offered: same name, same type, not already
+  // a reference.
+  it("offers the other bonuses defining an input of the same name and type", () => {
+    const [row] = inputRows({ hits: hitsDef });
+    const offer = makeSharedOffer(row, "own", bonuses, scope);
+    expect(offer?.def).toEqual(hitsDef);
+    expect(offer?.others.map((other) => other.bonus.id)).toEqual(["same"]);
+  });
+
+  // The dialog says what converting does: copy a bonus in, or nothing under a higher layer.
+  it("marks a bonus from elsewhere as copied, and one a higher layer overrides", () => {
+    const [row] = inputRows({ hits: hitsDef });
+    const inLayer = makeSharedOffer(row, "own", bonuses, {
+      inLayer: new Set(["same"]),
+      shadowedBy: new Map(),
+      taken,
+    });
+    expect(inLayer?.others[0]).toEqual({ bonus: bonuses[1], copied: false });
+    const shadowed = makeSharedOffer(row, "own", bonuses, {
+      inLayer: new Set(),
+      shadowedBy: new Map([["same", "Top"]]),
+      taken,
+    });
+    expect(shadowed?.others[0]).toMatchObject({
+      copied: true,
+      shadowedBy: "Top",
+    });
+  });
+
+  // Converting a bonus a higher layer overrides would change nothing in the engine.
+  it("is not offered on a bonus a higher layer overrides", () => {
+    expect(canMakeShared(scope, "own")).toBe(true);
+    expect(
+      canMakeShared(
+        {
+          inLayer: new Set(),
+          shadowedBy: new Map([["own", "Top"]]),
+          taken,
+        },
+        "own",
+      ),
+    ).toBe(false);
+    expect(canMakeShared(null, "own")).toBe(false);
+  });
+
+  it("offers nothing for a reference or an unnamed row", () => {
+    const [ref] = inputRows({ hits: { shared: "shared.hits" } });
+    expect(makeSharedOffer(ref, "reader", bonuses, scope)).toBeNull();
+    expect(makeSharedOffer(newInput(), "own", bonuses, scope)).toBeNull();
   });
 });

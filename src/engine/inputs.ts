@@ -2,8 +2,8 @@
 // reads this table, so a new kind of value gets its errors by adding an entry.
 import {
   assignmentAddress,
-  bonusInputAddress,
   bonusStatAddress,
+  inputKey,
   itemStatAddress,
   readInput,
 } from "../lib/build-inputs";
@@ -11,11 +11,13 @@ import {
   isPercentKind,
   kindOf,
   label as statLabel,
+  labeledFormat,
   outOfRangeErrorMessage,
   pctInput,
   statInput,
 } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
+import { declaredInputs } from "./shared-inputs";
 import type {
   Bonus,
   BoundedValueConfig,
@@ -55,6 +57,9 @@ export interface InputEntry {
   source: string;
   /** The item carrying the value on its slot, where a slot holds several. */
   itemId?: string;
+  /** A bonus input's bonus and the name it declares the input by, plus the shared input's
+   *  slot id when the input references one. */
+  bonusInput?: { bonusId: string; name: string; shared?: string };
 }
 
 export interface InputKind {
@@ -125,7 +130,7 @@ export function paramSpec(slot: BuildParameterSlot): InputSpec {
     ...(slot.control ? { control: slot.control } : {}),
     default: Number(slot.default ?? 0),
     label: slot.label,
-    format: percent ? pctInput : String,
+    format: labeledFormat(percent ? pctInput : String, slot.valueLabels),
   };
 }
 
@@ -150,7 +155,10 @@ export function bonusInputSpec(def: InputDef, name: string): InputSpec {
     ...(def.control ? { control: def.control } : {}),
     default: Number(def.default),
     label,
-    format: def.type === "percent" ? pctInput : String,
+    format: labeledFormat(
+      def.type === "percent" ? pctInput : String,
+      def.valueLabels,
+    ),
   };
 }
 
@@ -207,24 +215,31 @@ const bonusDynamic: InputKind = {
     ),
 };
 
-/** One entry per input of every bonus on the build, attributed to the bonus's anchor. */
+/** One entry per input of every bonus on the build, attributed to the bonus's anchor. A
+ *  shared input has one entry per reader, all at the slot's address. */
 const bonusInput: InputKind = {
   id: "bonusInput",
-  entries: (_db, build, resolved) =>
+  entries: (db, build, resolved) =>
     resolved.bonuses.flatMap((entry) =>
-      Object.entries(entry.bonus.inputs ?? {}).map(([name, def]) => {
-        const address = bonusInputAddress(entry.bonusId, name);
-        const spec = bonusInputSpec(def, name);
-        return {
-          kind: "bonusInput" as const,
-          address,
-          spec,
-          value: readInput(build, address, spec.default),
-          slotId: entry.slotId,
-          source: entry.bonus.name ?? entry.bonusId,
-          itemId: entry.sources[0]?.itemId,
-        };
-      }),
+      declaredInputs(entry.bonus, db.sharedInputs).map(
+        ({ name, def, address, shared }) => {
+          const spec = bonusInputSpec(def, name);
+          return {
+            kind: "bonusInput" as const,
+            address,
+            spec,
+            value: readInput(build, address, spec.default),
+            slotId: entry.slotId,
+            source: entry.bonus.name ?? entry.bonusId,
+            itemId: entry.sources[0]?.itemId,
+            bonusInput: {
+              bonusId: entry.bonusId,
+              name,
+              ...(shared !== undefined && { shared }),
+            },
+          };
+        },
+      ),
     ),
 };
 
@@ -301,20 +316,26 @@ export function rangeError(
   };
 }
 
-/** Every declared value outside its bounds. */
+/** Every declared value outside its bounds, once per slot holding it: bonuses on one row
+ *  reading the same shared input give that row one error. */
 export function inputRanges(
   db: Db,
   build: Build,
   resolved: InputSource,
 ): EngineError[] {
-  return inputEntries(db, build, resolved).flatMap(
-    (entry) =>
+  const seen = new Set<string>();
+  return inputEntries(db, build, resolved).flatMap((entry) => {
+    const key = `${entry.slotId}|${inputKey(entry.address)}`;
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return (
       rangeError(
         entry.slotId,
         entry.source,
         entry.spec,
         entry.value,
         entry.address,
-      ) ?? [],
-  );
+      ) ?? []
+    );
+  });
 }

@@ -2,6 +2,7 @@
 // bonus inputs it notes because their bonus also comes from it.
 import { describe, it, expect } from "vitest";
 import {
+  sharedInputReaders,
   groupBySlot,
   indexResolved,
   inputCopiesBySlot,
@@ -43,6 +44,24 @@ function bonusInput(bonusId: string, slotId: string): InputEntry {
     value: 0,
     slotId,
     source: bonusId,
+    bonusInput: { bonusId, name: "stacks" },
+  } as InputEntry;
+}
+
+/** A shared input's entry on one reader, as the engine's input table lists it. */
+function sharedInput(
+  bonusId: string,
+  source: string,
+  slotId = bonusId,
+): InputEntry {
+  return {
+    kind: "bonusInput",
+    address: { store: "context", path: "shared.song" },
+    spec: { type: "boolean", label: "Song" },
+    value: 0,
+    slotId,
+    source,
+    bonusInput: { bonusId, name: "song", shared: "shared.song" },
   } as InputEntry;
 }
 
@@ -111,5 +130,38 @@ describe("inputCopiesBySlot", () => {
     expect(inputCopiesBySlot([bonusInput("x", "ring")], new Map()).size).toBe(
       0,
     );
+  });
+});
+
+describe("shared input readers", () => {
+  const readers = (entries: InputEntry[], carried: string[]) =>
+    sharedInputReaders(
+      entries,
+      new Map(carried.map((id) => [id, bonus(id, id)])),
+    );
+
+  // Every equipped reader gets the control, so each one is listed under its shared input.
+  it("lists each equipped reader under its shared input", () => {
+    const a = sharedInput("a", "Bard Ring");
+    const b = sharedInput("b", "Bard Neck");
+    expect(readers([a, b], ["a", "b"]).get("shared.song")).toEqual([a, b]);
+  });
+
+  it("leaves out a private input", () => {
+    expect(readers([bonusInput("x", "ring")], ["x"]).size).toBe(0);
+  });
+
+  // A bonus resolved only as a 0-point preview is not equipped, so it shares nothing.
+  it("leaves out a reader no item on the build carries", () => {
+    const a = sharedInput("a", "Bard Ring");
+    const b = sharedInput("b", "Bard Neck");
+    const map = sharedInputReaders(
+      [a, b],
+      new Map([
+        ["a", bonus("a", "a")],
+        ["b", bonus("b", "b", [])],
+      ]),
+    );
+    expect(map.get("shared.song")).toEqual([a]);
   });
 });
