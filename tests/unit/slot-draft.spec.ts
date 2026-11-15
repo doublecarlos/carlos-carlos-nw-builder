@@ -71,6 +71,24 @@ describe("buildDraft / toSlot round trip", () => {
     expect(slot).not.toHaveProperty("scaler");
   });
 
+  // A shared pick is always shown and always counted, so the form never saves a way to move
+  // it to the quick strip or switch it off.
+  it("drops quick and toggleable from a shared picker", () => {
+    const draft = buildDraft({
+      id: "p",
+      section: "globals",
+      type: "item_picker",
+      filter: "location",
+      quick: true,
+      toggleable: true,
+    });
+    draft.globalInput = true;
+    const slot = toSlot(draft, { id: "p" });
+    expect(slot).toMatchObject({ globalInput: true, filter: "location" });
+    expect(slot).not.toHaveProperty("quick");
+    expect(slot).not.toHaveProperty("toggleable");
+  });
+
   it("round-trips numeric bounds and a preset list, including a 0 min", () => {
     const slot: BuildParameterSlot = {
       id: "s2",

@@ -34,11 +34,14 @@ export const isGlobalInputSlot = (
   slot: Pick<Slot, "type"> & { globalInput?: boolean },
 ): boolean => slot.type === "build_parameter" && slot.globalInput === true;
 
-/** Whether `slot` is flagged shared: its control shows on the rows of the bonuses reading it,
- *  and in the Shared inputs section while the build uses it. */
+/** Whether `slot` is flagged shared, a global input param or a shared picker: its control
+ *  shows on the rows of the bonuses reading it, and in the Shared inputs section while the
+ *  build uses it. */
 export const isSharedSlot = (
   slot: Pick<Slot, "type"> & { globalInput?: boolean },
-): boolean => slot.type === "build_parameter" && slot.globalInput === true;
+): boolean =>
+  (slot.type === "build_parameter" || slot.type === "item_picker") &&
+  slot.globalInput === true;
 
 /** Every global input slot in `slots`, by id. */
 export function globalInputsOf(slots: readonly Slot[]): GlobalInputs;

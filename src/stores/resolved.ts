@@ -16,8 +16,11 @@ import {
 } from "../lib/resolved-index";
 import { keepSet } from "../lib/keep-identity";
 import {
+  sharedPickerReaders,
+  sharedPickersByRow,
   sharedRowIds,
   sharedUsers as sharedUsersOf,
+  type SharedPickerControl,
 } from "../lib/shared-inputs";
 import * as builds from "./builds";
 import * as layers from "./layers";
@@ -151,9 +154,21 @@ export const globalReaders = computed<Map<string, InputEntry[]>>(() =>
   globalInputReaders(inputs.value, bonusById.value),
 );
 
+/** The equipped bonuses reading each shared picker, by its slot id. */
+const pickerReaders = computed(() =>
+  resolved.value.ok
+    ? sharedPickerReaders(db.value, resolved.value.result.bonuses)
+    : new Map<string, EvaluatedBonus[]>(),
+);
+
 /** The equipped bonuses reading each shared slot, by name, by its slot id. */
 export const sharedUsers = computed<Map<string, string[]>>(() =>
-  sharedUsersOf(globalReaders.value),
+  sharedUsersOf(globalReaders.value, pickerReaders.value),
+);
+
+/** The shared picker controls each reader's row shows, by the row's slot id. */
+export const sharedPickers = computed<Map<string, SharedPickerControl[]>>(() =>
+  sharedPickersByRow(db.value, pickerReaders.value),
 );
 
 const NO_SHARED_ROWS: ReadonlySet<string> = new Set();

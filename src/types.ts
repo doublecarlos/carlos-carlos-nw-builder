@@ -205,6 +205,11 @@ export interface ItemPickerSlot {
   /** Gives the row a checkbox that drops its pick from the calculation without clearing it.
    * The pick stays saved; `Build.disabledSlots` holds the off state. */
   toggleable?: boolean;
+  /** A shared pick, like the location. Stored and equipped as any pick, read by plain
+   *  `equipped` leaves. The build editor shows its control on the rows of the bonuses reading
+   *  it (`Db.sharedReaders`), and its own row in the Shared inputs section while one of them
+   *  is equipped or it holds a pick. */
+  globalInput?: boolean;
   /** Set only on a row expanded from an `ItemPickerListSlot`: the container's id, which is
    * what the row's remove button acts on. */
   list?: string;
@@ -834,6 +839,9 @@ export interface Db {
   slotById: Map<string, Slot>;
   /** Every `globalInput` slot, by id: what a `GlobalInputRef` resolves against. */
   globalInputs: ReadonlyMap<string, BuildParameterSlot>;
+  /** The ids of the bonuses reading each shared `item_picker`, by its slot id: those testing
+   *  one of its candidates, or a tag one carries, through `equipped`. */
+  sharedReaders: ReadonlyMap<string, readonly string[]>;
   bonuses: Bonus[];
   bonusById: Map<string, Bonus>;
   bonusMembers: Map<string, string[]>;

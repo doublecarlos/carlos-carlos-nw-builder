@@ -690,15 +690,29 @@ function save() {
         data-testid="slot-hide-preview-input"
         >hide stat previews in the picker</BaseCheckbox
       >
-      <BaseCheckbox
-        v-model="draft.toggleable"
-        data-testid="slot-toggleable-input"
-        >can be switched off</BaseCheckbox
+      <BaseCheckbox v-model="draft.globalInput" data-testid="slot-global-input"
+        >shared with the bonuses reading its items</BaseCheckbox
       >
-      <BaseCheckbox v-model="draft.quick" data-testid="slot-quick-input"
-        >show in the quick strip</BaseCheckbox
-      >
+      <template v-if="!draft.globalInput">
+        <BaseCheckbox
+          v-model="draft.toggleable"
+          data-testid="slot-toggleable-input"
+          >can be switched off</BaseCheckbox
+        >
+        <BaseCheckbox v-model="draft.quick" data-testid="slot-quick-input"
+          >show in the quick strip</BaseCheckbox
+        >
+      </template>
     </div>
+    <p
+      v-if="fields.has('pickerFlags') && draft.globalInput"
+      class="mb-2 text-muted"
+      data-testid="slot-global-note"
+    >
+      Shown on the rows of equipped items whose bonuses test its items or their
+      tags, and in the Shared inputs section while one is equipped or it holds a
+      pick.
+    </p>
 
     <!-- item_picker_list ---------------------------------------------------------------- -->
     <FormGrid v-if="fields.has('defaultRows')" class="mb-2">

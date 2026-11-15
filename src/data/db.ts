@@ -21,6 +21,7 @@ import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import { getPath } from "../lib/build-path";
 import { globalInputsOf } from "../engine/global-inputs";
+import { sharedPickerReaders } from "./shared-readers";
 import { copyCounts, copyCountsExcluding } from "../lib/copy-counts";
 import {
   isPreferredSlot,
@@ -303,7 +304,7 @@ export function build(
       : undefined;
   };
 
-  return {
+  const out: Db = {
     items,
     schema,
     slots: slotList,
@@ -312,6 +313,7 @@ export function build(
     presets: slots?.presets ?? [],
     slotById,
     globalInputs: globalInputsOf(slotList),
+    sharedReaders: new Map(),
     slotFor,
     bonuses,
     bonusById,
@@ -415,6 +417,15 @@ export function build(
       });
     },
   };
+  out.sharedReaders = sharedPickerReaders(
+    slotList.flatMap((slot) =>
+      slot.type === "item_picker" && slot.globalInput
+        ? [{ id: slot.id, candidates: out.forSlot(slot.id) }]
+        : [],
+    ),
+    bonuses,
+  );
+  return out;
 }
 
 /** Convenience for tests/tooling: build from the statically-imported data (src/data.ts), no

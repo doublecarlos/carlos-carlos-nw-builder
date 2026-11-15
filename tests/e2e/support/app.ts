@@ -93,7 +93,8 @@ export async function addListRows(page: Page, listId: string, count = 1) {
 }
 
 export function pickerInput(row: Locator): Locator {
-  return row.getByTestId("picker-input");
+  // The row's own picker comes first; a shared picker a reader's bonus reads follows it.
+  return row.getByTestId("picker-input").first();
 }
 
 /** The open floating menu. It lives in <body>, so `scope` only supplies the page. */

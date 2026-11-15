@@ -175,8 +175,8 @@ export interface SlotDraft {
   presets: string;
   /** `number` only. Empty leaves it to the bounds: a stepper when both are set. */
   control: "" | NumberControl;
-  /** See `BuildParameterSlot.globalInput`. A global input is never quick or a scaler, so
-   *  those fields are kept only for switching back. */
+  /** See `BuildParameterSlot.globalInput` and `ItemPickerSlot.globalInput`. A shared slot is
+   *  never quick, a scaler or switched off, so those fields are kept only for switching back. */
   globalInput: boolean;
   /** Empty means the parameter is not a scaler; see `BuildParameterSlot.scaler`. The filter
    *  and tag lists are comma-separated like `optionsFromTags`. */
@@ -445,8 +445,11 @@ const BUILDERS: {
     putIfSet(slot, "parent", local.parent);
     if (local.disallowEmpty) slot.disallowEmpty = true;
     if (local.hidePreview) slot.hidePreview = true;
-    if (local.toggleable) slot.toggleable = true;
-    if (local.quick) slot.quick = true;
+    if (local.globalInput) slot.globalInput = true;
+    else {
+      if (local.toggleable) slot.toggleable = true;
+      if (local.quick) slot.quick = true;
+    }
     if (local.stableRole) {
       const group = number(local.stableGroup);
       slot.stable = { group: group ?? 0, role: local.stableRole };

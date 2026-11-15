@@ -34,6 +34,7 @@ import {
   replacementValuesOf,
 } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import { readerTags, readsCandidates } from "./shared-readers";
 import {
   groupUnderParents,
   nestedParentId,
@@ -2566,6 +2567,69 @@ export function validateSlotLabels(
     }));
 }
 
+/** What a shared picker cannot carry, and the readers it cannot have. Its readers are derived
+ *  from the tags its candidates carry, so a tag that makes a bonus a reader must stay on
+ *  those candidates: on ordinary gear it would make the bonus a reader for the wrong reason. */
+export function validateSharedPickers(
+  slots: AuthoredSlot[],
+  items: Item[],
+  bonuses: Bonus[],
+  filters: FilterDef[],
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const report = (slot: AuthoredSlot, message: string) =>
+    findings.push({
+      level: "error",
+      kind: "slot",
+      name: slot.id,
+      message: `${slot.id}: ${message}`,
+    });
+  const labels = db.labelMap(filters);
+  for (const slot of slots) {
+    if (!(slot as { globalInput?: unknown }).globalInput) continue;
+    if (slot.type === "build_parameter") continue;
+    if (slot.type !== "item_picker") {
+      report(
+        slot,
+        `only a param or a single item_picker can be shared, this is a ${slot.type}`,
+      );
+      continue;
+    }
+    // A shared pick is always shown and always equipped, so nothing may prune or hide it.
+    const banned: [keyof Authored<ItemPickerSlot>, string][] = [
+      ["quick", "has its row in the Shared inputs section"],
+      ["availableWhen", "is never pruned"],
+      ["parent", "has no parent"],
+      ["toggleable", "is never switched off"],
+      ["list", "is a single pick"],
+    ];
+    for (const [field, reason] of banned)
+      if (slot[field] !== undefined && slot[field] !== false)
+        report(slot, `a shared picker ${reason}, so it cannot set ${field}`);
+    if (!slot.label && !db.categoryLabel(slot.type, slot.filter, labels))
+      report(
+        slot,
+        "a shared picker needs a label or a labeled category, or its row and every reader's control read as its id",
+      );
+    const candidates = items.filter((item) => offeredBy(slot, item));
+    const candidateIds = new Set(candidates.map((item) => item.id));
+    for (const bonus of bonuses) {
+      if (!readsCandidates(bonus, candidates)) continue;
+      for (const tag of readerTags(bonus, candidates)) {
+        const stray = items.find(
+          (item) => item.tags?.includes(tag) && !candidateIds.has(item.id),
+        );
+        if (stray)
+          report(
+            slot,
+            `bonus "${bonus.id}" reads it through tag "${tag}", which "${stray.id}" also carries outside its candidates`,
+          );
+      }
+    }
+  }
+  return findings;
+}
+
 /** Every tag an `equipped` leaf of `when` tests. */
 function conditionTags(when: ConditionWhen | undefined, out: Set<string>) {
   eachLeaf(when, (key, spec) => {
@@ -2932,6 +2996,7 @@ export function validate(
     ...validateFilterFields(db.filterFieldsOf(filters)),
     ...validateFilters(filters, items, slots),
     ...validateSlotLabels(slots, filters),
+    ...validateSharedPickers(slots, items, bonuses, filters),
     ...validateTags(tags, items, bonuses, slots),
     ...validateScalerTargets(slots, items),
     ...validateRequiredSlots(slots, sections),

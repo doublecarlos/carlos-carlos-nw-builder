@@ -6,6 +6,8 @@
 import { computed, useTemplateRef } from "vue";
 import PointAssignmentInput from "./PointAssignmentInput.vue";
 import BuildInputControl from "./BuildInputControl.vue";
+import SharedPickerControl from "./SharedPickerControl.vue";
+import { sharedPickers as sharedPickersByRow } from "../../stores/resolved";
 import BaseLink from "../ui/BaseLink.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { db } from "../../stores/resolved";
@@ -38,6 +40,11 @@ defineExpose({
 });
 
 const values = () => props.build.assignments[props.slotDef.id] ?? {};
+
+/** The shared pickers the bonuses anchored on this row read. */
+const sharedPickers = computed(
+  () => sharedPickersByRow.value.get(props.slotDef.id) ?? [],
+);
 
 const inputs = useSlotInputs(
   () => props.slotDef,
@@ -78,10 +85,16 @@ function setCount(itemId: string, count: number) {
   </div>
 
   <div
-    v-if="listed.length"
+    v-if="listed.length || sharedPickers.length"
     class="mt-1 flex flex-col gap-1.5 col-span-full"
     data-testid="assignment-inputs"
   >
+    <SharedPickerControl
+      v-for="control in sharedPickers"
+      :key="control.slot.id"
+      :control="control"
+      :build="build"
+    />
     <BuildInputControl
       v-for="input in listed"
       :key="inputKey(input.address)"
