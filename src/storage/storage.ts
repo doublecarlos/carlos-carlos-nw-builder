@@ -30,6 +30,7 @@ import {
   applyScenarioFlags,
   migrateOverlayScenarioFlags,
   migrateScenarioFlags,
+  migrateSwordCoastInput,
   withoutScenarioRows,
 } from "./migrate-scenario-flags";
 import { toRaw } from "vue";
@@ -382,6 +383,10 @@ export function normalize(
     }),
   );
   const stored = scenario.stored;
+  const swordCoast = migrateSwordCoastInput(
+    stored.choices,
+    migrateOccurrenceInputs(raw.occurrenceInputs, settings.bonusValues),
+  );
 
   const normalizedContext = {
     ...base.context,
@@ -428,15 +433,12 @@ export function normalize(
     id: keepId && typeof raw.id === "string" && raw.id ? raw.id : base.id,
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
-    choices: stored.choices,
+    choices: swordCoast.choices,
     // No seeded defaults to fall back on (unlike `assignments`, which seeds every
     // point_assignment row's every item up front): an absent value reads as its config's
     // `default` (`readInput`).
     values: stored.values,
-    bonusValues: migrateOccurrenceInputs(
-      raw.occurrenceInputs,
-      settings.bonusValues,
-    ),
+    bonusValues: swordCoast.bonusValues,
     assignments: stored.assignments,
     listRows: rowCounts(
       withoutScenarioRows(numbers(raw.listRows)),

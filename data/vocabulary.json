@@ -218,6 +218,10 @@
       "label": "WIS leveling bonus",
       "fields": ["inlineRepetition"]
     },
+    "location": {
+      "label": "Location",
+      "defaultMaxCopies": 1
+    },
     "misc": {
       "label": "Miscellaneous bonus"
     },
@@ -495,6 +499,18 @@
     },
     "race-ability:two-picks": {
       "label": "Race allowing two picks"
+    },
+    "region:chult": {
+      "label": "Chult"
+    },
+    "region:sword-coast": {
+      "label": "Sword Coast"
+    },
+    "region:thay": {
+      "label": "Thay"
+    },
+    "region:wildspace": {
+      "label": "Wildspace"
     }
   }
 }

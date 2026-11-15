@@ -322,6 +322,12 @@
           "globalInput": true
         },
         {
+          "id": "globals.location",
+          "type": "item_picker",
+          "filter": "location",
+          "globalInput": true
+        },
+        {
           "id": "globals.enemyTier.boss",
           "label": "Enemy: Boss",
           "type": "build_parameter",
@@ -372,42 +378,6 @@
           "type": "build_parameter",
           "paramType": "boolean",
           "path": "globals.enemyType.undead",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.location.chult",
-          "label": "Location: Chult",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.location.chult",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.location.thay",
-          "label": "Location: Thay",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.location.thay",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.location.wildspace",
-          "label": "Location: Wildspace",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.location.wildspace",
-          "default": false,
-          "globalInput": true
-        },
-        {
-          "id": "globals.location.swordCoast",
-          "label": "Location: Sword Coast",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "globals.location.swordCoast",
           "default": false,
           "globalInput": true
         }

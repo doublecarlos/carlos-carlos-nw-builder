@@ -5404,6 +5404,30 @@
     "shortDescription": "Whenever you are below 30% of your Maximum Hit Points, you instantly recover 10% of your Stamina and 20% of your Maximum Hit Points. This effect can only occur once every 30 seconds."
   },
   {
+    "id": "location-chult",
+    "name": "Chult",
+    "filter": "location",
+    "tags": ["region:chult"]
+  },
+  {
+    "id": "location-sword-coast",
+    "name": "Sword Coast",
+    "filter": "location",
+    "tags": ["region:sword-coast"]
+  },
+  {
+    "id": "location-thay",
+    "name": "Thay",
+    "filter": "location",
+    "tags": ["region:thay"]
+  },
+  {
+    "id": "location-wildspace",
+    "name": "Wildspace",
+    "filter": "location",
+    "tags": ["region:wildspace"]
+  },
+  {
     "id": "loremaster",
     "name": "Loremaster",
     "filter": "feat5",

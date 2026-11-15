@@ -867,18 +867,12 @@
   {
     "id": "compy-s-instincts",
     "name": "Compy's Instincts",
-    "inputs": {
-      "chult": {
-        "global": "globals.location.chult"
-      }
-    },
     "grants": [
       {
         "name": "Doubled in Chult",
         "when": {
-          "input": {
-            "key": "chult",
-            "is": true
+          "equipped": {
+            "tag": "region:chult"
           }
         },
         "stats": {
@@ -2200,11 +2194,6 @@
   {
     "id": "m28-voidtouched-set",
     "name": "M28 Voidtouched Set",
-    "inputs": {
-      "wildspace": {
-        "global": "globals.location.wildspace"
-      }
-    },
     "grants": [
       {
         "when": {
@@ -2219,9 +2208,8 @@
       },
       {
         "when": {
-          "input": {
-            "key": "wildspace",
-            "is": true
+          "equipped": {
+            "tag": "region:wildspace"
           },
           "bonusOccurrences": {
             "atLeast": 2
@@ -2242,9 +2230,8 @@
             "atLeast": 2
           },
           "not": {
-            "input": {
-              "key": "wildspace",
-              "is": true
+            "equipped": {
+              "tag": "region:wildspace"
             }
           }
         },
@@ -2288,9 +2275,8 @@
           "bonusOccurrences": {
             "atLeast": 2
           },
-          "input": {
-            "key": "wildspace",
-            "is": true
+          "equipped": {
+            "tag": "region:wildspace"
           }
         },
         "variants": [
@@ -2447,20 +2433,14 @@
   {
     "id": "m31-critical-empowerment",
     "name": "M31 Critical Empowerment",
-    "inputs": {
-      "thay": {
-        "global": "globals.location.thay"
-      }
-    },
     "grants": [
       {
         "variants": [
           {
             "when": {
               "toggle": "combat",
-              "input": {
-                "key": "thay",
-                "is": true
+              "equipped": {
+                "tag": "region:thay"
               }
             },
             "stats": {
@@ -2611,19 +2591,13 @@
   {
     "id": "m31-thayan-predator",
     "name": "M31 Thayan Predator",
-    "inputs": {
-      "thay": {
-        "global": "globals.location.thay"
-      }
-    },
     "grants": [
       {
         "variants": [
           {
             "when": {
-              "input": {
-                "key": "thay",
-                "is": true
+              "equipped": {
+                "tag": "region:thay"
               }
             },
             "stats": {
@@ -7100,17 +7074,11 @@
   {
     "id": "sword-coast-tactician-2",
     "name": "Sword Coast Tactician",
-    "inputs": {
-      "active": {
-        "global": "globals.location.swordCoast"
-      }
-    },
     "grants": [
       {
         "when": {
-          "input": {
-            "key": "active",
-            "is": true
+          "equipped": {
+            "tag": "region:sword-coast"
           }
         },
         "stats": {
