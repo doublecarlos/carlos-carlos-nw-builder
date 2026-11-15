@@ -267,11 +267,11 @@ test(
   },
 );
 
-// An ordered global input, like the enemy rank, reads by name wherever its control shows.
-test("a labeled global input names its presets on the reader's row and its own row", async ({
-  page,
-}) => {
-  const rank = `${GLOBALS}.rank`;
+const RANK = `${GLOBALS}.rank`;
+
+/** A ring whose bonus reads a ranked global input, its values labeled `labels` from 1 up. */
+async function openWithRank(page: Page, labels: string[]) {
+  const values = labels.map((_, index) => index + 1);
   await openBuilder(page);
   await importTestCatalog(page, {
     items: [
@@ -286,7 +286,7 @@ test("a labeled global input names its presets on the reader's row and its own r
       {
         id: "test-bane",
         name: "Test Bane",
-        inputs: { rank: { global: rank } },
+        inputs: { rank: { global: RANK } },
         grants: [
           {
             when: { input: { key: "rank", atLeast: 2 } },
@@ -297,7 +297,7 @@ test("a labeled global input names its presets on the reader's row and its own r
     ],
     slots: [
       {
-        id: rank,
+        id: RANK,
         label: "Test rank",
         section: GLOBALS,
         type: "build_parameter",
@@ -305,20 +305,28 @@ test("a labeled global input names its presets on the reader's row and its own r
         path: "test.rank",
         default: 2,
         min: 1,
-        max: 2,
+        max: values.length,
         step: 1,
-        presets: [1, 2],
-        valueLabels: { "1": "Weak", "2": "Strong" },
+        presets: values,
+        valueLabels: Object.fromEntries(
+          labels.map((label, index) => [String(index + 1), label]),
+        ),
         globalInput: true,
       },
     ],
-    sections: [{ id: GLOBALS, label: "Test Global Inputs", slotIds: [rank] }],
+    sections: [{ id: GLOBALS, label: "Test Global Inputs", slotIds: [RANK] }],
     choices: { "gear.ring1": "test-bane" },
   });
   await ensureSectionExpanded(page, "gear");
   await ensureSectionExpanded(page, GLOBALS);
-  const reader = slotRow(page, "gear.ring1");
-  const own = slotRow(page, rank);
+  return { reader: slotRow(page, "gear.ring1"), own: slotRow(page, RANK) };
+}
+
+// An ordered global input, like the enemy rank, reads by name wherever its control shows.
+test("a labeled global input names its presets on the reader's row and its own row", async ({
+  page,
+}) => {
+  const { reader, own } = await openWithRank(page, ["Weak", "Strong"]);
   for (const row of [reader, own])
     await expect(row.getByRole("button", { name: "Strong" })).toHaveAttribute(
       "aria-pressed",
@@ -335,3 +343,48 @@ test("a labeled global input names its presets on the reader's row and its own r
     "true",
   );
 });
+
+// Many labeled presets wrap as whole buttons on a phone, the same on both rows, rather than
+// squeezing their text onto two lines or running off the screen.
+test(
+  "labeled presets wrap whole and stay on screen on a phone",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await page.setViewportSize({ width: 400, height: 900 });
+    const labels = ["Minion", "2 dots", "3 dots", "4 dots", "5 dots", "Boss"];
+    const { reader, own } = await openWithRank(page, labels);
+    for (const row of [reader, own]) {
+      const one = await row
+        .getByRole("button", { name: "Minion" })
+        .boundingBox();
+      for (const label of labels) {
+        const box = (await row
+          .getByRole("button", { name: label })
+          .boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(400);
+        // One line of text: no taller than the single-word button.
+        expect(box.height).toBeLessThanOrEqual(one!.height + 1);
+      }
+    }
+  },
+);
+
+// The shared mark centers on its label's line like the presets beside it, whatever the font's
+// metrics, so every reader row reads the same.
+test(
+  "the shared mark sits on the label's line, between it and the presets",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    const { reader } = await openWithRank(page, ["Weak", "Strong"]);
+    const mark = (await page
+      .getByTestId("bonus-input-test-bane-rank-shared")
+      .boundingBox())!;
+    const preset = (await reader
+      .getByRole("button", { name: "Weak" })
+      .boundingBox())!;
+    const center = (r: { y: number; height: number }) => r.y + r.height / 2;
+    expect(Math.abs(center(mark) - center(preset))).toBeLessThan(1.5);
+    expect(mark.x + mark.width).toBeLessThanOrEqual(preset.x);
+  },
+);

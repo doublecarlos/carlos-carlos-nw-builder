@@ -12,16 +12,20 @@ import {
   inputsBySlot,
   resolvedIndex,
 } from "../stores/resolved";
-import { inputKey } from "../lib/build-inputs";
+import { inputKey, readInput } from "../lib/build-inputs";
 import { sharedTooltip } from "../lib/shared-inputs";
 import { keepEqual } from "../lib/keep-identity";
 import { isCarried } from "../lib/bonus-inspector";
+import { globalInputDef } from "../engine/global-inputs";
 import {
+  bonusInputSpec,
   numberControl,
   type InputEntry,
   type InputKindId,
 } from "../engine/inputs";
 import type {
+  Build,
+  BuildParameterSlot,
   DynamicStatConfig,
   EvaluatedBonus,
   InputAddress,
@@ -117,6 +121,27 @@ const NO_BONUSES: ReadonlyMap<string, EvaluatedBonus> = new Map();
 /** `slot`'s typed values. `pinned` names addresses shown whatever their view says, such as
  *  the row's compare diffs. The list keeps its previous identity while its entries are
  *  unchanged, so a new resolve with the same values re-renders nothing. */
+/** A global input's control on its own row in the Shared inputs section: the spec and
+ *  control its readers' rows get, so the value reads and steps the same everywhere. */
+export function ownGlobalInput(
+  slot: BuildParameterSlot,
+  build: Build,
+): BuildInput {
+  const spec = bonusInputSpec(globalInputDef(slot), slot.label);
+  const address: InputAddress = { store: "context", path: slot.path };
+  return {
+    kind: "bonusInput",
+    address,
+    spec,
+    value: readInput(build, address, spec.default),
+    slotId: slot.id,
+    source: slot.label,
+    anchor: { slotId: slot.id },
+    testid: `global-input-${slot.id}`,
+    control: spec.type === "boolean" ? "checkbox" : numberControl(spec),
+  };
+}
+
 export function useSlotInputs(
   slot: MaybeRefOrGetter<Slot>,
   pinned: MaybeRefOrGetter<readonly InputAddress[]> = [],
