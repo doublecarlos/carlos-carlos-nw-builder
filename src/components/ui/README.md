@@ -64,7 +64,7 @@ ordinary one.
 | PercentInput                              | A percent field over a decimal-stored value (`0.09` stored, `9` typed)                                                                                         |
 | PresetButtons                             | A row of one-click values next to a number field, the current one highlighted                                                                                  |
 | RailGutter / RailToggle                   | A side rail's show/hide-and-resize edge, and the button that collapses/restores it                                                                             |
-| RepeatableRows                            | A list whose rows share one Add/Remove pair, with an empty state that still offers Add                                                                         |
+| RepeatableRows                            | A list whose rows share one Add/Remove pair, with a caller's own row action beside it and an empty state that still offers Add                                 |
 | SegmentedControl                          | "Pick exactly one of a few options"; its segments wrap onto more lines when one row does not fit                                                               |
 | TabButton / TabStrip                      | A row of tabs, each drawn as its own button rather than joined to the panel below                                                                              |
 | ThemeToggle                               | System -> Light -> Dark cycle button                                                                                                                           |

@@ -23,6 +23,17 @@ const singer = (id: string, name: string): Bonus => ({
 
 const TAKEN_PATH = "shared.test.encore";
 
+const sharedSlot = {
+  id: "test-shared.encore",
+  label: "Test encore",
+  section: "test-shared",
+  type: "build_parameter" as const,
+  paramType: "boolean" as const,
+  path: TAKEN_PATH,
+  default: false,
+  sharedInput: true,
+};
+
 async function openWithSingers(page: Page) {
   await openBuilder(page);
   await importTestCatalog(page, {
@@ -131,6 +142,38 @@ async function openBalladForm(page: Page) {
   await page.locator(".editor-row", { hasText: "Test Ballad" }).first().click();
 }
 
+/** A bonus with a private on/off input and a row reading a shared input. */
+async function openMixedInputs(page: Page) {
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    bonuses: [
+      {
+        id: "test-ballad",
+        name: "Test Ballad",
+        inputs: {
+          song: { type: "boolean", default: false, label: "Sang" },
+          encore: { shared: sharedSlot.id },
+        },
+        grants: [
+          { when: { input: { key: "song", is: true } }, stats: { power: 5 } },
+        ],
+      },
+    ],
+    slots: [sharedSlot],
+    sections: [
+      {
+        id: "test-shared",
+        label: "Test Shared Inputs",
+        slotIds: [sharedSlot.id],
+      },
+    ],
+  });
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
+  await page.getByTestId("tab-bonuses").click();
+  await page.locator(".editor-search").fill("Test Ballad");
+  await page.locator(".editor-row", { hasText: "Test Ballad" }).first().click();
+}
+
 // The author picks where the shared input sits under the naming convention. A typed id that is
 // taken is reported, not renamed, so the id written is always the one typed.
 test("the new shared input's id can be edited, and a taken one is refused", async ({
@@ -163,3 +206,92 @@ test("the new shared input's id can be edited, and a taken one is refused", asyn
       .getByTestId("option-row-id"),
   ).toHaveText("shared.scenario.song");
 });
+
+// An author reaches a bonus through the item carrying it more often than through the Bonuses
+// list, so the same action has to be there, writing the same single layer edit.
+test("a bonus opened from its item offers make shared, undone in one step", async ({
+  page,
+}) => {
+  await openWithSingers(page);
+  await layerRow(page, "Test catalog (imported)").locator(".nav-name").click();
+  await page.locator(".editor-search").fill("Test Lute Ring");
+  await page
+    .locator(".editor-row", { hasText: "Test Lute Ring" })
+    .first()
+    .click();
+
+  const card = page.getByTestId("bonus-card").first();
+  await expect(card).toHaveAttribute("data-expanded", "true");
+  await card.getByTestId("bonus-input-make-shared").click();
+
+  const dialog = page.getByTestId("make-shared");
+  await dialog
+    .getByTestId("make-shared-other")
+    .filter({ hasText: "Test Chorus" })
+    .getByRole("checkbox")
+    .check();
+  await dialog.getByTestId("make-shared-submit").click();
+  await expect(dialog).toBeHidden();
+  await expect(
+    card.getByTestId("bonus-input-shared").getByRole("combobox"),
+  ).toHaveValue("Sang");
+
+  // Undo demotes the input again in one step, without leaving the item.
+  await undoButton(page).click();
+  await expect(card.getByTestId("bonus-input-make-shared")).toBeVisible();
+  await expect(card.getByTestId("bonus-input-shared-summary")).toHaveCount(0);
+});
+
+// The offer is a row action beside Add and Remove, not another field, and applies only to an
+// input the bonus itself defines under a name.
+test(
+  "make shared sits in the row's action group, and only for the bonus's own named input",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await openMixedInputs(page);
+    const rows = page.locator(".bonus-input-row");
+    const own = rows.nth(0);
+    const actions = own.getByTestId("repeatable-row-actions");
+    const share = actions.getByTestId("bonus-input-make-shared");
+    await expect(share).toBeVisible();
+    // Not among the fields: the row's rest holds the pickers and definitions.
+    await expect(
+      own
+        .getByTestId("repeatable-row-rest")
+        .getByTestId("bonus-input-make-shared"),
+    ).toHaveCount(0);
+
+    const [shareBox, addBox, removeBox] = await Promise.all(
+      [
+        share,
+        actions.getByRole("button", { name: "Add input" }),
+        actions.getByRole("button", { name: "Remove input" }),
+      ].map(async (target) => (await target.boundingBox())!),
+    );
+    const middle = (box: { y: number; height: number }) =>
+      box.y + box.height / 2;
+    expect(Math.abs(middle(shareBox) - middle(addBox))).toBeLessThanOrEqual(2);
+    expect(Math.abs(middle(shareBox) - middle(removeBox))).toBeLessThanOrEqual(
+      2,
+    );
+
+    // A row reading a shared input defines nothing to share.
+    await expect(
+      rows.nth(1).getByTestId("bonus-input-make-shared"),
+    ).toHaveCount(0);
+    await expect(
+      rows.nth(1).getByTestId("bonus-input-shared-summary"),
+    ).toBeVisible();
+
+    // Neither does a row whose id is still blank; naming it brings the offer back.
+    await page.getByRole("button", { name: "Add input" }).first().click();
+    const blank = rows.last();
+    await expect(blank.getByTestId("bonus-input-make-shared")).toHaveCount(0);
+    await blank.getByTestId("bonus-input-id").fill("chorus");
+    await expect(
+      blank
+        .getByTestId("repeatable-row-actions")
+        .getByTestId("bonus-input-make-shared"),
+    ).toBeVisible();
+  },
+);
