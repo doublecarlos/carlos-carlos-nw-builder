@@ -501,16 +501,16 @@
       "label": "Race allowing two picks"
     },
     "region:chult": {
-      "label": "Chult"
+      "label": "Location: Chult"
     },
     "region:sword-coast": {
-      "label": "Sword Coast"
+      "label": "Location: Sword Coast"
     },
     "region:thay": {
-      "label": "Thay"
+      "label": "Location: Thay"
     },
     "region:wildspace": {
-      "label": "Wildspace"
+      "label": "Location: Wildspace"
     }
   }
 }
