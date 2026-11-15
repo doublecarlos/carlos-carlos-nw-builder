@@ -66,6 +66,22 @@ describe("buildDraft / toSlot round trip", () => {
     expect(roundTrip(slot)).toEqual(slot);
   });
 
+  // The form offers "allow no value" for inline lists too, not only derived ones.
+  it("round-trips allowEmpty on an inline list", () => {
+    const slot: BuildParameterSlot = {
+      id: "s6",
+      label: "Role",
+      section: "boons",
+      type: "build_parameter",
+      paramType: "list",
+      path: "role",
+      default: "",
+      options: [{ value: "dps", label: "DPS" }],
+      allowEmpty: true,
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
   it("round-trips inline list options", () => {
     // A `list` slot's `default` always comes back as a string ("" for none): `toSlot`'s
     // non-numeric branch writes `String(local.default)` unconditionally.
@@ -588,12 +604,12 @@ describe("parent", () => {
   it("offers the section's top-level item pickers other than itself", () => {
     const values = (ownId: string) =>
       parentOptions(parentDb, "stable", ownId).map((option) => option.value);
-    expect(values("stable.new")).toEqual(["", "stable.mount"]);
-    expect(values("stable.mount")).toEqual([""]);
-    expect(values("boons.x")).toEqual(["", "stable.mount"]);
+    expect(values("stable.new")).toEqual(["stable.mount"]);
+    expect(values("stable.mount")).toEqual([]);
+    expect(values("boons.x")).toEqual(["stable.mount"]);
     expect(
       parentOptions(parentDb, "boons", "x").map((option) => option.value),
-    ).toEqual([""]);
+    ).toEqual([]);
   });
 
   it("blocks saving a parent the layout cannot nest under", () => {

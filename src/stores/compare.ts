@@ -5,10 +5,10 @@ import { computed } from "vue";
 import * as builds from "./builds";
 import type { BuildOption } from "../types";
 
-export const compareOptions = computed<BuildOption[]>(() => [
-  { value: "", label: "- none -" },
-  ...builds.otherBuilds.value,
-]);
+/** The builds to compare against; the picker draws its own empty row for "none". */
+export const compareOptions = computed<BuildOption[]>(
+  () => builds.otherBuilds.value,
+);
 
 export const compareBuild = computed(() => {
   const b = builds.build.value;

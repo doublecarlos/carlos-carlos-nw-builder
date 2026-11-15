@@ -362,12 +362,6 @@ describe("catalog.validateParamSchema", () => {
     ]);
   });
 
-  it('always allows the empty "- none -" option every one of these slots carries', () => {
-    expect(
-      catalog.validateParamSchema([listParam("role", ["", "dps"])], schema),
-    ).toEqual([]);
-  });
-
   it("leaves a param the schema has no say over alone", () => {
     expect(
       catalog.validateParamSchema([listParam("myThing", ["whatever"])], schema),

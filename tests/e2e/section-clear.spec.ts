@@ -29,8 +29,7 @@ test("clearing a section acts at once and offers an undo notice", async ({
   );
 
   await (await clearButton(page, "options")).click();
-  // Empty, not "- none -": class is an item_picker, and a cleared picker shows
-  // nothing rather than a named empty option.
+  // A cleared picker shows nothing rather than a named empty option.
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 
   // The notice takes it back, and goes with the action so it cannot fire twice.
@@ -48,8 +47,7 @@ test("clearing a section is a single undo step", async ({ page }) => {
   await chooseClass(page, "wizard");
 
   await (await clearButton(page, "options")).click();
-  // Empty, not "- none -": class is an item_picker, and a cleared picker shows
-  // nothing rather than a named empty option.
+  // A cleared picker shows nothing rather than a named empty option.
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 
   await undoButton(page).click();

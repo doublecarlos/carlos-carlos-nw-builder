@@ -87,7 +87,7 @@ const itemCount = computed(
   () => props.db.itemsByTag.get(displayId.value)?.length ?? 0,
 );
 
-const toneOptions = [{ value: "", label: "- none -" }, ...TONE_OPTIONS];
+const toneOptions = [...TONE_OPTIONS];
 
 /** What the badge reads with no text of its own. */
 const badgePlaceholder = computed(
@@ -155,14 +155,12 @@ function save() {
           class="w-36"
           data-testid="tag-badge-tone"
           :options="toneOptions"
+          show-empty-option
           :model-value="draft.badgeTone"
           @update:model-value="(v) => (draft.badgeTone = v)"
         >
           <template #option="{ option }">
-            <ToneBadge v-if="option.value" :tone="option.value">{{
-              option.label
-            }}</ToneBadge>
-            <template v-else>{{ option.label }}</template>
+            <ToneBadge :tone="option.value">{{ option.label }}</ToneBadge>
           </template>
         </ComboBox>
       </FormField>

@@ -333,7 +333,7 @@ test.describe("folder names in the build pickers", () => {
     const combo = page.locator(".compare-select");
 
     await pickerInput(combo).click();
-    // Rows are "- none -", the "Alts" heading, then "Build 1": one step down has to reach
+    // Rows are "- empty -", the "Alts" heading, then "Build 1": one step down has to reach
     // the build, not stop on a heading Enter would do nothing with.
     await pickerInput(combo).press("ArrowDown");
     await pickerInput(combo).press("Enter");
@@ -519,6 +519,29 @@ test.describe("nested folders in the build picker", () => {
       expect((await pickerInput(combo).boundingBox())?.height).toBe(
         topLevel?.height,
       );
+    },
+  );
+
+  // "No comparison" is the picker's own empty state: a chosen build gets a clear button,
+  // and the closed path and name stop short of its icon.
+  test(
+    "the clear button ends the comparison, clear of the closed name",
+    { tag: "@cross-browser" },
+    async ({ page }) => {
+      await nestedBuild(page);
+      const combo = page.locator(".compare-select");
+
+      await chooseCombo(combo, "Build 1");
+      const closed = await combo.getByTestId("picker-closed").boundingBox();
+      const icon = await combo
+        .getByTestId("combobox-clear")
+        .locator("svg")
+        .boundingBox();
+      expect(closed!.x + closed!.width).toBeLessThanOrEqual(icon!.x);
+
+      await combo.getByTestId("combobox-clear").click();
+      await expect(pickerInput(combo)).toHaveValue("");
+      await expect(combo.getByTestId("combobox-clear")).toHaveCount(0);
     },
   );
 });

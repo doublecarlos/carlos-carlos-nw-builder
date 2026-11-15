@@ -4,7 +4,11 @@
 import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
 import * as db from "../../src/data/db";
-import { optionsFromItems, resolvedOptions } from "../../src/lib/param-options";
+import {
+  isListValue,
+  optionsFromItems,
+  resolvedOptions,
+} from "../../src/lib/param-options";
 import { NW_SCHEMA } from "../../src/data/data";
 import type {
   BuildParameterSlot,
@@ -37,6 +41,7 @@ const derivedSlot: BuildParameterSlot = {
   path: "cls",
   default: "",
   optionsFrom: { tags: ["cls"] },
+  allowEmpty: true,
 };
 
 const slotsData = (slots: Slot[]): SlotsData => ({
@@ -86,13 +91,11 @@ describe("resolvedOptions", () => {
     ]);
   });
 
-  it("prepends the empty row only when the slot asks for it", () => {
-    const withEmpty = resolvedOptions(
-      { ...derivedSlot, allowEmpty: true },
-      items,
-    );
-    expect(withEmpty?.[0]).toEqual({ value: "", label: "- none -" });
-    expect(resolvedOptions(derivedSlot, items)?.[0].value).toBe("cls-archer");
+  // The picker draws the empty row itself, so an option set never carries one.
+  it("adds no empty option even when the slot allows empty", () => {
+    expect(
+      resolvedOptions(derivedSlot, items)?.some((o) => o.value === ""),
+    ).toBe(false);
   });
 
   it("passes an inline-authored option list straight through", () => {
@@ -104,6 +107,18 @@ describe("resolvedOptions", () => {
     expect(resolvedOptions(inline, items)).toEqual([
       { value: "a", label: "A" },
     ]);
+  });
+});
+
+describe("isListValue", () => {
+  const slot = { options: [{ value: "a", label: "A" }] };
+
+  // "" is legal only through allowEmpty, never by being listed.
+  it("accepts an option, and an empty value only when the slot allows it", () => {
+    expect(isListValue(slot, "a")).toBe(true);
+    expect(isListValue(slot, "b")).toBe(false);
+    expect(isListValue(slot, "")).toBe(false);
+    expect(isListValue({ ...slot, allowEmpty: true }, "")).toBe(true);
   });
 });
 
@@ -202,6 +217,37 @@ describe("catalog.validateSlots: the optionsFrom rules", () => {
     expect(
       findings.some((f) => /only meaningful on a list param/.test(f.message)),
     ).toBe(true);
+  });
+});
+
+describe("catalog.validateSlots: a list param's empty value", () => {
+  const inline: BuildParameterSlot = {
+    ...derivedSlot,
+    optionsFrom: undefined,
+    options: [{ value: "a", label: "A" }],
+  };
+  const messages = (slot: BuildParameterSlot) =>
+    catalog.validateSlots([slot]).map((f) => f.message);
+
+  // The picker draws the empty row, so an authored "" option would show a second one.
+  it("rejects an authored option with an empty value", () => {
+    expect(
+      messages({
+        ...inline,
+        options: [{ value: "", label: "- none -" }, ...inline.options!],
+      }),
+    ).toEqual([expect.stringMatching(/empty value; set allowEmpty/)]);
+  });
+
+  // Without allowEmpty a fresh build starts on the default, so it needs one.
+  it("requires a default unless the slot allows empty", () => {
+    expect(messages({ ...inline, allowEmpty: undefined })).toEqual([
+      expect.stringMatching(/without allowEmpty needs a default/),
+    ]);
+    expect(
+      messages({ ...inline, allowEmpty: undefined, default: "a" }),
+    ).toEqual([]);
+    expect(messages(inline)).toEqual([]);
   });
 });
 

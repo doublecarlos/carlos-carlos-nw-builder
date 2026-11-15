@@ -77,7 +77,7 @@ const props = withDefaults(
     /** What an empty row reads as instead of a bare dash. Display only: the row is still
      * empty. */
     placeholder?: string;
-    /** Whether the dropdown offers the empty "- none -" row (`ItemPickerSlot.disallowEmpty`).
+    /** Whether the dropdown offers the empty row (`ItemPickerSlot.disallowEmpty`).
      *  Stops an empty value being *chosen*; says nothing about a build already holding one. */
     allowEmpty?: boolean;
     /** Why each candidate in `items` would normally be withheld, keyed by item id

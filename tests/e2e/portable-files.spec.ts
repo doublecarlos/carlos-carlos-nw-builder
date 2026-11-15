@@ -180,7 +180,7 @@ test.describe("portable files", () => {
 
     await importText(page, JSON.stringify(bundle));
     await confirmImport(page);
-    await expect(comparePicker(page)).toHaveValue("- none -");
+    await expect(comparePicker(page)).toHaveValue("");
   });
 
   test("import sniffs bundle kind correctly", async ({ page }) => {

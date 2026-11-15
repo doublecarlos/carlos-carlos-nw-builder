@@ -43,7 +43,7 @@ const selected = computed(
 );
 
 /** The whole path and name on one line. Empty falls back to ComboBox's own label, which is
- *  what a top-level build, or the "- none -" row, wants. */
+ *  what a top-level build wants. */
 const closedDisplay = computed(() =>
   selected.value?.path
     ? `${pathLabel(selected.value.path)} · ${selected.value.label}`
@@ -55,6 +55,7 @@ const closedDisplay = computed(() =>
   <ComboBox
     v-model="model"
     :options="grouped"
+    show-empty-option
     :placeholder="placeholder"
     :closed-display="closedDisplay"
     input-class="h-9"

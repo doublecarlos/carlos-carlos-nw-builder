@@ -281,14 +281,11 @@ function removeStat(index: number) {
 }
 
 /** Each option carries its own tone, so the menu previews the palette. */
-const qualityOptions = [
-  { value: "", label: "- none -", style: undefined },
-  ...QUALITIES.map((q) => ({
-    value: q.id,
-    label: q.label,
-    style: toneStyle(q.id),
-  })),
-];
+const qualityOptions = QUALITIES.map((q) => ({
+  value: q.id,
+  label: q.label,
+  style: toneStyle(q.id),
+}));
 
 const shapeOptions = INSIGNIA_SHAPES.map((shape) => ({
   value: shape,
@@ -632,6 +629,7 @@ function showsGroup(group: FieldGroup): boolean {
           class="w-36"
           data-testid="item-quality"
           :options="qualityOptions"
+          show-empty-option
           :model-value="draft.quality"
           :tone="qualityColor(draft.quality)"
           @update:model-value="(v) => (draft.quality = v)"

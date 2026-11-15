@@ -8,9 +8,6 @@ import type { Authored, BuildParameterSlot, Item } from "../types";
 
 export type ParamOption = { value: string; label: string };
 
-/** The label of the empty row, matching what every inline-authored list param already uses. */
-export const EMPTY_OPTION: ParamOption = { value: "", label: "- none -" };
-
 /**
  * The items an `optionsFrom` selector picks out, ordered by name.
  *
@@ -48,9 +45,18 @@ export function resolvedOptions(
   items: Item[],
 ): ParamOption[] | undefined {
   if (!slot.optionsFrom) return slot.options;
-  const derived = optionsFromItems(slot.optionsFrom, items).map((item) => ({
+  return optionsFromItems(slot.optionsFrom, items).map((item) => ({
     value: item.id,
     label: item.name,
   }));
-  return slot.allowEmpty ? [EMPTY_OPTION, ...derived] : derived;
+}
+
+/** Whether `value` is one a list param may hold: one of its options, or "" when it allows
+ *  empty. */
+export function isListValue(
+  slot: Pick<BuildParameterSlot, "options" | "allowEmpty">,
+  value: unknown,
+): boolean {
+  if (value === "") return !!slot.allowEmpty;
+  return !!slot.options?.some((option) => option.value === value);
 }

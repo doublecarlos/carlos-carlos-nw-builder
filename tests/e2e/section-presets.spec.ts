@@ -137,12 +137,10 @@ test("applying a preset is a single undo step", async ({ page }) => {
 
   await undoButton(page).click();
 
-  // "" is the empty choice, displayed as its own option's label, not a blank input.
-  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue(
-    "- none -",
-  );
+  // Back to empty, which a list param shows as a blank input like an item picker.
+  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("");
   await expect(pickerInput(slotRow(page, "options.damageType"))).toHaveValue(
-    "- none -",
+    "",
   );
 });
 
@@ -169,8 +167,7 @@ test("applying a preset empties the slots it lists as cleared", async ({
     .click();
 
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("DPS");
-  // An emptied item_picker shows a blank input -- unlike a build_parameter, whose own
-  // "- none -" option has a label to display.
+  // An emptied item_picker shows a blank input.
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 });
 
@@ -193,9 +190,7 @@ test("clearing a slot through a preset is part of the same undo step", async ({
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
     className("wizard"),
   );
-  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue(
-    "- none -",
-  );
+  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("");
 });
 
 // The menu's other direction: a section's live state becomes a brand-new preset draft in the
@@ -257,7 +252,7 @@ test("'Create new from current' opens a preset draft holding the section's state
   );
   // Snapshotted while it sat at its default, so it came across as a cleared slot.
   await expect(pickerInput(slotRow(page, "options.damageType"))).toHaveValue(
-    "- none -",
+    "",
   );
 });
 

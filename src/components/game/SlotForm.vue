@@ -515,12 +515,12 @@ function save() {
               data-testid="slot-options-filter-input"
             />
           </FormField>
-          <FormField v-if="draft.optionsSource !== 'inline'" label="Empty row">
+          <FormField label="Empty">
             <BaseCheckbox
               v-model="draft.allowEmpty"
               data-testid="slot-allow-empty-input"
             >
-              offer “- none -”
+              allow no value
             </BaseCheckbox>
           </FormField>
         </FormGrid>
@@ -657,6 +657,7 @@ function save() {
         <ComboBox
           v-model="draft.parent"
           :options="parentChoices"
+          show-empty-option
           data-testid="slot-parent-input"
         />
       </FormField>

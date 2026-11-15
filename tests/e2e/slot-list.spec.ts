@@ -696,8 +696,8 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await parkCursorOnRow(page, "options.role");
     await page.keyboard.press("Backspace");
 
-    // Backspace clears the slot, same as an item row -- the empty option is the default.
-    await expect(row.getByTestId("picker-input")).toHaveValue("- none -");
+    // Backspace clears the slot, same as an item row: empty is the default.
+    await expect(row.getByTestId("picker-input")).toHaveValue("");
   });
 
   test("typing a character while the list is focused does not change rows", async ({
@@ -747,7 +747,27 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await parkCursorOnRow(page, "options.role");
     await page.keyboard.press("Delete");
 
-    // Delete clears the slot, same as an item row -- the empty option is the default.
-    await expect(row.getByTestId("picker-input")).toHaveValue("- none -");
+    // Delete clears the slot, same as an item row: empty is the default.
+    await expect(row.getByTestId("picker-input")).toHaveValue("");
+  });
+
+  // A list param that allows empty gets the picker's own empty row and clear button, like an
+  // item picker, rather than an authored "none" option.
+  test("a list param that allows empty clears like an item picker", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const row = slotRow(page, "options.role");
+    await row.getByTestId("picker-input").click();
+    await pickerMenu(row).getByText("Tank", { exact: true }).click();
+
+    await row.getByTestId("combobox-clear").click();
+    await expect(row.getByTestId("picker-input")).toHaveValue("");
+
+    await row.getByTestId("picker-input").click();
+    await pickerMenu(row).getByText("Healer", { exact: true }).click();
+    await row.getByTestId("picker-input").click();
+    await pickerMenu(row).getByText("- empty -", { exact: true }).click();
+    await expect(row.getByTestId("picker-input")).toHaveValue("");
   });
 });
