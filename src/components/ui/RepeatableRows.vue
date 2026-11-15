@@ -12,6 +12,7 @@
 // instead, and the rest takes the full width below: for a row of several fields or nested
 // content, where a pinned pair would sit beside whichever control comes last. Such a row's
 // `rowClass` names and spaces it; a row without `#lead` takes its layout from `rowClass`.
+// A caller's own row action fills `#actions`, drawn after the pair.
 import { computed } from "vue";
 import IconButton from "./IconButton.vue";
 import { Plus, Trash } from "@lucide/vue";
@@ -35,6 +36,8 @@ const props = defineProps<{
 defineEmits<{ add: []; remove: [index: number] }>();
 
 const slots = defineSlots<{
+  /** A caller's own row action, drawn after the Add/Remove pair. */
+  actions?(props: { row: T; index: number }): unknown;
   /** The row's main control, given the card's full first line on a phone. */
   lead?(props: { row: T; index: number }): unknown;
   row?(props: { row: T; index: number }): unknown;
@@ -73,6 +76,7 @@ const phoneAreas = computed(() =>
         <IconButton :title="removeLabel" @click="$emit('remove', index)"
           ><Trash
         /></IconButton>
+        <slot name="actions" :row="row" :index="index" />
       </div>
       <div class="min-w-0 [grid-area:lead]" data-testid="repeatable-row-lead">
         <slot name="lead" :row="row" :index="index" />
@@ -103,6 +107,7 @@ const phoneAreas = computed(() =>
         <IconButton :title="removeLabel" @click="$emit('remove', index)"
           ><Trash
         /></IconButton>
+        <slot name="actions" :row="row" :index="index" />
       </div>
       <slot name="row" :row="row" :index="index" />
     </div>

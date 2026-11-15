@@ -2,15 +2,17 @@
 // A repeatable list of a bonus's input declarations (id / type / label / default, plus
 // bounds, step, presets and control for a number), or a reference to a shared input that
 // defines all of those. The same row-mutating shape as `DynamicStatRowList`, the id leading
-// the row so a phone gives it the card's first line. With `canMakeShared`, an input the bonus
-// defines offers to become a shared input.
+// the row so a phone gives it the card's first line. With `canMakeShared`, the row's action
+// group offers to turn the input into a shared input, disabled until the bonus defines it
+// under a name.
 import { computed } from "vue";
-import BaseButton from "../ui/BaseButton.vue";
+import { Link2 } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";
 import FormField from "../ui/FormField.vue";
+import IconButton from "../ui/IconButton.vue";
 import IdField from "../ui/IdField.vue";
 import OptionRow from "../ui/OptionRow.vue";
 import { BOOLEAN_PAIR, booleanOptions } from "../../lib/boolean-label";
@@ -70,6 +72,13 @@ const controlOptions = [
   { value: "stepper", label: "stepper" },
   { value: "field", label: "field" },
 ];
+
+/** Whether this input can become a shared input: the bonus defines it under a name, and no
+ *  higher layer overrides the bonus. The button stays in place and disabled otherwise, so
+ *  naming a row never shifts the ones beside it. */
+function shareable(row: InputDraft): boolean {
+  return Boolean(props.canMakeShared && !row.shared && row.name.trim());
+}
 </script>
 
 <template>
@@ -84,6 +93,15 @@ const controlOptions = [
     @add="emit('add')"
     @remove="(i) => emit('remove', i)"
   >
+    <template #actions="{ row, index }">
+      <IconButton
+        :disabled="!shareable(row)"
+        title="Share this input with other bonuses through a new shared input"
+        data-testid="bonus-input-make-shared"
+        @click="emit('make-shared', index)"
+        ><Link2
+      /></IconButton>
+    </template>
     <template #lead="{ row }">
       <IdField
         v-if="row.frozen"
@@ -102,7 +120,7 @@ const controlOptions = [
         />
       </FormField>
     </template>
-    <template #row="{ row, index }">
+    <template #row="{ row }">
       <FormField
         v-if="sharedInputs.size || row.shared"
         label="Defined by"
@@ -131,14 +149,6 @@ const controlOptions = [
           </template>
         </ComboBox>
       </FormField>
-      <BaseButton
-        v-if="canMakeShared && !row.shared && row.name.trim()"
-        class="self-end"
-        title="Share this input with other bonuses through a new shared input"
-        data-testid="bonus-input-make-shared"
-        @click="emit('make-shared', index)"
-        >Make shared</BaseButton
-      >
       <!-- Keeps a control's border and padding so it sits level with the picker. It wraps
            beside the picker until the row runs out of room. -->
       <FormField

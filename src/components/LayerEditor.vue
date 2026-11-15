@@ -96,6 +96,7 @@ import { viewportKind } from "../lib/shell-layout";
 import { layerEditorLayout, viewOf } from "../lib/layer-editor-layout";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
 import { provideEditorDb } from "../composables/useEditorDb";
+import { provideMakeShared } from "../composables/useMakeSharedContext";
 import type {
   CatalogGroup,
   CatalogOverlay,
@@ -1361,6 +1362,9 @@ function onMakeShared(request: MakeSharedRequest) {
   );
 }
 
+// Offers the same action to every bonus form below, standalone or embedded in an item.
+provideMakeShared({ scope: makeSharedScope, request: onMakeShared });
+
 async function onDeleteBonusTop(event?: MouseEvent) {
   const bonus = selectedBonus.value;
   if (!bonus) return;
@@ -2021,10 +2025,8 @@ onUnmounted(() => {
           :all-bonus-ids="allBonusIds"
           :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds.bonuses"
-          :make-shared-scope="makeSharedScope"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
-          @make-shared="onMakeShared"
           @delete="onDeleteBonusTop"
           @duplicate="duplicateBonus"
           @revert="onRevertBonusTop"
