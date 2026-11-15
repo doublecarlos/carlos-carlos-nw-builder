@@ -168,9 +168,7 @@ const labelsOneControl = computed(
 );
 
 /** What this row calls itself. */
-const ownLabel = computed(
-  () => props.labelOverride || rowLabelOf(props.slotDef),
-);
+const ownLabel = computed(() => rowLabelOf(props.slotDef, props.labelOverride));
 
 // --- the quick enable/disable checkbox ------------------------------------------------------
 // The box sits at the right edge of the label column, not beside the picker, so a section
@@ -413,7 +411,6 @@ useCursorRowKeys(anchor, {
           ref="control"
           :input-id="controlId"
           :slot-def="slotDef"
-          :screen-label="ownLabel"
           :build="build"
           :compare-build="compareBuild"
           :highlight-diff="highlightDiff"

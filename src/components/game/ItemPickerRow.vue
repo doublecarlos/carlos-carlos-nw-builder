@@ -25,6 +25,7 @@ import {
   stableRef,
 } from "../../engine/insignia";
 import { useSlotInputs } from "../../composables/useSlotInputs";
+import { rowLabelOf } from "../../lib/slot-label";
 import { toneStyle } from "../../lib/item-quality";
 import { inputKey } from "../../lib/build-inputs";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
@@ -204,7 +205,7 @@ const stableGroup = computed(() => {
          `list` and so no button. A phone shows it on the row's label line instead. -->
     <IconButton
       v-if="slotDef.list && !isPhone"
-      :title="`Remove ${label ?? slotDef.label}`"
+      :title="`Remove ${rowLabelOf(slotDef)}`"
       :data-testid="'list-remove:' + slotDef.id"
       @click.stop="buildEditor.removeListRow(slotDef.id)"
     >

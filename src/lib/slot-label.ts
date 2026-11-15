@@ -1,9 +1,11 @@
 // A slot's row reads shorter than its references, which travel without the section's context.
 import type { Slot } from "../types";
 
-/** The name `slot` reads as on its own row. */
-export function rowLabelOf(slot: Slot): string {
-  return ("rowLabel" in slot && slot.rowLabel) || slot.label || slot.id;
+/** The name `slot` reads as on its own row; `override` wins where something else names the row. */
+export function rowLabelOf(slot: Slot, override?: string): string {
+  return (
+    override || ("rowLabel" in slot && slot.rowLabel) || slot.label || slot.id
+  );
 }
 
 /** Every name `slot` answers to, for matching a typed query. */
