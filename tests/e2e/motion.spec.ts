@@ -115,12 +115,13 @@ function slidingSections(page: Page) {
   );
 }
 
-/** The section ids in list order. */
+/** The ids of the sections on screen, in list order. A section with no row to show stays
+ *  mounted but hidden, and it can be neither folded nor slid. */
 function sectionOrder(page: Page) {
   return page.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>("[data-section-id]")].map(
-      (el) => el.dataset.sectionId!,
-    ),
+    [...document.querySelectorAll<HTMLElement>("[data-section-id]")]
+      .filter((el) => !el.hidden)
+      .map((el) => el.dataset.sectionId!),
   );
 }
 
