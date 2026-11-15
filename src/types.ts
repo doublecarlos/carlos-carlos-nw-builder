@@ -1231,6 +1231,9 @@ export type SupplyNeed =
 export interface ConditionLeafResult {
   ok: boolean;
   label: string;
+  /** A two-state leaf's test stated the other way round, for a `not` around one leaf:
+   *  "Combat enabled" negates to "Combat disabled". Absent where the leaf has no opposite. */
+  negatedLabel?: string;
   detail?: string;
   /** Why a formula leaf has no value. The leaf reads as unmet. */
   error?: string;

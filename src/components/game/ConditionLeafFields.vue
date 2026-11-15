@@ -348,15 +348,17 @@ const searchableInputs = computed(() =>
       <ComboBox
         :class="width('w-24')"
         data-testid="condition-is"
-        :model-value="row.is === true ? 'on' : row.is === false ? 'off' : ''"
+        :model-value="
+          row.is === true ? 'enabled' : row.is === false ? 'disabled' : ''
+        "
         :options="[
-          { value: 'on', label: 'on' },
-          { value: 'off', label: 'off' },
+          { value: 'enabled', label: 'enabled' },
+          { value: 'disabled', label: 'disabled' },
         ]"
         placeholder="- is -"
         :phone-screen="stacked"
         screen-label="Is"
-        @update:model-value="(v) => (row.is = v === 'on')"
+        @update:model-value="(v) => (row.is = v === 'enabled')"
       />
     </FormField>
     <FormField

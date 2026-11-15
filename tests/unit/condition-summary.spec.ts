@@ -17,7 +17,7 @@ const names: SummaryNames = {
   bonusNames: new Map([["m31-guile", "Gladiator's Guile"]]),
   itemNames: new Map([["mystic-aura-self", "Mystic Aura (Self)"]]),
   paramLabels: new Map([
-    ["toggles.combat", "In combat"],
+    ["toggles.combat", "Combat"],
     ["stacks", "Stacks"],
   ]),
   inputs: [
@@ -34,7 +34,7 @@ const text = (when: ConditionWhen) => summarizeLeaf(leaf(when), ctx);
 describe("summarizeLeaf", () => {
   it("reads a leaf the way the item card does", () => {
     expect(text({ toggle: ["combat", "solo"] })).toEqual({
-      text: "combat or solo enabled",
+      text: "Combat or solo enabled",
       complete: true,
     });
     expect(text({ class: "wizard" }).text).toBe("Class: wizard");
@@ -61,7 +61,7 @@ describe("summarizeLeaf", () => {
       "Stacks ≥ 3",
     );
     expect(text({ param: { key: "toggles.combat", is: true } }).text).toBe(
-      "In combat on",
+      "Combat enabled",
     );
   });
 
@@ -76,7 +76,7 @@ describe("summarizeLeaf", () => {
       "Share ≥ 50%",
     );
     expect(text({ input: { key: "active", is: false } }).text).toBe(
-      "Active off",
+      "Active disabled",
     );
   });
 

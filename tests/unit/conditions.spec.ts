@@ -86,7 +86,10 @@ describe("conditions.ts param leaf", () => {
       { paramLabels: new Map([["feature", "Feature"]]) },
     );
     const result = explain({ param: { key: "feature", is: true } }, c);
-    expect(result.unmet[0]).toMatchObject({ label: "Feature on", detail: "" });
+    expect(result.unmet[0]).toMatchObject({
+      label: "Feature enabled",
+      detail: "",
+    });
   });
 
   it("number form: exactly, a single-value alternative to atLeast/below", () => {
@@ -369,12 +372,44 @@ describe("conditions.ts toggle leaf", () => {
 // The two one-line summaries (the item card's "Conditions: ..." line and the "needs ..."
 // list) render `label` alone, so a compound's label has to explain itself without the tree.
 describe("conditions.ts compound operators explain themselves in one line", () => {
-  it("not: negates the child's own text instead of saying just 'not'", () => {
+  it("not: a single toggle reads as its opposite state", () => {
     const c = ctx({}, { toggles: { party: true } });
     const result = explain({ not: { toggle: "party" } }, c);
     expect(result.ok).toBe(false);
-    expect(result.leaves[0].label).toBe("not party enabled");
-    expect(result.unmet[0].label).toBe("not party enabled");
+    expect(result.leaves[0].label).toBe("party disabled");
+    expect(result.unmet[0].label).toBe("party disabled");
+  });
+
+  it("not: a toggle named by its slot label", () => {
+    const c = ctx(
+      {},
+      {
+        toggles: { party: true },
+        paramLabels: new Map([["toggles.party", "Party"]]),
+      },
+    );
+    expect(explain({ not: { toggle: "party" } }, c).unmet[0].label).toBe(
+      "Party disabled",
+    );
+  });
+
+  it("not: a boolean param and a boolean input each read as disabled", () => {
+    const c = ctx(
+      { feature: true },
+      {
+        paramLabels: new Map([["feature", "Feature"]]),
+        inputs: new Map([
+          ["proc", { label: "Proc", value: true, format: String }],
+        ]),
+      },
+    );
+    expect(
+      explain({ not: { param: { key: "feature", is: true } } }, c).unmet[0]
+        .label,
+    ).toBe("Feature disabled");
+    expect(
+      explain({ not: { input: { key: "proc", is: true } } }, c).unmet[0].label,
+    ).toBe("Proc disabled");
   });
 
   it("not: keeps its children tree, so the expandable detail is unchanged", () => {

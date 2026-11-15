@@ -102,10 +102,16 @@ const LEAVES: Record<
   toggle(spec, ctx) {
     const wanted = asArray(spec as string | string[]);
     const on = wanted.filter((name) => ctx.toggles?.[name]);
+    // A toggle reads by the slot whose path is `toggles.<name>`, falling back to the raw key
+    // for a layer-defined toggle with no row of its own.
+    const names = wanted.map(
+      (name) => ctx.paramLabels?.get(`toggles.${name}`) ?? name,
+    );
     // Unmet means every listed toggle is off, which the label already says.
     return {
       ok: on.length > 0,
-      label: `${wanted.join(" or ")} enabled`,
+      label: `${names.join(" or ")} enabled`,
+      negatedLabel: `${names.join(" and ")} disabled`,
       detail: "",
     };
   },
@@ -182,7 +188,8 @@ const LEAVES: Record<
     if (s.is !== undefined) {
       return {
         ok: value === s.is,
-        label: `${name} ${s.is ? "on" : "off"}`,
+        label: `${name} ${s.is ? "enabled" : "disabled"}`,
+        negatedLabel: `${name} ${s.is ? "disabled" : "enabled"}`,
         detail: "",
       };
     }
@@ -219,7 +226,8 @@ const LEAVES: Record<
     if (s.is !== undefined) {
       return {
         ok: Boolean(value) === s.is,
-        label: `${label} ${s.is ? "on" : "off"}`,
+        label: `${label} ${s.is ? "enabled" : "disabled"}`,
+        negatedLabel: `${label} ${s.is ? "disabled" : "enabled"}`,
         detail: "",
       };
     }
@@ -309,9 +317,11 @@ const conjoin = (leaves: ConditionLeafResult[]): string => {
 const tooBig = (text: string, depth: number) =>
   depth >= MAX_INLINE_DEPTH || text.length > MAX_INLINE_LENGTH;
 
-/** Text for `not`: the negation of what it negates. A single child always spells itself out
- * (its own label is already self-contained and bounded); a group defers once it gets big. */
+/** Text for `not`: a single two-state leaf states its opposite ("Combat disabled"); anything
+ *  else is the negation of what it negates. A single child always spells itself out (its own
+ *  label is already self-contained and bounded); a group defers once it gets big. */
 function describeNot(inner: ConditionLeafResult[], depth: number): string {
+  if (inner.length === 1 && inner[0].negatedLabel) return inner[0].negatedLabel;
   const text = conjoin(inner);
   if (!text) return "never"; // not(nothing constrained) -- vacuously unsatisfiable
   if (inner.length > 1 && tooBig(text, depth))
