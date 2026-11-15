@@ -14,10 +14,18 @@ describe("leafLayout", () => {
   it("lists each type's fields in the order the row shows them", () => {
     expect(fields(newLeafRow("duration"))).toEqual(["range"]);
     expect(fields(newLeafRow("bonusOccurrences"))).toEqual(["bonus", "range"]);
-    expect(fields(newLeafRow("equipped"))).toEqual(["tag", "item", "range"]);
+    expect(fields(newLeafRow("equipped"))).toEqual(["matchBy", "tag", "range"]);
     expect(fields(newLeafRow("formula"))).toEqual(["formula", "range"]);
     for (const type of ["toggle", "role", "class", "damageType"])
       expect(fields(newLeafRow(type))).toEqual(["value"]);
+  });
+
+  it("picks an equipped leaf's picker by what it matches", () => {
+    expect(fields({ ...newLeafRow("equipped"), matchBy: "item" })).toEqual([
+      "matchBy",
+      "item",
+      "range",
+    ]);
   });
 
   it("picks a param or input's comparison by its form", () => {

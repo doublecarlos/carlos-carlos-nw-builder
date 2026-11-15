@@ -11,6 +11,7 @@ import ComboBox from "../ui/ComboBox.vue";
 import CreatableComboBox from "../ui/CreatableComboBox.vue";
 import BonusComboBox from "./BonusComboBox.vue";
 import OptionRow from "../ui/OptionRow.vue";
+import SegmentedControl from "../ui/SegmentedControl.vue";
 import FormField from "../ui/FormField.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
@@ -23,7 +24,11 @@ import {
   newLeafRow,
   type ConditionRow,
 } from "../../engine/condition-draft";
-import { conditionTypeLabel, leafLayout } from "../../lib/condition-fields";
+import {
+  conditionTypeLabel,
+  itemPick,
+  leafLayout,
+} from "../../lib/condition-fields";
 import { knownTags } from "../../data/catalog";
 import type { BonusOption, BuildParameterSlot } from "../../types";
 import type { InputOption } from "../../lib/bonus-draft";
@@ -187,6 +192,26 @@ const tagOptions = computed(() =>
   })),
 );
 
+const matchByOptions = [
+  { value: "tag" as const, label: "tag", testid: "condition-match-tag" },
+  { value: "item" as const, label: "item", testid: "condition-match-item" },
+];
+
+/** Only the chosen target is saved, so the other one is cleared rather than kept behind it. */
+function setMatchBy(matchBy: "tag" | "item") {
+  const target = row.value;
+  target.matchBy = matchBy;
+  if (matchBy === "tag") target.item = "";
+  else target.tag = "";
+}
+
+const items = computed(() => itemPick(db.value));
+
+/** An id no item has, as a layer naming a removed item would carry. */
+const unknownItem = computed(
+  () => !!row.value.item && !items.value.ids.has(row.value.item),
+);
+
 /** The name doubles as search text, as a bonus picker's id does. */
 const searchableInputs = computed(() =>
   props.inputOptions.map((option) => ({ ...option, search: option.value })),
@@ -228,11 +253,36 @@ const searchableInputs = computed(() =>
       />
     </FormField>
     <FormField
-      v-else-if="field === 'item'"
-      label="Or exact item id"
+      v-else-if="field === 'matchBy'"
+      label="Match"
       :class="fieldClass"
-      ><BaseInput v-model="row.item" class="w-full" type="text"
-    /></FormField>
+    >
+      <SegmentedControl
+        :model-value="row.matchBy ?? 'tag'"
+        :options="matchByOptions"
+        @update:model-value="setMatchBy"
+      />
+    </FormField>
+    <FormField v-else-if="field === 'item'" label="Item" :class="fieldClass">
+      <ComboBox
+        :class="width('w-56')"
+        data-testid="condition-item"
+        :model-value="row.item"
+        :options="items.options"
+        show-value
+        :invalid="unknownItem"
+        :closed-display="unknownItem ? row.item : ''"
+        placeholder="- item -"
+        menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
+        :phone-screen="stacked"
+        screen-label="Item"
+        @update:model-value="(v) => (row.item = v)"
+      >
+        <template #option="{ option }">
+          <OptionRow :option="option" />
+        </template>
+      </ComboBox>
+    </FormField>
     <FormField
       v-else-if="field === 'formula'"
       label="Formula"

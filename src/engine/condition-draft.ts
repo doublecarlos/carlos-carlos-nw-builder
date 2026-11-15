@@ -57,6 +57,8 @@ export interface ConditionRow {
   rangeMode?: "range" | "exact" | "atLeastOne";
   /** Empty means the bonus the condition sits in (`BonusOccurrenceSpec`). */
   bonus?: string;
+  /** Which of `tag` and `item` an `equipped` leaf matches. Only that one is saved. */
+  matchBy?: "tag" | "item";
   tag?: string;
   item?: string;
   key?: string;
@@ -151,6 +153,8 @@ function leafFromSpec(
     const s = spec as (RangeSpec & { tag?: string; item?: string }) | undefined;
     return {
       type,
+      // conditions.ts reads `tag` first, so a spec carrying both loads as a tag match.
+      matchBy: s?.tag == null && s?.item != null ? "item" : "tag",
       tag: s?.tag ?? "",
       item: s?.item ?? "",
       ...countFields(s),
@@ -251,11 +255,10 @@ function leafToSpec(
     return range && (row.bonus ? { bonus: row.bonus, ...range } : range);
   }
   if (row.type === "equipped") {
-    const target = row.tag
-      ? { tag: row.tag }
-      : row.item
-        ? { item: row.item }
-        : null;
+    const target =
+      row.matchBy === "item"
+        ? row.item && { item: row.item }
+        : row.tag && { tag: row.tag };
     if (!target) return undefined;
     const range = countSpec(row);
     return range && { ...target, ...range };

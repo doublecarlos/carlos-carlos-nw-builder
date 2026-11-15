@@ -160,6 +160,33 @@ test.describe("at the narrowest width", () => {
     );
   });
 
+  // The item picker lists the whole catalog, so on a phone it opens full-screen like the
+  // editor's other pickers.
+  test("an item picked in the editor opens full-screen and names the summary", async ({
+    page,
+  }) => {
+    const tree = await openBonusConditions(page);
+    await addFrom(rootFoot(tree), "leaf");
+    const fields = editor(page).getByTestId("condition-editor-fields");
+    await fields.getByTestId("picker-input").first().tap();
+    await pickerScreen(page)
+      .getByTestId("picker-option")
+      .filter({ hasText: /^equipped$/ })
+      .tap();
+    await fields.getByTestId("condition-match-item").tap();
+    const item = fields
+      .getByTestId("condition-item")
+      .getByTestId("picker-input");
+    await item.tap();
+    await expect(pickerScreen(page)).toBeVisible();
+    await pickerScreen(page).getByTestId("picker-option").first().tap();
+    await expect(pickerScreen(page)).toHaveCount(0);
+    await expect(item).not.toHaveValue("");
+    const name = await item.inputValue();
+    await done(page).tap();
+    await expect(summaries(tree)).toContainText([name]);
+  });
+
   test("Delete in the editor removes that condition only", async ({ page }) => {
     const tree = await openSlotConditions(page, {
       toggle: "combat",
