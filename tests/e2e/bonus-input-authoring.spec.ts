@@ -52,7 +52,7 @@ test("a boolean input gates a grant and survives reopening", async ({
     "procActive",
   );
   await pickerMenu(key).getByText("Proc", { exact: true }).click();
-  await chooseCombo(leaf.getByTestId("condition-is"), "on");
+  await chooseCombo(leaf.getByTestId("condition-is"), "enabled");
   await page.getByRole("button", { name: "Save bonus" }).click();
 
   // Leave for another bonus and come back: the form is rebuilt from what was saved.
@@ -238,12 +238,12 @@ test("an input can reference a shared input defined by a flagged slot", async ({
   await chooseCombo(input.getByTestId("bonus-input-shared"), "Played a song");
   await expect(input.getByTestId("bonus-input-type")).toHaveCount(0);
   await expect(input.getByTestId("bonus-input-shared-summary")).toContainText(
-    "on/off",
+    "enabled/disabled",
   );
 
   const leaf = await addInputCondition(page);
   await chooseCombo(leaf.getByTestId("condition-input-key"), "Played a song");
-  await chooseCombo(leaf.getByTestId("condition-is"), "on");
+  await chooseCombo(leaf.getByTestId("condition-is"), "enabled");
   await page.getByRole("button", { name: "Save bonus" }).click();
 
   await openEditorRow(page, "Risky Investment");

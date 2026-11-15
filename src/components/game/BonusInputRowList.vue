@@ -6,6 +6,7 @@
 // group offers to turn the input into a shared input, disabled until the bonus defines it
 // under a name.
 import { computed } from "vue";
+import { Link2 } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -14,7 +15,7 @@ import FormField from "../ui/FormField.vue";
 import IconButton from "../ui/IconButton.vue";
 import IdField from "../ui/IdField.vue";
 import OptionRow from "../ui/OptionRow.vue";
-import { Link2 } from "@lucide/vue";
+import { BOOLEAN_PAIR, booleanOptions } from "../../lib/boolean-label";
 import type { InputDraft } from "../../lib/bonus-draft";
 import type { SharedInputs } from "../../engine/shared-inputs";
 
@@ -51,15 +52,12 @@ function sharedSummary(id: string): string {
 }
 
 const typeOptions = [
-  { value: "boolean", label: "on/off" },
+  { value: "boolean", label: BOOLEAN_PAIR },
   { value: "number", label: "number" },
   { value: "percent", label: "percent" },
 ];
 
-const onOffOptions = [
-  { value: "false", label: "off" },
-  { value: "true", label: "on" },
-];
+const booleanChoices = booleanOptions();
 
 /** A number or percent input's numeric fields, typed in the units the input shows. */
 const NUMBER_FIELDS = [
@@ -192,7 +190,7 @@ function shareable(row: InputDraft): boolean {
           <ComboBox
             class="w-full md:w-20"
             :model-value="String(row.on)"
-            :options="onOffOptions"
+            :options="booleanChoices"
             data-testid="bonus-input-default"
             @update:model-value="(v) => (row.on = v === 'true')"
           />

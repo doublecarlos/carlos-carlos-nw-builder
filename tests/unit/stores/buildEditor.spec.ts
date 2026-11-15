@@ -127,6 +127,26 @@ describe("buildEditor undo coalescing", () => {
     expect(builds.build.value!.context.class).toBe("wizard");
     expect(Object.hasOwn(builds.build.value!, "class")).toBe(false);
   });
+
+  it("setParam labels a boolean's state enabled or disabled", async () => {
+    const { buildEditor } = await freshStores();
+    const combatSlot = {
+      id: "options.toggleCombat",
+      label: "Combat",
+      section: "options",
+      type: "build_parameter" as const,
+      paramType: "boolean" as const,
+      path: "toggles.combat",
+      default: true,
+    };
+
+    buildEditor.setParam(combatSlot, false);
+    expect(buildEditor.undoLabel.value).toContain("Combat → disabled");
+
+    buildEditor.undo();
+    buildEditor.setParam(combatSlot, true);
+    expect(buildEditor.undoLabel.value).toContain("Combat → enabled");
+  });
 });
 
 // The real shipped "boons.tier1" slot -- seven rows, min 0/max 5/default 0 (data/slots.json,

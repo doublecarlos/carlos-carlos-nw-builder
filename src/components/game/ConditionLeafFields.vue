@@ -18,6 +18,7 @@ import TokenInput from "../ui/TokenInput.vue";
 import RangeOrExactFields from "./RangeOrExactFields.vue";
 import FormulaField from "./FormulaField.vue";
 import { useEditorDb } from "../../composables/useEditorDb";
+import { booleanOptions } from "../../lib/boolean-label";
 import {
   MULTI_VALUE_LEAF_TYPES,
   fromCsv,
@@ -60,6 +61,8 @@ const fieldClass = computed(() =>
 const typeOptions = computed(() =>
   props.leafTypes.map((t) => ({ value: t, label: conditionTypeLabel(t) })),
 );
+
+const booleanChoices = booleanOptions();
 
 // Each leaf type carries different fields; reset to the new type's defaults.
 function changeType(type: string) {
@@ -348,15 +351,14 @@ const searchableInputs = computed(() =>
       <ComboBox
         :class="width('w-24')"
         data-testid="condition-is"
-        :model-value="row.is === true ? 'on' : row.is === false ? 'off' : ''"
-        :options="[
-          { value: 'on', label: 'on' },
-          { value: 'off', label: 'off' },
-        ]"
+        :model-value="
+          row.is === true ? 'true' : row.is === false ? 'false' : ''
+        "
+        :options="booleanChoices"
         placeholder="- is -"
         :phone-screen="stacked"
         screen-label="Is"
-        @update:model-value="(v) => (row.is = v === 'on')"
+        @update:model-value="(v) => (row.is = v === 'true')"
       />
     </FormField>
     <FormField

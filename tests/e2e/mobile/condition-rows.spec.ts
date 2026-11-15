@@ -61,7 +61,7 @@ for (const width of [MIN_SUPPORTED_WIDTH, 412]) {
         enemies: { atLeast: 2, below: 5 },
       });
       await expect(summaries(tree)).toHaveText([
-        "combat enabled",
+        "Combat enabled",
         "Class: wizard",
         "enemies 2 to 5",
       ]);
@@ -255,7 +255,7 @@ test.describe("at the narrowest width", () => {
     });
     await expect(summaries(tree)).toHaveText([
       "enemies ≥ 2",
-      "combat enabled",
+      "Combat enabled",
       "Class: wizard",
     ]);
 
@@ -266,7 +266,7 @@ test.describe("at the narrowest width", () => {
       y: second.y + 12,
     });
     await expect(summaries(tree)).toHaveText([
-      "combat enabled",
+      "Combat enabled",
       "enemies ≥ 2",
       "Class: wizard",
     ]);

@@ -212,4 +212,20 @@ describe("paramDiffTitle", () => {
       "(none)",
     );
   });
+
+  it("names a boolean parameter's state", () => {
+    const combatSlot: BuildParameterSlot = {
+      id: "options.toggleCombat",
+      label: "Combat",
+      section: "options",
+      type: "build_parameter",
+      paramType: "boolean",
+      path: "toggles.combat",
+      default: true,
+    };
+    const other = (combat: boolean) =>
+      ({ context: { toggles: { combat } } }) as unknown as Build;
+    expect(paramDiffTitle(other(true), combatSlot)).toBe("enabled");
+    expect(paramDiffTitle(other(false), combatSlot)).toBe("disabled");
+  });
 });

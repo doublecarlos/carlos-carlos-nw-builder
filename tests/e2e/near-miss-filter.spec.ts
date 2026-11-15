@@ -192,7 +192,7 @@ test("a boon's proc bonus is listed, inactive, once a point is spent on the boon
   const entry = page.getByTestId(`bonus-entry-${BOON_BONUS}`);
   await expect(entry).toHaveAttribute("data-state", "inactive");
   // The reason is the proc input on the boon itself, one flip away from active.
-  await expect(entry).toContainText("Proc on");
+  await expect(entry).toContainText("Proc enabled");
   await expect(entry.getByText("1 away")).toBeVisible();
   // Expanded, the boon is what the bonus comes from.
   await entry.getByRole("button", { name: BOON_BONUS_NAME }).click();
