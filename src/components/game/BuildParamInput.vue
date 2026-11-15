@@ -114,9 +114,13 @@ defineExpose({ focus: focusControl, focusAndSeed });
       @update:model-value="model = $event as number | string"
     />
 
+    <!-- On a row the box takes the row label's own box (one line, its padding and border), so
+         the two share a center line however tall the row grows. -->
     <BaseCheckbox
       v-else-if="slotDef.paramType === 'boolean'"
-      :class="wide && 'w-full'"
+      :class="
+        wide && 'box-content h-lh w-full border-y border-transparent py-0.5'
+      "
       :input-id="inputId"
       :model-value="!!model"
       @update:model-value="model = $event as boolean"

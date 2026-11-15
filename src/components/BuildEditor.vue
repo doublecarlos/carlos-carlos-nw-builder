@@ -56,7 +56,7 @@ import {
   visibleRows,
 } from "../lib/row-visibility";
 import { isSharedSlot } from "../engine/global-inputs";
-import { usedByNote } from "../lib/shared-inputs";
+import { usedByLinks, type SharedRowLink } from "../lib/shared-inputs";
 import { keepArray, keepEqual, keepMap, keepSet } from "../lib/keep-identity";
 import {
   nestedParentId,
@@ -811,8 +811,8 @@ interface SlotRowData {
   placeholder: string | undefined;
   labelOverride: string | undefined;
   diff: SlotDiff | undefined;
-  /** A shared slot's own row: the bonuses on the build reading it. */
-  usedBy: string | undefined;
+  /** A shared slot's own row: the rows on the build reading it. */
+  usedBy: SharedRowLink[];
 }
 
 const EMPTY_ROW_DATA: SlotRowData = {
@@ -825,7 +825,7 @@ const EMPTY_ROW_DATA: SlotRowData = {
   placeholder: undefined,
   labelOverride: undefined,
   diff: undefined,
-  usedBy: undefined,
+  usedBy: [],
 };
 
 const rowDataBySlot = computed<Map<string, SlotRowData>>((previous) => {
@@ -866,9 +866,15 @@ const rowDataBySlot = computed<Map<string, SlotRowData>>((previous) => {
         placeholder: stablePlaceholder(slotDef.id),
         labelOverride: stableLabel(slotDef.id),
         diff,
-        usedBy: isSharedSlot(slotDef)
-          ? usedByNote(db.value, engine.sharedReaderRows.value.get(slotDef.id))
-          : undefined,
+        usedBy: keepEqual(
+          before?.usedBy,
+          isSharedSlot(slotDef)
+            ? usedByLinks(
+                db.value,
+                engine.sharedReaderRows.value.get(slotDef.id),
+              )
+            : [],
+        ),
       });
     }
   }
@@ -1010,6 +1016,11 @@ const rowHandlers = useKeyedCache((slotId: string) => ({
   rowclick: (event: MouseEvent, itemId?: string) =>
     onRowClick(event, slotId, itemId),
 }));
+
+/** A "Used by" link on a shared slot's row: jumps to the reader's row. */
+function onGoToSlot(slotId: string) {
+  goTo.requestJump({ slotId });
+}
 
 // --- reordering list rows -----------------------------------------------------------------
 // An item_picker_list's rows move by their grip or by Alt+arrow on the row cursor. Row ids are
@@ -1764,6 +1775,7 @@ watch(
               @info="rowHandlers(slotDef.id).info"
               @new-item="rowHandlers(slotDef.id).newItem"
               @rowclick="rowHandlers(slotDef.id).rowclick"
+              @go-to-slot="onGoToSlot"
             />
           </template>
         </BuildSection>

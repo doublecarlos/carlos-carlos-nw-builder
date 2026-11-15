@@ -6,7 +6,7 @@ import {
   sharedReaderRows,
   sharedRowIds,
   sharedTooltip,
-  usedByNote,
+  usedByLinks,
 } from "../../src/lib/shared-inputs";
 import type { InputEntry } from "../../src/engine/inputs";
 import type { Build, BuildParameterSlot, Db, Slot } from "../../src/types";
@@ -62,18 +62,19 @@ describe("shared rows", () => {
       ]),
     );
     expect(rows.get(song.id)).toEqual(["a", "b"]);
-    expect(usedByNote(db, rows.get(song.id))).toBe("Used by Ring, Neck");
-    expect(usedByNote(db, undefined)).toBeUndefined();
+    expect(usedByLinks(db, rows.get(song.id))).toEqual([
+      { key: "a", label: "Ring" },
+      { key: "b", label: "Neck" },
+    ]);
+    expect(usedByLinks(db, undefined)).toEqual([]);
   });
 
   // The tooltip tells the player that editing this control also changes the other places.
-  it("names the other reader rows and the section in a reader's tooltip", () => {
-    expect(sharedTooltip(db, song.id, "a", ["a", "b", "c"])).toBe(
-      "Shared input, also on Neck, Belt and Shared inputs",
+  it("names the other reader rows in a reader's tooltip", () => {
+    expect(sharedTooltip(db, "a", ["a", "b", "c"])).toBe(
+      "Shared input, also on Neck and Belt",
     );
-    expect(sharedTooltip(db, song.id, "a", ["a"])).toBe(
-      "Shared input, also on Shared inputs",
-    );
+    expect(sharedTooltip(db, "a", ["a"])).toBe("Shared input");
   });
 
   it("hides the section's text row along with an unused shared row", () => {

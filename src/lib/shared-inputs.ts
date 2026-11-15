@@ -7,7 +7,7 @@ import { isCarried } from "./bonus-inspector";
 import type { Build, Db, EvaluatedBonus, ItemPickerSlot, Slot } from "../types";
 
 /** What a note naming rows and sections reads. */
-type LabelDb = Pick<Db, "slotFor" | "slotById" | "sections">;
+type LabelDb = Pick<Db, "slotFor" | "slotById">;
 
 type SharedSlot = Extract<Slot, { type: "build_parameter" | "item_picker" }>;
 
@@ -82,34 +82,32 @@ export function sharedRowIds(
 const rowLabel = (db: LabelDb, slotId: string) =>
   db.slotFor(slotId)?.label ?? slotId;
 
-/** The note on a shared slot's own row naming the rows reading it, or undefined when none
- *  does. */
-export function usedByNote(
-  db: LabelDb,
-  rows: readonly string[] | undefined,
-): string | undefined {
-  return rows?.length
-    ? `Used by ${rows.map((row) => rowLabel(db, row)).join(", ")}`
-    : undefined;
+/** A row named in a shared slot's notes, by its slot id and label. */
+export interface SharedRowLink {
+  key: string;
+  label: string;
 }
 
-/** The tooltip on a shared control on reader row `ownRow`: the other rows sharing it, and the
- *  section holding its own row. */
+/** The rows reading a shared slot, as its own row's "Used by" links. Empty when none does. */
+export function usedByLinks(
+  db: LabelDb,
+  rows: readonly string[] | undefined,
+): SharedRowLink[] {
+  return (rows ?? []).map((row) => ({ key: row, label: rowLabel(db, row) }));
+}
+
+/** The tooltip on a shared control on reader row `ownRow`, naming the other reader rows. */
 export function sharedTooltip(
   db: LabelDb,
-  sharedSlotId: string,
   ownRow: string,
   rows: readonly string[] | undefined,
 ): string {
-  const section = db.slotById.get(sharedSlotId)?.section;
-  const places = [
-    ...(rows ?? [])
-      .filter((row) => row !== ownRow)
-      .map((row) => rowLabel(db, row)),
-    db.sections.find((entry) => entry.id === section)?.label ?? section ?? "",
-  ].filter(Boolean);
-  const last = places.pop();
-  const list = places.length ? `${places.join(", ")} and ${last}` : last;
+  const others = (rows ?? [])
+    .filter((row) => row !== ownRow)
+    .map((row) => rowLabel(db, row));
+  const last = others.pop();
+  if (last === undefined) return "Shared input";
+  const list = others.length ? `${others.join(", ")} and ${last}` : last;
   return `Shared input, also on ${list}`;
 }
 
@@ -132,7 +130,7 @@ export function sharedPickersByRow(
     const slot = db.slotById.get(slotId);
     if (slot?.type !== "item_picker") continue;
     for (const row of rows) {
-      const control = { slot, shared: sharedTooltip(db, slotId, row, rows) };
+      const control = { slot, shared: sharedTooltip(db, row, rows) };
       const bucket = map.get(row);
       if (bucket) bucket.push(control);
       else map.set(row, [control]);

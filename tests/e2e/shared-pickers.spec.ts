@@ -96,10 +96,7 @@ test("one pick shows on both reader rows and its own row, all in sync", async ({
   await expect(shared(ring2)).toHaveValue("Test Port");
   await expect(
     ring1.getByTestId(`shared-picker-${PLACE}-shared`),
-  ).toHaveAttribute(
-    "aria-label",
-    "Shared input, also on Ring 2 and Test Shared",
-  );
+  ).toHaveAttribute("aria-label", "Shared input, also on Ring 2");
   await expect(page.getByTestId(`slot-used-by:${PLACE}`)).toHaveText(
     "Used by Ring 1, Ring 2",
   );

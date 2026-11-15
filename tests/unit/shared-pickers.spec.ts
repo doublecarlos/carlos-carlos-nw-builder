@@ -176,12 +176,10 @@ describe("where a shared picker shows", () => {
     expect(byRow.get("a")).toEqual([
       {
         slot: testDb.slotById.get(place.id),
-        shared: "Shared input, also on b and Shared inputs",
+        shared: "Shared input, also on b",
       },
     ]);
-    expect(byRow.get("b")?.[0].shared).toBe(
-      "Shared input, also on a and Shared inputs",
-    );
+    expect(byRow.get("b")?.[0].shared).toBe("Shared input, also on a");
   });
 
   // A pick is never equipped without a row showing it.

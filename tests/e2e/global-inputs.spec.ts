@@ -106,16 +106,10 @@ test("the control shows on every reader's row and edits one shared value", async
   // Each control's mark names the other rows, so a change here is not a surprise there.
   await expect(
     page.getByTestId("bonus-input-test-ballad-song-shared"),
-  ).toHaveAttribute(
-    "aria-label",
-    "Shared input, also on Ring 2 and Test Global Inputs",
-  );
+  ).toHaveAttribute("aria-label", "Shared input, also on Ring 2");
   await expect(
     page.getByTestId("bonus-input-test-chorus-sang-shared"),
-  ).toHaveAttribute(
-    "aria-label",
-    "Shared input, also on Ring 1 and Test Global Inputs",
-  );
+  ).toHaveAttribute("aria-label", "Shared input, also on Ring 1");
 
   await drum(page).uncheck();
   await expect(lute(page)).not.toBeChecked();
@@ -133,11 +127,11 @@ test("the section shows the global input only with a reader equipped", async ({
     "Used by Ring 1",
   );
 
-  // A lone reader still shares the value with the section's row.
+  // A lone reader still marks the value as shared, with no other row to name.
   await expect(lute(page)).toBeVisible();
   await expect(
     page.getByTestId("bonus-input-test-ballad-song-shared"),
-  ).toHaveAttribute("aria-label", "Shared input, also on Test Global Inputs");
+  ).toHaveAttribute("aria-label", "Shared input");
   await own.check();
   await expect(lute(page)).toBeChecked();
 
@@ -154,15 +148,22 @@ test("the section shows the global input only with a reader equipped", async ({
   await expect(lute(page)).toBeChecked();
 });
 
-test("used by lists every equipped reader", async ({ page }) => {
+test("used by lists every equipped reader, each a link to its row", async ({
+  page,
+}) => {
   await openWithReaders(page, {
     "gear.ring1": "test-lute",
     "gear.ring2": "test-drum",
   });
   await ensureSectionExpanded(page, GLOBALS);
-  await expect(page.getByTestId(`slot-used-by:${SONG}`)).toHaveText(
-    "Used by Ring 1, Ring 2",
-  );
+  const usedBy = page.getByTestId(`slot-used-by:${SONG}`);
+  await expect(usedBy).toHaveText("Used by Ring 1, Ring 2");
+
+  await usedBy.getByTestId("slot-used-by-link").last().click();
+  await expect(slotRow(page, "gear.ring2")).toBeInViewport();
+  await expect(
+    slotRow(page, "gear.ring2").locator("[data-cursor-anchor]"),
+  ).toBeFocused();
 });
 
 test("only showing changes keeps the global input's row and a reader row whose one difference is it", async ({
@@ -245,3 +246,23 @@ test("the go-to palette offers the global input and its section only while read"
   await page.getByTestId("go-to-input").fill("played a song");
   await expect(page.getByTestId(`go-to-option-slot:${SONG}`)).toBeVisible();
 });
+
+// A boolean's box sits level with its row label like any other control, and the "Used by"
+// note goes on its own line below rather than pulling the box down beside it.
+test(
+  "the checkbox is level with its label, with used by below it",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await openWithReaders(page, { "gear.ring1": "test-lute" });
+    await ensureSectionExpanded(page, GLOBALS);
+    const row = slotRow(page, SONG);
+    const label = (await row.locator(".slot-label").boundingBox())!;
+    const box = (await row.getByRole("checkbox").boundingBox())!;
+    const usedBy = (await page
+      .getByTestId(`slot-used-by:${SONG}`)
+      .boundingBox())!;
+    const center = (r: { y: number; height: number }) => r.y + r.height / 2;
+    expect(Math.abs(center(box) - center(label))).toBeLessThan(2);
+    expect(usedBy.y).toBeGreaterThanOrEqual(box.y + box.height);
+  },
+);

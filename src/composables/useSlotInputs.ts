@@ -154,7 +154,7 @@ function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
     const shared =
       global === undefined
         ? undefined
-        : sharedTooltip(db.value, global, row.id, readerRows.get(global));
+        : sharedTooltip(db.value, row.id, readerRows.get(global));
     return [
       {
         ...entry,
