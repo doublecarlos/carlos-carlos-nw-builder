@@ -29,7 +29,7 @@ ordinary one.
 | CodeBlock                                 | Read-only, resizable JSON preview                                                                                                                              |
 | CodeSnippet                               | Simple code snippet component                                                                                                                                  |
 | ComboBox / ComboBoxMenu / ComboBoxMenuRow | Typeable single-select over a small fixed option list, replacing `<select>`; `#detail` adds per-row info on the phone screen; `showValue` adds the id          |
-| ComboBoxValueId                           | The id a closed ComboBox/CreatableComboBox shows after its label (`showValue`), truncating before the label                                                    |
+| ComboBoxValueId                           | The id a closed ComboBox/CreatableComboBox shows in parentheses after its label (`showValue`), truncating first                                                |
 | ComboBoxScreen                            | ComboBox's full-screen phone presentation (`phoneScreen`), sized to the visual viewport                                                                        |
 | CompareLine                               | A compare build's value stacked under this build's own, inside one table cell                                                                                  |
 | CreatableComboBox                         | Single-value combobox: pick a known option, or type one that doesn't exist yet; `showValue` reads the label with the id beside it                              |

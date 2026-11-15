@@ -328,7 +328,7 @@ const shownValue = computed(() => {
 const valueTooltip = computed(() =>
   shownValue.value && !(open.value && !screen.value)
     ? `${closedText.value}
-${shownValue.value}`
+(${shownValue.value})`
     : "",
 );
 
