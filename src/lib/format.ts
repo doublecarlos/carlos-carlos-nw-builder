@@ -25,6 +25,12 @@ export const pct = (value: unknown, digits = 2) =>
 export const pctInput = (value: unknown) =>
   finite(value) ? `${Number((value * 100).toFixed(4))}%` : "-";
 
+/** `format` with each value in `labels` read by its label instead. */
+export const labeledFormat =
+  (format: (value: number) => string, labels?: Record<string, string>) =>
+  (value: number): string =>
+    labels?.[String(value)] ?? format(value);
+
 /** A stored decimal in percent units, rounded past float noise: 0.036 -> 3.6, not
  *  3.5999999999999996. */
 export const toPercent = (value: number | string) =>

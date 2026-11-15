@@ -1185,6 +1185,11 @@ function checkInputDefs(
     }
     const control = controlProblem(def, label);
     if (control) report("error", control);
+    if (def.valueLabels !== undefined)
+      report(
+        "error",
+        `${label}: value labels belong on a global input's slot, not a bonus's own input`,
+      );
     if (def.type === "boolean") {
       if (typeof def.default !== "boolean")
         report("error", `${label}: a boolean's default is true or false`);
@@ -1548,6 +1553,16 @@ export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
         });
       }
     }
+    if (slot.valueLabels !== undefined) {
+      const problem = valueLabelsProblem(slot);
+      if (problem)
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: ${problem}`,
+        });
+    }
     if (slot.globalInput)
       for (const problem of globalInputSlotProblems(slot))
         findings.push({
@@ -1558,6 +1573,29 @@ export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
         });
   }
   return findings;
+}
+
+/** What is wrong with a parameter's `valueLabels`, or null. Each key is a whole number
+ *  within the bounds, as only those can be stepped to or picked. */
+function valueLabelsProblem(slot: Authored<BuildParameterSlot>): string | null {
+  if (slot.paramType !== "number")
+    return "value labels are for a number parameter";
+  const labels: unknown = slot.valueLabels;
+  if (!labels || typeof labels !== "object" || Array.isArray(labels))
+    return "value labels map values to labels";
+  for (const [key, text] of Object.entries(labels)) {
+    const value = Number(key);
+    if (!Number.isInteger(value) || String(value) !== key)
+      return `value label "${key}" is not a whole number`;
+    if (
+      (slot.min !== undefined && value < slot.min) ||
+      (slot.max !== undefined && value > slot.max)
+    )
+      return `value label "${key}" is outside the bounds`;
+    if (typeof text !== "string" || !text.trim())
+      return `value label "${key}" is empty`;
+  }
+  return null;
 }
 
 /** What a `globalInput` slot cannot carry. Its value is read only through the bonus inputs

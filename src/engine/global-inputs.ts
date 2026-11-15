@@ -78,6 +78,7 @@ export function globalInputDef(slot: Authored<BuildParameterSlot>): InputDef {
   if (slot.step !== undefined) def.step = slot.step;
   if (slot.presets) def.presets = slot.presets;
   if (slot.control) def.control = slot.control;
+  if (slot.valueLabels) def.valueLabels = slot.valueLabels;
   return def;
 }
 

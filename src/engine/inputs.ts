@@ -11,6 +11,7 @@ import {
   isPercentKind,
   kindOf,
   label as statLabel,
+  labeledFormat,
   outOfRangeErrorMessage,
   pctInput,
   statInput,
@@ -129,7 +130,7 @@ export function paramSpec(slot: BuildParameterSlot): InputSpec {
     ...(slot.control ? { control: slot.control } : {}),
     default: Number(slot.default ?? 0),
     label: slot.label,
-    format: percent ? pctInput : String,
+    format: labeledFormat(percent ? pctInput : String, slot.valueLabels),
   };
 }
 
@@ -154,7 +155,10 @@ export function bonusInputSpec(def: InputDef, name: string): InputSpec {
     ...(def.control ? { control: def.control } : {}),
     default: Number(def.default),
     label,
-    format: def.type === "percent" ? pctInput : String,
+    format: labeledFormat(
+      def.type === "percent" ? pctInput : String,
+      def.valueLabels,
+    ),
   };
 }
 

@@ -415,8 +415,8 @@
     "id": "batiri-s-wisdom-batiri-damage-offense",
     "name": "Batiri's Wisdom",
     "inputs": {
-      "boss": {
-        "global": "globals.enemyTier.boss"
+      "tier": {
+        "global": "globals.enemyTier"
       }
     },
     "grants": [
@@ -424,8 +424,8 @@
         "when": {
           "toggle": "combat",
           "input": {
-            "key": "boss",
-            "is": true
+            "key": "tier",
+            "atLeast": 6
           }
         },
         "stats": {
@@ -7090,14 +7090,46 @@
   {
     "id": "the-bigger-they-are-minsc-damage-defense",
     "name": "The Bigger They Are",
+    "inputs": {
+      "tier": {
+        "global": "globals.enemyTier"
+      }
+    },
     "grants": [
       {
         "when": {
           "toggle": "combat"
         },
-        "stats": {
-          "outgoing_damage": 0.098
-        }
+        "tierBy": {
+          "formula": "$tier"
+        },
+        "tiers": [
+          {
+            "atLeast": 3,
+            "stats": {
+              "outgoing_damage": 0.0825
+            }
+          },
+          {
+            "atLeast": 4,
+            "stats": {
+              "outgoing_damage": 0.0875
+            }
+          },
+          {
+            "atLeast": 5,
+            "stats": {
+              "outgoing_damage": 0.0925
+            }
+          },
+          {
+            "atLeast": 6,
+            "stats": {
+              "outgoing_damage": 0.0975
+            }
+          }
+        ],
+        "longDescription": "+6.8 to +9.8% damage against strong enemies, the stronger the higher the bonus.\nMeasured in game on Elite, Solo and Boss enemies. Mini is inferred, as each tier adds 0.5%."
       }
     ]
   },

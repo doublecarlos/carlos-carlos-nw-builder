@@ -266,3 +266,72 @@ test(
     expect(usedBy.y).toBeGreaterThanOrEqual(box.y + box.height);
   },
 );
+
+// An ordered global input, like the enemy tier, reads by name wherever its control shows.
+test("a labeled global input names its presets on the reader's row and its own row", async ({
+  page,
+}) => {
+  const tier = `${GLOBALS}.tier`;
+  await openBuilder(page);
+  await importTestCatalog(page, {
+    items: [
+      {
+        id: "test-bane",
+        name: "Test Bane Ring",
+        filter: "gear_ring",
+        bonuses: ["test-bane"],
+      },
+    ],
+    bonuses: [
+      {
+        id: "test-bane",
+        name: "Test Bane",
+        inputs: { tier: { global: tier } },
+        grants: [
+          {
+            when: { input: { key: "tier", atLeast: 2 } },
+            stats: { power: 5 },
+          },
+        ],
+      },
+    ],
+    slots: [
+      {
+        id: tier,
+        label: "Test tier",
+        section: GLOBALS,
+        type: "build_parameter",
+        paramType: "number",
+        path: "test.tier",
+        default: 2,
+        min: 1,
+        max: 2,
+        step: 1,
+        presets: [1, 2],
+        valueLabels: { "1": "Weak", "2": "Strong" },
+        globalInput: true,
+      },
+    ],
+    sections: [{ id: GLOBALS, label: "Test Global Inputs", slotIds: [tier] }],
+    choices: { "gear.ring1": "test-bane" },
+  });
+  await ensureSectionExpanded(page, "gear");
+  await ensureSectionExpanded(page, GLOBALS);
+  const reader = slotRow(page, "gear.ring1");
+  const own = slotRow(page, tier);
+  for (const row of [reader, own])
+    await expect(row.getByRole("button", { name: "Strong" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+  // Both rows also show the number itself, which a squeezed field once hid on the own row.
+  for (const row of [reader, own])
+    await expect(row.getByRole("spinbutton")).toHaveValue("2");
+
+  await own.getByRole("button", { name: "Weak" }).click();
+  await expect(reader.getByRole("button", { name: "Weak" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});

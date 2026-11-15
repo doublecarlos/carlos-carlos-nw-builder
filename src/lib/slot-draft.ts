@@ -173,6 +173,8 @@ export interface SlotDraft {
   max: string | number;
   step: string | number;
   presets: string;
+  /** `number` only: `value = label` pairs, comma-separated, e.g. `1 = Minion, 6 = Boss`. */
+  valueLabels: string;
   /** `number` only. Empty leaves it to the bounds: a stepper when both are set. */
   control: "" | NumberControl;
   /** See `BuildParameterSlot.globalInput` and `ItemPickerSlot.globalInput`. A shared slot is
@@ -254,6 +256,9 @@ export function buildDraft(slot: AuthoredSlot | null | undefined): SlotDraft {
     max: source.max == null ? "" : String(source.max),
     step: source.step == null ? "" : String(source.step),
     presets: (source.presets ?? []).join(", "),
+    valueLabels: Object.entries(source.valueLabels ?? {})
+      .map(([value, label]) => `${value} = ${label}`)
+      .join(", "),
     control: source.control ?? "",
     globalInput: source.globalInput ?? false,
     scalerMode: source.scaler?.mode ?? "",
@@ -408,6 +413,8 @@ const BUILDERS: {
       putIfSet(slot, "presets", presets);
       if (local.paramType === "number" && local.control)
         slot.control = local.control;
+      if (local.paramType === "number")
+        putIfSet(slot, "valueLabels", parseValueLabels(local.valueLabels));
       if (local.scalerMode && !local.globalInput) {
         const applies: NonNullable<Scaler["applies"]> = {};
         putIfSet(applies, "filter", commaList(local.scalerFilters));
@@ -704,4 +711,15 @@ export function slotSaveError(
   if (unavailable) return unavailable;
   const [badParent] = checkSlotParent(slot, refs);
   return badParent ?? null;
+}
+
+/** `value = label` pairs as typed, in their order. A pair missing either side is dropped. */
+function parseValueLabels(text: string): Record<string, string> | undefined {
+  const pairs = text.split(",").flatMap((part) => {
+    const [value, ...rest] = part.split("=");
+    const key = number(value ?? "");
+    const label = rest.join("=").trim();
+    return key !== undefined && label ? [[String(key), label] as const] : [];
+  });
+  return pairs.length ? Object.fromEntries(pairs) : undefined;
 }

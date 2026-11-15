@@ -33,6 +33,7 @@ import type {
   BonusCandidate,
   DynamicStatConfig,
   EvalContext,
+  FormulaRef,
   ConditionExplain,
   ConditionWhen,
   ConditionLeafResult,
@@ -609,11 +610,13 @@ function evaluateGrant(
       return inactive();
     }
     const label = grant.tierBy && formulaLabel(grant.tierBy, ctx);
+    const thresholds = grant.tierBy && tierThresholds(grant, grant.tierBy, ctx);
     const measured = grant.tierBy && {
       measure: {
         formula: formulaText(grant.tierBy),
         ...(label && { label }),
         value: measure.value,
+        ...(thresholds && { thresholds }),
       },
     };
     let best: GrantTier | null = null;
@@ -978,4 +981,19 @@ export function resolve(
     assignmentStatsBySlot,
     publishConflicts,
   };
+}
+
+/** Each tier's threshold in the units of the input `tierBy` reads, or undefined when it
+ *  reads anything else. */
+function tierThresholds(
+  grant: Grant,
+  tierBy: FormulaRef,
+  ctx: EvalContext,
+): Record<number, string> | undefined {
+  const read = singleRead(tierBy.formula);
+  const input = read?.kind === "named" ? ctx.inputs?.get(read.name) : undefined;
+  if (!input || !grant.tiers) return undefined;
+  return Object.fromEntries(
+    grant.tiers.map((tier) => [tier.atLeast, input.format(tier.atLeast)]),
+  );
 }

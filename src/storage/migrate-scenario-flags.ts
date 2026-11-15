@@ -1,5 +1,6 @@
 // Moves the scenario flag picks of the retired `options.scenario` list onto what replaced them:
-// the Boss flag onto its boolean global input, a location onto the shared Location pick. Also
+// the Boss and Non-boss flags onto the enemy tier global input, a location onto the shared
+// Location pick. Also
 // moves Sword Coast Tactician's private "active" input onto that pick.
 //
 // Called from `normalize` after `migrateListSlots`, which has already moved the older fixed
@@ -17,11 +18,17 @@ const RETIRED_LIST = "options.scenario";
  *  view of `data/slots.json`. */
 export const LOCATION_SLOT = "globals.location";
 
-/** The global input path each enemy flag item became. The Non-boss flag maps to nothing, as
- *  the Boss flag off says it. */
-export const FLAG_PATHS: Record<string, string | null> = {
-  "enemy-type-boss": "globals.enemyTier.boss",
-  "enemy-type-non-boss": null,
+/** A global input value a flag pick became. */
+export interface ScenarioFlag {
+  path: string;
+  value: number;
+}
+
+/** The enemy tier each enemy flag item became. Boss is the tier's default, so Non-boss needs
+ *  a value of its own: Solo, the strongest tier below Boss. */
+export const FLAG_VALUES: Record<string, ScenarioFlag> = {
+  "enemy-type-boss": { path: "globals.enemyTier", value: 6 },
+  "enemy-type-non-boss": { path: "globals.enemyTier", value: 5 },
 };
 
 /** The location flag items, which kept their ids as Location picks. */
@@ -35,20 +42,20 @@ const isRetiredRow = (slotId: string) =>
   parseRowSlotId(slotId)?.listId === RETIRED_LIST;
 
 /**
- * A build's stored rows with the retired list's rows dropped, the context paths its enemy flag
- * picks set, and its first location pick in stored order moved onto Location unless that
+ * A build's stored rows with the retired list's rows dropped, the context values its enemy
+ * flag picks set, the first stored winning a path, and its first location pick in stored order moved onto Location unless that
  * already holds one. A pick of any other item is dropped with its row, as no slot shows it.
  */
 export function migrateScenarioFlags(stored: SlotData): {
   stored: SlotData;
-  flags: string[];
+  flags: ScenarioFlag[];
 } {
-  const flags: string[] = [];
+  const flags: ScenarioFlag[] = [];
   let location: string | undefined;
   for (const [slotId, itemId] of Object.entries(stored.choices ?? {})) {
     if (!isRetiredRow(slotId)) continue;
-    const path = FLAG_PATHS[itemId];
-    if (path && !flags.includes(path)) flags.push(path);
+    const flag = FLAG_VALUES[itemId];
+    if (flag && !flags.some(({ path }) => path === flag.path)) flags.push(flag);
     if (LOCATION_FLAGS.includes(itemId)) location ??= itemId;
   }
   const hasRows = Object.values(stored).some((field) =>
@@ -108,10 +115,10 @@ export function migrateSwordCoastInput(
 /** Sets each of `flags` in `context` unless it already holds a value there. */
 export function applyScenarioFlags(
   context: Record<string, unknown>,
-  flags: readonly string[],
+  flags: readonly ScenarioFlag[],
 ): void {
-  for (const path of flags)
-    if (getPath(context, path) === undefined) setPath(context, path, true);
+  for (const { path, value } of flags)
+    if (getPath(context, path) === undefined) setPath(context, path, value);
 }
 
 /** `listRows` without the retired list's count. */

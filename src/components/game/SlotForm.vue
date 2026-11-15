@@ -436,6 +436,18 @@ function save() {
           </FormField>
           <FormField
             v-if="draft.paramType === 'number'"
+            label="Value labels"
+            hint="value = label, comma-separated"
+          >
+            <BaseInput
+              v-model="draft.valueLabels"
+              class="w-full"
+              type="text"
+              data-testid="slot-value-labels-input"
+            />
+          </FormField>
+          <FormField
+            v-if="draft.paramType === 'number'"
             label="Control"
             class="w-44"
           >

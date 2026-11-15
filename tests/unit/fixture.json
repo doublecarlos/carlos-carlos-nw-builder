@@ -196,9 +196,7 @@
           "procs": true
         },
         "globals": {
-          "enemyTier": {
-            "boss": true
-          }
+          "enemyTier": 6
         }
       },
       "values": {
@@ -226,11 +224,11 @@
       "derived": {
         "baseDamage": 17010.44,
         "damage": {
-          "average": 42597470.88112924,
-          "critDeflect": 45215192.55538858,
-          "critNoDeflect": 45215192.55538857,
-          "noCritDeflect": 19037975.812795192,
-          "noCritNoDeflect": 19037975.81279519
+          "average": 42587146.724347584,
+          "critDeflect": 45204233.95321811,
+          "critNoDeflect": 45204233.95321809,
+          "noCritDeflect": 19033361.664512888,
+          "noCritNoDeflect": 19033361.664512884
         },
         "ehp": {
           "average": 799703.7744309655,
@@ -376,7 +374,7 @@
           "hit_points_mult": -0.2799999999999999,
           "out_healing": 109744.75,
           "out_healing_p": 0.07,
-          "outgoing_damage": 1.0630000000000002,
+          "outgoing_damage": 1.0625,
           "overall_damage": 0.095,
           "overall_healing": 0,
           "physical_damage_boost": 0,
@@ -449,7 +447,7 @@
           "hit_points_mult": -0.2799999999999999,
           "out_healing": 109744.75,
           "out_healing_p": 0.26657749999999997,
-          "outgoing_damage": 1.0630000000000002,
+          "outgoing_damage": 1.0625,
           "overall_damage": 0.095,
           "overall_healing": 0,
           "physical_damage_boost": 0,
@@ -522,7 +520,7 @@
           "hit_points_mult": -0.2799999999999999,
           "out_healing": 0,
           "out_healing_p": 0.07,
-          "outgoing_damage": 1.0630000000000002,
+          "outgoing_damage": 1.0625,
           "overall_damage": 0.095,
           "overall_healing": 0,
           "physical_damage_boost": 0,
@@ -595,7 +593,7 @@
           "hit_points_mult": -0.21879999999999988,
           "out_healing": 109744.75,
           "out_healing_p": 0.2940775,
-          "outgoing_damage": 1.0630000000000002,
+          "outgoing_damage": 1.0625,
           "overall_damage": 0.095,
           "overall_healing": 0.2940775,
           "physical_damage_boost": 0.0275,
@@ -887,7 +885,7 @@
           "hit_points_mult": -0.21879999999999988,
           "out_healing": 109744.75,
           "out_healing_p": 0.2940775,
-          "outgoing_damage": 1.0630000000000002,
+          "outgoing_damage": 1.0625,
           "overall_damage": 0.095,
           "overall_healing": 0.2940775,
           "physical_damage_boost": 0.0275,

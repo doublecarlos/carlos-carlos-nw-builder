@@ -1,17 +1,19 @@
 // Builds saved while the scenario flags were items picked in the `options.scenario` list.
-// The Boss flag became a boolean global input and a location the shared Location pick, so a
-// stored pick has to move there, or every such build silently loses its Boss or location.
+// The Boss and Non-boss flags became enemy tiers and a location the shared Location pick, so a
+// stored pick has to move there, or every such build silently loses its tier or location.
 import { describe, expect, it } from "vitest";
 import * as db from "../../src/data/db";
 import { getPath } from "../../src/lib/build-path";
 import {
-  FLAG_PATHS,
+  FLAG_VALUES,
   LOCATION_FLAGS,
   LOCATION_SLOT,
   migrateOverlayScenarioFlags,
 } from "../../src/storage/migrate-scenario-flags";
 import * as storage from "../../src/storage/storage";
 import type { Build, SectionPreset } from "../../src/types";
+
+const TIER = FLAG_VALUES["enemy-type-boss"]!.path;
 
 const flagged = (choices: Record<string, string>, extra = {}) =>
   storage.normalize({
@@ -26,7 +28,7 @@ describe("scenario flag migration", () => {
       "options.scenario#1": "enemy-type-boss",
       "options.scenario#2": "location-thay",
     });
-    expect(getPath(build.context, FLAG_PATHS["enemy-type-boss"]!)).toBe(true);
+    expect(getPath(build.context, TIER)).toBe(6);
     expect(build.choices[LOCATION_SLOT]).toBe("location-thay");
     expect(Object.keys(build.choices)).not.toContain("options.scenario#1");
     expect(build.listRows).not.toHaveProperty("options.scenario");
@@ -49,12 +51,19 @@ describe("scenario flag migration", () => {
     expect(build.choices[LOCATION_SLOT]).toBe("location-chult");
   });
 
-  it("drops a Non-boss pick, which Boss off already says", () => {
+  // The tier defaults to Boss, so a Non-boss pick has to store a lower tier to stay non-boss.
+  it("stores a tier below Boss for a Non-boss pick", () => {
     const build = flagged({ "options.scenario#1": "enemy-type-non-boss" });
     expect(build.choices).not.toHaveProperty("options.scenario#1");
-    expect(getPath(build.context, FLAG_PATHS["enemy-type-boss"]!)).toBe(
-      undefined,
-    );
+    expect(getPath(build.context, TIER)).toBeLessThan(6);
+  });
+
+  it("keeps the first stored of a Boss and a Non-boss pick", () => {
+    const build = flagged({
+      "options.scenario#1": "enemy-type-boss",
+      "options.scenario#2": "enemy-type-non-boss",
+    });
+    expect(getPath(build.context, TIER)).toBe(6);
   });
 
   // The fixed Location and Enemy Type slots came before the list, so they chain through it.
@@ -69,9 +78,9 @@ describe("scenario flag migration", () => {
   it("keeps a value the context already stores", () => {
     const build = flagged(
       { "options.scenario#1": "enemy-type-boss" },
-      { context: { globals: { enemyTier: { boss: false } } } },
+      { context: { globals: { enemyTier: 3 } } },
     );
-    expect(getPath(build.context, FLAG_PATHS["enemy-type-boss"]!)).toBe(false);
+    expect(getPath(build.context, TIER)).toBe(3);
   });
 
   it("is idempotent", () => {
@@ -81,14 +90,14 @@ describe("scenario flag migration", () => {
 
   // The flag lands beside a stored sibling, in a copy of the nested objects they share.
   it("does not mutate the stored build", () => {
-    const context = { globals: { enemyTier: { elite: true } } };
+    const context = { globals: { enemyType: { demon: true } } };
     const build = flagged(
       { "options.scenario#1": "enemy-type-boss" },
       { context },
     );
-    expect(getPath(build.context, FLAG_PATHS["enemy-type-boss"]!)).toBe(true);
-    expect(getPath(build.context, "globals.enemyTier.elite")).toBe(true);
-    expect(context).toEqual({ globals: { enemyTier: { elite: true } } });
+    expect(getPath(build.context, TIER)).toBe(6);
+    expect(getPath(build.context, "globals.enemyType.demon")).toBe(true);
+    expect(context).toEqual({ globals: { enemyType: { demon: true } } });
   });
 
   // `sameContent` compares the live build with its downloaded snapshot, so both migrate.
@@ -136,7 +145,7 @@ describe("scenario flag migration", () => {
     const paths = new Set(
       [...db.fromData().globalInputs.values()].map((slot) => slot.path),
     );
-    const targets = Object.values(FLAG_PATHS).filter((path) => path !== null);
+    const targets = Object.values(FLAG_VALUES).map(({ path }) => path);
     expect(targets.filter((path) => !paths.has(path))).toEqual([]);
   });
 

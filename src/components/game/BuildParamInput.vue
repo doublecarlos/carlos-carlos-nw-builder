@@ -20,6 +20,7 @@ import BaseInput from "../ui/BaseInput.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
 import PresetButtons from "../ui/PresetButtons.vue";
 import { numberControl } from "../../engine/inputs";
+import { labeledFormat } from "../../lib/format";
 import type { BuildParameterSlot } from "../../types";
 
 const props = withDefaults(
@@ -44,11 +45,17 @@ const props = withDefaults(
 
 const model = defineModel<string | number | boolean>();
 
-/** A number param with both bounds steps, unless its `control` asks for a field. */
+/** A number param with both bounds steps, unless its `control` asks for a field. The value's
+ *  type is the slot's `paramType`, not its slot `type`. */
 const stepper = computed(
   () =>
-    props.slotDef.paramType === "number" &&
-    numberControl(props.slotDef) === "stepper",
+    numberControl({ ...props.slotDef, type: props.slotDef.paramType }) ===
+    "stepper",
+);
+
+/** Preset text: a labeled value reads by its label, as on the readers' rows. */
+const presetFormat = computed(() =>
+  labeledFormat(String, props.slotDef.valueLabels),
 );
 
 /** Width class per paramType when `wide` is set, so every row lines up visually. */
@@ -154,6 +161,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
       <PresetButtons
         v-if="slotDef.presets?.length"
         :presets="slotDef.presets"
+        :format="presetFormat"
         :model-value="Number(model)"
         @update:model-value="model = $event ?? undefined"
       />

@@ -203,11 +203,12 @@ function tierGrant(entry: EvaluatedBonus) {
 }
 
 /** What a tier rung reads as: the occurrence count it needs, or its `tierBy` measure's label
- *  (else its formula) against its threshold. */
+ *  (else its formula) against its threshold, in the measured input's units. */
 export function tierHeading(grant: ResolvedGrant, atLeast: number): string {
   const measure =
     grant.measure?.label ?? grant.measure?.formula ?? grant.raw.tierBy?.formula;
-  return measure ? `${measure} ≥ ${atLeast}` : `${atLeast} equipped`;
+  const threshold = grant.measure?.thresholds?.[atLeast] ?? atLeast;
+  return measure ? `${measure} ≥ ${threshold}` : `${atLeast} equipped`;
 }
 
 // Tiers have no `when` of their own (bonus.ts matches the `tierBy` measure directly), so the

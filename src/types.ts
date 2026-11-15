@@ -154,6 +154,9 @@ export interface BuildParameterSlot {
   /** A `number` with both bounds is a stepper unless this says `field`; anything else is a
    *  field. */
   control?: NumberControl;
+  /** `number` only: how some values read, by value, e.g. `{ "6": "Boss" }` for an ordered
+   *  scale. Presets, notes and ladders show the label; unlabeled values read as numbers. */
+  valueLabels?: Record<string, string>;
   /** Marks this parameter as a stat scaler: its value multiplies stat payloads elsewhere
    * rather than only being read by `param` conditions. The slot's `path` is the scaler's
    * identity and its `label` the display name. */
@@ -784,6 +787,8 @@ export interface InputDef {
   /** A `number` with both bounds is a stepper unless this says `field`; anything else is a
    *  field. */
   control?: NumberControl;
+  /** Set from a global input slot's own `valueLabels`. A bonus's own input takes none. */
+  valueLabels?: Record<string, string>;
   default: number | boolean;
   label?: string;
 }
@@ -1252,7 +1257,13 @@ export interface GrantEvaluation {
   scale?: GrantScale;
   /** The value `raw.tierBy` measured, with its label, for naming the tier rungs. Absent
    * without `tierBy` or when it failed. */
-  measure?: { formula: string; label?: string; value: number };
+  measure?: {
+    formula: string;
+    label?: string;
+    value: number;
+    /** Each tier's threshold as the measured input shows it, when `tierBy` reads one. */
+    thresholds?: Record<number, string>;
+  };
 }
 
 /** A value a formula read, named and formatted for the player. `key` tells reads apart, and

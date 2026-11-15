@@ -105,6 +105,22 @@ describe("buildDraft / toSlot round trip", () => {
     expect(roundTrip(slot)).toEqual(slot);
   });
 
+  // The form rebuilds a slot field by field, so labels the form did not carry would be lost.
+  it("round-trips a number slot's value labels", () => {
+    const slot: BuildParameterSlot = {
+      id: "s7",
+      label: "Tier",
+      section: "globals",
+      type: "build_parameter",
+      paramType: "number",
+      path: "tier",
+      min: 1,
+      max: 6,
+      valueLabels: { "1": "Minion", "6": "Boss" },
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
   it("round-trips a boolean slot's default without confusing the string 'false'", () => {
     const slot: BuildParameterSlot = {
       id: "s3",
