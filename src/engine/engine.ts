@@ -698,7 +698,7 @@ function collectPruned(
 export function resolveBuild(db: Db, stored: Build): ResolvedBuild {
   // The stores save pruned builds, so this only clears what a store path forgot to.
   const pruned = pruneUnavailableSlots(db, stored);
-  if (import.meta.env.DEV && pruned.cleared.length)
+  if (import.meta.env?.DEV && pruned.cleared.length)
     console.warn(
       `resolveBuild cleared unavailable slots the stored build still holds: ${pruned.cleared.join(", ")}`,
     );
