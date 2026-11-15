@@ -6,7 +6,6 @@ import {
   groupBySlot,
   indexResolved,
   inputCopiesBySlot,
-  sharedNote,
 } from "../../src/lib/resolved-index";
 import { bonusInputAddress } from "../../src/lib/build-inputs";
 import type { InputEntry } from "../../src/engine/inputs";
@@ -141,31 +140,15 @@ describe("global input readers", () => {
       new Map(carried.map((id) => [id, bonus(id, id)])),
     );
 
-  // The note tells the player that editing this control also changes the other rows.
-  it("names the readers on other rows", () => {
+  // Every equipped reader gets the control, so each one is listed under its global input.
+  it("lists each equipped reader under its global input", () => {
     const a = globalInput("a", "Bard Ring");
     const b = globalInput("b", "Bard Neck");
-    const c = globalInput("c", "Bard Belt");
-    const map = readers([a, b, c], ["a", "b", "c"]);
-    expect(sharedNote(a, map)).toBe("Shared with Bard Neck, Bard Belt");
-    expect(sharedNote(b, map)).toBe("Shared with Bard Ring, Bard Belt");
+    expect(readers([a, b], ["a", "b"]).get("globals.song")).toEqual([a, b]);
   });
 
-  // Readers on one row share that row's control, so the note names only the other rows.
-  it("leaves out a reader on the same row", () => {
-    const a = globalInput("a", "Bard Ring", "ring");
-    const b = globalInput("b", "Bard Ring Proc", "ring");
-    const c = globalInput("c", "Bard Neck", "neck");
-    const map = readers([a, b, c], ["a", "b", "c"]);
-    expect(sharedNote(a, map)).toBe("Shared with Bard Neck");
-  });
-
-  it("has no note for a lone reader or a private input", () => {
-    const a = globalInput("a", "Bard Ring");
-    expect(sharedNote(a, readers([a], ["a"]))).toBeUndefined();
-    expect(
-      sharedNote(bonusInput("x", "ring"), readers([a], ["a"])),
-    ).toBeUndefined();
+  it("leaves out a private input", () => {
+    expect(readers([bonusInput("x", "ring")], ["x"]).size).toBe(0);
   });
 
   // A bonus resolved only as a 0-point preview is not equipped, so it shares nothing.
@@ -179,6 +162,6 @@ describe("global input readers", () => {
         ["b", bonus("b", "b", [])],
       ]),
     );
-    expect(sharedNote(a, map)).toBeUndefined();
+    expect(map.get("globals.song")).toEqual([a]);
   });
 });

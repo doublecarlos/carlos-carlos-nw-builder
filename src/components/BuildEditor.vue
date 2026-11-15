@@ -867,7 +867,7 @@ const rowDataBySlot = computed<Map<string, SlotRowData>>((previous) => {
         labelOverride: stableLabel(slotDef.id),
         diff,
         usedBy: isSharedSlot(slotDef)
-          ? usedByNote(engine.sharedUsers.value.get(slotDef.id))
+          ? usedByNote(db.value, engine.sharedReaderRows.value.get(slotDef.id))
           : undefined,
       });
     }

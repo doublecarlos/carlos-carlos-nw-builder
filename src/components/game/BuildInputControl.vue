@@ -3,13 +3,14 @@
 // `control`: a checkbox with its label, a stepper, a typed field noting its range, or a note
 // pointing to the row that holds the control. Presets go in InputRow's slot for them, which
 // places them by layout. Writes go straight to the store by the value's address. A global
-// input's control names the other rows sharing its value under it.
+// input's control carries a shared mark whose tooltip names where else it is set.
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import InputRow from "../ui/InputRow.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import PresetButtons from "../ui/PresetButtons.vue";
+import SharedMark from "./SharedMark.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { int, pctInput } from "../../lib/format";
 import type { BuildInput } from "../../composables/useSlotInputs";
@@ -50,15 +51,25 @@ function rangeNote() {
   >
     {{ input.note }}
   </p>
-  <!-- A checkbox stays one clickable unit with its label, so it skips InputRow's grid. -->
-  <BaseCheckbox
+  <!-- A checkbox stays one clickable unit with its label, so it skips InputRow's grid. The
+       shared mark sits outside it, so tapping the mark never toggles the box. -->
+  <div
     v-else-if="input.control === 'checkbox'"
-    :data-testid="input.testid"
-    :model-value="input.value === 1"
-    @update:model-value="set($event as boolean)"
+    class="flex items-center gap-1.5"
   >
-    {{ input.spec.label }}
-  </BaseCheckbox>
+    <BaseCheckbox
+      :data-testid="input.testid"
+      :model-value="input.value === 1"
+      @update:model-value="set($event as boolean)"
+    >
+      {{ input.spec.label }}
+    </BaseCheckbox>
+    <SharedMark
+      v-if="input.shared"
+      :text="input.shared"
+      :testid="`${input.testid}-shared`"
+    />
+  </div>
   <InputRow v-else>
     <NumberStepper
       v-if="input.control === 'stepper'"
@@ -88,7 +99,13 @@ function rangeNote() {
       @update:model-value="onField"
       @blur="onFieldBlur"
     />
-    <template #description>{{ input.spec.label }}</template>
+    <template #description
+      >{{ input.spec.label }}
+      <SharedMark
+        v-if="input.shared"
+        :text="input.shared"
+        :testid="`${input.testid}-shared`"
+    /></template>
     <template v-if="input.spec.presets?.length" #presets>
       <PresetButtons
         :presets="input.spec.presets"
@@ -101,11 +118,4 @@ function rangeNote() {
       rangeNote()
     }}</template>
   </InputRow>
-  <p
-    v-if="input.shared && input.control !== 'note'"
-    class="text-muted"
-    :data-testid="`${input.testid}-shared`"
-  >
-    {{ input.shared }}
-  </p>
 </template>

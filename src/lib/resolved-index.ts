@@ -110,21 +110,3 @@ export function globalInputReaders(
   }
   return map;
 }
-
-/** The note a global input's control carries on one reader's row, naming the readers on
- *  other rows, or undefined when there are none. */
-export function sharedNote(
-  entry: InputEntry,
-  readers: ReadonlyMap<string, readonly InputEntry[]>,
-): string | undefined {
-  const own = entry.bonusInput;
-  if (own?.global === undefined) return undefined;
-  const others = [
-    ...new Set(
-      (readers.get(own.global) ?? [])
-        .filter((other) => other.slotId !== entry.slotId)
-        .map((other) => other.source),
-    ),
-  ];
-  return others.length ? `Shared with ${others.join(", ")}` : undefined;
-}

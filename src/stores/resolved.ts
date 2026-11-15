@@ -19,7 +19,7 @@ import {
   sharedPickerReaders,
   sharedPickersByRow,
   sharedRowIds,
-  sharedUsers as sharedUsersOf,
+  sharedReaderRows as sharedReaderRowsOf,
   type SharedPickerControl,
 } from "../lib/shared-inputs";
 import * as builds from "./builds";
@@ -161,14 +161,14 @@ const pickerReaders = computed(() =>
     : new Map<string, EvaluatedBonus[]>(),
 );
 
-/** The equipped bonuses reading each shared slot, by name, by its slot id. */
-export const sharedUsers = computed<Map<string, string[]>>(() =>
-  sharedUsersOf(globalReaders.value, pickerReaders.value),
+/** The rows the equipped readers of each shared slot anchor on, by its slot id. */
+export const sharedReaderRows = computed<Map<string, string[]>>(() =>
+  sharedReaderRowsOf(globalReaders.value, pickerReaders.value),
 );
 
 /** The shared picker controls each reader's row shows, by the row's slot id. */
 export const sharedPickers = computed<Map<string, SharedPickerControl[]>>(() =>
-  sharedPickersByRow(db.value, pickerReaders.value),
+  sharedPickersByRow(db.value, sharedReaderRows.value),
 );
 
 const NO_SHARED_ROWS: ReadonlySet<string> = new Set();
@@ -178,5 +178,8 @@ const NO_SHARED_ROWS: ReadonlySet<string> = new Set();
 export const sharedRows = computed<ReadonlySet<string>>((previous) => {
   const b = builds.build.value;
   if (!b) return NO_SHARED_ROWS;
-  return keepSet(previous, sharedRowIds(db.value.slots, b, sharedUsers.value));
+  return keepSet(
+    previous,
+    sharedRowIds(db.value.slots, b, sharedReaderRows.value),
+  );
 });

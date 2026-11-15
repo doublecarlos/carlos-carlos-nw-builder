@@ -6,21 +6,26 @@ import type { InputEntry } from "../engine/inputs";
 import { isCarried } from "./bonus-inspector";
 import type { Build, Db, EvaluatedBonus, ItemPickerSlot, Slot } from "../types";
 
+/** What a note naming rows and sections reads. */
+type LabelDb = Pick<Db, "slotFor" | "slotById" | "sections">;
+
 type SharedSlot = Extract<Slot, { type: "build_parameter" | "item_picker" }>;
 
 interface SharedKind {
-  /** Whether the slot's own row shows, given the names of its equipped readers. */
-  rowShown(slot: SharedSlot, build: Build, users: readonly string[]): boolean;
+  /** Whether the slot's own row shows, given the rows its equipped readers anchor on. */
+  rowShown(slot: SharedSlot, build: Build, readers: readonly string[]): boolean;
 }
 
 const KINDS: Record<SharedSlot["type"], SharedKind> = {
   /** A param holds no pick, so it shows while an equipped bonus reads it. */
-  build_parameter: { rowShown: (_slot, _build, users) => users.length > 0 },
+  build_parameter: {
+    rowShown: (_slot, _build, readers) => readers.length > 0,
+  },
   /** A pick is equipped whatever reads it, so its row stays while it holds one: a pick is
    *  never equipped without a row showing it. */
   item_picker: {
-    rowShown: (slot, build, users) =>
-      users.length > 0 || Boolean(build.choices[slot.id]),
+    rowShown: (slot, build, readers) =>
+      readers.length > 0 || Boolean(build.choices[slot.id]),
   },
 };
 
@@ -42,22 +47,19 @@ export function sharedPickerReaders(
   return map;
 }
 
-const unique = (names: string[]) => [...new Set(names)];
+const unique = (ids: string[]) => [...new Set(ids)];
 
-/** The names of the equipped bonuses reading each shared slot, by its id, each name once and
+/** The rows the equipped readers of each shared slot anchor on, by its id, each row once and
  *  in build order. `params` is `globalInputReaders`' map, `pickers` `sharedPickerReaders`'. */
-export function sharedUsers(
+export function sharedReaderRows(
   params: ReadonlyMap<string, readonly InputEntry[]>,
   pickers: ReadonlyMap<string, readonly EvaluatedBonus[]> = new Map(),
 ): Map<string, string[]> {
   const map = new Map<string, string[]>();
   for (const [slotId, entries] of params)
-    map.set(slotId, unique(entries.map((entry) => entry.source)));
+    map.set(slotId, unique(entries.map((entry) => entry.slotId)));
   for (const [slotId, bonuses] of pickers)
-    map.set(
-      slotId,
-      unique(bonuses.map((bonus) => bonus.bonus.name ?? bonus.bonusId)),
-    );
+    map.set(slotId, unique(bonuses.map((bonus) => bonus.slotId)));
   return map;
 }
 
@@ -65,51 +67,72 @@ export function sharedUsers(
 export function sharedRowIds(
   slots: readonly Slot[],
   build: Build,
-  users: ReadonlyMap<string, readonly string[]>,
+  readerRows: ReadonlyMap<string, readonly string[]>,
 ): Set<string> {
   const ids = new Set<string>();
   for (const slot of slots)
     if (
       isShared(slot) &&
-      KINDS[slot.type].rowShown(slot, build, users.get(slot.id) ?? [])
+      KINDS[slot.type].rowShown(slot, build, readerRows.get(slot.id) ?? [])
     )
       ids.add(slot.id);
   return ids;
 }
 
-/** The note on a shared slot's own row naming the bonuses that read it, or undefined when
- *  none does. */
-export function usedByNote(users: readonly string[] | undefined) {
-  return users?.length ? `Used by ${users.join(", ")}` : undefined;
+const rowLabel = (db: LabelDb, slotId: string) =>
+  db.slotFor(slotId)?.label ?? slotId;
+
+/** The note on a shared slot's own row naming the rows reading it, or undefined when none
+ *  does. */
+export function usedByNote(
+  db: LabelDb,
+  rows: readonly string[] | undefined,
+): string | undefined {
+  return rows?.length
+    ? `Used by ${rows.map((row) => rowLabel(db, row)).join(", ")}`
+    : undefined;
+}
+
+/** The tooltip on a shared control on reader row `ownRow`: the other rows sharing it, and the
+ *  section holding its own row. */
+export function sharedTooltip(
+  db: LabelDb,
+  sharedSlotId: string,
+  ownRow: string,
+  rows: readonly string[] | undefined,
+): string {
+  const section = db.slotById.get(sharedSlotId)?.section;
+  const places = [
+    ...(rows ?? [])
+      .filter((row) => row !== ownRow)
+      .map((row) => rowLabel(db, row)),
+    db.sections.find((entry) => entry.id === section)?.label ?? section ?? "",
+  ].filter(Boolean);
+  const last = places.pop();
+  const list = places.length ? `${places.join(", ")} and ${last}` : last;
+  return `Shared input, also on ${list}`;
 }
 
 /** A shared picker's control on one reader's row. */
 export interface SharedPickerControl {
   slot: ItemPickerSlot;
-  /** The readers on other rows, as the shared note under the control. */
-  shared?: string;
+  /** Where else it is set, as the tooltip on its shared mark. */
+  shared: string;
 }
 
 /** The shared picker controls each row shows, by row slot id: one per shared picker an
- *  equipped bonus anchored on the row reads, however many of them read it. */
+ *  equipped bonus anchored on the row reads, however many of them read it. `readerRows` is
+ *  `sharedReaderRows`' map. */
 export function sharedPickersByRow(
-  db: Pick<Db, "slotById">,
-  readers: ReadonlyMap<string, readonly EvaluatedBonus[]>,
+  db: LabelDb,
+  readerRows: ReadonlyMap<string, readonly string[]>,
 ): Map<string, SharedPickerControl[]> {
   const map = new Map<string, SharedPickerControl[]>();
-  for (const [slotId, bonuses] of readers) {
+  for (const [slotId, rows] of readerRows) {
     const slot = db.slotById.get(slotId);
     if (slot?.type !== "item_picker") continue;
-    for (const row of unique(bonuses.map((bonus) => bonus.slotId))) {
-      const others = unique(
-        bonuses
-          .filter((bonus) => bonus.slotId !== row)
-          .map((bonus) => bonus.bonus.name ?? bonus.bonusId),
-      );
-      const control: SharedPickerControl = {
-        slot,
-        ...(others.length && { shared: `Shared with ${others.join(", ")}` }),
-      };
+    for (const row of rows) {
+      const control = { slot, shared: sharedTooltip(db, slotId, row, rows) };
       const bucket = map.get(row);
       if (bucket) bucket.push(control);
       else map.set(row, [control]);

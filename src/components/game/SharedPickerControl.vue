@@ -5,6 +5,7 @@
 // identity, not gear to compare.
 import { computed } from "vue";
 import ItemPicker from "./ItemPicker.vue";
+import SharedMark from "./SharedMark.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { db } from "../../stores/resolved";
 import type { SharedPickerControl } from "../../lib/shared-inputs";
@@ -36,9 +37,9 @@ const testid = computed(() => `shared-picker-${slot.value.id}`);
       :data-testid="testid"
       @update:model-value="buildEditor.setChoice(slot.id, $event)"
     />
-    <span class="min-w-0">{{ slot.label }}</span>
+    <span class="min-w-0"
+      >{{ slot.label }}
+      <SharedMark :text="control.shared" :testid="`${testid}-shared`"
+    /></span>
   </div>
-  <p v-if="control.shared" class="text-muted" :data-testid="`${testid}-shared`">
-    {{ control.shared }}
-  </p>
 </template>

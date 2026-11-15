@@ -44,7 +44,7 @@ test("one Location control is shared by two reader rows and the section row", as
   await expect(own).toHaveValue("Thay");
   await expect(control(shirt).getByTestId("picker-input")).toHaveValue("Thay");
   await expect(page.getByTestId(`slot-used-by:${LOCATION}`)).toHaveText(
-    "Used by M31 Thayan Predator, M31 Critical Empowerment",
+    "Used by Ring 1, Shirt",
   );
 
   await chooseItem(page, LOCATION, "Chult");

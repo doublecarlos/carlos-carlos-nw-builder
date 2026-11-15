@@ -9,7 +9,7 @@ import {
   sharedPickerReaders,
   sharedPickersByRow,
   sharedRowIds,
-  sharedUsers,
+  sharedReaderRows,
 } from "../../src/lib/shared-inputs";
 import type {
   Bonus,
@@ -161,21 +161,27 @@ describe("where a shared picker shows", () => {
       testDb,
       engine.resolveBuild(testDb, b).bonuses,
     );
+    const readerRows = sharedReaderRows(new Map(), readers);
     return {
-      users: sharedUsers(new Map(), readers),
-      rows: sharedRowIds(testDb.slots, b, sharedUsers(new Map(), readers)),
-      byRow: sharedPickersByRow(testDb, readers),
+      readerRows,
+      rows: sharedRowIds(testDb.slots, b, readerRows),
+      byRow: sharedPickersByRow(testDb, readerRows),
     };
   };
 
   it("shows its row while a reader is equipped, and on each reader's row", () => {
-    const { users, rows, byRow } = visibility({ a: "shell", b: "map" });
-    expect(users.get(place.id)).toEqual(["Coast", "Chart"]);
+    const { readerRows, rows, byRow } = visibility({ a: "shell", b: "map" });
+    expect(readerRows.get(place.id)).toEqual(["a", "b"]);
     expect(rows).toEqual(new Set([place.id]));
     expect(byRow.get("a")).toEqual([
-      { slot: testDb.slotById.get(place.id), shared: "Shared with Chart" },
+      {
+        slot: testDb.slotById.get(place.id),
+        shared: "Shared input, also on b and Shared inputs",
+      },
     ]);
-    expect(byRow.get("b")?.[0].shared).toBe("Shared with Coast");
+    expect(byRow.get("b")?.[0].shared).toBe(
+      "Shared input, also on a and Shared inputs",
+    );
   });
 
   // A pick is never equipped without a row showing it.

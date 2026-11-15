@@ -103,13 +103,19 @@ test("the control shows on every reader's row and edits one shared value", async
 
   await lute(page).check();
   await expect(drum(page)).toBeChecked();
-  // Each row names the other reader, so a change here is not a surprise there.
+  // Each control's mark names the other rows, so a change here is not a surprise there.
   await expect(
     page.getByTestId("bonus-input-test-ballad-song-shared"),
-  ).toHaveText("Shared with Test Chorus");
+  ).toHaveAttribute(
+    "aria-label",
+    "Shared input, also on Ring 2 and Test Global Inputs",
+  );
   await expect(
     page.getByTestId("bonus-input-test-chorus-sang-shared"),
-  ).toHaveText("Shared with Test Ballad");
+  ).toHaveAttribute(
+    "aria-label",
+    "Shared input, also on Ring 1 and Test Global Inputs",
+  );
 
   await drum(page).uncheck();
   await expect(lute(page)).not.toBeChecked();
@@ -124,14 +130,14 @@ test("the section shows the global input only with a reader equipped", async ({
   await expect(own).toBeVisible();
   await expect(page.getByText("Shared circumstances")).toBeVisible();
   await expect(page.getByTestId(`slot-used-by:${SONG}`)).toHaveText(
-    "Used by Test Ballad",
+    "Used by Ring 1",
   );
 
-  // A lone reader has no one to share with.
+  // A lone reader still shares the value with the section's row.
   await expect(lute(page)).toBeVisible();
   await expect(
     page.getByTestId("bonus-input-test-ballad-song-shared"),
-  ).toHaveCount(0);
+  ).toHaveAttribute("aria-label", "Shared input, also on Test Global Inputs");
   await own.check();
   await expect(lute(page)).toBeChecked();
 
@@ -155,7 +161,7 @@ test("used by lists every equipped reader", async ({ page }) => {
   });
   await ensureSectionExpanded(page, GLOBALS);
   await expect(page.getByTestId(`slot-used-by:${SONG}`)).toHaveText(
-    "Used by Test Ballad, Test Chorus",
+    "Used by Ring 1, Ring 2",
   );
 });
 

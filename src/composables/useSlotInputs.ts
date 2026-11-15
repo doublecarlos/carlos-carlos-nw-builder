@@ -6,13 +6,14 @@
 // every reader's row, each control writing the one shared value.
 import { computed, toValue, type MaybeRefOrGetter } from "vue";
 import {
-  globalReaders,
+  db,
+  sharedReaderRows,
   inputCopies,
   inputsBySlot,
   resolvedIndex,
 } from "../stores/resolved";
 import { inputKey } from "../lib/build-inputs";
-import { sharedNote } from "../lib/resolved-index";
+import { sharedTooltip } from "../lib/shared-inputs";
 import { keepEqual } from "../lib/keep-identity";
 import { isCarried } from "../lib/bonus-inspector";
 import {
@@ -35,7 +36,7 @@ export interface BuildInput extends InputEntry {
   /** `note` stands in for a control rendered on another row, naming where it is. */
   control: "checkbox" | "stepper" | "field" | "note";
   note?: string;
-  /** A global input's other readers on the build, under its control. */
+  /** A global input's tooltip on its shared mark: where else it is set. */
   shared?: string;
 }
 
@@ -140,7 +141,7 @@ function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
     ].map(inputKey),
   );
 
-  const readers = globalReaders.value;
+  const readerRows = sharedReaderRows.value;
   // Two bonuses on one row reading the same global input share one control there.
   const shown = new Set<string>();
   const controls = own.flatMap((entry) => {
@@ -149,7 +150,11 @@ function slotInputs(row: Slot, pinned: readonly InputAddress[]): BuildInput[] {
     if (!view.visible(entry, bonuses) && !forced.has(key)) return [];
     if (shown.has(key)) return [];
     shown.add(key);
-    const shared = sharedNote(entry, readers);
+    const global = entry.bonusInput?.global;
+    const shared =
+      global === undefined
+        ? undefined
+        : sharedTooltip(db.value, global, row.id, readerRows.get(global));
     return [
       {
         ...entry,
