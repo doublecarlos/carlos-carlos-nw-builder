@@ -238,14 +238,15 @@ test("a bonus opened from its item offers make shared, undone in one step", asyn
 
   // Undo demotes the input again in one step, without leaving the item.
   await undoButton(page).click();
-  await expect(card.getByTestId("bonus-input-make-shared")).toBeVisible();
+  await expect(card.getByTestId("bonus-input-make-shared")).toBeEnabled();
   await expect(card.getByTestId("bonus-input-shared-summary")).toHaveCount(0);
 });
 
-// The offer is a row action beside Add and Remove, not another field, and applies only to an
-// input the bonus itself defines under a name.
+// The offer is a row action after Add and Remove, not another field, and stays in place
+// disabled until the bonus's own named input can be shared, so enabling it never shifts the
+// row.
 test(
-  "make shared sits in the row's action group, and only for the bonus's own named input",
+  "make shared follows the add/remove pair, disabled until the input can be shared",
   { tag: "@cross-browser" },
   async ({ page }) => {
     await openMixedInputs(page);
@@ -253,7 +254,7 @@ test(
     const own = rows.nth(0);
     const actions = own.getByTestId("repeatable-row-actions");
     const share = actions.getByTestId("bonus-input-make-shared");
-    await expect(share).toBeVisible();
+    await expect(share).toBeEnabled();
     // Not among the fields: the row's rest holds the pickers and definitions.
     await expect(
       own
@@ -261,16 +262,17 @@ test(
         .getByTestId("bonus-input-make-shared"),
     ).toHaveCount(0);
 
-    const [shareBox, addBox, removeBox] = await Promise.all(
+    const [addBox, removeBox, shareBox] = await Promise.all(
       [
-        share,
         actions.getByRole("button", { name: "Add input" }),
         actions.getByRole("button", { name: "Remove input" }),
+        share,
       ].map(async (target) => (await target.boundingBox())!),
     );
+    expect(addBox.x).toBeLessThan(removeBox.x);
+    expect(shareBox.x).toBeGreaterThanOrEqual(removeBox.x + removeBox.width);
     const middle = (box: { y: number; height: number }) =>
       box.y + box.height / 2;
-    expect(Math.abs(middle(shareBox) - middle(addBox))).toBeLessThanOrEqual(2);
     expect(Math.abs(middle(shareBox) - middle(removeBox))).toBeLessThanOrEqual(
       2,
     );
@@ -278,20 +280,30 @@ test(
     // A row reading a shared input defines nothing to share.
     await expect(
       rows.nth(1).getByTestId("bonus-input-make-shared"),
-    ).toHaveCount(0);
+    ).toBeDisabled();
     await expect(
       rows.nth(1).getByTestId("bonus-input-shared-summary"),
     ).toBeVisible();
 
-    // Neither does a row whose id is still blank; naming it brings the offer back.
+    // A row whose id is still blank keeps the button in place, disabled; naming it enables it
+    // without moving the id field, the row, or the buttons.
     await page.getByRole("button", { name: "Add input" }).first().click();
     const blank = rows.last();
-    await expect(blank.getByTestId("bonus-input-make-shared")).toHaveCount(0);
+    const blankShare = blank
+      .getByTestId("repeatable-row-actions")
+      .getByTestId("bonus-input-make-shared");
+    await expect(blankShare).toBeDisabled();
+    const idBoxBefore = (await blank
+      .getByTestId("bonus-input-id")
+      .boundingBox())!;
+    const rowBoxBefore = (await blank.boundingBox())!;
     await blank.getByTestId("bonus-input-id").fill("chorus");
-    await expect(
-      blank
-        .getByTestId("repeatable-row-actions")
-        .getByTestId("bonus-input-make-shared"),
-    ).toBeVisible();
+    await expect(blankShare).toBeEnabled();
+    const idBoxAfter = (await blank
+      .getByTestId("bonus-input-id")
+      .boundingBox())!;
+    const rowBoxAfter = (await blank.boundingBox())!;
+    expect(idBoxAfter.x).toBe(idBoxBefore.x);
+    expect(rowBoxAfter.width).toBe(rowBoxBefore.width);
   },
 );
