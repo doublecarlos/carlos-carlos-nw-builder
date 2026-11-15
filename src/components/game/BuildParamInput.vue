@@ -21,6 +21,7 @@ import NumberStepper from "../ui/NumberStepper.vue";
 import PresetButtons from "../ui/PresetButtons.vue";
 import { numberControl } from "../../engine/inputs";
 import { labeledFormat } from "../../lib/format";
+import { rowLabelOf } from "../../lib/slot-label";
 import type { BuildParameterSlot } from "../../types";
 
 const props = withDefaults(
@@ -108,7 +109,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
       :options="slotDef.options ?? []"
       :show-empty-option="!!slotDef.allowEmpty"
       :phone-screen="phoneScreen"
-      :screen-label="slotDef.label"
+      :screen-label="rowLabelOf(slotDef)"
       @update:model-value="model = $event as string"
     />
 

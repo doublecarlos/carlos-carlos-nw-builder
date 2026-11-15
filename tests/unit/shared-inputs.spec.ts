@@ -29,9 +29,14 @@ const note: Slot = {
 };
 const build = { choices: {}, context: {} } as unknown as Build;
 
-const labels: Record<string, string> = { a: "Ring", b: "Neck", c: "Belt" };
+const labels: Record<string, { label: string; rowLabel?: string }> = {
+  a: { label: "Ring" },
+  b: { label: "Neck" },
+  c: { label: "Belt" },
+  d: { label: "Companion universal power 1", rowLabel: "Universal 1" },
+};
 const db = {
-  slotFor: (id: string) => (labels[id] ? { label: labels[id] } : undefined),
+  slotFor: (id: string) => labels[id],
   slotById: new Map([[song.id, song]]),
   sections: [{ id: "shared", label: "Shared inputs", slotIds: [] }],
 } as unknown as Db;
@@ -75,6 +80,16 @@ describe("shared rows", () => {
       "Shared input, also on Neck and Belt",
     );
     expect(sharedTooltip(db, "a", ["a"])).toBe("Shared input");
+  });
+
+  // A note travels without the section that supplies a row's context, so it keeps the full name.
+  it("names a reader row by its label, not by the shorter name its own row reads", () => {
+    expect(usedByLinks(db, ["d"])).toEqual([
+      { key: "d", label: "Companion universal power 1" },
+    ]);
+    expect(sharedTooltip(db, "a", ["a", "d"])).toBe(
+      "Shared input, also on Companion universal power 1",
+    );
   });
 
   it("hides the section's text row along with an unused shared row", () => {

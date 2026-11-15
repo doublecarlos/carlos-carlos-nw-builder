@@ -118,6 +118,8 @@ export interface SlotSection {
 export interface BuildParameterSlot {
   id: string;
   label: string;
+  /** The name this row reads as; everywhere else the slot reads `label`. */
+  rowLabel?: string;
   section: string;
   type: "build_parameter";
   paramType: "list" | "number" | "percent" | "boolean";
@@ -175,6 +177,8 @@ export interface BuildParameterSlot {
 export interface ItemPickerSlot {
   id: string;
   label: string;
+  /** The name this row reads as; everywhere else the slot reads `label`. */
+  rowLabel?: string;
   section: string;
   type: "item_picker";
   /** Shown in the always-visible QuickOptions strip instead of its section's slot list, for a
@@ -238,6 +242,8 @@ export interface ItemPickerSlot {
 export interface PointAssignmentSlot {
   id: string;
   label: string;
+  /** The name this row reads as; everywhere else the slot reads `label`. */
+  rowLabel?: string;
   section: string;
   type: "point_assignment";
   filter: string;
@@ -287,6 +293,8 @@ export interface TextSlot {
 export interface ItemPickerListSlot {
   id: string;
   label: string;
+  /** The name this row reads as; its expanded rows number it like `label`. */
+  rowLabel?: string;
   section: string;
   type: "item_picker_list";
   /** Rows an empty build starts with. Usually 0. */
@@ -308,6 +316,14 @@ export type Slot =
   | PointAssignmentSlot
   | SeparatorSlot
   | TextSlot;
+
+/** The slot types that render a row, and so may carry a `rowLabel`. */
+export const ROW_LABEL_TYPES: readonly Slot["type"][] = [
+  "build_parameter",
+  "item_picker",
+  "item_picker_list",
+  "point_assignment",
+];
 
 /** A slot variant as authored in `data/slots.json` or a layer: `label` may be left out, and
  *  `Db` then fills it from the slot's category label, else its id. */

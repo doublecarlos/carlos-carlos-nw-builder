@@ -43,6 +43,7 @@ import {
 import { slotCandidateContext, slotCandidateList } from "../data/db";
 import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
+import { slotNames } from "../lib/slot-label";
 import { slotStablePlaceholder, slotStatSummary } from "../lib/slot-summary";
 import { slotsSupplying } from "../lib/bonus-slots";
 import { bonusesForItem } from "../lib/candidate-preview";
@@ -313,14 +314,17 @@ function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
   // match, so it only survives a chip that keeps it explicitly.
   if (slotDef.type === "item_picker_list") {
     if (filterStat.value || !activeChips.value.length) return false;
-    return matchesQuery([section.label, slotDef.label], filterText.value);
+    return matchesQuery(
+      [section.label, ...slotNames(slotDef)],
+      filterText.value,
+    );
   }
   if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
     return false;
   return matchesQuery(
     [
       section.label,
-      slotDef.label,
+      ...slotNames(slotDef),
       itemIn(slotDef.id)?.name ?? "",
       rowDataFor(slotDef.id).statSummary,
     ],

@@ -230,7 +230,7 @@ describe("a pruning edit", () => {
     buildEditor.setChoice("gear.mainhand", PLAIN);
     expect(active().choices["gear.mainhandMod"]).toBeUndefined();
     expect(active().values["gear.mainhandMod"]).toBeUndefined();
-    expect(notice.notice.value).toBe("Cleared Main-hand mod");
+    expect(notice.notice.value).toBe("Cleared Main-hand modification");
 
     buildEditor.undo();
     expect(active().choices["gear.mainhand"]).toBe(ARTIFACT);
@@ -254,7 +254,9 @@ describe("a pruning edit", () => {
     buildEditor.setChoice("gear.mainhandMod", MOD);
     makeStale(active());
     buildEditor.clearSection("options", "Options");
-    expect(notice.notice.value).toBe("Cleared Options; cleared Main-hand mod");
+    expect(notice.notice.value).toBe(
+      "Cleared Options; cleared Main-hand modification",
+    );
   });
 
   it("stays quiet when nothing was cleared", async () => {

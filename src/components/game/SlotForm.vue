@@ -40,6 +40,7 @@ import {
   type SlotDraft,
 } from "../../lib/slot-draft";
 import type { ConditionRow } from "../../engine/condition-draft";
+import { ROW_LABEL_TYPES } from "../../types";
 import type {
   AuthoredSlot,
   BonusOption,
@@ -134,6 +135,10 @@ defineExpose({ draft, dirty });
 
 /** The field blocks the active type is authored with. */
 const fields = computed(() => new Set(TYPE_FIELDS[draft.value.type]));
+
+const showsRowLabel = computed(() =>
+  ROW_LABEL_TYPES.includes(draft.value.type),
+);
 
 const noun = computed(() => nounOf(draft.value.type));
 
@@ -297,6 +302,19 @@ function save() {
           type="text"
           :placeholder="inheritedLabel"
           data-testid="slot-label-input"
+        />
+      </FormField>
+      <FormField
+        v-if="showsRowLabel"
+        label="Row label"
+        hint="Shown on the row. Blank reads Label."
+        class="w-60"
+      >
+        <BaseInput
+          v-model="draft.rowLabel"
+          class="w-full"
+          type="text"
+          data-testid="slot-row-label-input"
         />
       </FormField>
       <IdField :id="displayId" label="Id" :existing="Boolean(source)" />

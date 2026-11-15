@@ -12,6 +12,7 @@ import {
   rowSlotId,
   storedListRows,
 } from "../../src/lib/item-picker-list";
+import { rowLabelOf } from "../../src/lib/slot-label";
 import * as storage from "../../src/storage/storage";
 import type { Build, ItemPickerListSlot, Slot } from "../../src/types";
 
@@ -83,6 +84,19 @@ describe("rowSlot", () => {
     const row = rowSlot(tagged, 1);
     expect(row.tags).toEqual(["a", "b"]);
     expect(row.filter).toBeUndefined();
+  });
+
+  // A container that reads shorter inside its section numbers its short name too, while the
+  // numbered full name stays what a reference names the row by.
+  it("numbers the container's row label for the row", () => {
+    const short: ItemPickerListSlot = {
+      ...misc,
+      label: "Misc bonus",
+      rowLabel: "Misc",
+    };
+    const row = rowSlot(short, 2);
+    expect(row.label).toBe("Misc bonus 2");
+    expect(rowLabelOf(row)).toBe("Misc 2");
   });
 
   // The editor compares a row's slot by identity: a new object per expansion would re-render

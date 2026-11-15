@@ -150,6 +150,8 @@ export function draftCategoryLabel(
 export interface SlotDraft {
   type: Slot["type"];
   label: string;
+  /** See `ItemPickerSlot.rowLabel`; blank reads `label`. */
+  rowLabel: string;
   section: string;
   // --- build_parameter --------------------------------------------------------------------
   paramType: BuildParameterSlot["paramType"];
@@ -233,6 +235,7 @@ export function buildDraft(slot: AuthoredSlot | null | undefined): SlotDraft {
   return {
     type: slot?.type ?? "build_parameter",
     label: source.label ?? "",
+    rowLabel: source.rowLabel ?? "",
     section: source.section ?? "",
     paramType: source.paramType ?? "number",
     path: source.path ?? "",
@@ -377,6 +380,7 @@ interface SlotCommon {
   id: string;
   section: string;
   label: string;
+  rowLabel: string;
 }
 
 /** One builder per slot type, each writing only its own type's fields. */
@@ -395,6 +399,7 @@ const BUILDERS: {
       paramType: local.paramType,
       path: local.path.trim(),
     };
+    putIfSet(slot, "rowLabel", common.rowLabel);
     if (local.sharedInput) slot.sharedInput = true;
     else if (local.quick) slot.quick = true;
 
@@ -446,6 +451,7 @@ const BUILDERS: {
       type: "item_picker",
     };
     putIfSet(slot, "label", common.label);
+    putIfSet(slot, "rowLabel", common.rowLabel);
     putSelector(slot, local);
     putIfSet(slot, "default", local.itemDefault.trim());
     putIfSet(slot, "availableWhen", availableWhenOf(local));
@@ -471,6 +477,7 @@ const BUILDERS: {
       type: "item_picker_list",
     };
     putIfSet(slot, "label", common.label);
+    putIfSet(slot, "rowLabel", common.rowLabel);
     putSelector(slot, local);
     putIfSet(slot, "defaultRows", number(local.defaultRows));
     if (local.toggleable) slot.toggleable = true;
@@ -485,6 +492,7 @@ const BUILDERS: {
       filter: local.filter.trim(),
     };
     putIfSet(slot, "label", common.label);
+    putIfSet(slot, "rowLabel", common.rowLabel);
     return slot;
   },
   separator: (_local, common) => {
@@ -513,6 +521,7 @@ export function toSlot(local: SlotDraft, ctx: SlotDraftContext): AuthoredSlot {
     id: ctx.id,
     section: local.section,
     label: local.label.trim(),
+    rowLabel: local.rowLabel.trim(),
   };
   return BUILDERS[local.type](local, common);
 }
@@ -525,6 +534,12 @@ const CHECKS: DiffCheck<AuthoredSlot>[] = [
       : nw.label === undefined
         ? "clear label"
         : `edit label to "${nw.label}"`,
+  (old, nw) => {
+    const from = (old as { rowLabel?: string }).rowLabel;
+    const to = (nw as { rowLabel?: string }).rowLabel;
+    if (from === to) return null;
+    return to === undefined ? "clear row label" : `edit row label to "${to}"`;
+  },
   (old, nw) =>
     old.section !== nw.section ? `move to section "${nw.section}"` : null,
   (old, nw) =>
