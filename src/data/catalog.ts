@@ -24,7 +24,7 @@ import {
 } from "./data";
 import * as db from "./db";
 import { findParamSlot } from "../lib/build-path";
-import { resolvedOptions } from "../lib/param-options";
+import { isListValue, resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
 import { isQuality } from "../lib/item-quality";
 import { isBadgeTone } from "../lib/tag-badges";
@@ -235,6 +235,19 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
   ) {
     const { tags: _dropped, ...rest } = classSlot;
     overlay.slots["options.class"] = { ...rest, filter: "class" };
+  }
+  // A list param once offered "" as an authored option; that is now `allowEmpty`.
+  for (const [id, slot] of Object.entries(overlay.slots)) {
+    if (
+      slot?.type === "build_parameter" &&
+      slot.options?.some((option) => option.value === "")
+    ) {
+      overlay.slots[id] = {
+        ...slot,
+        options: slot.options.filter((option) => option.value !== ""),
+        allowEmpty: true,
+      };
+    }
   }
   if (isStringList(source.sectionOrder))
     overlay.sectionOrder = [...source.sectionOrder];
@@ -943,11 +956,10 @@ function checkParamCondition(
   }
 
   if (slot.paramType === "list" && spec.equals !== undefined) {
-    const allowed = new Set((slot.options ?? []).map((o) => o.value));
     for (const value of Array.isArray(spec.equals)
       ? spec.equals
       : [spec.equals]) {
-      if (!allowed.has(value)) {
+      if (!isListValue(slot, value)) {
         report(
           "error",
           `${path}: param "${spec.key}" equals "${value}", which is not one of its declared options`,
@@ -1439,6 +1451,25 @@ export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
         });
       }
     }
+    if (slot.paramType === "list") {
+      if (slot.options?.some((option) => option.value === "")) {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: has an option with an empty value; set allowEmpty instead, the picker draws its own empty row`,
+        });
+      }
+      // Same rule as an item picker's `disallowEmpty`: a fresh build starts on the default.
+      if (!slot.allowEmpty && !slot.default) {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: a list param without allowEmpty needs a default; without one every fresh build starts empty`,
+        });
+      }
+    }
     const control = controlProblem({ ...slot, type: slot.paramType }, slot.id);
     if (control)
       findings.push({
@@ -1766,8 +1797,8 @@ const SCHEMA_BACKED_PARAM_PATHS: Record<string, "role" | "statKey"> = {
 
 /**
  * Every option an engine-coupled list param offers has to be a value `schema.json` knows --
- * a real `schema.roles` key, or a real `StatKey`. Empty is always allowed: it is the
- * "- none -" row every one of these slots carries.
+ * a real `schema.roles` key, or a real `StatKey`. An empty option is `validateSlots`' to
+ * report.
  */
 export function validateParamSchema(
   slots: AuthoredSlot[],
@@ -3148,10 +3179,7 @@ export function validate(
           `defaultParams "${slotId}" is not a build_parameter slot`,
           item.id,
         );
-      } else if (
-        slot.paramType === "list" &&
-        !slot.options?.some((option) => option.value === value)
-      ) {
+      } else if (slot.paramType === "list" && !isListValue(slot, value)) {
         report(
           "error",
           `defaultParams "${slotId}": "${value}" is not one of its options`,

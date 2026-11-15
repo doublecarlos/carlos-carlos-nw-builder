@@ -25,10 +25,6 @@
           "default": "",
           "options": [
             {
-              "value": "",
-              "label": "- none -"
-            },
-            {
               "value": "dps",
               "label": "DPS"
             },
@@ -40,7 +36,8 @@
               "value": "tank",
               "label": "Tank"
             }
-          ]
+          ],
+          "allowEmpty": true
         },
         {
           "id": "options.damageType",
@@ -51,10 +48,6 @@
           "default": "",
           "options": [
             {
-              "value": "",
-              "label": "- none -"
-            },
-            {
               "value": "magical",
               "label": "Magical"
             },
@@ -62,7 +55,8 @@
               "value": "physical",
               "label": "Physical"
             }
-          ]
+          ],
+          "allowEmpty": true
         },
         {
           "id": "options.magnitude",
@@ -82,10 +76,6 @@
           "default": "",
           "options": [
             {
-              "value": "",
-              "label": "- none -"
-            },
-            {
               "value": "power_p",
               "label": "Power"
             },
@@ -129,7 +119,8 @@
               "value": "mana_regen",
               "label": "Mana Regen"
             }
-          ]
+          ],
+          "allowEmpty": true
         },
         {
           "id": "options.forte2a",
@@ -140,10 +131,6 @@
           "default": "",
           "options": [
             {
-              "value": "",
-              "label": "- none -"
-            },
-            {
               "value": "power_p",
               "label": "Power"
             },
@@ -187,7 +174,8 @@
               "value": "mana_regen",
               "label": "Mana Regen"
             }
-          ]
+          ],
+          "allowEmpty": true
         },
         {
           "id": "options.forte2b",
@@ -198,10 +186,6 @@
           "default": "",
           "options": [
             {
-              "value": "",
-              "label": "- none -"
-            },
-            {
               "value": "power_p",
               "label": "Power"
             },
@@ -245,7 +229,8 @@
               "value": "mana_regen",
               "label": "Mana Regen"
             }
-          ]
+          ],
+          "allowEmpty": true
         },
         {
           "id": "options.m32Forte",

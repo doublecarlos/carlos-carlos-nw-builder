@@ -317,6 +317,30 @@ describe("normalizeOverlay and the overlay shape", () => {
     expect(ids).toContain("own");
   });
 
+  // Layers saved while list params authored "" as an option keep a single empty row.
+  it("turns a list param's empty option into allowEmpty", () => {
+    const normalized = catalog.normalizeOverlay({
+      slots: {
+        "boons.mood": {
+          id: "boons.mood",
+          section: "boons",
+          type: "build_parameter",
+          paramType: "list",
+          path: "mood",
+          default: "",
+          options: [
+            { value: "", label: "- none -" },
+            { value: "calm", label: "Calm" },
+          ],
+        },
+      },
+    });
+    expect(normalized.slots["boons.mood"]).toMatchObject({
+      options: [{ value: "calm", label: "Calm" }],
+      allowEmpty: true,
+    });
+  });
+
   it("gives a section entry without slotIds an empty list and drops a bad sectionOrder", () => {
     const normalized = catalog.normalizeOverlay({
       sections: { extra: { id: "extra", label: "Extra" } },

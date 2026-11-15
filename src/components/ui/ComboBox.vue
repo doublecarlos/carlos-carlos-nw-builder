@@ -648,8 +648,13 @@ for (const target of keyTargets) {
       <!-- Over the box's own text, which goes transparent but stays its value. -->
       <div
         v-if="$slots.closed && closedOption"
-        class="pointer-events-none absolute inset-y-0 left-0 right-6 flex min-w-0 flex-col justify-center pl-1.5"
-        :class="tone && 'text-(--tone)'"
+        class="pointer-events-none absolute inset-y-0 left-0 flex min-w-0 flex-col justify-center pl-1.5"
+        :class="[
+          tone && 'text-(--tone)',
+          clearable
+            ? 'right-7 pointer-coarse:right-[calc(var(--spacing-tap)+0.25rem)]'
+            : 'right-6',
+        ]"
         :style="tone ? { '--tone': tone } : undefined"
         data-testid="picker-closed"
       >

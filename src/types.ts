@@ -139,10 +139,9 @@ export interface BuildParameterSlot {
    * pick a known value out of, not a ranking, so `Db.forSlot`'s item-level-first order (which
    * answers "which of these is best") would be the wrong question here. */
   optionsFrom?: { filter?: string; tags?: string[] };
-  /** `optionsFrom` only: prepend the empty "- none -" row. Explicit rather than automatic
-   * because a derived option set has no other way to say whether "no value" is legal, and
-   * silently prepending it would make a genuinely required parameter unexpressible. An inline
-   * `options` list just authors the empty row itself, as every shipped one does. */
+  /** `list` only: "" is a legal value, offered by the picker's own empty row and clear
+   * button rather than as an authored option. Opt-in so a parameter stays required unless it
+   * says otherwise; without it the slot needs a non-empty `default`. */
   allowEmpty?: boolean;
   min?: number;
   max?: number;
@@ -180,7 +179,7 @@ export interface ItemPickerSlot {
    * choice needing no `?? slot.default` fallback. A default that is not one of this slot's own
    * candidates is an authoring error (`validateSlotDefaults`), not a silently empty slot. */
   default?: string;
-  /** Drops the empty "- none -" row from this slot's picker, so a pick can be changed but not
+  /** Drops the empty row from this slot's picker, so a pick can be changed but not
    * taken back. Needs a `default`, or a fresh build starts in the state it forbids. */
   disallowEmpty?: boolean;
   /** Exact-match category key into `Db.forFilter`/`byFilter`. Mutually exclusive with `tags` --

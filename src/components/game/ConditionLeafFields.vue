@@ -100,8 +100,8 @@ const valueOptions = computed(() => {
   const path = type ? PATH_FOR_TYPE[type] : undefined;
   if (!path) return [];
   const slot = paramSlots.value.find((s) => s.path === path);
-  // Drop a slot's own "- none -" row: "" is a build-editor value, not a condition value. A
-  // `class: ""` leaf would serialize to nothing anyway (`fromCsv`).
+  // Skip any "" option: it is a build-editor value, not a condition value. A `class: ""` leaf
+  // would serialize to nothing anyway (`fromCsv`).
   const fromSlot = (slot?.options ?? []).filter((o) => o.value);
   if (fromSlot.length) return fromSlot;
   // No parameter declares this path, so the vocabulary is whatever items publish at it, which

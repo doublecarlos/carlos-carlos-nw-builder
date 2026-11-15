@@ -99,6 +99,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
       :input-id="inputId"
       :model-value="(model as string) ?? ''"
       :options="slotDef.options ?? []"
+      :show-empty-option="!!slotDef.allowEmpty"
       :phone-screen="phoneScreen"
       :screen-label="slotDef.label"
       @update:model-value="model = $event as string"

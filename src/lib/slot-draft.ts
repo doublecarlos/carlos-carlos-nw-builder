@@ -385,8 +385,8 @@ const BUILDERS: {
           local.optionsSource === "tags"
             ? { tags: commaList(local.optionsFromTags) }
             : { filter: local.optionsFromFilter.trim() };
-        if (local.allowEmpty) slot.allowEmpty = true;
       }
+      if (local.allowEmpty) slot.allowEmpty = true;
     }
     return slot;
   },
@@ -497,6 +497,13 @@ const CHECKS: DiffCheck<AuthoredSlot>[] = [
       ? "edit options"
       : null,
   (old, nw) =>
+    !!(old as BuildParameterSlot).allowEmpty !==
+    !!(nw as BuildParameterSlot).allowEmpty
+      ? (nw as BuildParameterSlot).allowEmpty
+        ? "allow empty"
+        : "require a value"
+      : null,
+  (old, nw) =>
     (old as TextSlot).text !== (nw as TextSlot).text ? "edit text" : null,
   (old, nw) =>
     (old as BuildParameterSlot).default !== (nw as BuildParameterSlot).default
@@ -539,21 +546,18 @@ export function parentOptions(
   section: string,
   ownId: string,
 ): { value: string; label: string }[] {
-  return [
-    { value: "", label: "- none -" },
-    ...db.authoredSlots
-      .filter(
-        (slot) =>
-          slot.type === "item_picker" &&
-          slot.section === section &&
-          slot.id !== ownId &&
-          !slot.parent,
-      )
-      .map((slot) => ({
-        value: slot.id,
-        label: db.slotById.get(slot.id)?.label || slot.id,
-      })),
-  ];
+  return db.authoredSlots
+    .filter(
+      (slot) =>
+        slot.type === "item_picker" &&
+        slot.section === section &&
+        slot.id !== ownId &&
+        !slot.parent,
+    )
+    .map((slot) => ({
+      value: slot.id,
+      label: db.slotById.get(slot.id)?.label || slot.id,
+    }));
 }
 
 /** The other slot already sitting on this `path`, if any. Two slots sharing a path silently

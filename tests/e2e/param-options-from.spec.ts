@@ -123,7 +123,8 @@ test("the empty row appears only when the parameter asks for it", async ({
 
   const row = slotRow(page, "options.preferred-paragon");
   await pickerInput(row).click();
+  // The picker's own empty row, not an authored option.
   await expect(
-    pickerMenu(row).getByText("- none -", { exact: true }),
+    pickerMenu(row).getByText("- empty -", { exact: true }),
   ).toBeVisible();
 });

@@ -36,7 +36,10 @@ function valueOf(slot: QuickSlot): QuickValue {
   if (slot.paramType === "boolean")
     return { label: slot.label, value: Boolean(value) };
   const option = slot.options?.find((entry) => entry.value === value);
-  return { label: slot.label, value: option?.label ?? String(value ?? "") };
+  return {
+    label: slot.label,
+    value: option?.label ?? (value === "" ? "none" : String(value ?? "")),
+  };
 }
 
 const summary = computed(() =>
