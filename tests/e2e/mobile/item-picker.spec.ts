@@ -293,3 +293,34 @@ test("a candidate's info button shows its card in a sheet, then Back or Choose",
   await page.goBack();
   await expect(page.getByTestId("editor-pane")).toBeVisible();
 });
+
+// Touch screens enlarge field text so iOS doesn't zoom, and the closed box's id has to follow
+// the larger label rather than land on top of it.
+test(
+  "a closed picker's id starts past its label at the enlarged touch font",
+  { tag: "@cross-browser" },
+  async ({ page }) => {
+    await openBuilder(page);
+    await openPicker(page, "gear.boots");
+    await pickerScreen(page).getByTestId("picker-new-item").click();
+
+    const input = page.getByTestId("item-filter-input");
+    const id = comboBoxValueId(input);
+    await expect(id).toHaveText("gear_boots");
+    const textWidth = await input.evaluate((el: HTMLInputElement) => {
+      const ctx = document.createElement("canvas").getContext("2d")!;
+      // The input's own font, which the label copy has to measure against.
+      // eslint-disable-next-line no-restricted-syntax
+      ctx.font = getComputedStyle(el).font;
+      return ctx.measureText(el.value).width;
+    });
+    // The invisible copy is what pushes the id along, so it has to be as wide as the label.
+    const labelCopy = id.locator("xpath=preceding-sibling::span");
+    const copyBox = (await labelCopy.boundingBox())!;
+    const idBox = (await id.boundingBox())!;
+    const box = (await input.boundingBox())!;
+    expect(copyBox.width).toBeGreaterThanOrEqual(textWidth - 0.5);
+    expect(idBox.x).toBeGreaterThanOrEqual(copyBox.x + copyBox.width);
+    expect(idBox.x + idBox.width).toBeLessThanOrEqual(box.x + box.width);
+  },
+);

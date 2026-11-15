@@ -401,11 +401,13 @@
 }
 
 /* iOS zooms the page into any focused field set below 16px. Unlayered so no text-size utility
- * on a field can undercut it. */
+ * on a field can undercut it. `.field-text` is for text that has to measure the same as a
+ * field's own, such as a copy laid over it. */
 @media (pointer: coarse) {
   input,
   textarea,
-  select {
+  select,
+  .field-text {
     font-size: 16px;
   }
 }

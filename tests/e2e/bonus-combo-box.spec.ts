@@ -239,7 +239,7 @@ test("a closed picker's tooltip names the bonus and its full id, and an open one
   const tooltip = page.getByTestId("tooltip");
   await picker.hover();
   await expect(tooltip).toContainText("Aardvark Pick");
-  await expect(tooltip).toContainText(LONG_ID);
+  await expect(tooltip).toContainText(`(${LONG_ID})`);
 
   await picker.click();
   await expect(page.getByRole("listbox")).toBeVisible();
