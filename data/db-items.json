@@ -1201,7 +1201,7 @@
   },
   {
     "id": "accuracy-kit",
-    "name": "Accuracy Kit",
+    "name": "Major Accuracy Armor Kit +1",
     "filter": "reinforcement_armor_kit",
     "quality": "epic",
     "il": 44,
@@ -3159,7 +3159,7 @@
   },
   {
     "id": "combat-advantage-jewel",
-    "name": "Combat Advantage Jewel",
+    "name": "Major Combat Advantage Jewel +1",
     "filter": "reinforcement_jewel",
     "quality": "epic",
     "il": 44,
@@ -3309,7 +3309,7 @@
   },
   {
     "id": "crit-strike-kit",
-    "name": "Crit Strike Kit",
+    "name": "Major Critical Strike Armor Kit +1",
     "filter": "reinforcement_armor_kit",
     "quality": "epic",
     "il": 44,
@@ -3430,7 +3430,7 @@
   },
   {
     "id": "defense-kit",
-    "name": "Defense Kit",
+    "name": "Major Defense Armor Kit +1",
     "filter": "reinforcement_armor_kit",
     "quality": "epic",
     "il": 44,
@@ -7564,7 +7564,6 @@
     "combined_rating": 5220,
     "gameIds": ["Secondary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
-    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -7778,7 +7777,6 @@
     "combined_rating": 5220,
     "gameIds": ["Primary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
-    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -7793,7 +7791,6 @@
     "combined_rating": 5220,
     "gameIds": ["Secondary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
-    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -7809,7 +7806,6 @@
     "combined_rating": 5220,
     "gameIds": ["Primary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
-    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -8741,6 +8737,46 @@
     "bonuses": ["magistrate-patience"]
   },
   {
+    "id": "major-awareness-jewel-1",
+    "name": "Major Awareness Jewel +1",
+    "filter": "reinforcement_jewel",
+    "quality": "epic",
+    "il": 44,
+    "awareness": 880
+  },
+  {
+    "id": "major-critical-avoidance-armor-kit-1",
+    "name": "Major Critical Avoidance Armor Kit +1",
+    "filter": "reinforcement_armor_kit",
+    "quality": "epic",
+    "il": 44,
+    "crit_avoid": 880
+  },
+  {
+    "id": "major-deflection-armor-kit-1",
+    "name": "Major Deflection Armor Kit +1",
+    "filter": "reinforcement_armor_kit",
+    "quality": "epic",
+    "il": 44,
+    "deflect": 880
+  },
+  {
+    "id": "major-hit-points-armor-kit-1",
+    "name": "Major Hit Points Armor Kit +1",
+    "filter": "reinforcement_armor_kit",
+    "quality": "epic",
+    "il": 44,
+    "hit_points": 3520
+  },
+  {
+    "id": "major-stamina-regeneration-jewel-1",
+    "name": "Major Stamina Regeneration Jewel +1",
+    "filter": "reinforcement_jewel",
+    "quality": "epic",
+    "il": 44,
+    "stamina_regen": 0.022
+  },
+  {
     "id": "marco-s",
     "name": "Marco's Mystic Marker",
     "filter": "artifact",
@@ -9432,7 +9468,7 @@
   },
   {
     "id": "power-kit",
-    "name": "Power Kit",
+    "name": "Major Power Armor Kit +1",
     "filter": "reinforcement_armor_kit",
     "quality": "epic",
     "il": 44,
@@ -10302,7 +10338,7 @@
   },
   {
     "id": "severity-kit",
-    "name": "Severity Kit",
+    "name": "Major Critical Severity Armor Kit +1",
     "filter": "reinforcement_armor_kit",
     "quality": "epic",
     "il": 44,
