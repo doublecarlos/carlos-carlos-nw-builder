@@ -277,7 +277,7 @@ describe("catalog.validate: global inputs", () => {
         default: 0,
         scaler: { mode: "absolute" },
       }),
-      flagged({ path: "l", paramType: "list", options: [] }),
+      flagged({ path: "l", paramType: "list", options: [], allowEmpty: true }),
       flagged({ path: "toggles.combat" }),
       flagged({ path: "enemies", paramType: "number", default: 0 }),
     ]);

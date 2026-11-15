@@ -1340,6 +1340,7 @@ describe("applyRetiredItems", () => {
       },
       sections: {},
       filters: {},
+      tags: {},
     });
     const build = storage.defaultBuild("Flavoured");
     (build.context as unknown as Record<string, unknown>).test = {

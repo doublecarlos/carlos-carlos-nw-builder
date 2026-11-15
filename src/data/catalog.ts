@@ -1163,7 +1163,7 @@ const INPUT_NAME = /^[a-zA-Z_]\w*$/;
  *  bounds on a number or percent. A reference names a global input and nothing else. */
 function checkInputDefs(
   inputs: Record<string, InputDecl>,
-  paramSlotsById: ReadonlyMap<string, BuildParameterSlot>,
+  paramSlotsById: ReadonlyMap<string, Authored<BuildParameterSlot>>,
   report: (level: "error" | "warn", message: string) => void,
 ) {
   for (const [name, def] of Object.entries(inputs)) {
@@ -1200,7 +1200,7 @@ function checkInputDefs(
 /** What is wrong with a reference to a global input, or null. */
 function globalRefProblem(
   ref: GlobalInputRef,
-  paramSlotsById: ReadonlyMap<string, BuildParameterSlot>,
+  paramSlotsById: ReadonlyMap<string, Authored<BuildParameterSlot>>,
 ): string | null {
   const extra = Object.keys(ref).filter((key) => key !== "global");
   if (extra.length)
@@ -1561,7 +1561,7 @@ export function validateSlots(slots: AuthoredSlot[]): LintFinding[] {
 
 /** What a `globalInput` slot cannot carry. Its value is read only through the bonus inputs
  *  referencing it, so it has no row, no scaler and no reader of its own. */
-function globalInputSlotProblems(slot: BuildParameterSlot): string[] {
+function globalInputSlotProblems(slot: Authored<BuildParameterSlot>): string[] {
   const out: string[] = [];
   if (slot.quick)
     out.push("a global input has no row of its own, so it cannot be quick");

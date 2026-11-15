@@ -115,6 +115,7 @@ const controlOptions = [
           :model-value="row.global"
           :options="globalOptions"
           show-empty-option
+          show-value
           :closed-display="
             !row.global
               ? 'this bonus'

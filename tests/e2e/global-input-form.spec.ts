@@ -71,7 +71,7 @@ test("the global input picker shows each slot's id and finds it by id", async ({
   await box.click();
   const menu = pickerMenu(picker);
   const song = menu.getByRole("option", { name: /Played a song/ });
-  await expect(song.getByTestId("bonus-option-id")).toHaveText(SONG);
+  await expect(song.getByTestId("option-row-id")).toHaveText(SONG);
 
   await box.fill(HIT);
   await expect(menu.getByRole("option")).toHaveCount(1);

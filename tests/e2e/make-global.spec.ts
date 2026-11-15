@@ -160,6 +160,6 @@ test("the new global input's id can be edited, and a taken one is refused", asyn
   await expect(
     pickerMenu(picker)
       .getByRole("option", { name: /Sang/ })
-      .getByTestId("bonus-option-id"),
+      .getByTestId("option-row-id"),
   ).toHaveText("globals.scenario.song");
 });

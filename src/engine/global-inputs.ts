@@ -2,6 +2,8 @@
 // global inputs resolved against the flagged `build_parameter` slots that define them.
 import { bonusInputAddress } from "../lib/build-inputs";
 import type {
+  Authored,
+  AuthoredSlot,
   Bonus,
   BuildParameterSlot,
   GlobalInputRef,
@@ -12,6 +14,13 @@ import type {
 } from "../types";
 
 export type GlobalInputs = ReadonlyMap<string, BuildParameterSlot>;
+
+/** Global inputs as authored, their labels not yet filled by `Db`: what the catalog check
+ *  reads. Resolved ones fit wherever these do. */
+export type AuthoredGlobalInputs = ReadonlyMap<
+  string,
+  Authored<BuildParameterSlot>
+>;
 
 /** For an evaluation context built without a catalog, where no reference can resolve. */
 export const NO_GLOBALS: GlobalInputs = new Map();
@@ -26,7 +35,13 @@ export const isGlobalInputSlot = (
 ): boolean => slot.type === "build_parameter" && slot.globalInput === true;
 
 /** Every global input slot in `slots`, by id. */
-export function globalInputsOf(slots: readonly Slot[]): GlobalInputs {
+export function globalInputsOf(slots: readonly Slot[]): GlobalInputs;
+export function globalInputsOf(
+  slots: readonly AuthoredSlot[],
+): AuthoredGlobalInputs;
+export function globalInputsOf(
+  slots: readonly AuthoredSlot[],
+): AuthoredGlobalInputs {
   return new Map(
     slots.flatMap((slot) =>
       slot.type === "build_parameter" && slot.globalInput
@@ -37,7 +52,7 @@ export function globalInputsOf(slots: readonly Slot[]): GlobalInputs {
 }
 
 /** A global input slot's definition in a bonus input's shape. */
-export function globalInputDef(slot: BuildParameterSlot): InputDef {
+export function globalInputDef(slot: Authored<BuildParameterSlot>): InputDef {
   if (slot.paramType === "boolean")
     return {
       type: "boolean",
@@ -67,7 +82,7 @@ export interface DeclaredInput {
 }
 
 const declaredCache = new WeakMap<
-  GlobalInputs,
+  AuthoredGlobalInputs,
   WeakMap<object, DeclaredInput[]>
 >();
 
@@ -75,7 +90,7 @@ const declaredCache = new WeakMap<
  *  input is left out, as the catalog check reports it. */
 export function declaredInputs(
   bonus: Pick<Bonus, "id" | "inputs">,
-  globals: GlobalInputs,
+  globals: AuthoredGlobalInputs,
 ): DeclaredInput[] {
   const inputs = bonus.inputs;
   if (!inputs) return [];
@@ -108,7 +123,7 @@ export function declaredInputs(
 /** `bonus`'s inputs by name with references resolved, what formula checks read. */
 export function inputDefs(
   bonus: Pick<Bonus, "id" | "inputs">,
-  globals: GlobalInputs,
+  globals: AuthoredGlobalInputs,
 ): Record<string, InputDef> {
   return Object.fromEntries(
     declaredInputs(bonus, globals).map((entry) => [entry.name, entry.def]),
@@ -123,7 +138,7 @@ export type WithInputDefs<T> = Omit<T, "inputs"> & {
 /** `owner` with its input references resolved. */
 export function withInputDefs<T extends Pick<Bonus, "id" | "inputs">>(
   owner: T,
-  globals: GlobalInputs,
+  globals: AuthoredGlobalInputs,
 ): WithInputDefs<T> {
   return { ...owner, inputs: inputDefs(owner, globals) };
 }

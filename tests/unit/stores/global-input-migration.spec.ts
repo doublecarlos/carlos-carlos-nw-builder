@@ -24,6 +24,7 @@ const privateOverlay = (): CatalogOverlay => ({
   slots: {},
   sections: {},
   filters: {},
+  tags: {},
 });
 
 const promotedOverlay = (): CatalogOverlay => ({
