@@ -1499,6 +1499,13 @@
     "shortDescription": "Whenever you use an Artifact power, your cooldowns are reduced by 3 seconds. This effect overwrites Artificer's Persuasion."
   },
   {
+    "id": "aspect-of-the-pack",
+    "name": "Aspect of the Pack",
+    "filter": "group_buff",
+    "longDescription": "Class Feature (Ranger)\n\nIf you are within 30' of an ally, you and your ally gain 1% Combat Advantage per friendly target affected. Maximum 5%.",
+    "bonuses": ["aspect-of-the-pack"]
+  },
+  {
     "id": "assassin-s-covenant",
     "name": "Assassin's Covenant",
     "filter": "insignia_bonus",
@@ -8008,7 +8015,7 @@
   },
   {
     "id": "m34-ashen-bindings-of-the-devourer",
-    "name": "M34 Ashen Bindings of the Devourer",
+    "name": "M34 Bloodied Bindings of the Devourer",
     "filter": "gear_arms",
     "quality": "legendary",
     "il": 6050,
@@ -8026,7 +8033,7 @@
   },
   {
     "id": "m34-ashen-bindings-of-the-devourer-1",
-    "name": "M34 Ashen Bindings of the Devourer +1",
+    "name": "M34 Ashen Bindings of the Devourer",
     "filter": "gear_arms",
     "quality": "mythic",
     "il": 6400,
@@ -8044,7 +8051,7 @@
   },
   {
     "id": "m34-ashen-bindings-of-the-devourer-2",
-    "name": "M34 Ashen Bindings of the Devourer +2",
+    "name": "M34 Molten Bindings of the Devourer",
     "filter": "gear_arms",
     "quality": "celestial",
     "il": 6750,
@@ -8062,7 +8069,7 @@
   },
   {
     "id": "m34-ashen-boots-of-the-devourer",
-    "name": "M34 Ashen Boots of the Devourer",
+    "name": "M34 Bloodied Boots of the Devourer",
     "filter": "gear_boots",
     "quality": "legendary",
     "il": 6050,
@@ -8079,7 +8086,7 @@
   },
   {
     "id": "m34-ashen-boots-of-the-devourer-1",
-    "name": "M34 Ashen Boots of the Devourer +1",
+    "name": "M34 Ashen Boots of the Devourer",
     "filter": "gear_boots",
     "quality": "mythic",
     "il": 6400,
@@ -8096,7 +8103,7 @@
   },
   {
     "id": "m34-ashen-boots-of-the-devourer-2",
-    "name": "M34 Ashen Boots of the Devourer +2",
+    "name": "M34 Molten Boots of the Devourer",
     "filter": "gear_boots",
     "quality": "celestial",
     "il": 6750,
@@ -8113,7 +8120,7 @@
   },
   {
     "id": "m34-ashen-bracers-of-the-devourer-2",
-    "name": "M34 Ashen Bracers of the Devourer +2",
+    "name": "M34 Molten Bracers of the Devourer",
     "filter": "gear_arms",
     "quality": "celestial",
     "il": 6750,
@@ -8131,7 +8138,7 @@
   },
   {
     "id": "m34-ashen-cap-of-the-devourer-2",
-    "name": "M34 Ashen Cap of the Devourer +2",
+    "name": "M34 Molten Cap of the Devourer",
     "filter": "gear_head",
     "quality": "celestial",
     "il": 6750,
@@ -8148,7 +8155,7 @@
   },
   {
     "id": "m34-ashen-coif-of-the-devourer-2",
-    "name": "M34 Ashen Coif of the Devourer +2",
+    "name": "M34 Molten Coif of the Devourer",
     "filter": "gear_head",
     "quality": "celestial",
     "il": 6750,
@@ -8165,7 +8172,7 @@
   },
   {
     "id": "m34-ashen-cowl-of-the-devourer",
-    "name": "M34 Ashen Cowl of the Devourer",
+    "name": "M34 Bloodied Cowl of the Devourer",
     "filter": "gear_head",
     "quality": "legendary",
     "il": 6050,
@@ -8182,7 +8189,7 @@
   },
   {
     "id": "m34-ashen-cowl-of-the-devourer-1",
-    "name": "M34 Ashen Cowl of the Devourer +1",
+    "name": "M34 Ashen Cowl of the Devourer",
     "filter": "gear_head",
     "quality": "mythic",
     "il": 6400,
@@ -8199,7 +8206,7 @@
   },
   {
     "id": "m34-ashen-cowl-of-the-devourer-2",
-    "name": "M34 Ashen Cowl of the Devourer +2",
+    "name": "M34 Molten Cowl of the Devourer",
     "filter": "gear_head",
     "quality": "celestial",
     "il": 6750,
@@ -8216,7 +8223,7 @@
   },
   {
     "id": "m34-ashen-crown-of-the-devourer-2",
-    "name": "M34 Ashen Crown of the Devourer +2",
+    "name": "M34 Molten Crown of the Devourer",
     "filter": "gear_head",
     "quality": "celestial",
     "il": 6750,
@@ -8233,7 +8240,7 @@
   },
   {
     "id": "m34-ashen-cuirass-of-the-devourer-2",
-    "name": "M34 Ashen Cuirass of the Devourer +2",
+    "name": "M34 Molten Cuirass of the Devourer",
     "filter": "gear_armor",
     "quality": "celestial",
     "il": 6750,
@@ -8250,7 +8257,7 @@
   },
   {
     "id": "m34-ashen-hood-of-the-devourer",
-    "name": "M34 Ashen Hood of the Devourer",
+    "name": "M34 Bloodied Hood of the Devourer",
     "filter": "gear_head",
     "quality": "legendary",
     "il": 6050,
@@ -8267,7 +8274,7 @@
   },
   {
     "id": "m34-ashen-hood-of-the-devourer-1",
-    "name": "M34 Ashen Hood of the Devourer +1",
+    "name": "M34 Ashen Hood of the Devourer",
     "filter": "gear_head",
     "quality": "mythic",
     "il": 6400,
@@ -8284,7 +8291,7 @@
   },
   {
     "id": "m34-ashen-hood-of-the-devourer-2",
-    "name": "M34 Ashen Hood of the Devourer +2",
+    "name": "M34 Molten Hood of the Devourer",
     "filter": "gear_head",
     "quality": "celestial",
     "il": 6750,
@@ -8301,7 +8308,7 @@
   },
   {
     "id": "m34-ashen-jerkin-of-the-devourer",
-    "name": "M34 Ashen Jerkin of the Devourer",
+    "name": "M34 Bloodied Jerkin of the Devourer",
     "filter": "gear_armor",
     "quality": "legendary",
     "il": 6050,
@@ -8318,7 +8325,7 @@
   },
   {
     "id": "m34-ashen-jerkin-of-the-devourer-1",
-    "name": "M34 Ashen Jerkin of the Devourer +1",
+    "name": "M34 Ashen Jerkin of the Devourer",
     "filter": "gear_armor",
     "quality": "mythic",
     "il": 6400,
@@ -8335,7 +8342,7 @@
   },
   {
     "id": "m34-ashen-jerkin-of-the-devourer-2",
-    "name": "M34 Ashen Jerkin of the Devourer +2",
+    "name": "M34 Molten Jerkin of the Devourer",
     "filter": "gear_armor",
     "quality": "celestial",
     "il": 6750,
@@ -8352,7 +8359,7 @@
   },
   {
     "id": "m34-ashen-robes-of-the-devourer",
-    "name": "M34 Ashen Robes of the Devourer",
+    "name": "M34 Bloodied Robes of the Devourer",
     "filter": "gear_armor",
     "quality": "legendary",
     "il": 6050,
@@ -8369,7 +8376,7 @@
   },
   {
     "id": "m34-ashen-robes-of-the-devourer-1",
-    "name": "M34 Ashen Robes of the Devourer +1",
+    "name": "M34 Ashen Robes of the Devourer",
     "filter": "gear_armor",
     "quality": "mythic",
     "il": 6400,
@@ -8386,7 +8393,7 @@
   },
   {
     "id": "m34-ashen-robes-of-the-devourer-2",
-    "name": "M34 Ashen Robes of the Devourer +2",
+    "name": "M34 Molten Robes of the Devourer",
     "filter": "gear_armor",
     "quality": "celestial",
     "il": 6750,
@@ -8403,7 +8410,7 @@
   },
   {
     "id": "m34-ashen-shoes-of-the-devourer-2",
-    "name": "M34 Ashen Shoes of the Devourer +2",
+    "name": "M34 Molten Shoes of the Devourer",
     "filter": "gear_boots",
     "quality": "celestial",
     "il": 6750,
@@ -8420,7 +8427,7 @@
   },
   {
     "id": "m34-ashen-sleeves-of-the-devourer",
-    "name": "M34 Ashen Sleeves of the Devourer",
+    "name": "M34 Bloodied Sleeves of the Devourer",
     "filter": "gear_arms",
     "quality": "legendary",
     "il": 6050,
@@ -8438,7 +8445,7 @@
   },
   {
     "id": "m34-ashen-sleeves-of-the-devourer-1",
-    "name": "M34 Ashen Sleeves of the Devourer +1",
+    "name": "M34 Ashen Sleeves of the Devourer",
     "filter": "gear_arms",
     "quality": "mythic",
     "il": 6400,
@@ -8456,7 +8463,7 @@
   },
   {
     "id": "m34-ashen-sleeves-of-the-devourer-2",
-    "name": "M34 Ashen Sleeves of the Devourer +2",
+    "name": "M34 Molten Sleeves of the Devourer",
     "filter": "gear_arms",
     "quality": "celestial",
     "il": 6750,
@@ -8474,7 +8481,7 @@
   },
   {
     "id": "m34-ashen-striders-of-the-devourer",
-    "name": "M34 Ashen Striders of the Devourer",
+    "name": "M34 Bloodied Striders of the Devourer",
     "filter": "gear_boots",
     "quality": "legendary",
     "il": 6050,
@@ -8491,7 +8498,7 @@
   },
   {
     "id": "m34-ashen-striders-of-the-devourer-1",
-    "name": "M34 Ashen Striders of the Devourer +1",
+    "name": "M34 Ashen Striders of the Devourer",
     "filter": "gear_boots",
     "quality": "mythic",
     "il": 6400,
@@ -8508,7 +8515,7 @@
   },
   {
     "id": "m34-ashen-striders-of-the-devourer-2",
-    "name": "M34 Ashen Striders of the Devourer +2",
+    "name": "M34 Molten Striders of the Devourer",
     "filter": "gear_boots",
     "quality": "celestial",
     "il": 6750,
@@ -8525,7 +8532,7 @@
   },
   {
     "id": "m34-ashen-swiftguards-of-the-devourer-2",
-    "name": "M34 Ashen Swiftguards of the Devourer +2",
+    "name": "M34 Molten Swiftguards of the Devourer",
     "filter": "gear_arms",
     "quality": "celestial",
     "il": 6750,
@@ -8543,7 +8550,7 @@
   },
   {
     "id": "m34-ashen-tunic-of-the-devourer-2",
-    "name": "M34 Ashen Tunic of the Devourer +2",
+    "name": "M34 Molten Tunic of the Devourer",
     "filter": "gear_armor",
     "quality": "celestial",
     "il": 6750,
@@ -8560,7 +8567,7 @@
   },
   {
     "id": "m34-ashen-vambraces-of-the-devourer-2",
-    "name": "M34 Ashen Vambraces of the Devourer +2",
+    "name": "M34 Molten Vambraces of the Devourer",
     "filter": "gear_arms",
     "quality": "celestial",
     "il": 6750,
@@ -8578,7 +8585,7 @@
   },
   {
     "id": "m34-ashen-warboots-of-the-devourer-2",
-    "name": "M34 Ashen Warboots of the Devourer +2",
+    "name": "M34 Molten Warboots of the Devourer",
     "filter": "gear_boots",
     "quality": "celestial",
     "il": 6750,

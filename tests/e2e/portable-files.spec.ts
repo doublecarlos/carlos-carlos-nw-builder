@@ -12,7 +12,13 @@ import {
   pickerInput,
   slotRow,
 } from "./support/app";
-import { addBuild, buildRow, layerRow, renameViaSidebar } from "./support/nav";
+import {
+  addBuild,
+  buildRow,
+  layerRow,
+  openRowMenu,
+  renameViaSidebar,
+} from "./support/nav";
 
 /** Export the first build's JSON via the header's "Export bundle…" button. Since we need a
  *  single-build export (not a bundle), we use the download function from the kebab menu. */
@@ -181,6 +187,25 @@ test.describe("portable files", () => {
     await importText(page, JSON.stringify(bundle));
     await confirmImport(page);
     await expect(comparePicker(page)).toHaveValue("");
+  });
+
+  // An imported build must be plain data in the store, or copying it fails silently until
+  // a reload reads it back from storage.
+  test("a build imported from a bundle can be duplicated right away", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await page.getByTestId("header-export-bundle").click();
+    await page.getByText("Select all").first().click();
+    const bundle = await downloadBundle(page);
+
+    await renameViaSidebar(page, buildRow(page, "Build 1"), "Original");
+    await importText(page, JSON.stringify(bundle));
+    await confirmImport(page);
+
+    const menu = await openRowMenu(buildRow(page, "Build 1"));
+    await menu.getByRole("button", { name: "Duplicate" }).click();
+    await expect(buildRow(page, "Build 1 copy")).toBeVisible();
   });
 
   test("import sniffs bundle kind correctly", async ({ page }) => {
