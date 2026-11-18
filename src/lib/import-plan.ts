@@ -176,8 +176,15 @@ export function resolveImport(
     return { finalId, replacing };
   };
 
-  // Only new entries are renamed: one taking an existing build's place is that build.
-  const buildNames = new Set<string>();
+  // Only new entries are renamed: one taking an existing build's place is that build. Names
+  // only collide within one folder, as builds in different folders tell apart by their path.
+  const buildNamesByFolder = new Map<string, Set<string>>();
+  const buildNames = (entry: ImportBuildEntry) => {
+    const folder = entry.path?.at(-1)?.key ?? "";
+    let names = buildNamesByFolder.get(folder);
+    if (!names) buildNamesByFolder.set(folder, (names = new Set()));
+    return names;
+  };
   const builds = plan.builds.flatMap((entry, i) => {
     const decision = decisions.builds[i];
     if (!decision?.selected) return [];
@@ -194,7 +201,7 @@ export function resolveImport(
           id: finalId,
           name: replacing
             ? entry.build.name
-            : uniqueName(entry.build.name, buildNames),
+            : uniqueName(entry.build.name, buildNames(entry)),
         },
         replacing,
       },

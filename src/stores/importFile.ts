@@ -8,7 +8,7 @@
 // Reading a file does not commit it: it becomes an `ImportPlan` and the picker shows what the
 // file holds, whatever the shape, so every import looks the same and the file's own contents
 // are never taken on trust.
-import { computed, ref } from "vue";
+import { computed, shallowRef } from "vue";
 import * as builds from "./builds";
 import * as layers from "./layers";
 import * as folders from "./folders";
@@ -125,7 +125,9 @@ function parseFile(text: string, fileName: string): ParsedFile | null {
   }
 }
 
-const _pending = ref<ImportPlan | null>(null);
+// Shallow, so the builds and layers it carries stay plain data: they are written into the
+// stores as they are, and a nested reactive proxy there breaks `structuredClone`.
+const _pending = shallowRef<ImportPlan | null>(null);
 
 /** The file waiting on the picker, or null when none is. */
 export const pending = computed(() => _pending.value);

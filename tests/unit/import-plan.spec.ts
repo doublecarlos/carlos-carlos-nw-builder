@@ -163,6 +163,28 @@ describe("resolveImport", () => {
     ]);
   });
 
+  // A folder already tells same-named builds apart, so only siblings get a suffix.
+  it("keeps a name shared by builds in different folders", () => {
+    const loose = storage.defaultBuild("Same");
+    const inA = storage.defaultBuild("Same");
+    const inB = storage.defaultBuild("Same");
+    const alsoInA = storage.defaultBuild("Same");
+    const target = plan({
+      builds: [loose, inA, inB, alsoInA],
+      folders: [
+        { id: "f_a", name: "A", collapsed: false, items: [inA.id, alsoInA.id] },
+        { id: "f_b", name: "B", collapsed: false, items: [inB.id] },
+      ],
+    });
+
+    expect(resolve(target).builds.map((b) => b.build.name)).toEqual([
+      "Same",
+      "Same",
+      "Same",
+      "Same (2)",
+    ]);
+  });
+
   it("remaps a comparison to the fresh id its target ended up with", () => {
     const targetBuild = storage.defaultBuild("Target");
     const source = storage.defaultBuild("Source");

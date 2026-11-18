@@ -366,6 +366,10 @@ function run(
 
 // --- derived outputs ---
 
+/** A bonus multiplier its counter stat can cancel but never push below 1. */
+const counteredMult = (bonus: number, counter: number) =>
+  1 + Math.max(bonus - counter, 0);
+
 function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
   const { schema } = db;
   const context = build.context ?? {};
@@ -389,7 +393,7 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     ? capped.magical_damage_boost
     : capped.physical_damage_boost;
   const damage = (critChance: number, deflectChance: number) => {
-    const critMult = 1 + capped.sev_p - capped.enemy_crit_avoid;
+    const critMult = counteredMult(capped.sev_p, capped.enemy_crit_avoid);
     const deflectMult = 1 / (1 + capped.enemy_deflect_sev - capped.acc_p);
     const other =
       (1 + effectiveMagPhys) *
@@ -401,7 +405,7 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
       (magnitude / 100) *
       (1 + capped.power_p) *
       averageByChance(critMult, critChance) *
-      (1 + capped.ca_p - capped.enemy_awareness) *
+      counteredMult(capped.ca_p, capped.enemy_awareness) *
       (1 / (1 + capped.enemy_defense)) *
       averageByChance(deflectMult, deflectChance) *
       other;
@@ -416,11 +420,11 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     (1 + capped.overall_healing);
 
   const ehp = (critChance: number, deflectChance: number) => {
-    const critMult = 1 + capped.enemy_severity - capped.crit_avoid_p;
+    const critMult = counteredMult(capped.enemy_severity, capped.crit_avoid_p);
     const deflectMult = 1 / (1 + capped.deflect_sev_p - capped.enemy_accuracy);
     const finalMult =
       (1 / (1 + capped.defense_p)) *
-      (1 + capped.enemy_ca - capped.awareness_p) *
+      counteredMult(capped.enemy_ca, capped.awareness_p) *
       averageByChance(critMult, critChance) *
       averageByChance(deflectMult, deflectChance) *
       (1 + capped.enemy_outgoing_damage) *
