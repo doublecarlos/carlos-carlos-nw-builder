@@ -3765,17 +3765,17 @@
     "gameIds": ["Mount_M34_Ethereal_Jaunt_Slots"],
     "insigniaSlots": [
       {
-        "shape": "regal"
+        "shape": "barbed"
       },
       {
-        "shape": "regal"
+        "shape": "barbed"
       },
       {
         "universal": true
       },
       {
         "universal": true,
-        "preferred": "enlightened"
+        "preferred": "illuminated"
       }
     ]
   },
